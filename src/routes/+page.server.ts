@@ -16,7 +16,7 @@ type ChaptersApiResponse = {
 	message: string;
 	data: Chapter[];
 };
-export const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
+ const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
 const API_URL =
 	`${BASE_URL}/api/v1/chapters?boardSlug=jee&examSlug=jee-mains`;
 

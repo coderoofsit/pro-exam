@@ -38,7 +38,7 @@ type QuestionsApiResponse = {
 		data: Question[];
 	};
 };
-export const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
+ const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
 const API_BASE = `${BASE_URL}/api/v1/questions`;
 
 const TOKEN =
