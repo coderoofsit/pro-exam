@@ -1,5 +1,5 @@
-import { BASE_URL } from "$lib/http";
-
+// import { BASE_URL } from "$lib/http";
+export const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
 export type BackendRole = 'student' | 'teacher' | 'admin' | 'institute';
 
 export type LoginResponse = {

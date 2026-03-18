@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { renderLatexText } from '$lib/server/mathjax';
-import { BASE_URL } from '$lib/http';
+// import { BASE_URL } from '$lib/http';
 
 type QuestionOption = {
 	identifier: string;
@@ -38,7 +38,7 @@ type QuestionsApiResponse = {
 		data: Question[];
 	};
 };
-
+export const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
 const API_BASE = `${BASE_URL}/api/v1/questions`;
 
 const TOKEN =
