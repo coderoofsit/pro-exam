@@ -1,30 +1,49 @@
 @import "tailwindcss";
 
+/* ================================================================
+   ExamFlow — Design Tokens
+   Change values here to retheme the entire app from one place.
+   ================================================================ */
+
 @theme {
-  --color-brand-primary: #4f7eff;
-  --color-brand-primary-hover: #3a6aee;
-  --color-brand-primary-light: #eef2ff;
-  --color-brand-secondary: #22c55e;
-  --color-brand-secondary-hover: #16a34a;
-  --color-brand-secondary-light: #f0fdf4;
-  --color-brand-tutor: #f59e0b;
-  --color-brand-tutor-light: #fffbeb;
-  --color-brand-institute: #8b5cf6;
-  --color-brand-institute-light: #f5f3ff;
-  --color-surface-page: #f5f7ff;
-  --color-surface-card: #ffffff;
-  --color-surface-subtle: #f0f3ff;
-  --color-surface-border: #e2e8f0;
-  --color-surface-border-focus: #4f7eff;
-  --color-content-primary: #1a1f36;
-  --color-content-secondary: #64748b;
-  --color-content-muted: #94a3b8;
-  --color-content-link: #4f7eff;
-  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
-  --radius-card: 1.25rem;
-  --radius-item: 0.875rem;
-  --radius-icon: 0.625rem;
-  --shadow-card: 0 4px 24px 0 rgba(79, 126, 255, 0.08);
-  --shadow-item: 0 2px 8px 0 rgba(79, 126, 255, 0.06);
-  --shadow-item-hover: 0 4px 16px 0 rgba(79, 126, 255, 0.14);
+  /* ── Brand colors ─────────────────────────────────────────── */
+  --color-brand-primary:            #4f7eff;
+  --color-brand-primary-hover:      #3a6aee;
+  --color-brand-primary-light:      #eef2ff;
+
+  --color-brand-secondary:          #22c55e;
+  --color-brand-secondary-hover:    #16a34a;
+  --color-brand-secondary-light:    #f0fdf4;
+
+  --color-brand-tutor:              #f59e0b;
+  --color-brand-tutor-light:        #fffbeb;
+
+  --color-brand-institute:          #8b5cf6;
+  --color-brand-institute-light:    #f5f3ff;
+
+  /* ── Surface / background ─────────────────────────────────── */
+  --color-surface-page:             #f5f7ff;
+  --color-surface-card:             #ffffff;
+  --color-surface-subtle:           #f0f3ff;
+  --color-surface-border:           #e2e8f0;
+  --color-surface-border-focus:     #4f7eff;
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --color-content-primary:          #1a1f36;
+  --color-content-secondary:        #64748b;
+  --color-content-muted:            #94a3b8;
+  --color-content-link:             #4f7eff;
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --font-sans:                      "Plus Jakarta Sans", system-ui, sans-serif;
+
+  /* ── Radius ───────────────────────────────────────────────── */
+  --radius-card:                    1.25rem;
+  --radius-item:                    0.875rem;
+  --radius-icon:                    0.625rem;
+
+  /* ── Shadows ──────────────────────────────────────────────── */
+  --shadow-card:                    0 4px 24px 0 rgba(79, 126, 255, 0.08);
+  --shadow-item:                    0 2px 8px 0 rgba(79, 126, 255, 0.06);
+  --shadow-item-hover:              0 4px 16px 0 rgba(79, 126, 255, 0.14);
 }

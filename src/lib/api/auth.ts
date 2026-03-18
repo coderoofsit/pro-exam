@@ -29,7 +29,7 @@ export async function googleLogin(params: {
     headers: {
       'Content-Type': 'application/json'
     },
-    credentials: 'include',
+    // credentials: 'include',
     body: JSON.stringify(params)
   });
 

@@ -18,7 +18,11 @@
   let isLoading = $state(false);
   let errorMessage = $state('');
 
-
+  function getRedirectPath(role: AccountType) {
+    if (role === 'student') return '/student/dashboard';
+    if (role === 'tutor') return '/tutor/dashboard';
+    return '/institute/dashboard';
+  }
   function mapRole(role: AccountType): BackendRole {
     if (role === 'tutor') return 'teacher';
     if (role === 'institute') return 'institute';
@@ -43,9 +47,8 @@
       });
 
       onSuccess?.(result);
+      await goto(getRedirectPath(selected));
 
-      // adjust this to your actual post-login route
-      await goto('/dashboard');
     } catch (error) {
       errorMessage =
         error instanceof Error
