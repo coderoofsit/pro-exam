@@ -1,3 +1,4 @@
+import { BASE_URL } from '$lib/http';
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 
@@ -17,10 +18,8 @@ type ChaptersApiResponse = {
 	data: Chapter[];
 };
 
-const base_url = "https://test-exam-backend-5yh6.onrender.com"
-
 const API_URL =
-	`${base_url}/api/v1/chapters?boardSlug=jee&examSlug=jee-mains`;
+	`${BASE_URL}/api/v1/chapters?boardSlug=jee&examSlug=jee-mains`;
 
 const TOKEN =
 	'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YTAyMjAzNmY0OGI2NTM1YzA3MGFiYiIsIm93bmVkQnkiOm51bGwsIm93bmVkUm9sZSI6bnVsbCwicm9sZSI6Imluc3RpdHV0ZSIsImlhdCI6MTc3Mzc1OTY1Mn0.Zb2vZB4ErKGvEAcy8IKmgAiimKeBL455m5TnEWMtyMQ';

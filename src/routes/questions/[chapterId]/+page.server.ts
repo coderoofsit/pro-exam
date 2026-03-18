@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { renderLatexText } from '$lib/server/mathjax';
+import { BASE_URL } from '$lib/http';
 
 type QuestionOption = {
 	identifier: string;
@@ -37,9 +38,8 @@ type QuestionsApiResponse = {
 		data: Question[];
 	};
 };
-const base_url = "https://test-exam-backend-5yh6.onrender.com"
 
-const API_BASE = `${base_url}/api/v1/questions`;
+const API_BASE = `${BASE_URL}/api/v1/questions`;
 
 const TOKEN =
 	'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YTAyMjAzNmY0OGI2NTM1YzA3MGFiYiIsIm93bmVkQnkiOm51bGwsIm93bmVkUm9sZSI6bnVsbCwicm9sZSI6Imluc3RpdHV0ZSIsImlhdCI6MTc3Mzc1OTY1Mn0.Zb2vZB4ErKGvEAcy8IKmgAiimKeBL455m5TnEWMtyMQ';
