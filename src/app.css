@@ -1,12 +1,8 @@
 @import "tailwindcss";
 
-/* ================================================================
-   ExamFlow — Design Tokens
-   Change values here to retheme the entire app from one place.
-   ================================================================ */
-
 @theme {
-  /* ── Brand colors ─────────────────────────────────────────── */
+  /* ─── GLOBAL BRAND COLORS (do not remove — used across the entire app) ─── */
+
   --color-brand-primary:            #4f7eff;
   --color-brand-primary-hover:      #3a6aee;
   --color-brand-primary-light:      #eef2ff;
@@ -21,29 +17,208 @@
   --color-brand-institute:          #8b5cf6;
   --color-brand-institute-light:    #f5f3ff;
 
-  /* ── Surface / background ─────────────────────────────────── */
   --color-surface-page:             #f5f7ff;
   --color-surface-card:             #ffffff;
   --color-surface-subtle:           #f0f3ff;
   --color-surface-border:           #e2e8f0;
   --color-surface-border-focus:     #4f7eff;
 
-  /* ── Text ─────────────────────────────────────────────────── */
   --color-content-primary:          #1a1f36;
   --color-content-secondary:        #64748b;
   --color-content-muted:            #94a3b8;
   --color-content-link:             #4f7eff;
 
-  /* ── Typography ───────────────────────────────────────────── */
   --font-sans:                      "Plus Jakarta Sans", system-ui, sans-serif;
 
-  /* ── Radius ───────────────────────────────────────────────── */
   --radius-card:                    1.25rem;
   --radius-item:                    0.875rem;
   --radius-icon:                    0.625rem;
 
-  /* ── Shadows ──────────────────────────────────────────────── */
   --shadow-card:                    0 4px 24px 0 rgba(79, 126, 255, 0.08);
   --shadow-item:                    0 2px 8px 0 rgba(79, 126, 255, 0.06);
   --shadow-item-hover:              0 4px 16px 0 rgba(79, 126, 255, 0.14);
+
+  /* ─── SIDEBAR DARK THEME TOKENS ───────────────────────────────────────────
+     All sidebar-specific values live here under the --sb- prefix.
+     To retheme the sidebar, only edit this block. Nothing else needs touching.
+  ─────────────────────────────────────────────────────────────────────────── */
+
+  /* Backgrounds */
+  --sb-bg-from:                     #05070D;
+  --sb-bg-to:                       #1A1235;
+  --sb-border-color:                rgba(139, 92, 246, 0.18);
+
+  /* Logo mark */
+  --sb-logo-glow:                   0 0 18px rgba(139, 92, 246, 0.55);
+
+  /* Brand text */
+  --sb-brand-name-color:            #ffffff;
+  --sb-brand-role-color:            #A1A1AA;
+
+  /* Nav item — default */
+  --sb-nav-text:                    #A1A1AA;
+  --sb-nav-icon:                    #A1A1AA;
+  --sb-nav-hover-bg:                rgba(139, 92, 246, 0.10);
+  --sb-nav-hover-text:              #ffffff;
+  --sb-nav-hover-icon:              #C4B5FD;
+
+  /* Nav item — active */
+  --sb-nav-active-bg:               rgba(139, 92, 246, 0.18);
+  --sb-nav-active-text:             #ffffff;
+  --sb-nav-active-icon:             #A78BFA;
+  --sb-nav-active-indicator:        #8B5CF6;
+  --sb-nav-active-glow:             0 0 12px rgba(139, 92, 246, 0.35);
+
+  /* Collapse button */
+  --sb-collapse-text:               #71717A;
+  --sb-collapse-hover-bg:           rgba(139, 92, 246, 0.10);
+  --sb-collapse-hover-text:         #A1A1AA;
+
+  /* Dividers */
+  --sb-divider:                     rgba(139, 92, 246, 0.15);
+
+  /* Typography — sidebar only */
+  --sb-font-brand:                  700;
+  --sb-font-nav:                    500;
+  --sb-font-size-brand:             0.9375rem;
+  --sb-font-size-role:              0.6875rem;
+  --sb-font-size-nav:               0.8125rem;
+  --sb-font-size-collapse:          0.6875rem;
+
+  /* Widths */
+  --sb-width-expanded:              240px;
+  --sb-width-collapsed:             72px;
+
+  /* ─── TOPBAR DARK THEME TOKENS ───────────────────────────────────────────
+     All topbar-specific values live here under the --topbar- prefix.
+     To retheme the topbar, only edit this block.
+  ─────────────────────────────────────────────────────────────────────── */
+ 
+  /* Page background (main content area) */
+  --topbar-page-bg:                   #0C0E1A;
+ 
+  /* Topbar bar itself */
+  --topbar-bg:                        rgba(10, 10, 20, 0.85);
+  --topbar-border:                    rgba(139, 92, 246, 0.15);
+  --topbar-shadow:                    0 1px 24px rgba(5, 7, 13, 0.5);
+ 
+  /* Search input */
+  --topbar-search-bg:                 rgba(255, 255, 255, 0.05);
+  --topbar-search-border:             rgba(139, 92, 246, 0.18);
+  --topbar-search-border-focus:       rgba(139, 92, 246, 0.60);
+  --topbar-search-ring-focus:         rgba(139, 92, 246, 0.15);
+  --topbar-search-text:               #ffffff;
+  --topbar-search-placeholder:        #52525B;
+  --topbar-search-icon:               #52525B;
+ 
+  /* Icon buttons (bell etc.) */
+  --topbar-icon-btn-bg:               rgba(255, 255, 255, 0.05);
+  --topbar-icon-btn-border:           rgba(139, 92, 246, 0.18);
+  --topbar-icon-btn-color:            #A1A1AA;
+  --topbar-icon-btn-hover-border:     rgba(139, 92, 246, 0.50);
+  --topbar-icon-btn-hover-color:      #A78BFA;
+  --topbar-notif-dot:                 #8B5CF6;
+ 
+  /* Profile trigger button */
+  --topbar-profile-bg:                rgba(255, 255, 255, 0.05);
+  --topbar-profile-border:            rgba(139, 92, 246, 0.18);
+  --topbar-profile-hover-border:      rgba(139, 92, 246, 0.50);
+  --topbar-profile-name:              #ffffff;
+  --topbar-profile-role:              #A1A1AA;
+  --topbar-profile-avatar-bg:         rgba(139, 92, 246, 0.25);
+  --topbar-profile-avatar-text:       #C4B5FD;
+  --topbar-profile-chevron:           #71717A;
+ 
+  /* Dropdown card */
+  --topbar-dd-bg:                     #0F1020;
+  --topbar-dd-border:                 rgba(139, 92, 246, 0.22);
+  --topbar-dd-shadow:                 0 20px 60px rgba(5, 7, 13, 0.8), 0 0 0 1px rgba(139, 92, 246, 0.10);
+ 
+  /* Dropdown header */
+  --topbar-dd-header-border:          rgba(139, 92, 246, 0.12);
+  --topbar-dd-header-title:           #ffffff;
+  --topbar-dd-header-sub:             #71717A;
+ 
+  /* Dropdown user items */
+  --topbar-dd-item-hover-bg:          rgba(139, 92, 246, 0.08);
+  --topbar-dd-item-selected-bg:       rgba(139, 92, 246, 0.14);
+  --topbar-dd-item-selected-text:     #A78BFA;
+  --topbar-dd-item-name:              #ffffff;
+  --topbar-dd-item-sub:               #71717A;
+  --topbar-dd-avatar-bg:              rgba(255, 255, 255, 0.06);
+  --topbar-dd-avatar-text:            #A1A1AA;
+  --topbar-dd-check:                  #8B5CF6;
+ 
+  /* Dropdown footer actions */
+  --topbar-dd-footer-border:          rgba(139, 92, 246, 0.12);
+  --topbar-dd-action-icon-bg:         rgba(255, 255, 255, 0.06);
+  --topbar-dd-action-icon-color:      #A1A1AA;
+  --topbar-dd-action-text:            #A1A1AA;
+  --topbar-dd-action-hover-bg:        rgba(139, 92, 246, 0.08);
+  --topbar-dd-action-hover-text:      #ffffff;
+  --topbar-dd-logout-icon-bg:         rgba(239, 68, 68, 0.12);
+  --topbar-dd-logout-icon-color:      #F87171;
+  --topbar-dd-logout-text:            #F87171;
+  --topbar-dd-logout-hover-bg:        rgba(239, 68, 68, 0.10);
+ 
+  /* Empty state */
+  --topbar-dd-empty-text:             #52525B;
+
+
+  /* ─── LOGIN PAGE DARK THEME TOKENS ───────────────────────────────────────
+     All login page specific values live here under the --login- prefix.
+     To retheme the login page, only edit this block.
+  ─────────────────────────────────────────────────────────────────────── */
+
+  /* Page background */
+  --login-bg-from:                    #05070D;
+  --login-bg-to:                      #1A1235;
+
+  /* Card */
+  --login-card-bg:                    rgba(255, 255, 255, 0.04);
+  --login-card-border:                rgba(139, 92, 246, 0.20);
+  --login-card-shadow:                0 8px 48px rgba(5, 7, 13, 0.7), 0 0 0 1px rgba(139, 92, 246, 0.10);
+
+  /* Heading */
+  --login-heading-color:              #ffffff;
+  --login-subtext-color:              #A1A1AA;
+
+  /* Account type option — default */
+  --login-option-bg:                  rgba(255, 255, 255, 0.03);
+  --login-option-border:              rgba(139, 92, 246, 0.18);
+  --login-option-hover-bg:            rgba(139, 92, 246, 0.08);
+  --login-option-hover-border:        rgba(139, 92, 246, 0.40);
+
+  /* Account type option — selected per role */
+  --login-option-student-bg:          rgba(79, 126, 255, 0.12);
+  --login-option-student-border:      #4f7eff;
+  --login-option-student-glow:        0 0 16px rgba(79, 126, 255, 0.20);
+
+  --login-option-tutor-bg:            rgba(245, 158, 11, 0.12);
+  --login-option-tutor-border:        #f59e0b;
+  --login-option-tutor-glow:          0 0 16px rgba(245, 158, 11, 0.20);
+
+  --login-option-institute-bg:        rgba(139, 92, 246, 0.14);
+  --login-option-institute-border:    #8b5cf6;
+  --login-option-institute-glow:      0 0 16px rgba(139, 92, 246, 0.25);
+
+  /* Icon boxes — selected */
+  --login-icon-student-bg:            rgba(79, 126, 255, 0.18);
+  --login-icon-tutor-bg:              rgba(245, 158, 11, 0.18);
+  --login-icon-institute-bg:          rgba(139, 92, 246, 0.18);
+
+  /* Icon boxes — default */
+  --login-icon-default-bg:            rgba(255, 255, 255, 0.06);
+
+  /* Text */
+  --login-label-color:                #ffffff;
+  --login-desc-color:                 #A1A1AA;
+
+  /* Radio dot */
+  --login-radio-border:               rgba(139, 92, 246, 0.30);
+  --login-radio-bg:                   rgba(255, 255, 255, 0.06);
+
+  /* Back to home link */
+  --login-back-color:                 #52525B;
+  --login-back-hover-color:           #A1A1AA;
 }

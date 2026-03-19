@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { googleLogin, type BackendRole } from '$lib/api/auth';
-
-  type AccountType = 'student' | 'tutor' | 'institute';
+  import { googleLogin, type BackendRole, type AccountType } from '$lib/api/auth';
+  import { authStore } from '$lib/stores/auth';
 
   let {
     selected,
@@ -20,9 +19,10 @@
 
   function getRedirectPath(role: AccountType) {
     if (role === 'student') return '/student/dashboard';
-    if (role === 'tutor') return '/tutor/dashboard';
+    if (role === 'tutor') return '/teacher/dashboard';
     return '/institute/dashboard';
   }
+
   function mapRole(role: AccountType): BackendRole {
     if (role === 'tutor') return 'teacher';
     if (role === 'institute') return 'institute';
@@ -41,19 +41,23 @@
     isLoading = true;
 
     try {
-      const result = await googleLogin({
+      const apiResponse = await googleLogin({
         idToken,
         role: mapRole(selected)
       });
 
-      onSuccess?.(result);
-      await goto(getRedirectPath(selected));
+      if (!apiResponse.success) {
+        errorMessage = apiResponse.message;
+        return;
+      }
 
+      authStore.setAuthFromLoginResponse(apiResponse.data, selected);
+
+      onSuccess?.(apiResponse.data);
+      await goto(getRedirectPath(selected));
     } catch (error) {
       errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Google authentication failed';
+        error instanceof Error ? error.message : 'Google authentication failed';
     } finally {
       isLoading = false;
     }
@@ -65,7 +69,7 @@
     googleButtonEl.innerHTML = '';
 
     window.google.accounts.id.initialize({
-      client_id: "669946693353-dihobt6ckouhr1s8gb0l7dm6nkpqbg2j.apps.googleusercontent.com",
+      client_id: '669946693353-dihobt6ckouhr1s8gb0l7dm6nkpqbg2j.apps.googleusercontent.com',
       callback: handleGoogleCredential
     });
 

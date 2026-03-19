@@ -1,7 +1,7 @@
 <svelte:head>
-  <title>student Dashboard</title>
+  <title>Student Dashboard</title>
 </svelte:head>
 
-<div class="min-h-screen flex items-center justify-center text-3xl font-bold">
-  student Dashboard
+<div class="min-h-screen flex flex-col items-center justify-center gap-4">
+  <h1 class="text-3xl font-bold">Student Dashboard</h1>
 </div>

@@ -1,18 +1,20 @@
-// import { BASE_URL } from "$lib/http";
- const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
+import { apiRequest } from "../../http/api";
 export type BackendRole = 'student' | 'teacher' | 'admin' | 'institute';
+export type AccountType = 'student' | 'tutor' | 'institute';
+
+export type LoginUser = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  image?: string;
+};
 
 export type LoginResponse = {
   success: boolean;
   statusCode: number;
   message: string;
   data?: {
-    users: Array<{
-      _id: string;
-      firstName?: string;
-      lastName?: string;
-      image?: string;
-    }>;
+    users: LoginUser[];
     id: string;
     token?: string;
   };
@@ -21,23 +23,10 @@ export type LoginResponse = {
 export async function googleLogin(params: {
   idToken: string;
   role?: BackendRole;
-}): Promise<LoginResponse> {
-  const url = `${BASE_URL}/api/v1/users/google`;
-
-  const response = await fetch(url, {
+}) {
+  return apiRequest<LoginResponse>({
+    endpoint: '/api/v1/users/google',
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    // credentials: 'include',
-    body: JSON.stringify(params)
+    data: params
   });
-
-  const data: LoginResponse = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || 'Google authentication failed');
-  }
-
-  return data;
 }

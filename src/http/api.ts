@@ -1,0 +1,86 @@
+export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export type ApiRequestOptions = {
+  endpoint: string;
+  method?: ApiMethod;
+  data?: unknown;
+  token?: string | null;
+  headers?: Record<string, string>;
+};
+
+export type ApiSuccessResponse<T> = {
+  success: true;
+  data: T;
+  message?: string;
+  status: number;
+};
+
+export type ApiErrorResponse = {
+  success: false;
+  message: string;
+  status: number;
+  error?: unknown;
+};
+
+export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+const BASE_URL = 'http://localhost:8000';
+
+export async function apiRequest<T>({
+  endpoint,
+  method = 'GET',
+  data,
+  token,
+  headers = {}
+}: ApiRequestOptions): Promise<ApiResponse<T>> {
+  try {
+    const finalHeaders: Record<string, string> = {
+      ...headers
+    };
+
+    if (data !== undefined) {
+      finalHeaders['Content-Type'] = 'application/json';
+    }
+
+    if (token) {
+      finalHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method,
+      headers: finalHeaders,
+      body: data !== undefined ? JSON.stringify(data) : undefined
+    });
+
+    let result: any = null;
+
+    try {
+      result = await response.json();
+    } catch {
+      result = null;
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result?.message || 'Something went wrong',
+        status: response.status,
+        error: result
+      };
+    }
+   console.log("response on api call",result)
+    return {
+      success: true,
+      data: result,
+      message: result?.message,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Network error',
+      status: 500,
+      error
+    };
+  }
+}

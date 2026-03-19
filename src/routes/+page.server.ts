@@ -1,4 +1,5 @@
 // import { BASE_URL } from '$lib/http';
+import { BASE_URL } from '$lib/http';
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 type Chapter = {
@@ -16,7 +17,7 @@ type ChaptersApiResponse = {
 	message: string;
 	data: Chapter[];
 };
- const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
+//  const BASE_URL = "https://test-exam-backend-5yh6.onrender.com";
 const API_URL =
 	`${BASE_URL}/api/v1/chapters?boardSlug=jee&examSlug=jee-mains`;
 
