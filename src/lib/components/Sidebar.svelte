@@ -661,8 +661,10 @@
     </header>
 
     <!-- ── Page content: min-h-0 allows flex child to shrink, overflow-auto enables scroll ── -->
-    <main class="min-h-0 min-w-0 flex-1 overflow-auto p-6">
-      {@render children?.()}
+    <main id="layout-main-scroll" class="min-h-0 min-w-0 flex-1 overflow-auto p-6">
+      {#key page.url.pathname}
+        {@render children?.()}
+      {/key}
     </main>
   </div>
 </div>
