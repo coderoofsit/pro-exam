@@ -23,6 +23,17 @@ const initialState: AuthState = {
 };
 
 const AUTH_STORAGE_KEY = 'auth';
+const AUTH_COOKIE_NAME = 'auth_token';
+const COOKIE_MAX_AGE_DAYS = 7;
+
+function setAuthCookie(token: string | null) {
+	if (typeof document === 'undefined') return;
+	if (token) {
+		document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 24 * 60 * 60}; SameSite=Lax`;
+	} else {
+		document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
+	}
+}
 
 function createAuthStore() {
   const { subscribe, set, update } = writable<AuthState>(initialState);
@@ -45,6 +56,7 @@ function createAuthStore() {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
       }
+      setAuthCookie(data.token);
 
       set(authData);
     },
@@ -74,6 +86,7 @@ function createAuthStore() {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
       }
+      setAuthCookie(token);
 
       set(authData);
     },
@@ -86,6 +99,7 @@ function createAuthStore() {
 
       try {
         const parsed: AuthState = JSON.parse(raw);
+        setAuthCookie(parsed.token ?? null);
         set({
           users: parsed.users ?? [],
           token: parsed.token ?? null,
@@ -102,6 +116,7 @@ function createAuthStore() {
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(AUTH_STORAGE_KEY);
       }
+      setAuthCookie(null);
 
       set(initialState);
     },

@@ -289,14 +289,14 @@
   });
 </script>
 
-<!-- ── Root layout ── -->
-<div class="flex min-h-screen bg-[var(--topbar-page-bg)] text-white font-sans">
+<!-- ── Root layout: h-dvh constrains to viewport so main content scrolls ── -->
+<div class="flex h-dvh min-h-0 bg-[var(--topbar-page-bg)] text-white font-sans">
 
   <!-- ════════════════════════════════════════
        SIDEBAR
   ════════════════════════════════════════ -->
   <aside class="
-    relative flex h-screen flex-col overflow-hidden flex-shrink-0
+    relative flex h-dvh flex-shrink-0 flex-col overflow-hidden
     border-r border-[var(--sb-border-color)]
     bg-[linear-gradient(160deg,var(--sb-bg-from)_0%,var(--sb-bg-to)_100%)]
     shadow-[4px_0_32px_rgba(5,7,13,0.6)]
@@ -337,7 +337,7 @@
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 overflow-y-auto px-2.5 py-2.5 flex flex-col gap-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <nav class="flex-1 min-h-0 overflow-y-auto px-2.5 py-2.5 flex flex-col gap-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {#each sidebarNavItems as navItem}
         {@const active = isActive(navItem.href)}
         <a
@@ -442,7 +442,7 @@
   <!-- ════════════════════════════════════════
        MAIN COLUMN (topbar + content)
   ════════════════════════════════════════ -->
-  <div class="flex min-w-0 flex-1 flex-col">
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
 
     <!-- ── Topbar ── -->
     <header class="
@@ -660,8 +660,8 @@
       </div>
     </header>
 
-    <!-- ── Page content ── -->
-    <main class="min-w-0 flex-1 p-6 overflow-auto">
+    <!-- ── Page content: min-h-0 allows flex child to shrink, overflow-auto enables scroll ── -->
+    <main class="min-h-0 min-w-0 flex-1 overflow-auto p-6">
       {@render children?.()}
     </main>
   </div>

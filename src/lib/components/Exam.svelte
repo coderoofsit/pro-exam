@@ -4,13 +4,15 @@
 	let { exams, boardName }: { exams: Exam[]; boardName: string } = $props();
 </script>
 
-<div class="min-h-screen bg-slate-950 text-white">
-	<div class="mx-auto max-w-7xl px-4 py-10">
+<div class="w-full overflow-x-hidden bg-slate-950 text-white">
+	<div class="mx-auto max-w-full px-4 py-10">
 		<a href="/boards" class="mb-6 inline-block text-sm text-slate-400 hover:text-white">← Back to Boards</a>
 
 		<div class="mb-8">
-			<h1 class="text-3xl font-bold md:text-4xl">{boardName} Exams</h1>
-			<p class="mt-2 text-sm text-slate-400">{exams.length} exam{exams.length !== 1 ? 's' : ''} available</p>
+			<h1 class="break-words text-3xl font-bold md:text-4xl">{boardName} Exams</h1>
+			<p class="mt-2 break-words text-sm text-slate-400">
+				{exams.length} exam{exams.length !== 1 ? 's' : ''} available
+			</p>
 		</div>
 
 		{#if exams.length === 0}
@@ -53,7 +55,7 @@
 
 						<div class="mt-4 grid grid-cols-2 gap-2">
 							<a
-								href={`/boards/${exam.boardSlug}/${exam.slug}/chapters`}
+								href={`/student/exams/${exam.slug}/chapters`}
 								class="rounded-lg bg-blue-600 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-500"
 							>
 								Chapter Wise
