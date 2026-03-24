@@ -35,22 +35,6 @@
 								{/if}
 							</div>
 						</div>
-
-						<div class="mt-4 grid grid-cols-3 gap-2 text-center">
-							<div class="rounded-lg bg-slate-800 py-2">
-								<p class="text-sm font-bold text-blue-300">{exam.numberofPapers}</p>
-								<p class="text-[10px] text-slate-400">Papers</p>
-							</div>
-							<div class="rounded-lg bg-slate-800 py-2">
-								<p class="text-sm font-bold text-blue-300">{exam.numberofQuestions}</p>
-								<p class="text-[10px] text-slate-400">Questions</p>
-							</div>
-							<div class="rounded-lg bg-slate-800 py-2">
-								<p class="text-sm font-bold text-blue-300">{exam.numberofTests}</p>
-								<p class="text-[10px] text-slate-400">Tests</p>
-							</div>
-						</div>
-
 						<div class="mt-4 grid grid-cols-2 gap-2">
 							<a
 								href={`/boards/${exam.boardSlug}/${exam.slug}/chapters`}

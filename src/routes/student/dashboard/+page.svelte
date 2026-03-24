@@ -144,7 +144,7 @@
     <!-- ══ ACTION BANNERS ══ -->
     <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <!-- PYQ Mock Tests -->
-      <a href="/student/mock-tests/pyq"
+      <a href="/student/tests/pyq"
         class="group relative flex items-center justify-between gap-4 rounded-2xl px-5 py-5 overflow-hidden bg-[var(--sh-banner-bg)] border border-[var(--sh-banner-border)] transition-all duration-200 hover:shadow-[var(--sh-banner-hover-shadow)] hover:border-[var(--sh-exam-card-hover-border)] hover:-translate-y-0.5">
         <!-- NEW badge -->
         <span class="absolute -top-px left-1/2 -translate-x-1/2 px-4 py-0.5 rounded-b-xl text-[10px] font-bold tracking-widest bg-[var(--sh-badge-new-bg)] text-[var(--sh-badge-new-text)]">NEW</span>
@@ -159,8 +159,7 @@
         </span>
       </a>
 
-      <!-- Join Online Mock Tests -->
-      <a href="/student/mock-tests/online"
+      <a href="/student/tests/own"
         class="group flex items-center justify-between gap-4 rounded-2xl px-5 py-5 bg-[var(--sh-banner-bg)] border border-[var(--sh-banner-border)] transition-all duration-200 hover:shadow-[var(--sh-banner-hover-shadow)] hover:border-[var(--sh-exam-card-hover-border)] hover:-translate-y-0.5">
         <div class="flex items-center gap-3">
           <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-icon)]">
@@ -172,9 +171,21 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
       </a>
+
+      <a href="/student/tests/batch"
+        class="group flex items-center justify-between gap-4 rounded-2xl px-5 py-5 bg-[var(--sh-banner-bg)] border border-[var(--sh-banner-border)] transition-all duration-200 hover:shadow-[var(--sh-banner-hover-shadow)] hover:border-[var(--sh-exam-card-hover-border)] hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-icon)]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M9 9l3 2-3 2V9Z" fill="currentColor"/></svg>
+          </span>
+          <span class="text-sm font-semibold text-[var(--sh-banner-title)]">Batch Mock Tests</span>
+        </div>
+        <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-arrow-color)] transition-colors group-hover:bg-[var(--sh-banner-arrow-hover-bg)]">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </a>
     </section>
 
-    <!-- ══ CHAPTER AI ══ -->
     <section>
       <a href="/student/chapter-ai"
         class="group flex flex-col sm:flex-row sm:items-center gap-5 rounded-2xl px-6 py-5 bg-[var(--sh-ai-card-bg)] border border-[var(--sh-ai-card-border)] transition-all duration-200 hover:shadow-[var(--sh-ai-card-hover-shadow)] hover:-translate-y-0.5">

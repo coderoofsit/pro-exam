@@ -6,6 +6,7 @@ export type ApiRequestOptions = {
   data?: unknown;
   token?: string | null;
   headers?: Record<string, string>;
+  fetch?: typeof globalThis.fetch;
 };
 
 export type ApiSuccessResponse<T> = {
@@ -24,15 +25,19 @@ export type ApiErrorResponse = {
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
-// const BASE_URL = 'http://localhost:8000';
-const BASE_URL = 'https://test-exam-backend-5yh6.onrender.com';
+const BASE_URL =
+  (typeof import.meta !== 'undefined' &&
+    (import.meta as any).env?.VITE_PUBLIC_API_URL) ||
+  (typeof process !== 'undefined' && process.env?.VITE_PUBLIC_API_URL) ||
+  'https://test-exam-backend-5yh6.onrender.com';
 
 export async function apiRequest<T>({
   endpoint,
   method = 'GET',
   data,
   token,
-  headers = {}
+  headers = {},
+  fetch: customFetch = fetch
 }: ApiRequestOptions): Promise<ApiResponse<T>> {
   try {
     const finalHeaders: Record<string, string> = {
@@ -47,7 +52,7 @@ export async function apiRequest<T>({
       finalHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await customFetch(`${BASE_URL}${endpoint}`, {
       method,
       headers: finalHeaders,
       body: data !== undefined ? JSON.stringify(data) : undefined
@@ -69,7 +74,6 @@ export async function apiRequest<T>({
         error: result
       };
     }
-   console.log("response on api call",result)
     return {
       success: true,
       data: result,
