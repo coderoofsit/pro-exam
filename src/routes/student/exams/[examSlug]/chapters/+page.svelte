@@ -7,8 +7,6 @@
 	import { fetchChaptersByBoardAndExam } from '$lib/api/chapters';
 
 	const examSlug = $derived($page.params.examSlug);
-	const _chapterStore = $derived($chapterStore);
-	const _examStore = $derived($examStore);
 
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -16,9 +14,12 @@
 
 	const token = $derived($authStore.token?.startsWith('Bearer ') ? $authStore.token.slice(7) : $authStore.token);
 
-	const displayChapters = $derived(
-		exam ? (chapterStore.getChapters(exam.boardSlug, examSlug) ?? []) : []
-	);
+	const chapterStoreState = $derived($chapterStore);
+	const displayChapters = $derived.by(() => {
+		if (!exam) return [];
+		const key = `${exam.boardSlug}:${examSlug}`;
+		return chapterStoreState?.chaptersByKey?.[key] ?? [];
+	});
 
 	$effect(() => {
 		if (!examSlug) return;
@@ -70,7 +71,7 @@
 				{#each displayChapters as chapter}
 					<a
 						class="block cursor-pointer rounded-2xl border border-slate-800 bg-slate-900 p-5 transition duration-200 hover:-translate-y-1 hover:border-slate-700 hover:bg-slate-800"
-						href={`/student/exams/${examSlug}/${chapter.slug ?? chapter._id}`}
+						href={`/student/exams/${examSlug}/${chapter._id}`}
 					>
 						<div class="mb-4 flex items-start justify-between gap-3">
 							<span class="inline-block rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300">

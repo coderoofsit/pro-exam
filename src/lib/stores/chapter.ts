@@ -22,6 +22,10 @@ function createChapterStore() {
 		getChapters(boardSlug: string, examSlug: string): Chapter[] | undefined {
 			return get(store).chaptersByKey[cacheKey(boardSlug, examSlug)];
 		},
+		getChapterById(boardSlug: string, examSlug: string, chapterId: string): Chapter | undefined {
+			const chapters = get(store).chaptersByKey[cacheKey(boardSlug, examSlug)];
+			return chapters?.find((ch) => ch._id === chapterId);
+		},
 		hasChapters(boardSlug: string, examSlug: string): boolean {
 			return cacheKey(boardSlug, examSlug) in get(store).chaptersByKey;
 		},

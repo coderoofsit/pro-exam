@@ -23,18 +23,6 @@ export type ExamResponse = {
 
 const getToken = () => (TOKEN.startsWith('Bearer ') ? TOKEN.slice(7) : TOKEN);
 
-export async function fetchExamsByBoard(boardId: string, token?: string | null): Promise<Exam[]> {
-	const t = token ?? getToken();
-	const response = await apiRequest<{ success: boolean; message: string; data: Exam[] }>({
-		endpoint: `/api/v1/exams?boardId=${boardId}`,
-		method: 'GET',
-		token: t,
-		headers: { 'Content-Type': 'application/json' }
-	});
-	if (!response.success) throw new Error(response.message || 'Unable to fetch exams');
-	return response.data.data.sort((a, b) => a.order - b.order);
-}
-
 export async function fetchExamBySlug(slug: string, token?: string | null): Promise<Exam> {
 	const t = token ?? getToken();
 	const response = await apiRequest<{ success: boolean; message: string; data: Exam }>({
@@ -73,9 +61,4 @@ export async function fetchExamsPage(
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch exams');
 	return response.data.data;
-}
-
-export async function fetchAllExams(token?: string | null): Promise<Exam[]> {
-	const res = await fetchExamsPage(1, 8, token);
-	return res.data.sort((a, b) => a.order - b.order);
 }

@@ -1,7 +1,46 @@
 <script lang="ts">
-	import { createDashboardExamState } from './dashboard-exams.svelte.ts';
+	import { fromStore } from 'svelte/store';
+	import { examStore } from '$lib/stores/exam';
+	import { authStore } from '$lib/stores/auth';
+	import { fetchExamsPage } from '$lib/api/exams';
+	import type { Exam } from '$lib/api/exams';
 
-	const examState = createDashboardExamState();
+	const DASHBOARD_EXAMS_PAGE = 1;
+	const DASHBOARD_EXAMS_LIMIT = 8;
+	const FEATURED_EXAMS_COUNT = 4;
+
+	const auth = fromStore(authStore);
+	const exams = fromStore(examStore);
+
+	let isExamsLoading = $state(false);
+	let examsFetchError = $state<string | null>(null);
+
+	const authToken = $derived(
+		auth.current.token?.startsWith('Bearer ') ? auth.current.token.slice(7) : auth.current.token
+	);
+	const pageOneExams = $derived(exams.current.examsByPage[DASHBOARD_EXAMS_PAGE] ?? []);
+	const featuredExams = $derived(pageOneExams.slice(0, FEATURED_EXAMS_COUNT) as Exam[]);
+	const hasExamsLoaded = $derived(DASHBOARD_EXAMS_PAGE in exams.current.examsByPage);
+
+	$effect(() => {
+		if (examStore.hasPage(DASHBOARD_EXAMS_PAGE) || isExamsLoading) return;
+		isExamsLoading = true;
+		examsFetchError = null;
+		fetchExamsPage(DASHBOARD_EXAMS_PAGE, DASHBOARD_EXAMS_LIMIT, authToken ?? undefined)
+			.then((res) => {
+				examStore.setExamsPage(DASHBOARD_EXAMS_PAGE, res.data, {
+					total: res.total,
+					lastPage: res.lastPage,
+					limit: res.limit
+				});
+			})
+			.catch((e) => {
+				examsFetchError = e instanceof Error ? e.message : 'Failed to fetch exams';
+			})
+			.finally(() => {
+				isExamsLoading = false;
+			});
+	});
 
 	const pyqCardGradients = [
 		'bg-gradient-to-br from-sky-100/95 via-indigo-50/90 to-violet-200/80',
@@ -16,10 +55,10 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl min-w-0 text-white">
-	{#if examState.loading && !examState.hasPage1}
+	{#if isExamsLoading && !hasExamsLoaded}
 		<div class="flex min-h-[40vh] items-center justify-center text-slate-400">Loading…</div>
-	{:else if examState.error}
-		<div class="flex min-h-[40vh] items-center justify-center text-red-400">{examState.error}</div>
+	{:else if examsFetchError}
+		<div class="flex min-h-[40vh] items-center justify-center text-red-400">{examsFetchError}</div>
 	{:else}
 		<!-- Hero banner -->
 		<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
@@ -51,7 +90,7 @@
 			</div>
 
 			<div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
-				{#each examState.displayExams as exam, i (exam._id)}
+				{#each featuredExams as exam, i (exam._id)}
 					<a
 						href="/student/exams/{exam.slug}/chapters"
 						class="group relative flex min-h-[148px] min-w-0 flex-col overflow-hidden rounded-2xl border border-white/25 p-4 text-left text-slate-900 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.35)] ring-1 ring-white/20 no-underline transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.25)] hover:ring-white/40 sm:min-h-[156px] {pyqCardGradients[i % 4]}"
@@ -101,7 +140,7 @@
 				{/each}
 			</div>
 
-			{#if examState.displayExams.length === 0 && !examState.loading}
+			{#if featuredExams.length === 0 && !isExamsLoading}
 				<p class="mt-4 text-sm text-slate-400">No exams available yet.</p>
 			{/if}
 		</section>
@@ -121,7 +160,7 @@
 			</div>
 
 			<div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
-				{#each examState.displayExams as exam, i (exam._id)}
+				{#each featuredExams as exam, i (exam._id)}
 					<a
 						href="/student/exams/{exam.slug}/chapters"
 						class="group relative flex min-h-[148px] min-w-0 flex-col overflow-hidden rounded-2xl border border-white/25 p-4 text-left text-slate-900 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.35)] ring-1 ring-white/20 no-underline transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.25)] hover:ring-white/40 sm:min-h-[156px] {pyqCardGradients[i % 4]}"
@@ -171,7 +210,7 @@
 				{/each}
 			</div>
 
-			{#if examState.displayExams.length === 0 && !examState.loading}
+			{#if featuredExams.length === 0 && !isExamsLoading}
 				<p class="mt-4 text-sm text-slate-400">No exams available yet.</p>
 			{/if}
 		</section>

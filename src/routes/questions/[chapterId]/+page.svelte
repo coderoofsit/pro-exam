@@ -1,28 +1,6 @@
 <script lang="ts">
   import MathText from "$lib/components/MathText.svelte";
-
-  type QuestionOption = {
-    identifier: string;
-    content: string;
-    images?: string[];
-  };
-
-  type QuestionPrompt = {
-    content: string;
-    images?: string[];
-    options?: QuestionOption[];
-    explanation?: string;
-    explanationImages?: string[];
-  };
-
-  type Question = {
-    _id: string;
-    kind: string;
-    difficulty: string;
-    prompt: {
-      en: QuestionPrompt;
-    };
-  };
+  import type { Question } from "$lib/api/questions";
 
   let { data } = $props<{
     data: {
@@ -36,31 +14,30 @@
     };
   }>();
 
-  const buildPageLink = (page: number) => `/questions/${data.chapterId}?page=${page}`;
+  const PAGINATION_WINDOW = 2;
+  const questionsPageUrl = (page: number) => `/questions/${data.chapterId}?page=${page}`;
+  const paginationStartPage = $derived(Math.max(1, data.currentPage - PAGINATION_WINDOW));
+  const paginationEndPage = $derived(Math.min(data.lastPage, data.currentPage + PAGINATION_WINDOW));
+  const visiblePageNumbers = $derived(
+    Array.from({ length: paginationEndPage - paginationStartPage + 1 }, (_, i) => paginationStartPage + i)
+  );
 
-  const paginationWindow = 2;
-  const startPage = Math.max(1, data.currentPage - paginationWindow);
-  const endPage = Math.min(data.lastPage, data.currentPage + paginationWindow);
-  const visiblePages = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
-
-  const difficultyConfig: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  const DIFFICULTY_STYLE_MAP: Record<string, { bg: string; text: string; border: string; dot: string }> = {
     easy:   { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/25", dot: "bg-emerald-400" },
     medium: { bg: "bg-amber-500/10",   text: "text-amber-400",   border: "border-amber-500/25",   dot: "bg-amber-400" },
     hard:   { bg: "bg-rose-500/10",    text: "text-rose-400",    border: "border-rose-500/25",     dot: "bg-rose-400" },
   };
+  const getDifficultyStyles = (difficulty: string) =>
+    DIFFICULTY_STYLE_MAP[difficulty.toLowerCase()] ?? DIFFICULTY_STYLE_MAP.medium;
 
-  const getDifficultyStyle = (difficulty: string) =>
-    difficultyConfig[difficulty.toLowerCase()] ?? difficultyConfig.medium;
-
-  const kindConfig: Record<string, { bg: string; text: string; border: string }> = {
+  const QUESTION_KIND_STYLE_MAP: Record<string, { bg: string; text: string; border: string }> = {
     mcq:  { bg: "bg-sky-500/10",    text: "text-sky-300",    border: "border-sky-500/25" },
     msq:  { bg: "bg-violet-500/10", text: "text-violet-300", border: "border-violet-500/25" },
     nat:  { bg: "bg-cyan-500/10",   text: "text-cyan-300",   border: "border-cyan-500/25" },
     tf:   { bg: "bg-teal-500/10",   text: "text-teal-300",   border: "border-teal-500/25" },
   };
-
-  const getKindStyle = (kind: string) =>
-    kindConfig[kind.toLowerCase()] ?? { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/25" };
+  const getQuestionKindStyles = (kind: string) =>
+    QUESTION_KIND_STYLE_MAP[kind.toLowerCase()] ?? { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/25" };
 </script>
 
 <svelte:head>
@@ -161,8 +138,8 @@
       <div class="flex flex-col gap-4">
         {#each data.questions as question, index}
           {@const qNumber = (data.currentPage - 1) * data.limit + index + 1}
-          {@const diffStyle = getDifficultyStyle(question.difficulty)}
-          {@const kindStyle = getKindStyle(question.kind)}
+          {@const difficultyStyles = getDifficultyStyles(question.difficulty)}
+          {@const kindStyles = getQuestionKindStyles(question.kind)}
 
           <div class="question-card rounded-2xl border border-slate-800/80 bg-[#0d1526]/90 overflow-hidden">
 
@@ -175,12 +152,12 @@
               </div>
               <div class="flex items-center gap-2">
                 <!-- Kind badge -->
-                <span class="inline-flex items-center gap-1.5 rounded-md border {kindStyle.border} {kindStyle.bg} px-2.5 py-1 text-xs font-semibold uppercase tracking-widest {kindStyle.text}">
+                <span class="inline-flex items-center gap-1.5 rounded-md border {kindStyles.border} {kindStyles.bg} px-2.5 py-1 text-xs font-semibold uppercase tracking-widest {kindStyles.text}">
                   {question.kind}
                 </span>
                 <!-- Difficulty badge -->
-                <span class="inline-flex items-center gap-1.5 rounded-md border {diffStyle.border} {diffStyle.bg} px-2.5 py-1 text-xs font-medium {diffStyle.text}">
-                  <span class="w-1.5 h-1.5 rounded-full {diffStyle.dot}"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-md border {difficultyStyles.border} {difficultyStyles.bg} px-2.5 py-1 text-xs font-medium {difficultyStyles.text}">
+                  <span class="w-1.5 h-1.5 rounded-full {difficultyStyles.dot}"></span>
                   {question.difficulty}
                 </span>
               </div>
@@ -238,30 +215,30 @@
       <!-- Pagination -->
       <div class="mt-10 flex flex-wrap items-center justify-center gap-1.5">
         {#if data.currentPage > 1}
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={buildPageLink(1)}>
+          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(1)}>
             ← First
           </a>
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={buildPageLink(data.currentPage - 1)}>
+          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(data.currentPage - 1)}>
             Prev
           </a>
         {/if}
 
-        {#each visiblePages as pageNumber}
+        {#each visiblePageNumbers as pageNumber}
           <a
             class="rounded-lg border px-3.5 py-2 text-xs transition-all {pageNumber === data.currentPage
               ? 'page-link-active'
               : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:border-slate-600'}"
-            href={buildPageLink(pageNumber)}
+            href={questionsPageUrl(pageNumber)}
           >
             {pageNumber}
           </a>
         {/each}
 
         {#if data.currentPage < data.lastPage}
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={buildPageLink(data.currentPage + 1)}>
+          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(data.currentPage + 1)}>
             Next
           </a>
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={buildPageLink(data.lastPage)}>
+          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(data.lastPage)}>
             Last →
           </a>
         {/if}
