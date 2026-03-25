@@ -1,18 +1,18 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-	import favicon from '$lib/assets/favicon.svg';
-	import '../app.css';
-	import { authStore } from '$lib/stores/auth';
+  import { onMount } from 'svelte';
+  import favicon from '$lib/assets/favicon.svg';
+  import '../app.css';
+  import { authStore } from '$lib/stores/auth';
 
-    
-	let { children } = $props();
-	onMount(() => {
-    authStore.restore();
+  let { children } = $props();
+
+  onMount(() => {
+    authStore.restoreToken();
   });
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+  <link rel="icon" href={favicon} />
 </svelte:head>
 
 {@render children()}

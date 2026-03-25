@@ -164,7 +164,7 @@
 </style> -->
 
 
-<script lang="ts">
+<!-- <script lang="ts">
 	type Chapter = {
 		_id: string;
 		name: {
@@ -181,17 +181,40 @@
 			message: string;
 		};
 	}>();
+</script> -->
+<script lang="ts">
+  import { goto } from '$app/navigation';
 </script>
 
 <svelte:head>
-	<title>JEE Main Chapters</title>
-	<meta
-		name="description"
-		content="JEE Main chapters rendered with SSR using SvelteKit"
-	/>
+  <title>Welcome</title>
+  <meta name="description" content="JEE Main chapters rendered with SSR using SvelteKit"/>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-950 text-white">
+<div class="min-h-screen bg-[var(--topbar-page-bg)] flex items-center justify-center font-sans">
+  <button
+    type="button"
+    onclick={() => goto('/login')}
+    class="
+      inline-flex items-center gap-2
+      px-6 py-3 rounded-xl
+      text-sm font-semibold
+      bg-[linear-gradient(135deg,#8B5CF6_0%,#4f7eff_100%)]
+      text-white
+      shadow-[0_4px_20px_rgba(79,126,255,0.35)]
+      transition-[shadow,opacity] duration-150
+      hover:shadow-[0_6px_28px_rgba(79,126,255,0.50)]
+      active:opacity-90
+    "
+  >
+    Login
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
+
+<!-- <div class="min-h-screen bg-slate-950 text-white">
 	<div class="mx-auto max-w-7xl px-4 py-10">
 		<div class="mb-8">
 			<h1 class="text-3xl font-bold md:text-4xl">JEE Main Chapters</h1>
@@ -234,4 +257,4 @@
 			{/each}
 		</div>
 	</div>
-</div>
+</div> -->

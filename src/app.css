@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* ─── GLOBAL BRAND COLORS (do not remove — used across the entire app) ─── */
-
+  /* ─── GLOBAL BRAND COLORS (shared, theme-neutral) ─────────────────────── */
   --color-brand-primary:            #4f7eff;
   --color-brand-primary-hover:      #3a6aee;
   --color-brand-primary-light:      #eef2ff;
@@ -37,57 +36,665 @@
   --shadow-card:                    0 4px 24px 0 rgba(79, 126, 255, 0.08);
   --shadow-item:                    0 2px 8px 0 rgba(79, 126, 255, 0.06);
   --shadow-item-hover:              0 4px 16px 0 rgba(79, 126, 255, 0.14);
+}
 
-  /* ─── SIDEBAR DARK THEME TOKENS ───────────────────────────────────────────
-     All sidebar-specific values live here under the --sb- prefix.
-     To retheme the sidebar, only edit this block. Nothing else needs touching.
-  ─────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROOT — LIGHT THEME DEFAULTS
+   All --sb-* --topbar-* --login-* --pc-* --sh-* tokens defined here.
+   [data-theme="dark"] below overrides only what changes.
+═══════════════════════════════════════════════════════════════════════════ */
+:root {
 
-  /* Backgrounds */
-  --sb-bg-from:                     #05070D;
-  --sb-bg-to:                       #1A1235;
-  --sb-border-color:                rgba(139, 92, 246, 0.18);
-
-  /* Logo mark */
-  --sb-logo-glow:                   0 0 18px rgba(139, 92, 246, 0.55);
-
-  /* Brand text */
-  --sb-brand-name-color:            #ffffff;
-  --sb-brand-role-color:            #A1A1AA;
-
-  /* Nav item — default */
-  --sb-nav-text:                    #A1A1AA;
-  --sb-nav-icon:                    #A1A1AA;
-  --sb-nav-hover-bg:                rgba(139, 92, 246, 0.10);
-  --sb-nav-hover-text:              #ffffff;
-  --sb-nav-hover-icon:              #C4B5FD;
-
-  /* Nav item — active */
-  --sb-nav-active-bg:               rgba(139, 92, 246, 0.18);
-  --sb-nav-active-text:             #ffffff;
-  --sb-nav-active-icon:             #A78BFA;
-  --sb-nav-active-indicator:        #8B5CF6;
-  --sb-nav-active-glow:             0 0 12px rgba(139, 92, 246, 0.35);
-
-  /* Collapse button */
-  --sb-collapse-text:               #71717A;
-  --sb-collapse-hover-bg:           rgba(139, 92, 246, 0.10);
-  --sb-collapse-hover-text:         #A1A1AA;
-
-  /* Dividers */
-  --sb-divider:                     rgba(139, 92, 246, 0.15);
-
-  /* Typography — sidebar only */
+  /* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+  --sb-bg-from:                     #ffffff;
+  --sb-bg-to:                       #f5f7ff;
+  --sb-border-color:                #e2e8f0;
+  --sb-logo-glow:                   0 0 14px rgba(79, 126, 255, 0.30);
+  --sb-brand-name-color:            #1a1f36;
+  --sb-brand-role-color:            #64748b;
+  --sb-shadow:                      1px 0 0 #e2e8f0;
+  --sb-nav-text:                    #64748b;
+  --sb-nav-icon:                    #94a3b8;
+  --sb-nav-hover-bg:                #eef2ff;
+  --sb-nav-hover-text:              #1a1f36;
+  --sb-nav-hover-icon:              #4f7eff;
+  --sb-nav-active-bg:               #eef2ff;
+  --sb-nav-active-text:             #4f7eff;
+  --sb-nav-active-icon:             #4f7eff;
+  --sb-nav-active-indicator:        #4f7eff;
+  --sb-nav-active-glow:             0 0 10px rgba(79, 126, 255, 0.18);
+  --sb-collapse-text:               #94a3b8;
+  --sb-collapse-hover-bg:           #f0f3ff;
+  --sb-collapse-hover-text:         #64748b;
+  --sb-divider:                     #e2e8f0;
   --sb-font-brand:                  700;
   --sb-font-nav:                    500;
   --sb-font-size-brand:             0.9375rem;
   --sb-font-size-role:              0.6875rem;
   --sb-font-size-nav:               0.8125rem;
   --sb-font-size-collapse:          0.6875rem;
-
-  /* Widths */
   --sb-width-expanded:              240px;
   --sb-width-collapsed:             72px;
+
+  /* ── TOPBAR ──────────────────────────────────────────────────────────── */
+  --topbar-page-bg:                 #f5f7ff;
+  --topbar-border:                  #e2e8f0;
+  --topbar-shadow:                   0 1px 0 #e2e8f0;   /* just a clean 1px border line */
+  --topbar-bg:                      #ffffff; 
+  --topbar-search-bg:               #f0f3ff;
+  --topbar-search-border:           #e2e8f0;
+  --topbar-search-border-focus:     #4f7eff;
+  --topbar-search-ring-focus:       rgba(79, 126, 255, 0.15);
+  --topbar-search-text:             #1a1f36;
+  --topbar-search-placeholder:      #94a3b8;
+  --topbar-search-icon:             #94a3b8;
+  --topbar-icon-btn-bg:             #ffffff;
+  --topbar-icon-btn-border:         #e2e8f0;
+  --topbar-icon-btn-color:          #64748b;
+  --topbar-icon-btn-hover-border:   #4f7eff;
+  --topbar-icon-btn-hover-color:    #4f7eff;
+  --topbar-notif-dot:               #4f7eff;
+  --topbar-profile-bg:              #ffffff;
+  --topbar-profile-border:          #e2e8f0;
+  --topbar-profile-hover-border:    #4f7eff;
+  --topbar-profile-name:            #1a1f36;
+  --topbar-profile-role:            #64748b;
+  --topbar-profile-avatar-bg:       #eef2ff;
+  --topbar-profile-avatar-text:     #4f7eff;
+  --topbar-profile-chevron:         #94a3b8;
+  --topbar-dd-bg:                   #ffffff;
+  --topbar-dd-border:               #e2e8f0;
+  --topbar-dd-shadow:               0 20px 60px rgba(15, 23, 42, 0.12);
+  --topbar-dd-header-border:        #f1f5f9;
+  --topbar-dd-header-title:         #1a1f36;
+  --topbar-dd-header-sub:           #94a3b8;
+  --topbar-dd-item-hover-bg:        #f8faff;
+  --topbar-dd-item-selected-bg:     #eef2ff;
+  --topbar-dd-item-selected-text:   #4f7eff;
+  --topbar-dd-item-name:            #1a1f36;
+  --topbar-dd-item-sub:             #94a3b8;
+  --topbar-dd-avatar-bg:            #f1f5f9;
+  --topbar-dd-avatar-text:          #64748b;
+  --topbar-dd-check:                #4f7eff;
+  --topbar-dd-footer-border:        #f1f5f9;
+  --topbar-dd-action-icon-bg:       #f8faff;
+  --topbar-dd-action-icon-color:    #64748b;
+  --topbar-dd-action-text:          #64748b;
+  --topbar-dd-action-hover-bg:      #eef2ff;
+  --topbar-dd-action-hover-text:    #1a1f36;
+  --topbar-dd-logout-icon-bg:       #fff1f2;
+  --topbar-dd-logout-icon-color:    #ef4444;
+  --topbar-dd-logout-text:          #ef4444;
+  --topbar-dd-logout-hover-bg:      #fff1f2;
+  --topbar-dd-empty-text:           #94a3b8;
+
+  /* ── LOGIN PAGE ──────────────────────────────────────────────────────── */
+  --login-bg-from:                  #f5f7ff;
+  --login-bg-to:                    #eef2ff;
+  --login-card-bg:                  #ffffff;
+  --login-card-border:              #e2e8f0;
+  --login-card-shadow:              0 8px 48px rgba(79, 126, 255, 0.10);
+  --login-heading-color:            #1a1f36;
+  --login-subtext-color:            #64748b;
+  --login-option-bg:                #ffffff;
+  --login-option-border:            #e2e8f0;
+  --login-option-hover-bg:          #eef2ff;
+  --login-option-hover-border:      #4f7eff;
+  --login-option-student-bg:        #eef2ff;
+  --login-option-student-border:    #4f7eff;
+  --login-option-student-glow:      0 0 14px rgba(79, 126, 255, 0.15);
+  --login-option-tutor-bg:          #fffbeb;
+  --login-option-tutor-border:      #f59e0b;
+  --login-option-tutor-glow:        0 0 14px rgba(245, 158, 11, 0.15);
+  --login-option-institute-bg:      #f5f3ff;
+  --login-option-institute-border:  #8b5cf6;
+  --login-option-institute-glow:    0 0 14px rgba(139, 92, 246, 0.15);
+  --login-icon-student-bg:          #eef2ff;
+  --login-icon-tutor-bg:            #fffbeb;
+  --login-icon-institute-bg:        #f5f3ff;
+  --login-icon-default-bg:          #f8faff;
+  --login-label-color:              #1a1f36;
+  --login-desc-color:               #64748b;
+  --login-radio-border:             #e2e8f0;
+  --login-radio-bg:                 #f8faff;
+  --login-back-color:               #94a3b8;
+  --login-back-hover-color:         #64748b;
+
+  /* ── PROFILE CREATE ──────────────────────────────────────────────────── */
+  --pc-page-bg:                     #f5f7ff;
+  --pc-card-bg:                     #ffffff;
+  --pc-card-border:                 #e2e8f0;
+  --pc-card-shadow:                 0 8px 48px rgba(79, 126, 255, 0.09);
+  --pc-divider:                     #e2e8f0;
+  --pc-heading:                     #1a1f36;
+  --pc-subheading:                  #64748b;
+  --pc-section-label:               #94a3b8;
+  --pc-label:                       #374151;
+  --pc-label-required:              #4f7eff;
+  --pc-input-bg:                    #f8faff;
+  --pc-input-border:                #e2e8f0;
+  --pc-input-border-focus:          #4f7eff;
+  --pc-input-ring-focus:            rgba(79, 126, 255, 0.14);
+  --pc-input-text:                  #1a1f36;
+  --pc-input-placeholder:           #94a3b8;
+  --pc-avatar-ring:                 rgba(79, 126, 255, 0.30);
+  --pc-avatar-overlay-bg:           rgba(0, 0, 0, 0.45);
+  --pc-avatar-placeholder-bg:       #eef2ff;
+  --pc-avatar-placeholder-icon:     #4f7eff;
+  --pc-avatar-btn-bg:               #eef2ff;
+  --pc-avatar-btn-border:           #c7d7ff;
+  --pc-avatar-btn-text:             #4f7eff;
+  --pc-avatar-btn-hover-bg:         #dde8ff;
+  --pc-select-bg:                   #ffffff;
+  --pc-select-border:               #e2e8f0;
+  --pc-select-shadow:               0 16px 48px rgba(15, 23, 42, 0.12);
+  --pc-select-item-hover-bg:        #f0f3ff;
+  --pc-select-item-selected-bg:     #eef2ff;
+  --pc-select-item-selected-text:   #4f7eff;
+  --pc-select-item-text:            #1a1f36;
+  --pc-select-item-sub:             #94a3b8;
+  --pc-select-check:                #4f7eff;
+  --pc-select-empty:                #94a3b8;
+  --pc-select-search-bg:            #f8faff;
+  --pc-select-search-border:        #e2e8f0;
+  --pc-tag-bg:                      #eef2ff;
+  --pc-tag-border:                  #c7d7ff;
+  --pc-tag-text:                    #4f7eff;
+  --pc-tag-remove-hover:            #dde8ff;
+  --pc-btn-bg:                      linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
+  --pc-btn-shadow:                  0 4px 20px rgba(79, 126, 255, 0.30);
+  --pc-btn-hover-shadow:            0 6px 28px rgba(79, 126, 255, 0.45);
+  --pc-btn-disabled-opacity:        0.5;
+  --pc-btn-text:                    #ffffff;
+  --pc-success-bg:                  #f0fdf4;
+  --pc-success-border:              #bbf7d0;
+  --pc-success-text:                #16a34a;
+  --pc-error-bg:                    #fff1f2;
+  --pc-error-border:                #fecdd3;
+  --pc-error-text:                  #ef4444;
+
+  /* ── STUDENT HOME ─────────────────────────────────────────────────────── */
+  --sh-page-bg:                     #f5f7ff;
+  --sh-section-title:               #1a1f36;
+  --sh-section-link:                #4f7eff;
+  --sh-section-link-hover:          #1a1f36;
+  --sh-exam-card-bg:                #ffffff;
+  --sh-exam-card-border:            #e2e8f0;
+  --sh-exam-card-hover-border:      #4f7eff;
+  --sh-exam-card-hover-shadow:      0 4px 24px rgba(79, 126, 255, 0.14);
+  --sh-exam-card-title:             #1a1f36;
+  --sh-exam-card-arrow-bg:          #eef2ff;
+  --sh-exam-card-arrow-color:       #4f7eff;
+  --sh-exam-card-arrow-hover-bg:    #dde8ff;
+  --sh-toolbox-label:               #8b5cf6;
+  --sh-toolbox-sub:                 #94a3b8;
+  --sh-tool-card-bg:                #ffffff;
+  --sh-tool-card-border:            #e2e8f0;
+  --sh-tool-card-hover-border:      #8b5cf6;
+  --sh-tool-card-hover-shadow:      0 4px 20px rgba(139, 92, 246, 0.12);
+  --sh-tool-card-text:              #374151;
+  --sh-tool-card-icon:              #8b5cf6;
+  --sh-badge-new-bg:                linear-gradient(135deg, #8B5CF6 0%, #4f7eff 100%);
+  --sh-badge-new-text:              #ffffff;
+  --sh-banner-bg:                   #ffffff;
+  --sh-banner-border:               #e2e8f0;
+  --sh-banner-hover-shadow:         0 4px 24px rgba(79, 126, 255, 0.12);
+  --sh-banner-title:                #1a1f36;
+  --sh-banner-icon:                 #4f7eff;
+  --sh-banner-arrow-bg:             #eef2ff;
+  --sh-banner-arrow-color:          #4f7eff;
+  --sh-banner-arrow-hover-bg:       #dde8ff;
+  --sh-ai-card-bg:                  #f0f6ff;
+  --sh-ai-card-border:              #c7d7ff;
+  --sh-ai-card-hover-shadow:        0 4px 28px rgba(79, 126, 255, 0.14);
+  --sh-ai-title:                    #2563eb;
+  --sh-ai-sub:                      #64748b;
+  --sh-ai-pill-bg:                  #eef2ff;
+  --sh-ai-pill-border:              #c7d7ff;
+  --sh-ai-pill-text:                #2563eb;
+  --sh-ai-pill-icon:                #4f7eff;
+  --sh-wa-card-bg:                  #f0fdf4;
+  --sh-wa-card-border:              #bbf7d0;
+  --sh-wa-title:                    #1a1f36;
+  --sh-wa-sub:                      #64748b;
+  --sh-wa-btn-bg:                   #16a34a;
+  --sh-wa-btn-hover-bg:             #15803d;
+  --sh-wa-btn-text:                 #ffffff;
+  --sh-wa-btn-shadow:               0 4px 16px rgba(34, 197, 94, 0.25);
+  --sh-teacher-card-bg:             #f0f6ff;
+  --sh-teacher-card-border:         #c7d7ff;
+  --sh-teacher-title:               #2563eb;
+  --sh-teacher-sub:                 #64748b;
+  --sh-teacher-btn-bg:              linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
+  --sh-teacher-btn-text:            #ffffff;
+  --sh-teacher-btn-shadow:          0 4px 20px rgba(79, 126, 255, 0.28);
+  --sh-teacher-btn-hover-shadow:    0 6px 28px rgba(79, 126, 255, 0.42);
+  --sh-social-title:                #1a1f36;
+  --sh-social-sub:                  #64748b;
+  --sh-social-divider:              #e2e8f0;
+  --sh-social-btn-bg:               #ffffff;
+  --sh-social-btn-border:           #e2e8f0;
+  --sh-social-btn-text:             #374151;
+  --sh-social-btn-hover-border:     #4f7eff;
+  --sh-social-btn-hover-bg:         #eef2ff;
+  --sh-social-btn-hover-text:       #1a1f36;
+
+
+    --sh-page-bg:                     #f5f7ff;
+  --sh-section-title:               #1a1f36;
+  --sh-section-link:                #4f7eff;
+  --sh-section-link-hover:          #1a1f36;
+ 
+  --sh-exam-card-bg:                #ffffff;
+  --sh-exam-card-border:            #e2e8f0;
+  --sh-exam-card-hover-border:      #4f7eff;
+  --sh-exam-card-hover-shadow:      0 4px 24px rgba(79, 126, 255, 0.14);
+  --sh-exam-card-title:             #1a1f36;
+  --sh-exam-card-arrow-bg:          #eef2ff;
+  --sh-exam-card-arrow-color:       #4f7eff;
+  --sh-exam-card-arrow-hover-bg:    #dde8ff;
+ 
+  --sh-toolbox-label:               #8b5cf6;
+  --sh-toolbox-sub:                 #94a3b8;
+ 
+  --sh-tool-card-bg:                #ffffff;
+  --sh-tool-card-border:            #e2e8f0;
+  --sh-tool-card-hover-border:      #8b5cf6;
+  --sh-tool-card-hover-shadow:      0 4px 20px rgba(139, 92, 246, 0.12);
+  --sh-tool-card-text:              #374151;
+  --sh-tool-card-icon:              #8b5cf6;
+ 
+  --sh-badge-new-bg:                linear-gradient(135deg, #8B5CF6 0%, #4f7eff 100%);
+  --sh-badge-new-text:              #ffffff;
+ 
+  --sh-banner-bg:                   #ffffff;
+  --sh-banner-border:               #e2e8f0;
+  --sh-banner-hover-shadow:         0 4px 24px rgba(79, 126, 255, 0.12);
+  --sh-banner-title:                #1a1f36;
+  --sh-banner-icon:                 #4f7eff;
+  --sh-banner-arrow-bg:             #eef2ff;
+  --sh-banner-arrow-color:          #4f7eff;
+  --sh-banner-arrow-hover-bg:       #dde8ff;
+ 
+  --sh-ai-card-bg:                  #f0f6ff;
+  --sh-ai-card-border:              #c7d7ff;
+  --sh-ai-card-hover-shadow:        0 4px 28px rgba(79, 126, 255, 0.14);
+  --sh-ai-title:                    #2563eb;
+  --sh-ai-sub:                      #64748b;
+  --sh-ai-pill-bg:                  #eef2ff;
+  --sh-ai-pill-border:              #c7d7ff;
+  --sh-ai-pill-text:                #2563eb;
+  --sh-ai-pill-icon:                #4f7eff;
+ 
+  --sh-wa-card-bg:                  #f0fdf4;
+  --sh-wa-card-border:              #bbf7d0;
+  --sh-wa-title:                    #1a1f36;
+  --sh-wa-sub:                      #64748b;
+  --sh-wa-btn-bg:                   #16a34a;
+  --sh-wa-btn-hover-bg:             #15803d;
+  --sh-wa-btn-text:                 #ffffff;
+  --sh-wa-btn-shadow:               0 4px 16px rgba(34, 197, 94, 0.25);
+ 
+  --sh-teacher-card-bg:             #f0f6ff;
+  --sh-teacher-card-border:         #c7d7ff;
+  --sh-teacher-title:               #2563eb;
+  --sh-teacher-sub:                 #64748b;
+  --sh-teacher-btn-bg:              linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
+  --sh-teacher-btn-text:            #ffffff;
+  --sh-teacher-btn-shadow:          0 4px 20px rgba(79, 126, 255, 0.28);
+  --sh-teacher-btn-hover-shadow:    0 6px 28px rgba(79, 126, 255, 0.42);
+ 
+  --sh-social-title:                #1a1f36;
+  --sh-social-sub:                  #64748b;
+  --sh-social-divider:              #e2e8f0;
+  --sh-social-btn-bg:               #ffffff;
+  --sh-social-btn-border:           #e2e8f0;
+  --sh-social-btn-text:             #374151;
+  --sh-social-btn-hover-border:     #4f7eff;
+  --sh-social-btn-hover-bg:         #eef2ff;
+
+  
+  /* ── STUDENT HOME + EXAM CARD (shared) ───────────────────────────────── */
+  --sh-page-bg:                     #f5f7ff;
+  --sh-section-title:               #1a1f36;
+  --sh-section-link:                #4f7eff;
+  --sh-section-link-hover:          #1a1f36;
+ 
+  --sh-exam-card-bg:                #ffffff;
+  --sh-exam-card-border:            #e2e8f0;
+  --sh-exam-card-hover-border:      #4f7eff;
+  --sh-exam-card-hover-shadow:      0 4px 24px rgba(79, 126, 255, 0.14);
+  --sh-exam-card-title:             #1a1f36;
+  --sh-exam-card-arrow-bg:          #eef2ff;
+  --sh-exam-card-arrow-color:       #4f7eff;
+  --sh-exam-card-arrow-hover-bg:    #dde8ff;
+ 
+  --sh-toolbox-label:               #8b5cf6;
+  --sh-toolbox-sub:                 #94a3b8;
+ 
+  --sh-tool-card-bg:                #ffffff;
+  --sh-tool-card-border:            #e2e8f0;
+  --sh-tool-card-hover-border:      #8b5cf6;
+  --sh-tool-card-hover-shadow:      0 4px 20px rgba(139, 92, 246, 0.12);
+  --sh-tool-card-text:              #374151;
+  --sh-tool-card-icon:              #8b5cf6;
+ 
+  --sh-badge-new-bg:                linear-gradient(135deg, #8B5CF6 0%, #4f7eff 100%);
+  --sh-badge-new-text:              #ffffff;
+ 
+  --sh-banner-bg:                   #ffffff;
+  --sh-banner-border:               #e2e8f0;
+  --sh-banner-hover-shadow:         0 4px 24px rgba(79, 126, 255, 0.12);
+  --sh-banner-title:                #1a1f36;
+  --sh-banner-icon:                 #4f7eff;
+  --sh-banner-arrow-bg:             #eef2ff;
+  --sh-banner-arrow-color:          #4f7eff;
+  --sh-banner-arrow-hover-bg:       #dde8ff;
+ 
+  --sh-ai-card-bg:                  #f0f6ff;
+  --sh-ai-card-border:              #c7d7ff;
+  --sh-ai-card-hover-shadow:        0 4px 28px rgba(79, 126, 255, 0.14);
+  --sh-ai-title:                    #2563eb;
+  --sh-ai-sub:                      #64748b;
+  --sh-ai-pill-bg:                  #eef2ff;
+  --sh-ai-pill-border:              #c7d7ff;
+  --sh-ai-pill-text:                #2563eb;
+  --sh-ai-pill-icon:                #4f7eff;
+ 
+  --sh-wa-card-bg:                  #f0fdf4;
+  --sh-wa-card-border:              #bbf7d0;
+  --sh-wa-title:                    #1a1f36;
+  --sh-wa-sub:                      #64748b;
+  --sh-wa-btn-bg:                   #16a34a;
+  --sh-wa-btn-hover-bg:             #15803d;
+  --sh-wa-btn-text:                 #ffffff;
+  --sh-wa-btn-shadow:               0 4px 16px rgba(34, 197, 94, 0.25);
+ 
+  --sh-teacher-card-bg:             #f0f6ff;
+  --sh-teacher-card-border:         #c7d7ff;
+  --sh-teacher-title:               #2563eb;
+  --sh-teacher-sub:                 #64748b;
+  --sh-teacher-btn-bg:              linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
+  --sh-teacher-btn-text:            #ffffff;
+  --sh-teacher-btn-shadow:          0 4px 20px rgba(79, 126, 255, 0.28);
+  --sh-teacher-btn-hover-shadow:    0 6px 28px rgba(79, 126, 255, 0.42);
+ 
+  --sh-social-title:                #1a1f36;
+  --sh-social-sub:                  #64748b;
+  --sh-social-divider:              #e2e8f0;
+  --sh-social-btn-bg:               #ffffff;
+  --sh-social-btn-border:           #e2e8f0;
+  --sh-social-btn-text:             #374151;
+  --sh-social-btn-hover-border:     #4f7eff;
+  --sh-social-btn-hover-bg:         #eef2ff;
+  --sh-social-btn-hover-text:       #1a1f36;
+
+   
+  /* ── PYQ PAPERS PAGE ─────────────────────────────────────────────────── */
+  --pyq-page-bg:                    #f5f7ff;
+ 
+  /* Header bar (showing count + sort) */
+  --pyq-header-text:                #64748b;
+  --pyq-header-count:               #1a1f36;
+  --pyq-sort-btn-bg:                #ffffff;
+  --pyq-sort-btn-border:            #e2e8f0;
+  --pyq-sort-btn-text:              #64748b;
+  --pyq-sort-btn-hover-bg:          #eef2ff;
+  --pyq-sort-btn-hover-border:      #4f7eff;
+  --pyq-sort-btn-hover-text:        #4f7eff;
+ 
+  /* Year accordion row */
+  --pyq-accordion-bg:               #ffffff;
+  --pyq-accordion-border:           #e2e8f0;
+  --pyq-accordion-hover-bg:         #f8faff;
+  --pyq-accordion-hover-border:     #4f7eff;
+  --pyq-accordion-title:            #1a1f36;
+  --pyq-accordion-count:            #64748b;
+  --pyq-accordion-chevron:          #94a3b8;
+  --pyq-accordion-chevron-active:   #4f7eff;
+  --pyq-accordion-active-bg:        #ffffff;
+  --pyq-accordion-active-border:    #4f7eff;
+ 
+  /* Paper card inside accordion */
+  --pyq-paper-bg:                   #f8faff;
+  --pyq-paper-border:               #e2e8f0;
+  --pyq-paper-hover-bg:             #eef2ff;
+  --pyq-paper-hover-border:         #4f7eff;
+  --pyq-paper-hover-shadow:         0 4px 16px rgba(79, 126, 255, 0.12);
+  --pyq-paper-title:                #1a1f36;
+  --pyq-paper-meta:                 #64748b;
+  --pyq-paper-meta-label:           #94a3b8;
+  --pyq-paper-badge-bg:             #eef2ff;
+  --pyq-paper-badge-border:         #c7d7ff;
+  --pyq-paper-badge-text:           #4f7eff;
+  --pyq-paper-arrow-bg:             #eef2ff;
+  --pyq-paper-arrow-color:          #4f7eff;
+  --pyq-paper-arrow-hover-bg:       #dde8ff;
+ 
+  /* Divider inside open accordion */
+  --pyq-accordion-divider:          #e2e8f0;
+ 
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK THEME OVERRIDES — only values that differ from light
+═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+
+  /* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+  --sb-bg-from:                     #05070D;
+  --sb-bg-to:                       #1A1235;
+  --sb-border-color:                rgba(139, 92, 246, 0.18);
+  --sb-logo-glow:                   0 0 18px rgba(139, 92, 246, 0.55);
+  --sb-brand-name-color:            #ffffff;
+  --sb-shadow:                      4px 0 32px rgba(5, 7, 13, 0.6);
+  --sb-brand-role-color:            #A1A1AA;
+  --sb-nav-text:                    #A1A1AA;
+  --sb-nav-icon:                    #A1A1AA;
+  --sb-nav-hover-bg:                rgba(139, 92, 246, 0.10);
+  --sb-nav-hover-text:              #ffffff;
+  --sb-nav-hover-icon:              #C4B5FD;
+  --sb-nav-active-bg:               rgba(139, 92, 246, 0.18);
+  --sb-nav-active-text:             #ffffff;
+  --sb-nav-active-icon:             #A78BFA;
+  --sb-nav-active-indicator:        #8B5CF6;
+  --sb-nav-active-glow:             0 0 12px rgba(139, 92, 246, 0.35);
+  --sb-collapse-text:               #71717A;
+  --sb-collapse-hover-bg:           rgba(139, 92, 246, 0.10);
+  --sb-collapse-hover-text:         #A1A1AA;
+  --sb-divider:                     rgba(139, 92, 246, 0.15);
+
+  /* ── TOPBAR ──────────────────────────────────────────────────────────── */
+  --topbar-page-bg:                 #0C0E1A;
+  --topbar-bg:                      rgba(10, 10, 20, 0.85);
+  --topbar-border:                  rgba(139, 92, 246, 0.15);
+  --topbar-shadow:                  0 1px 24px rgba(5, 7, 13, 0.5);
+  --topbar-search-bg:               rgba(255, 255, 255, 0.05);
+  --topbar-search-border:           rgba(139, 92, 246, 0.18);
+  --topbar-search-border-focus:     rgba(139, 92, 246, 0.60);
+  --topbar-search-ring-focus:       rgba(139, 92, 246, 0.15);
+  --topbar-search-text:             #ffffff;
+  --topbar-search-placeholder:      #52525B;
+  --topbar-search-icon:             #52525B;
+  --topbar-icon-btn-bg:             rgba(255, 255, 255, 0.05);
+  --topbar-icon-btn-border:         rgba(139, 92, 246, 0.18);
+  --topbar-icon-btn-color:          #A1A1AA;
+  --topbar-icon-btn-hover-border:   rgba(139, 92, 246, 0.50);
+  --topbar-icon-btn-hover-color:    #A78BFA;
+  --topbar-notif-dot:               #8B5CF6;
+  --topbar-profile-bg:              rgba(255, 255, 255, 0.05);
+  --topbar-profile-border:          rgba(139, 92, 246, 0.18);
+  --topbar-profile-hover-border:    rgba(139, 92, 246, 0.50);
+  --topbar-profile-name:            #ffffff;
+  --topbar-profile-role:            #A1A1AA;
+  --topbar-profile-avatar-bg:       rgba(139, 92, 246, 0.25);
+  --topbar-profile-avatar-text:     #C4B5FD;
+  --topbar-profile-chevron:         #71717A;
+  --topbar-dd-bg:                   #0F1020;
+  --topbar-dd-border:               rgba(139, 92, 246, 0.22);
+  --topbar-dd-shadow:               0 20px 60px rgba(5, 7, 13, 0.8), 0 0 0 1px rgba(139, 92, 246, 0.10);
+  --topbar-dd-header-border:        rgba(139, 92, 246, 0.12);
+  --topbar-dd-header-title:         #ffffff;
+  --topbar-dd-header-sub:           #71717A;
+  --topbar-dd-item-hover-bg:        rgba(139, 92, 246, 0.08);
+  --topbar-dd-item-selected-bg:     rgba(139, 92, 246, 0.14);
+  --topbar-dd-item-selected-text:   #A78BFA;
+  --topbar-dd-item-name:            #ffffff;
+  --topbar-dd-item-sub:             #71717A;
+  --topbar-dd-avatar-bg:            rgba(255, 255, 255, 0.06);
+  --topbar-dd-avatar-text:          #A1A1AA;
+  --topbar-dd-check:                #8B5CF6;
+  --topbar-dd-footer-border:        rgba(139, 92, 246, 0.12);
+  --topbar-dd-action-icon-bg:       rgba(255, 255, 255, 0.06);
+  --topbar-dd-action-icon-color:    #A1A1AA;
+  --topbar-dd-action-text:          #A1A1AA;
+  --topbar-dd-action-hover-bg:      rgba(139, 92, 246, 0.08);
+  --topbar-dd-action-hover-text:    #ffffff;
+  --topbar-dd-logout-icon-bg:       rgba(239, 68, 68, 0.12);
+  --topbar-dd-logout-icon-color:    #F87171;
+  --topbar-dd-logout-text:          #F87171;
+  --topbar-dd-logout-hover-bg:      rgba(239, 68, 68, 0.10);
+  --topbar-dd-empty-text:           #52525B;
+
+  /* ── LOGIN ───────────────────────────────────────────────────────────── */
+  --login-bg-from:                  #05070D;
+  --login-bg-to:                    #1A1235;
+  --login-card-bg:                  rgba(255, 255, 255, 0.04);
+  --login-card-border:              rgba(139, 92, 246, 0.20);
+  --login-card-shadow:              0 8px 48px rgba(5, 7, 13, 0.7), 0 0 0 1px rgba(139, 92, 246, 0.10);
+  --login-heading-color:            #ffffff;
+  --login-subtext-color:            #A1A1AA;
+  --login-option-bg:                rgba(255, 255, 255, 0.03);
+  --login-option-border:            rgba(139, 92, 246, 0.18);
+  --login-option-hover-bg:          rgba(139, 92, 246, 0.08);
+  --login-option-hover-border:      rgba(139, 92, 246, 0.40);
+  --login-option-student-bg:        rgba(79, 126, 255, 0.12);
+  --login-option-student-border:    #4f7eff;
+  --login-option-student-glow:      0 0 16px rgba(79, 126, 255, 0.20);
+  --login-option-tutor-bg:          rgba(245, 158, 11, 0.12);
+  --login-option-tutor-border:      #f59e0b;
+  --login-option-tutor-glow:        0 0 16px rgba(245, 158, 11, 0.20);
+  --login-option-institute-bg:      rgba(139, 92, 246, 0.14);
+  --login-option-institute-border:  #8b5cf6;
+  --login-option-institute-glow:    0 0 16px rgba(139, 92, 246, 0.25);
+  --login-icon-student-bg:          rgba(79, 126, 255, 0.18);
+  --login-icon-tutor-bg:            rgba(245, 158, 11, 0.18);
+  --login-icon-institute-bg:        rgba(139, 92, 246, 0.18);
+  --login-icon-default-bg:          rgba(255, 255, 255, 0.06);
+  --login-label-color:              #ffffff;
+  --login-desc-color:               #A1A1AA;
+  --login-radio-border:             rgba(139, 92, 246, 0.30);
+  --login-radio-bg:                 rgba(255, 255, 255, 0.06);
+  --login-back-color:               #52525B;
+  --login-back-hover-color:         #A1A1AA;
+
+  /* ── PROFILE CREATE ──────────────────────────────────────────────────── */
+  --pc-page-bg:                     #0C0E1A;
+  --pc-card-bg:                     rgba(255, 255, 255, 0.03);
+  --pc-card-border:                 rgba(139, 92, 246, 0.18);
+  --pc-card-shadow:                 0 8px 48px rgba(5, 7, 13, 0.7), 0 0 0 1px rgba(139, 92, 246, 0.08);
+  --pc-divider:                     rgba(139, 92, 246, 0.12);
+  --pc-heading:                     #ffffff;
+  --pc-subheading:                  #A1A1AA;
+  --pc-section-label:               #71717A;
+  --pc-label:                       #D4D4D8;
+  --pc-label-required:              #8B5CF6;
+  --pc-input-bg:                    rgba(255, 255, 255, 0.04);
+  --pc-input-border:                rgba(139, 92, 246, 0.20);
+  --pc-input-border-focus:          rgba(139, 92, 246, 0.65);
+  --pc-input-ring-focus:            rgba(139, 92, 246, 0.14);
+  --pc-input-text:                  #ffffff;
+  --pc-input-placeholder:           #52525B;
+  --pc-avatar-ring:                 rgba(139, 92, 246, 0.35);
+  --pc-avatar-overlay-bg:           rgba(0, 0, 0, 0.55);
+  --pc-avatar-placeholder-bg:       rgba(139, 92, 246, 0.12);
+  --pc-avatar-placeholder-icon:     #7C3AED;
+  --pc-avatar-btn-bg:               rgba(139, 92, 246, 0.14);
+  --pc-avatar-btn-border:           rgba(139, 92, 246, 0.30);
+  --pc-avatar-btn-text:             #A78BFA;
+  --pc-avatar-btn-hover-bg:         rgba(139, 92, 246, 0.24);
+  --pc-select-bg:                   #0F1022;
+  --pc-select-border:               rgba(139, 92, 246, 0.22);
+  --pc-select-shadow:               0 16px 48px rgba(5, 7, 13, 0.8);
+  --pc-select-item-hover-bg:        rgba(139, 92, 246, 0.10);
+  --pc-select-item-selected-bg:     rgba(139, 92, 246, 0.18);
+  --pc-select-item-selected-text:   #A78BFA;
+  --pc-select-item-text:            #D4D4D8;
+  --pc-select-item-sub:             #71717A;
+  --pc-select-check:                #8B5CF6;
+  --pc-select-empty:                #52525B;
+  --pc-select-search-bg:            rgba(255, 255, 255, 0.04);
+  --pc-select-search-border:        rgba(139, 92, 246, 0.18);
+  --pc-tag-bg:                      rgba(139, 92, 246, 0.14);
+  --pc-tag-border:                  rgba(139, 92, 246, 0.30);
+  --pc-tag-text:                    #C4B5FD;
+  --pc-tag-remove-hover:            rgba(139, 92, 246, 0.30);
+  --pc-success-bg:                  rgba(34, 197, 94, 0.10);
+  --pc-success-border:              rgba(34, 197, 94, 0.25);
+  --pc-success-text:                #4ADE80;
+  --pc-error-bg:                    rgba(239, 68, 68, 0.10);
+  --pc-error-border:                rgba(239, 68, 68, 0.25);
+  --pc-error-text:                  #F87171;
+
+  /* ── STUDENT HOME ─────────────────────────────────────────────────────── */
+  --sh-page-bg:                     #0C0E1A;
+  --sh-section-title:               #ffffff;
+  --sh-section-link:                #A78BFA;
+  --sh-section-link-hover:          #ffffff;
+  --sh-exam-card-bg:                rgba(255, 255, 255, 0.03);
+  --sh-exam-card-border:            rgba(139, 92, 246, 0.18);
+  --sh-exam-card-hover-border:      rgba(139, 92, 246, 0.50);
+  --sh-exam-card-hover-shadow:      0 4px 24px rgba(139, 92, 246, 0.18);
+  --sh-exam-card-title:             #ffffff;
+  --sh-exam-card-arrow-bg:          rgba(139, 92, 246, 0.12);
+  --sh-exam-card-arrow-color:       #A78BFA;
+  --sh-exam-card-arrow-hover-bg:    rgba(139, 92, 246, 0.28);
+  --sh-toolbox-label:               #8B5CF6;
+  --sh-toolbox-sub:                 #71717A;
+  --sh-tool-card-bg:                rgba(255, 255, 255, 0.03);
+  --sh-tool-card-border:            rgba(139, 92, 246, 0.18);
+  --sh-tool-card-hover-border:      rgba(139, 92, 246, 0.45);
+  --sh-tool-card-hover-shadow:      0 4px 20px rgba(139, 92, 246, 0.15);
+  --sh-tool-card-text:              #D4D4D8;
+  --sh-tool-card-icon:              #A78BFA;
+  --sh-banner-bg:                   rgba(255, 255, 255, 0.03);
+  --sh-banner-border:               rgba(139, 92, 246, 0.22);
+  --sh-banner-hover-shadow:         0 4px 24px rgba(139, 92, 246, 0.18);
+  --sh-banner-title:                #ffffff;
+  --sh-banner-icon:                 #A78BFA;
+  --sh-banner-arrow-bg:             rgba(139, 92, 246, 0.14);
+  --sh-banner-arrow-color:          #A78BFA;
+  --sh-banner-arrow-hover-bg:       rgba(139, 92, 246, 0.28);
+  --sh-ai-card-bg:                  rgba(79, 126, 255, 0.06);
+  --sh-ai-card-border:              rgba(79, 126, 255, 0.28);
+  --sh-ai-card-hover-shadow:        0 4px 28px rgba(79, 126, 255, 0.20);
+  --sh-ai-title:                    #60A5FA;
+  --sh-ai-sub:                      #A1A1AA;
+  --sh-ai-pill-bg:                  rgba(79, 126, 255, 0.10);
+  --sh-ai-pill-border:              rgba(79, 126, 255, 0.22);
+  --sh-ai-pill-text:                #93C5FD;
+  --sh-ai-pill-icon:                #60A5FA;
+  --sh-wa-card-bg:                  rgba(34, 197, 94, 0.05);
+  --sh-wa-card-border:              rgba(34, 197, 94, 0.22);
+  --sh-wa-title:                    #ffffff;
+  --sh-wa-sub:                      #A1A1AA;
+  --sh-wa-btn-shadow:               0 4px 16px rgba(34, 197, 94, 0.30);
+  --sh-teacher-card-bg:             rgba(79, 126, 255, 0.05);
+  --sh-teacher-card-border:         rgba(79, 126, 255, 0.22);
+  --sh-teacher-title:               #60A5FA;
+  --sh-teacher-sub:                 #A1A1AA;
+  --sh-teacher-btn-shadow:          0 4px 20px rgba(79, 126, 255, 0.35);
+  --sh-teacher-btn-hover-shadow:    0 6px 28px rgba(79, 126, 255, 0.50);
+  --sh-social-title:                #ffffff;
+  --sh-social-sub:                  #A1A1AA;
+  --sh-social-divider:              rgba(139, 92, 246, 0.15);
+  --sh-social-btn-bg:               rgba(255, 255, 255, 0.04);
+  --sh-social-btn-border:           rgba(139, 92, 246, 0.18);
+  --sh-social-btn-text:             #D4D4D8;
+  --sh-social-btn-hover-border:     rgba(139, 92, 246, 0.45);
+  --sh-social-btn-hover-bg:         rgba(139, 92, 246, 0.08);
+  --sh-social-btn-hover-text:       #ffffff;
+
 
   /* ─── APP SHELL & MAIN CONTENT ───────────────────────────────────────────
      Main column background and typography. --topbar-page-bg aliases --page-bg.
@@ -675,4 +1282,110 @@ html[data-theme='dark'] .student-dash-mascot {
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   line-height: 1.25rem;
+ 
+  --sh-page-bg:                     #0C0E1A;
+  --sh-section-title:               #ffffff;
+  --sh-section-link:                #A78BFA;
+  --sh-section-link-hover:          #ffffff;
+ 
+  --sh-exam-card-bg:                rgba(255, 255, 255, 0.03);
+  --sh-exam-card-border:            rgba(139, 92, 246, 0.18);
+  --sh-exam-card-hover-border:      rgba(139, 92, 246, 0.50);
+  --sh-exam-card-hover-shadow:      0 4px 24px rgba(139, 92, 246, 0.18);
+  --sh-exam-card-title:             #ffffff;
+  --sh-exam-card-arrow-bg:          rgba(139, 92, 246, 0.12);
+  --sh-exam-card-arrow-color:       #A78BFA;
+  --sh-exam-card-arrow-hover-bg:    rgba(139, 92, 246, 0.28);
+ 
+  --sh-toolbox-label:               #8B5CF6;
+  --sh-toolbox-sub:                 #71717A;
+ 
+  --sh-tool-card-bg:                rgba(255, 255, 255, 0.03);
+  --sh-tool-card-border:            rgba(139, 92, 246, 0.18);
+  --sh-tool-card-hover-border:      rgba(139, 92, 246, 0.45);
+  --sh-tool-card-hover-shadow:      0 4px 20px rgba(139, 92, 246, 0.15);
+  --sh-tool-card-text:              #D4D4D8;
+  --sh-tool-card-icon:              #A78BFA;
+ 
+  --sh-banner-bg:                   rgba(255, 255, 255, 0.03);
+  --sh-banner-border:               rgba(139, 92, 246, 0.22);
+  --sh-banner-hover-shadow:         0 4px 24px rgba(139, 92, 246, 0.18);
+  --sh-banner-title:                #ffffff;
+  --sh-banner-icon:                 #A78BFA;
+  --sh-banner-arrow-bg:             rgba(139, 92, 246, 0.14);
+  --sh-banner-arrow-color:          #A78BFA;
+  --sh-banner-arrow-hover-bg:       rgba(139, 92, 246, 0.28);
+ 
+  --sh-ai-card-bg:                  rgba(79, 126, 255, 0.06);
+  --sh-ai-card-border:              rgba(79, 126, 255, 0.28);
+  --sh-ai-card-hover-shadow:        0 4px 28px rgba(79, 126, 255, 0.20);
+  --sh-ai-title:                    #60A5FA;
+  --sh-ai-sub:                      #A1A1AA;
+  --sh-ai-pill-bg:                  rgba(79, 126, 255, 0.10);
+  --sh-ai-pill-border:              rgba(79, 126, 255, 0.22);
+  --sh-ai-pill-text:                #93C5FD;
+  --sh-ai-pill-icon:                #60A5FA;
+ 
+  --sh-wa-card-bg:                  rgba(34, 197, 94, 0.05);
+  --sh-wa-card-border:              rgba(34, 197, 94, 0.22);
+  --sh-wa-title:                    #ffffff;
+  --sh-wa-sub:                      #A1A1AA;
+  --sh-wa-btn-shadow:               0 4px 16px rgba(34, 197, 94, 0.30);
+ 
+  --sh-teacher-card-bg:             rgba(79, 126, 255, 0.05);
+  --sh-teacher-card-border:         rgba(79, 126, 255, 0.22);
+  --sh-teacher-title:               #60A5FA;
+  --sh-teacher-sub:                 #A1A1AA;
+  --sh-teacher-btn-shadow:          0 4px 20px rgba(79, 126, 255, 0.35);
+  --sh-teacher-btn-hover-shadow:    0 6px 28px rgba(79, 126, 255, 0.50);
+ 
+  --sh-social-title:                #ffffff;
+  --sh-social-sub:                  #A1A1AA;
+  --sh-social-divider:              rgba(139, 92, 246, 0.15);
+  --sh-social-btn-bg:               rgba(255, 255, 255, 0.04);
+  --sh-social-btn-border:           rgba(139, 92, 246, 0.18);
+  --sh-social-btn-text:             #D4D4D8;
+  --sh-social-btn-hover-border:     rgba(139, 92, 246, 0.45);
+  --sh-social-btn-hover-bg:         rgba(139, 92, 246, 0.08);
+  --sh-social-btn-hover-text:       #ffffff;
+ 
+   /* ── PYQ PAPERS PAGE ─────────────────────────────────────────────────── */
+  --pyq-page-bg:                    #0C0E1A;
+ 
+  --pyq-header-text:                #A1A1AA;
+  --pyq-header-count:               #ffffff;
+  --pyq-sort-btn-bg:                rgba(255, 255, 255, 0.05);
+  --pyq-sort-btn-border:            rgba(139, 92, 246, 0.22);
+  --pyq-sort-btn-text:              #A1A1AA;
+  --pyq-sort-btn-hover-bg:          rgba(139, 92, 246, 0.10);
+  --pyq-sort-btn-hover-border:      rgba(139, 92, 246, 0.50);
+  --pyq-sort-btn-hover-text:        #C4B5FD;
+ 
+  --pyq-accordion-bg:               rgba(255, 255, 255, 0.03);
+  --pyq-accordion-border:           rgba(139, 92, 246, 0.18);
+  --pyq-accordion-hover-bg:         rgba(139, 92, 246, 0.06);
+  --pyq-accordion-hover-border:     rgba(139, 92, 246, 0.40);
+  --pyq-accordion-title:            #ffffff;
+  --pyq-accordion-count:            #A1A1AA;
+  --pyq-accordion-chevron:          #52525B;
+  --pyq-accordion-chevron-active:   #A78BFA;
+  --pyq-accordion-active-bg:        rgba(139, 92, 246, 0.05);
+  --pyq-accordion-active-border:    rgba(139, 92, 246, 0.40);
+ 
+  --pyq-paper-bg:                   rgba(255, 255, 255, 0.03);
+  --pyq-paper-border:               rgba(139, 92, 246, 0.14);
+  --pyq-paper-hover-bg:             rgba(139, 92, 246, 0.08);
+  --pyq-paper-hover-border:         rgba(139, 92, 246, 0.40);
+  --pyq-paper-hover-shadow:         0 4px 20px rgba(139, 92, 246, 0.15);
+  --pyq-paper-title:                #ffffff;
+  --pyq-paper-meta:                 #A1A1AA;
+  --pyq-paper-meta-label:           #71717A;
+  --pyq-paper-badge-bg:             rgba(139, 92, 246, 0.12);
+  --pyq-paper-badge-border:         rgba(139, 92, 246, 0.28);
+  --pyq-paper-badge-text:           #C4B5FD;
+  --pyq-paper-arrow-bg:             rgba(139, 92, 246, 0.12);
+  --pyq-paper-arrow-color:          #A78BFA;
+  --pyq-paper-arrow-hover-bg:       rgba(139, 92, 246, 0.25);
+ 
+  --pyq-accordion-divider:          rgba(139, 92, 246, 0.12);
 }

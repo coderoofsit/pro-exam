@@ -1,38 +1,86 @@
-import { writable } from 'svelte/store';
-import type { AccountType, LoginResponse, LoginUser } from '$lib/api/auth';
+
+import { writable, get } from "svelte/store";
+import type {
+  AccountType,
+  LoginResponse,
+  LoginUser,
+  LinkedProfile,
+} from "$lib/api/auth";
+
+export type AuthLinkedProfile = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+};
 
 export type AuthUser = {
   _id: string;
   firstName?: string;
   lastName?: string;
   image?: string;
+  instituteId?: AuthLinkedProfile | null;
+  teacherId?: AuthLinkedProfile | null;
+  adminId?: AuthLinkedProfile | null;
 };
 
 export type AuthState = {
   users: AuthUser[];
   token: string | null;
   role: AccountType | null;
+  profileId: string | null;
   isAuthenticated: boolean;
 };
+
+const AUTH_STORAGE_KEY = "auth_token";
+const AUTH_PROFILE_ID_KEY = "auth_profile_id";
 
 const initialState: AuthState = {
   users: [],
   token: null,
   role: null,
-  isAuthenticated: false
+  profileId: null,
+  isAuthenticated: false,
 };
 
-const AUTH_STORAGE_KEY = 'auth';
-const AUTH_COOKIE_NAME = 'auth_token';
-const COOKIE_MAX_AGE_DAYS = 7;
+function mapLinkedProfile(
+  profile?: LinkedProfile | null,
+): AuthLinkedProfile | null {
+  if (!profile) return null;
 
-function setAuthCookie(token: string | null) {
-	if (typeof document === 'undefined') return;
-	if (token) {
-		document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 24 * 60 * 60}; SameSite=Lax`;
-	} else {
-		document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
-	}
+  return {
+    _id: profile._id,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+  };
+}
+
+function mapBackendRoleToAccountType(
+  backendRole?: "student" | "teacher" | "admin" | "institute" | null,
+): AccountType | null {
+  if (backendRole === "teacher") return "tutor";
+  if (backendRole === "institute") return "institute";
+  if (backendRole === "student") return "student";
+  return null;
+}
+
+function persistToken(token: string | null) {
+  if (typeof localStorage === "undefined") return;
+
+  if (token) {
+    localStorage.setItem(AUTH_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+}
+
+function persistProfileId(profileId: string | null) {
+  if (typeof localStorage === "undefined") return;
+
+  if (profileId) {
+    localStorage.setItem(AUTH_PROFILE_ID_KEY, profileId);
+  } else {
+    localStorage.removeItem(AUTH_PROFILE_ID_KEY);
+  }
 }
 
 function createAuthStore() {
@@ -44,105 +92,161 @@ function createAuthStore() {
     setAuth(data: {
       users: AuthUser[];
       token: string | null;
-      role: AccountType;
+      role: AccountType | null;
+      profileId: string | null;
     }) {
       const authData: AuthState = {
         users: data.users,
         token: data.token,
         role: data.role,
-        isAuthenticated: true
+        profileId: data.profileId,
+        isAuthenticated: !!data.token,
       };
 
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-      }
-      setAuthCookie(data.token);
-
+      persistToken(data.token);
+      persistProfileId(data.profileId);
       set(authData);
     },
 
-    setAuthFromLoginResponse(response: LoginResponse, role: AccountType) {
-      const usersFromApi = response.data?.users ?? [];
-      const token = response.data?.token ?? null;
+    setAuthAfterMembership(data: {
+      token: string | null;
+      users: AuthUser[];
+      role: AccountType | null;
+    }) {
+      persistToken(data.token);
 
-      if (!usersFromApi.length) {
-        throw new Error('Invalid login response');
-      }
+      update((state) => ({
+        ...state,
+        token: data.token,
+        users: data.users,
+        role: data.role,
+        isAuthenticated: !!data.token,
+      }));
+    },
+
+    setAuthFromLoginResponse(
+      response: LoginResponse,
+      selectedRole?: AccountType | null,
+    ) {
+      const payload = response?.data;
+
+      const usersFromApi = payload?.users ?? [];
+      const token = payload?.token ?? null;
+      const profileId = payload?.id ?? null;
+      const backendRole = payload?.role ?? null;
 
       const mappedUsers: AuthUser[] = usersFromApi.map((user: LoginUser) => ({
         _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
-        image: user.image
+        image: user.image,
+        instituteId: mapLinkedProfile(user.instituteId),
+        teacherId: mapLinkedProfile(user.teacherId),
+        adminId: mapLinkedProfile(user.adminId),
       }));
+
+      const mappedRole: AccountType | null =
+        selectedRole ?? mapBackendRoleToAccountType(backendRole);
 
       const authData: AuthState = {
         users: mappedUsers,
         token,
-        role,
-        isAuthenticated: true
+        role: mappedRole,
+        profileId,
+        isAuthenticated: !!token,
       };
 
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-      }
-      setAuthCookie(token);
-
+      persistToken(token);
+      persistProfileId(profileId);
       set(authData);
     },
 
     restore() {
-      if (typeof localStorage === 'undefined') return;
+      if (typeof localStorage === "undefined") return;
 
-      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!raw) return;
+      const token = localStorage.getItem(AUTH_STORAGE_KEY);
+      const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
 
-      try {
-        const parsed: AuthState = JSON.parse(raw);
-        setAuthCookie(parsed.token ?? null);
-        set({
-          users: parsed.users ?? [],
-          token: parsed.token ?? null,
-          role: parsed.role ?? null,
-          isAuthenticated: parsed.isAuthenticated ?? false
-        });
-      } catch {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        set(initialState);
-      }
+      update((state) => ({
+        ...state,
+        token,
+        profileId,
+        isAuthenticated: !!token,
+      }));
+    },
+
+    restoreToken() {
+      if (typeof localStorage === "undefined") return;
+
+      const token = localStorage.getItem(AUTH_STORAGE_KEY);
+      const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
+
+      update((state) => ({
+        ...state,
+        token,
+        profileId,
+        isAuthenticated: !!token,
+      }));
+    },
+
+    setUsers(users: AuthUser[]) {
+      update((state) => ({
+        ...state,
+        users,
+      }));
+    },
+
+    setRole(role: AccountType | null) {
+      update((state) => ({
+        ...state,
+        role,
+      }));
+    },
+
+    setProfileId(profileId: string | null) {
+      persistProfileId(profileId);
+
+      update((state) => ({
+        ...state,
+        profileId,
+      }));
+    },
+
+    updateUser(updatedUser: Partial<AuthUser> & { _id: string }) {
+      update((state) => ({
+        ...state,
+        users: state.users.map((user) =>
+          user._id === updatedUser._id ? { ...user, ...updatedUser } : user,
+        ),
+      }));
+    },
+
+    clearUserData() {
+      persistProfileId(null);
+
+      update((state) => ({
+        ...state,
+        users: [],
+        role: null,
+        profileId: null,
+      }));
+    },
+
+    getToken() {
+      return get({ subscribe }).token;
     },
 
     logout() {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
-      setAuthCookie(null);
-
+      persistToken(null);
+      persistProfileId(null);
       set(initialState);
     },
 
     clear() {
+      persistToken(null);
+      persistProfileId(null);
       set(initialState);
     },
-
-    updateUser(updatedUser: Partial<AuthUser> & { _id: string }) {
-      update((state) => {
-        const nextState: AuthState = {
-          ...state,
-          users: state.users.map((user) =>
-            user._id === updatedUser._id
-              ? { ...user, ...updatedUser }
-              : user
-          )
-        };
-
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextState));
-        }
-
-        return nextState;
-      });
-    }
   };
 }
 

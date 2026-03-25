@@ -211,6 +211,8 @@
   import { goto } from '$app/navigation';
   import { authStore, type AuthUser } from '$lib/stores/auth';
   import { type ThemeMode, toggleThemeMode } from '$lib/theme';
+  import { getMembershipUsers, type MembershipUser } from '$lib/api/auth';
+  import { themeStore } from '$lib/stores/theme';
 
   type Role = 'student' | 'tutor' | 'institute';
   type SidebarIcon = 'dashboard' | 'exams' | 'tests' | 'batch' | 'subscription';
@@ -229,33 +231,43 @@
   let selectedUserIndex = $state(0);
   let searchValue = $state('');
   let themeMode = $state<ThemeMode>('dark');
+  let isLoadingUsers = $state(false);
 
-  function toggleSidebar() { sidebarCollapsed = !sidebarCollapsed; }
-  function toggleProfileDropdown() { profileDropdownOpen = !profileDropdownOpen; }
-  function closeProfileDropdown() { profileDropdownOpen = false; }
+  function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
+  }
+
+  function toggleProfileDropdown() {
+    profileDropdownOpen = !profileDropdownOpen;
+  }
+
+  function closeProfileDropdown() {
+    profileDropdownOpen = false;
+  }
 
   const navItemsByRole: Record<Role, SidebarItem[]> = {
     student: [
-      { id: 'sidebar-dashboard',    label: 'Dashboard',    href: '/student/dashboard',      icon: 'dashboard'    },
-      { id: 'sidebar-exams',        label: 'Exams',        href: '/student/exams',          icon: 'exams'        },
-      { id: 'sidebar-tests',        label: 'Tests',        href: '/student/tests',          icon: 'tests'        },
-      { id: 'sidebar-subscription', label: 'Subscription', href: '/student/subscription',   icon: 'subscription' }
+      { id: 'sidebar-dashboard', label: 'Dashboard', href: '/student/dashboard', icon: 'dashboard' },
+      { id: 'sidebar-exams', label: 'Exams', href: '/student/exams', icon: 'exams' },
+      { id: 'sidebar-tests', label: 'Tests', href: '/student/tests', icon: 'tests' },
+      { id: 'sidebar-subscription', label: 'Subscription', href: '/student/subscription', icon: 'subscription' }
     ],
     tutor: [
-      { id: 'sidebar-dashboard',    label: 'Dashboard',    href: '/tutor/dashboard',        icon: 'dashboard'    },
-      { id: 'sidebar-tests',        label: 'Tests',        href: '/tutor/tests',            icon: 'tests'        },
-      { id: 'sidebar-batch',        label: 'Batch',        href: '/tutor/batch',            icon: 'batch'        },
-      { id: 'sidebar-subscription', label: 'Subscription', href: '/tutor/subscription',     icon: 'subscription' }
+      { id: 'sidebar-dashboard', label: 'Dashboard', href: '/tutor/dashboard', icon: 'dashboard' },
+      { id: 'sidebar-tests', label: 'Tests', href: '/tutor/tests', icon: 'tests' },
+      { id: 'sidebar-batch', label: 'Batch', href: '/tutor/batch', icon: 'batch' },
+      { id: 'sidebar-subscription', label: 'Subscription', href: '/tutor/subscription', icon: 'subscription' }
     ],
     institute: [
-      { id: 'sidebar-dashboard',    label: 'Dashboard',    href: '/institute/dashboard',    icon: 'dashboard'    },
-      { id: 'sidebar-exams',        label: 'Exams',        href: '/institute/exams',        icon: 'exams'        },
-      { id: 'sidebar-batch',        label: 'Batch',        href: '/institute/batch',        icon: 'batch'        },
+      { id: 'sidebar-dashboard', label: 'Dashboard', href: '/institute/dashboard', icon: 'dashboard' },
+      { id: 'sidebar-exams', label: 'Exams', href: '/institute/exams', icon: 'exams' },
+      { id: 'sidebar-batch', label: 'Batch', href: '/institute/batch', icon: 'batch' },
       { id: 'sidebar-subscription', label: 'Subscription', href: '/institute/subscription', icon: 'subscription' }
     ]
   };
 
   const sidebarNavItems = $derived(navItemsByRole[role]);
+  const isDark = $derived($themeStore === 'dark');
 
   function isActive(href: string): boolean {
     return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
@@ -264,7 +276,7 @@
   function getInitials(user?: AuthUser) {
     if (!user) return 'U';
     const first = user.firstName?.[0] ?? '';
-    const last  = user.lastName?.[0]  ?? '';
+    const last = user.lastName?.[0] ?? '';
     return `${first}${last}`.trim() || 'U';
   }
 
@@ -284,11 +296,69 @@
     await goto('/profile/create');
   }
 
+  function mapMembershipUsers(users: MembershipUser[]): AuthUser[] {
+    return users.map((user) => ({
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      image: user.image,
+      instituteId: null,
+      teacherId: null,
+      adminId: null
+    }));
+  }
+
+  async function loadUsersIfMissing() {
+    if (isLoadingUsers) return;
+
+    const token = $authStore.token;
+
+    if (!token) return;
+    if ($authStore.users.length > 0) return;
+
+    isLoadingUsers = true;
+
+    try {
+      const response = await getMembershipUsers(token);
+
+      if (!response.success) return;
+
+      const membershipResponse = response.data;
+
+      if (!membershipResponse?.ok) return;
+
+      const apiUsers = membershipResponse.data?.users ?? [];
+      const mappedUsers = mapMembershipUsers(apiUsers);
+
+      authStore.setUsers(mappedUsers);
+    } catch (error) {
+      console.error('Failed to load membership users', error);
+    } finally {
+      isLoadingUsers = false;
+    }
+  }
+
+  onMount(() => {
+    loadUsersIfMissing();
+  });
+
   const currentUser = $derived($authStore.users[selectedUserIndex] ?? $authStore.users[0] ?? null);
 
   $effect(() => {
-    if ($authStore.users.length === 0) { selectedUserIndex = 0; return; }
-    if (selectedUserIndex > $authStore.users.length - 1) selectedUserIndex = 0;
+    if ($authStore.token && $authStore.users.length === 0) {
+      loadUsersIfMissing();
+    }
+  });
+
+  $effect(() => {
+    if ($authStore.users.length === 0) {
+      selectedUserIndex = 0;
+      return;
+    }
+
+    if (selectedUserIndex > $authStore.users.length - 1) {
+      selectedUserIndex = 0;
+    }
   });
 
   onMount(() => {
@@ -304,21 +374,17 @@
 <!-- ── Root layout: h-dvh constrains to viewport so main content scrolls ── -->
 <div class="flex h-dvh min-h-0 bg-[var(--page-bg)] font-sans text-[var(--page-text)]">
 
-  <!-- ════════════════════════════════════════
-       SIDEBAR
-  ════════════════════════════════════════ -->
   <aside class="
     relative flex h-dvh flex-shrink-0 flex-col overflow-hidden
     border-r border-[var(--sb-border-color)]
     bg-[linear-gradient(160deg,var(--sb-bg-from)_0%,var(--sb-bg-to)_100%)]
-    shadow-[4px_0_32px_rgba(5,7,13,0.6)]
+    shadow-[var(--sb-shadow)]
     transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
     before:absolute before:inset-x-0 before:top-0 before:h-px before:pointer-events-none
     before:bg-[linear-gradient(90deg,transparent,var(--sb-edge-glow),transparent)]
     {sidebarCollapsed ? 'w-[var(--sb-width-collapsed)]' : 'w-[var(--sb-width-expanded)]'}
   ">
 
-    <!-- Header / brand -->
     <div class="flex items-center gap-3 px-4 py-[18px] min-h-[68px] border-b border-[var(--sb-divider)] flex-shrink-0">
       <div class="
         flex-shrink-0 w-9 h-9 rounded-[10px] flex items-center justify-center
@@ -420,7 +486,6 @@
       {/each}
     </nav>
 
-    <!-- Collapse toggle -->
     <div class="px-2.5 py-2.5 border-t border-[var(--sb-divider)] flex-shrink-0">
       <button
         onclick={toggleSidebar}
@@ -466,8 +531,6 @@
       backdrop-blur-md
     ">
       <div class="flex items-center justify-between gap-4">
-
-        <!-- Search -->
         <div class="relative w-full max-w-[560px]">
           <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--topbar-search-icon)]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -491,8 +554,6 @@
             "
           />
         </div>
-
-        <!-- Right actions -->
         <div class="flex items-center gap-2.5 flex-shrink-0">
 
           <!-- Theme: light / dark -->
@@ -547,7 +608,6 @@
             <span class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[var(--topbar-notif-dot)]"></span>
           </button>
 
-          <!-- Profile trigger -->
           <div class="relative">
             <button
               type="button"
@@ -586,9 +646,7 @@
               </span>
             </button>
 
-            <!-- Dropdown -->
             {#if profileDropdownOpen}
-              <!-- Backdrop -->
               <button
                 class="fixed inset-0 z-10 cursor-default bg-transparent"
                 aria-label="Close dropdown"
@@ -601,13 +659,10 @@
                 border border-[var(--topbar-dd-border)]
                 shadow-[var(--topbar-dd-shadow)]
               ">
-                <!-- Dropdown header -->
                 <div class="border-b border-[var(--topbar-dd-header-border)] px-4 py-3.5">
                   <p class="text-sm font-semibold text-[var(--topbar-dd-header-title)]">Switch user</p>
                   <p class="mt-0.5 text-xs text-[var(--topbar-dd-header-sub)]">Choose a user from auth store</p>
                 </div>
-
-                <!-- User list -->
                 <div class="max-h-[240px] overflow-y-auto px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {#if $authStore.users.length > 0}
                     {#each $authStore.users as user, index}
@@ -638,7 +693,6 @@
                           <p class="truncate text-sm font-semibold text-[var(--topbar-dd-item-name)]">
                             {user.firstName} {user.lastName}
                           </p>
-                          <p class="truncate text-xs text-[var(--topbar-dd-item-sub)]">{user._id}</p>
                         </div>
 
                         {#if selectedUserIndex === index}
@@ -656,8 +710,6 @@
                     </div>
                   {/if}
                 </div>
-
-                <!-- Footer actions -->
                 <div class="border-t border-[var(--topbar-dd-footer-border)] p-2 flex flex-col gap-1">
                   <button
                     type="button"
