@@ -40,24 +40,24 @@
       selectedBorder: 'border-[var(--login-option-student-border)]',
       selectedGlow:   'shadow-[var(--login-option-student-glow)]',
       iconSelectedBg: 'bg-[var(--login-icon-student-bg)]',
-      iconColor:      'text-[#4f7eff]',
-      radioDot:       'bg-[#4f7eff]'
+      iconColor:      'text-[var(--login-icon-student-color)]',
+      radioDot:       'bg-[var(--login-icon-student-color)]'
     },
     tutor: {
       selectedBg:     'bg-[var(--login-option-tutor-bg)]',
       selectedBorder: 'border-[var(--login-option-tutor-border)]',
       selectedGlow:   'shadow-[var(--login-option-tutor-glow)]',
       iconSelectedBg: 'bg-[var(--login-icon-tutor-bg)]',
-      iconColor:      'text-[#f59e0b]',
-      radioDot:       'bg-[#f59e0b]'
+      iconColor:      'text-[var(--login-icon-tutor-color)]',
+      radioDot:       'bg-[var(--login-icon-tutor-color)]'
     },
     institute: {
       selectedBg:     'bg-[var(--login-option-institute-bg)]',
       selectedBorder: 'border-[var(--login-option-institute-border)]',
       selectedGlow:   'shadow-[var(--login-option-institute-glow)]',
       iconSelectedBg: 'bg-[var(--login-icon-institute-bg)]',
-      iconColor:      'text-[#8b5cf6]',
-      radioDot:       'bg-[#8b5cf6]'
+      iconColor:      'text-[var(--login-icon-institute-color)]',
+      radioDot:       'bg-[var(--login-icon-institute-color)]'
     }
   };
 </script>

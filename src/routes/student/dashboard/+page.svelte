@@ -1,276 +1,345 @@
 <script lang="ts">
-  type Exam = { id: string; name: string; logo: string; };
-  type Tool = { id: string; label: string; icon: 'ncert' | 'ar' | 'diagram' | 'match' };
+	import { fromStore } from 'svelte/store';
+	import { examStore, STUDENT_EXAMS_PAGE_SIZE } from '$lib/stores/exam';
+	import { fetchExamsPage } from '$lib/api/exams';
+	import type { Exam } from '$lib/api/exams';
 
-  // Replace with your API data
-  const exams: Exam[] = [
-    { id: 'jee',    name: 'JEE Mains', logo: '/logos/jee.png'    },
-    { id: 'neet',   name: 'NEET',      logo: '/logos/neet.png'   },
-    { id: 'mhtcet', name: 'MHT CET',   logo: '/logos/mhtcet.png' },
-    { id: 'gujcet', name: 'GUJCET',    logo: '/logos/gujcet.png' },
-  ];
+	const DASHBOARD_EXAMS_PAGE = 1;
+	const FEATURED_EXAMS_COUNT = 7;
 
-  const tools: Tool[] = [
-    { id: 'ncert',   label: 'NCERT Line by line', icon: 'ncert'   },
-    { id: 'ar',      label: 'AR & Statement',      icon: 'ar'      },
-    { id: 'diagram', label: 'Diagram',              icon: 'diagram' },
-    { id: 'match',   label: 'Match Type',           icon: 'match'   },
-  ];
+	const exams = fromStore(examStore);
 
-  const socialLinks = [
-    { id: 'youtube',   label: 'YouTube',   href: '#', color: '#FF4444' },
-    { id: 'instagram', label: 'Instagram', href: '#', color: '#E1306C' },
-    { id: 'telegram',  label: 'Telegram',  href: '#', color: '#229ED9' },
-    { id: 'facebook',  label: 'Facebook',  href: '#', color: '#1877F2' },
-    { id: 'linkedin',  label: 'LinkedIn',  href: '#', color: '#0A66C2' },
-    { id: 'whatsapp',  label: 'WhatsApp',  href: '#', color: '#25D366' },
-  ];
+	let isExamsLoading = $state(false);
+	let examsFetchError = $state<string | null>(null);
 
-  // Svelte 5 event handler for broken images
-  function handleImgError(e: Event) {
-    const img = e.currentTarget as HTMLImageElement;
-    img.style.display = 'none';
-  }
+	const pageOneExams = $derived(exams.current.examsByPage[DASHBOARD_EXAMS_PAGE] ?? []);
+	const featuredExams = $derived(pageOneExams.slice(0, FEATURED_EXAMS_COUNT) as Exam[]);
+	/** Must read `$examStore` so this updates after fetch (`hasPage` uses `get()` internally). */
+	const hasExamsLoaded = $derived.by(() => {
+		$examStore;
+		return examStore.hasPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE);
+	});
+
+	$effect(() => {
+		if (examStore.hasPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE) || isExamsLoading) return;
+		isExamsLoading = true;
+		examsFetchError = null;
+		fetchExamsPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE)
+			.then((res) => {
+				examStore.setExamsPage(DASHBOARD_EXAMS_PAGE, res.data, {
+					total: res.total,
+					lastPage: res.lastPage,
+					limit: res.limit
+				});
+			})
+			.catch((e) => {
+				examsFetchError = e instanceof Error ? e.message : 'Failed to fetch exams';
+			})
+			.finally(() => {
+				isExamsLoading = false;
+			});
+	});
+
 </script>
 
-<div class="min-h-screen bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
-  <div class="max-w-4xl mx-auto px-4 py-8 space-y-10">
+<svelte:head>
+	<title>Student Dashboard</title>
+</svelte:head>
 
-    <!-- ══ HERO ══ -->
-    <div class="relative overflow-hidden rounded-3xl px-8 py-10 text-center
-      bg-[linear-gradient(135deg,var(--sh-ai-card-bg)_0%,var(--sh-banner-bg)_100%)]
-      border border-[var(--sh-ai-card-border)]">
-      <!-- Decorative glow blobs -->
-      <div class="pointer-events-none absolute -top-12 -left-12 h-48 w-48 rounded-full bg-[var(--sb-nav-active-indicator)] opacity-10 blur-3xl"></div>
-      <div class="pointer-events-none absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[var(--sh-ai-pill-icon)] opacity-10 blur-3xl"></div>
+<div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
+	{#if isExamsLoading && !hasExamsLoaded}
+		<div class="flex min-h-[40vh] items-center justify-center text-[var(--page-text-muted)]">Loading…</div>
+	{:else if examsFetchError}
+		<div class="flex min-h-[40vh] items-center justify-center text-semantic-error">{examsFetchError}</div>
+	{:else}
+		<!-- Hero banner -->
+		<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
+			<img
+				src="/Student-dash.png"
+				alt="ExamFlow student mascot"
+				class="student-dash-mascot h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
+			/>
+			<div>
+				<h1 class="text-2xl font-extrabold tracking-tight sm:text-4xl">
+					<span
+						class="bg-gradient-to-r from-[var(--marketing-exam-a)] via-[var(--marketing-exam-b)] to-[var(--marketing-exam-c)] bg-clip-text text-transparent"
+					>
+						EXAM
+					</span>
+					<span
+						class="bg-gradient-to-r from-[var(--marketing-flow-a)] to-[var(--marketing-flow-b)] bg-clip-text text-transparent"
+					>
+						FLOW
+					</span>
+				</h1>
+				<p class="text-base font-semibold text-[var(--marketing-tagline)] sm:text-xl">For Students</p>
+			</div>
+		</section>
 
-      <div class="relative flex justify-center mb-4">
-        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8B5CF6_0%,#4f7eff_100%)] shadow-[0_0_32px_rgba(139,92,246,0.4)]">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M9 7v4l1.5-1L12 11V7" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-      </div>
-      <h1 class="text-3xl font-extrabold tracking-tight text-[var(--sh-section-title)]">EXAMFLOW</h1>
-      <p class="mt-1 text-base font-semibold text-[var(--sb-nav-active-indicator)]">For Students</p>
-      <p class="mt-2 text-sm text-[var(--sh-ai-sub)] max-w-xs mx-auto">Practice smarter. Track progress. Ace every exam.</p>
-    </div>
+		<!-- Chapter wise PYQ -->
+		<section class="min-w-0" aria-labelledby="pyq-heading">
+			<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
+					Chapter wise PYQ
+				</h2>
+				<a
+					href="/student/exams"
+					class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
+				>
+					View All
+				</a>
+			</div>
 
-    <!-- ══ QUESTIONS BY CHAPTER ══ -->
-    <section>
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-base font-bold text-[var(--sh-section-title)]">Questions by Chapter</h2>
-          <p class="text-xs text-[var(--sh-ai-sub)] mt-0.5">Explore subject-wise chapters</p>
-        </div>
-        <a href="/student/exams" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-section-link)] hover:text-[var(--sh-section-link-hover)] transition-colors">View All →</a>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {#each exams as exam}
-          <a href="/student/exams/{exam.id}/chapters"
-            class="group relative flex flex-col justify-between rounded-2xl p-4 min-h-[110px] overflow-hidden bg-[var(--sh-exam-card-bg)] border border-[var(--sh-exam-card-border)] transition-all duration-200 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)] hover:-translate-y-0.5">
-            <span class="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-exam-card-arrow-color)] transition-colors group-hover:bg-[var(--sh-exam-card-arrow-hover-bg)]">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-            <p class="text-sm font-semibold text-[var(--sh-exam-card-title)] pr-7 leading-tight">{exam.name}</p>
-            <div class="flex justify-end mt-3">
-              <div class="h-11 w-11 rounded-full overflow-hidden bg-[var(--sh-exam-card-arrow-bg)] flex items-center justify-center ring-2 ring-[var(--sh-exam-card-border)]">
-                <img src={exam.logo} alt={exam.name} class="h-full w-full object-contain" onerror={handleImgError}/>
-              </div>
-            </div>
-          </a>
-        {/each}
-      </div>
-    </section>
+			<div
+				class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+			>
+				{#each featuredExams as exam (exam._id)}
+					<a
+						href="/student/exams/{exam.slug}/subject"
+						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
+					>
+						{#if exam.image}
+							<img
+								src={exam.image}
+								alt=""
+								class="h-9 w-9 shrink-0 rounded-full border border-[var(--page-card-border)] object-cover ring-1 ring-[var(--page-card-border)]"
+							/>
+						{:else}
+							<div
+								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
+							>
+								{exam.name.en[0]?.toUpperCase() ?? '?'}
+							</div>
+						{/if}
+						<span
+							class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
+						>
+							{exam.name.en}
+						</span>
+						{#if exam.name.hi}
+							<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
+								{exam.name.hi}
+							</span>
+						{/if}
+					</a>
+				{/each}
+			</div>
 
-    <!-- ══ TOOLBOX ══ -->
-    <section>
-      <div class="flex items-end gap-4 mb-4">
-        <div>
-          <span class="text-xs font-bold uppercase tracking-widest text-[var(--sh-toolbox-label)]">Toolbox</span>
-          <p class="text-sm font-medium text-[var(--sh-section-title)] mt-0.5">For future Doctors &amp; Engineers</p>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {#each tools as tool}
-          <a href="/student/tools/{tool.id}"
-            class="group flex flex-col items-center justify-center gap-3 rounded-2xl py-6 px-4 text-center bg-[var(--sh-tool-card-bg)] border border-[var(--sh-tool-card-border)] transition-all duration-200 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)] hover:-translate-y-0.5">
-            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-tool-card-icon)] transition-colors group-hover:bg-[var(--sh-tool-card-hover-border)]/10">
-              {#if tool.icon === 'ncert'}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7l9 5 9-5-9-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              {:else if tool.icon === 'ar'}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              {:else if tool.icon === 'diagram'}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M17.5 14v7M14 17.5h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-              {:else if tool.icon === 'match'}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="19" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
-              {/if}
-            </span>
-            <span class="text-xs font-semibold leading-snug text-[var(--sh-tool-card-text)]">{tool.label}</span>
-          </a>
-        {/each}
-      </div>
-    </section>
+			{#if featuredExams.length === 0 && !isExamsLoading}
+				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
+			{/if}
+		</section>
 
-    <!-- ══ CHAPTER WISE PYQ ══ -->
-    <section>
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-base font-bold text-[var(--sh-section-title)]">Chapter wise PYQ</h2>
-          <p class="text-xs text-[var(--sh-ai-sub)] mt-0.5">Previous year questions by chapter</p>
-        </div>
-        <a href="/student/pyq" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-section-link)] hover:text-[var(--sh-section-link-hover)] transition-colors">View All →</a>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {#each exams as exam}
-          <a href="/student/pyq/{exam.id}"
-            class="group relative flex flex-col justify-between rounded-2xl p-4 min-h-[110px] overflow-hidden bg-[var(--sh-exam-card-bg)] border border-[var(--sh-exam-card-border)] transition-all duration-200 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)] hover:-translate-y-0.5">
-            <span class="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-exam-card-arrow-color)] transition-colors group-hover:bg-[var(--sh-exam-card-arrow-hover-bg)]">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-            <p class="text-sm font-semibold text-[var(--sh-exam-card-title)] pr-7 leading-tight">{exam.name}</p>
-            <div class="flex justify-end mt-3">
-              <div class="h-11 w-11 rounded-full overflow-hidden bg-[var(--sh-exam-card-arrow-bg)] flex items-center justify-center ring-2 ring-[var(--sh-exam-card-border)]">
-                <img src={exam.logo} alt={exam.name} class="h-full w-full object-contain" onerror={handleImgError}/>
-              </div>
-            </div>
-          </a>
-        {/each}
-      </div>
-    </section>
+		<!-- Questions by Chapter -->
+		<section class="mt-10 min-w-0" aria-labelledby="qbc-heading">
+			<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<h2 id="qbc-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
+					Questions by Chapter
+				</h2>
+				<a
+					href="/student/exams"
+					class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
+				>
+					View All
+				</a>
+			</div>
 
-    <!-- ══ ACTION BANNERS ══ -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <!-- PYQ Mock Tests -->
-      <a href="/student/tests/pyq"
-        class="group relative flex items-center justify-between gap-4 rounded-2xl px-5 py-5 overflow-hidden bg-[var(--sh-banner-bg)] border border-[var(--sh-banner-border)] transition-all duration-200 hover:shadow-[var(--sh-banner-hover-shadow)] hover:border-[var(--sh-exam-card-hover-border)] hover:-translate-y-0.5">
-        <!-- NEW badge -->
-        <span class="absolute -top-px left-1/2 -translate-x-1/2 px-4 py-0.5 rounded-b-xl text-[10px] font-bold tracking-widest bg-[var(--sh-badge-new-bg)] text-[var(--sh-badge-new-text)]">NEW</span>
-        <div class="flex items-center gap-3 mt-2">
-          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-icon)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.75"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
-          </span>
-          <span class="text-sm font-semibold text-[var(--sh-banner-title)]">PYQ Mock Tests</span>
-        </div>
-        <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-arrow-color)] transition-colors group-hover:bg-[var(--sh-banner-arrow-hover-bg)]">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-      </a>
+			<div
+				class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+			>
+				{#each featuredExams as exam (exam._id)}
+					<a
+						href="/student/exams/{exam.slug}/subject"
+						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
+					>
+						{#if exam.image}
+							<img
+								src={exam.image}
+								alt=""
+								class="h-9 w-9 shrink-0 rounded-full border border-[var(--page-card-border)] object-cover ring-1 ring-[var(--page-card-border)]"
+							/>
+						{:else}
+							<div
+								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
+							>
+								{exam.name.en[0]?.toUpperCase() ?? '?'}
+							</div>
+						{/if}
+						<span
+							class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
+						>
+							{exam.name.en}
+						</span>
+						{#if exam.name.hi}
+							<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
+								{exam.name.hi}
+							</span>
+						{/if}
+					</a>
+				{/each}
+			</div>
 
-      <a href="/student/tests/own"
-        class="group flex items-center justify-between gap-4 rounded-2xl px-5 py-5 bg-[var(--sh-banner-bg)] border border-[var(--sh-banner-border)] transition-all duration-200 hover:shadow-[var(--sh-banner-hover-shadow)] hover:border-[var(--sh-exam-card-hover-border)] hover:-translate-y-0.5">
-        <div class="flex items-center gap-3">
-          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-icon)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M9 9l3 2-3 2V9Z" fill="currentColor"/></svg>
-          </span>
-          <span class="text-sm font-semibold text-[var(--sh-banner-title)]">Join Online Mock Tests</span>
-        </div>
-        <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-arrow-color)] transition-colors group-hover:bg-[var(--sh-banner-arrow-hover-bg)]">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-      </a>
+			{#if featuredExams.length === 0 && !isExamsLoading}
+				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
+			{/if}
+		</section>
 
-      <a href="/student/tests/batch"
-        class="group flex items-center justify-between gap-4 rounded-2xl px-5 py-5 bg-[var(--sh-banner-bg)] border border-[var(--sh-banner-border)] transition-all duration-200 hover:shadow-[var(--sh-banner-hover-shadow)] hover:border-[var(--sh-exam-card-hover-border)] hover:-translate-y-0.5">
-        <div class="flex items-center gap-3">
-          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-icon)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M9 9l3 2-3 2V9Z" fill="currentColor"/></svg>
-          </span>
-          <span class="text-sm font-semibold text-[var(--sh-banner-title)]">Batch Mock Tests</span>
-        </div>
-        <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--sh-banner-arrow-bg)] text-[var(--sh-banner-arrow-color)] transition-colors group-hover:bg-[var(--sh-banner-arrow-hover-bg)]">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-      </a>
-    </section>
+		<!-- CTA row: PYQ Mock Tests + Create Your Own Test -->
+		<section class="mt-10 min-w-0" aria-label="Quick actions">
+			<div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:gap-4">
+				<a
+					href="/student/tests"
+					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
+				>
+					<span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-pink)]" aria-hidden="true">
+						<svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+							<path
+								d="M8 4h8a2 2 0 0 1 2 2v14l-6-3-6 3V6a2 2 0 0 1 2-2z"
+								stroke="currentColor"
+								stroke-width="1.6"
+								stroke-linejoin="round"
+							/>
+							<path d="M9 9h6M9 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+						</svg>
+					</span>
+					<span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">PYQ Mock Tests</span>
+					<span
+						class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]"
+					>
+						New
+					</span>
+					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
+				</a>
 
-    <section>
-      <a href="/student/chapter-ai"
-        class="group flex flex-col sm:flex-row sm:items-center gap-5 rounded-2xl px-6 py-5 bg-[var(--sh-ai-card-bg)] border border-[var(--sh-ai-card-border)] transition-all duration-200 hover:shadow-[var(--sh-ai-card-hover-shadow)] hover:-translate-y-0.5">
-        <div class="flex items-center gap-4 flex-1">
-          <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[var(--sh-ai-pill-bg)] text-[var(--sh-ai-pill-icon)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.4"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          </span>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <p class="text-base font-bold text-[var(--sh-ai-title)]">Chapter AI</p>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[var(--sh-ai-title)]"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <p class="text-xs text-[var(--sh-ai-sub)] mt-0.5">Your Smart Learning Assistant for Every Chapter</p>
-          </div>
-        </div>
-        <div class="flex gap-2 flex-wrap">
-          {#each ['Powered by AI', 'Chapter-Wise Support'] as pill}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-[var(--sh-ai-pill-bg)] border border-[var(--sh-ai-pill-border)] text-[var(--sh-ai-pill-text)]">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="text-[var(--sh-ai-pill-icon)]"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-              {pill}
-            </span>
-          {/each}
-        </div>
-      </a>
-    </section>
+				<a
+					href="/student/tests"
+					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
+				>
+					<span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-cyan)]" aria-hidden="true">
+						<svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+							<path
+								d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
+								stroke="currentColor"
+								stroke-width="1.6"
+								stroke-linecap="round"
+							/>
+							<rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+							<path d="M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+						</svg>
+					</span>
+					<span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Create Your Own Test</span>
+					<span
+						class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]"
+					>
+						Updated
+					</span>
+					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
+				</a>
+			</div>
+		</section>
+		<!-- WhatsApp Community -->
+		<section class="mt-10 min-w-0" aria-label="WhatsApp community">
+			<div
+				class="flex flex-col items-start gap-4 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--dash-glass-bg)] p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+			>
+				<div class="flex min-w-0 items-start gap-3 sm:items-center">
+					<span class="flex h-10 w-10 shrink-0 items-center justify-center" aria-hidden="true">
+						<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+							<circle cx="16" cy="16" r="14" fill="var(--whatsapp-brand)"/>
+							<path d="M22.8 9.1a9.5 9.5 0 0 0-15.2 11l-1.1 4.1 4.2-1.1a9.5 9.5 0 0 0 12.1-14Zm-3 7.5c-.2.7-1.2 1.3-1.7 1.4-.4 0-.9.2-3-1-2.4-1.4-3.9-3.7-4-3.9-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .7.5.2.5.8 2 .9 2.1 0 .2 0 .3-.1.5l-.4.6c-.2.2-.3.4-.2.7.2.3.8 1.3 1.7 2.1 1.1 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1.2-.2.8-1 1-1.3.3-.3.5-.3.8-.2.3.1 1.8.9 2.1 1 .3.2.5.2.6.4.1.1.1.7-.1 1.4Z" fill="white"/>
+						</svg>
+					</span>
+					<div class="min-w-0">
+						<p class="text-sm font-bold text-[var(--page-text)] sm:text-base">Join Our WhatsApp Community</p>
+						<p class="mt-0.5 text-xs leading-relaxed text-[var(--page-text-muted)] sm:text-sm">
+							Connect with peers, get instant updates, and receive exclusive study materials directly on WhatsApp.
+						</p>
+					</div>
+				</div>
+				<a
+					href="https://whatsapp.com"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-[var(--whatsapp-brand)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--whatsapp-shadow)] transition hover:bg-[var(--whatsapp-brand-hover)] hover:shadow-[var(--whatsapp-shadow-hover)] active:scale-[0.97]"
+				>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M17.5 14.4c-.3-.1-1.6-.8-1.8-.9-.3-.1-.5-.1-.7.2-.2.2-.7.9-.9 1-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.4c.1-.2.2-.3.1-.5 0-.2-.7-1.6-.9-2.2-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.3-.3.3-1 1-1 2.5s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.2.2-1.3 0-.1-.2-.2-.5-.3ZM12 21.5c-1.8 0-3.5-.5-5-1.4l-.4-.2-3.6 1 1-3.5-.2-.4A9.4 9.4 0 0 1 12 2.5a9.5 9.5 0 0 1 0 19Z" fill="white"/>
+					</svg>
+					Join Community
+				</a>
+			</div>
+		</section>
+		<!-- Divider with logo -->
+		<div class="relative mt-16 flex items-center justify-center">
+			<div class="absolute inset-x-0 top-1/2 h-px bg-[var(--dash-divider)]"></div>
+			<div class="relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--logo-divider-ring)] bg-[var(--page-bg)]">
+				<svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+					<path d="M8 6h6l4 6-4 6H8l4-6L8 6Z" fill="var(--logo-orange)"/>
+					<path d="M18 6h6l-4 6 4 6h-6l-4-6 4-6Z" fill="var(--logo-blue)"/>
+				</svg>
+			</div>
+		</div>
 
-    <!-- ══ WHATSAPP ══ -->
-    <section>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-2xl px-6 py-5 bg-[var(--sh-wa-card-bg)] border border-[var(--sh-wa-card-border)]">
-        <div class="flex items-start gap-3">
-          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[rgba(34,197,94,0.14)]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <div>
-            <p class="text-sm font-bold text-[var(--sh-wa-title)]">Join Our WhatsApp Community</p>
-            <p class="mt-1 text-xs leading-relaxed text-[var(--sh-wa-sub)]">Connect with peers, get updates, and receive exclusive study materials.</p>
-          </div>
-        </div>
-        <a href="https://wa.me/" target="_blank" rel="noopener noreferrer"
-          class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sh-wa-btn-bg)] text-[var(--sh-wa-btn-text)] shadow-[var(--sh-wa-btn-shadow)] transition-colors hover:bg-[var(--sh-wa-btn-hover-bg)]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Join Community
-        </a>
-      </div>
-    </section>
+		<!-- Social media section -->
+		<section class="mt-8 min-w-0 pb-6 text-center" aria-label="Social media links">
+			<h2 class="text-xl font-bold text-[var(--page-text)] sm:text-2xl">We're on social media</h2>
+			<p class="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-[var(--page-text-muted)]">
+				Follow us &amp; share with your friends. It motivates us to keep working hard for you to bring new features &amp; keep the app FREE.
+			</p>
 
-    <!-- ══ FOR TEACHER ══ -->
-    <section>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-2xl px-6 py-5 bg-[var(--sh-teacher-card-bg)] border border-[var(--sh-teacher-card-border)]">
-        <div>
-          <p class="text-base font-bold text-[var(--sh-teacher-title)]">ExamFlow for Teacher</p>
-          <p class="mt-0.5 text-xs text-[var(--sh-teacher-sub)]">Create exam papers and manage exams with ease.</p>
-        </div>
-        <a href="/tutor/dashboard"
-          class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sh-teacher-btn-bg)] text-[var(--sh-teacher-btn-text)] shadow-[var(--sh-teacher-btn-shadow)] transition-shadow hover:shadow-[var(--sh-teacher-btn-hover-shadow)]">
-          Switch to Teacher
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-      </div>
-    </section>
-
-    <!-- ══ SOCIAL MEDIA ══ -->
-    <section class="pb-6">
-      <div class="flex items-center gap-4 mb-6">
-        <div class="flex-1 h-px bg-[var(--sh-social-divider)]"></div>
-        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--sh-exam-card-arrow-bg)] ring-1 ring-[var(--sh-exam-card-border)]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" stroke="var(--sb-nav-active-indicator)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2" stroke="var(--sb-nav-active-indicator)" stroke-width="1.8" stroke-linecap="round"/><path d="M9 7v4l1.5-1L12 11V7" stroke="var(--sb-nav-active-indicator)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="flex-1 h-px bg-[var(--sh-social-divider)]"></div>
-      </div>
-      <div class="text-center mb-5">
-        <p class="text-lg font-bold text-[var(--sh-social-title)]">We're on social media</p>
-        <p class="mt-1.5 text-xs leading-relaxed text-[var(--sh-social-sub)] max-w-sm mx-auto">Follow us &amp; share with friends. It motivates us to keep working hard and keep the app FREE.</p>
-      </div>
-      <div class="grid grid-cols-3 gap-3">
-        {#each socialLinks as social}
-          <a href={social.href} target="_blank" rel="noopener noreferrer"
-            class="flex items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-medium bg-[var(--sh-social-btn-bg)] border border-[var(--sh-social-btn-border)] text-[var(--sh-social-btn-text)] transition-all duration-150 hover:bg-[var(--sh-social-btn-hover-bg)] hover:border-[var(--sh-social-btn-hover-border)] hover:text-[var(--sh-social-btn-hover-text)]">
-            <!-- Simple colored dot instead of complex SVG per platform -->
-            <span class="h-3 w-3 rounded-full flex-shrink-0" style="background-color: {social.color}"></span>
-            <span>{social.label}</span>
-          </a>
-        {/each}
-      </div>
-    </section>
-
-  </div>
+			<div class="mx-auto mt-6 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+				<a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+					class="flex items-center justify-center gap-2.5 rounded-xl border border-[var(--dash-glass-border)] bg-[var(--dash-glass-bg)] px-4 py-3 text-sm font-medium text-[var(--page-text)] transition hover:border-[var(--dash-glass-hover-border)] hover:bg-[var(--dash-glass-hover-bg)]">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<rect x="2" y="4" width="20" height="16" rx="4" fill="var(--social-youtube)"/>
+						<path d="M10 8.5v7l5.5-3.5L10 8.5Z" fill="white"/>
+					</svg>
+					YouTube
+				</a>
+				<a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
+					class="flex items-center justify-center gap-2.5 rounded-xl border border-[var(--dash-glass-border)] bg-[var(--dash-glass-bg)] px-4 py-3 text-sm font-medium text-[var(--page-text)] transition hover:border-[var(--dash-glass-hover-border)] hover:bg-[var(--dash-glass-hover-bg)]">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<defs><linearGradient id="ig" x1="2" y1="22" x2="22" y2="2"><stop stop-color="var(--social-ig-grad-1)"/><stop offset=".5" stop-color="var(--social-ig-grad-2)"/><stop offset="1" stop-color="var(--social-ig-grad-3)"/></linearGradient></defs>
+						<rect x="2" y="2" width="20" height="20" rx="6" fill="url(#ig)"/>
+						<rect x="5.5" y="5.5" width="13" height="13" rx="4" stroke="var(--social-instagram-accent)" stroke-width="1.5" fill="none"/>
+						<circle cx="12" cy="12" r="3.5" stroke="var(--social-instagram-accent)" stroke-width="1.5" fill="none"/>
+						<circle cx="17" cy="7" r="1" fill="var(--social-instagram-accent)"/>
+					</svg>
+					Instagram
+				</a>
+				<a href="https://telegram.org" target="_blank" rel="noopener noreferrer"
+					class="flex items-center justify-center gap-2.5 rounded-xl border border-[var(--dash-glass-border)] bg-[var(--dash-glass-bg)] px-4 py-3 text-sm font-medium text-[var(--page-text)] transition hover:border-[var(--dash-glass-hover-border)] hover:bg-[var(--dash-glass-hover-bg)]">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<circle cx="12" cy="12" r="10" fill="var(--social-telegram)"/>
+						<path d="M7 12.5l2.5 2L17 8l-1 8.5-3.5-2-1.5 2v-3L7 12.5Z" fill="white"/>
+					</svg>
+					Telegram
+				</a>
+				<a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
+					class="flex items-center justify-center gap-2.5 rounded-xl border border-[var(--dash-glass-border)] bg-[var(--dash-glass-bg)] px-4 py-3 text-sm font-medium text-[var(--page-text)] transition hover:border-[var(--dash-glass-hover-border)] hover:bg-[var(--dash-glass-hover-bg)]">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<circle cx="12" cy="12" r="10" fill="var(--social-facebook)"/>
+						<path d="M15.5 12.5h-2V19h-3v-6.5H9V10h1.5V8.5c0-2 1-3 3-3h2V8h-1.5c-.6 0-.8.3-.8.8V10h2.3l-.5 2.5Z" fill="white"/>
+					</svg>
+					Facebook
+				</a>
+				<a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"
+					class="flex items-center justify-center gap-2.5 rounded-xl border border-[var(--dash-glass-border)] bg-[var(--dash-glass-bg)] px-4 py-3 text-sm font-medium text-[var(--page-text)] transition hover:border-[var(--dash-glass-hover-border)] hover:bg-[var(--dash-glass-hover-bg)]">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<rect x="2" y="2" width="20" height="20" rx="4" fill="var(--social-linkedin)"/>
+						<path d="M8 10v6M8 7.5v.01M11 16v-3.5c0-1.5 1-2 2-2s1.5.7 1.5 2V16M11 10v6" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					LinkedIn
+				</a>
+				<a href="https://whatsapp.com" target="_blank" rel="noopener noreferrer"
+					class="flex items-center justify-center gap-2.5 rounded-xl border border-[var(--dash-glass-border)] bg-[var(--dash-glass-bg)] px-4 py-3 text-sm font-medium text-[var(--page-text)] transition hover:border-[var(--dash-glass-hover-border)] hover:bg-[var(--dash-glass-hover-bg)]">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<circle cx="12" cy="12" r="10" fill="var(--social-whatsapp)"/>
+						<path d="M16.6 14c-.2-.1-1.2-.6-1.4-.7-.2-.1-.4-.1-.5.1-.2.2-.5.7-.7.8-.1.1-.3.1-.5 0-.2-.1-.9-.3-1.7-1.1-.6-.6-1.1-1.3-1.2-1.5-.1-.2 0-.3.1-.4l.3-.3c.1-.1.1-.2.1-.4 0-.1-.5-1.2-.7-1.7-.2-.4-.4-.4-.5-.4h-.5c-.1 0-.4 0-.6.3-.2.2-.8.8-.8 1.9s.8 2.1.9 2.3c.1.1 1.5 2.4 3.7 3.3.5.2.9.4 1.2.5.5.1 1 .1 1.3.1.4-.1 1.2-.5 1.4-1 .2-.5.2-.9.1-1 0-.1-.2-.1-.4-.2ZM12 20c-1.4 0-2.7-.4-3.8-1.1l-.3-.2-2.7.7.8-2.7-.2-.3A7.2 7.2 0 0 1 12 4.7 7.3 7.3 0 0 1 12 20Z" fill="white"/>
+					</svg>
+					WhatsApp
+				</a>
+			</div>
+		</section>
+	{/if}
 </div>
