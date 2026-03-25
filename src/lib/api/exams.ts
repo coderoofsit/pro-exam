@@ -1,7 +1,6 @@
 import { apiRequest } from '../../http/api';
 import { resolveApiToken } from './authToken';
 import { BASE_URL } from '$lib/http';
-import { apiRequest } from '../../http/api';
 
 export type ExamApiItem = {
   _id: string;
@@ -74,6 +73,7 @@ function mapExam(item: ExamApiItem): Exam {
     description: item.name?.hi ?? '',
     image: item.image ?? null
   };
+}
 
 export async function getExamsServer(fetchFn: typeof fetch) {
   const res = await fetchFn(`${BASE_URL}/api/v1/exams/all`, {
