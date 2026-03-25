@@ -89,13 +89,39 @@
   --sb-width-expanded:              240px;
   --sb-width-collapsed:             72px;
 
+  /* ─── APP SHELL & MAIN CONTENT ───────────────────────────────────────────
+     Main column background and typography. --topbar-page-bg aliases --page-bg.
+  ─────────────────────────────────────────────────────────────────────── */
+  --page-bg:                          #0C0E1A;
+  --page-text:                        #f8fafc;
+  --page-text-muted:                  #94a3b8;
+  --page-link:                        #a5b4fc;
+  --page-link-hover:                  #c7d2fe;
+  --page-card-bg:                     #1e293b;
+  --page-card-border:                 rgba(148, 163, 184, 0.22);
+  --page-card-heading:                #f8fafc;
+  --page-card-sub:                    #94a3b8;
+  --page-avatar-bg:                   rgba(30, 41, 59, 0.85);
+  --page-avatar-text:                 #cbd5e1;
+
+  /* Dashboard sections (social row, WhatsApp strip, CTA pills) */
+  --dash-glass-border:                rgba(255, 255, 255, 0.1);
+  --dash-glass-bg:                    rgba(255, 255, 255, 0.04);
+  --dash-glass-hover-border:          rgba(148, 163, 184, 0.45);
+  --dash-glass-hover-bg:              rgba(255, 255, 255, 0.08);
+  --dash-cta-bg:                      #1e2128;
+  --dash-cta-hover-bg:                #23272f;
+  --dash-cta-text:                    #ffffff;
+  --dash-cta-chevron:                 rgba(255, 255, 255, 0.7);
+  --dash-divider:                     rgba(148, 163, 184, 0.35);
+
   /* ─── TOPBAR DARK THEME TOKENS ───────────────────────────────────────────
      All topbar-specific values live here under the --topbar- prefix.
      To retheme the topbar, only edit this block.
   ─────────────────────────────────────────────────────────────────────── */
  
-  /* Page background (main content area) */
-  --topbar-page-bg:                   #0C0E1A;
+  /* Page background (main content area) — same as --page-bg */
+  --topbar-page-bg:                   var(--page-bg);
  
   /* Topbar bar itself */
   --topbar-bg:                        rgba(10, 10, 20, 0.85);
@@ -221,4 +247,432 @@
   /* Back to home link */
   --login-back-color:                 #52525B;
   --login-back-hover-color:           #A1A1AA;
+
+  /* ─── PAGINATION (exam lists, question pages) ───────────────────────── */
+  --pagination-btn-bg:                rgba(15, 23, 42, 0.6);
+  --pagination-btn-border:            #1e293b;
+  --pagination-btn-text:              #94a3b8;
+  --pagination-btn-hover-border:      #475569;
+  --pagination-btn-hover-text:        #e2e8f0;
+  --pagination-active-from:           #6366f1;
+  --pagination-active-to:             #818cf8;
+  --pagination-active-text:           #ffffff;
+  --pagination-active-shadow:         0 2px 8px rgb(99 102 241 / 0.4);
+
+  /* ─── QUESTION VIEW (cards, tags, page link) ──────────────────────────── */
+  --question-card-hover-border:       rgb(99 102 241 / 0.35);
+  --question-card-hover-shadow:       0 0 0 1px rgb(99 102 241 / 0.1), 0 4px 24px rgb(0 0 0 / 0.25);
+
+  /* Difficulty / kind tags (question cards) */
+  --q-diff-easy-bg:                   rgb(16 185 129 / 0.1);
+  --q-diff-easy-text:                 #34d399;
+  --q-diff-easy-border:               rgb(16 185 129 / 0.25);
+  --q-diff-easy-dot:                  #34d399;
+  --q-diff-medium-bg:                 rgb(245 158 11 / 0.1);
+  --q-diff-medium-text:               #fbbf24;
+  --q-diff-medium-border:             rgb(245 158 11 / 0.25);
+  --q-diff-medium-dot:                #fbbf24;
+  --q-diff-hard-bg:                   rgb(244 63 94 / 0.1);
+  --q-diff-hard-text:                 #fb7185;
+  --q-diff-hard-border:               rgb(244 63 94 / 0.25);
+  --q-diff-hard-dot:                  #fb7185;
+
+  --q-kind-mcq-bg:                    rgb(14 165 233 / 0.1);
+  --q-kind-mcq-text:                  #38bdf8;
+  --q-kind-mcq-border:                rgb(14 165 233 / 0.25);
+  --q-kind-msq-bg:                    rgb(139 92 246 / 0.1);
+  --q-kind-msq-text:                  #c4b5fd;
+  --q-kind-msq-border:                rgb(139 92 246 / 0.25);
+  --q-kind-nat-bg:                    rgb(6 182 212 / 0.1);
+  --q-kind-nat-text:                  #22d3ee;
+  --q-kind-nat-border:                rgb(6 182 212 / 0.25);
+  --q-kind-tf-bg:                     rgb(20 184 166 / 0.1);
+  --q-kind-tf-text:                   #2dd4bf;
+  --q-kind-tf-border:                 rgb(20 184 166 / 0.25);
+  --q-kind-default-bg:                rgb(100 116 139 / 0.1);
+  --q-kind-default-text:              #94a3b8;
+  --q-kind-default-border:            rgb(100 116 139 / 0.25);
+
+  /* ─── DASHBOARD MARKETING (hero, CTAs — optional hex centralization) ──── */
+  --marketing-exam-a:                 #6366f1;
+  --marketing-exam-b:                 #8b5cf6;
+  --marketing-exam-c:                 #a855f7;
+  --marketing-flow-a:                 #3b82f6;
+  --marketing-flow-b:                 #6366f1;
+  --marketing-tagline:                #a78bfa;
+  --dash-pyq-card-border:             rgba(255, 255, 255, 0.25);
+  --dash-pyq-card-ring:               rgba(255, 255, 255, 0.2);
+  --dash-pyq-card-shadow:             0 6px 20px -10px rgba(15, 23, 42, 0.3);
+  --dash-pyq-card-shadow-hover:       0 10px 24px -8px rgba(37, 99, 235, 0.22);
+  --dash-pyq-radial-blue:             rgb(59 130 246 / 0.35);
+  --accent-cta-pink:                  #ec4899;
+  --accent-cta-cyan:                  #06b6d4;
+  --cta-pink-border:                  rgba(236, 72, 153, 0.5);
+  --cta-pink-border-hover:            rgba(236, 72, 153, 0.8);
+  --cta-pink-glow:                    0 0 24px rgba(236, 72, 153, 0.12);
+  --cta-cyan-border:                  rgba(6, 182, 212, 0.5);
+  --cta-cyan-border-hover:            rgba(6, 182, 212, 0.8);
+  --cta-cyan-glow:                    0 0 24px rgba(6, 182, 212, 0.12);
+  --badge-new-bg:                     #f87171;
+  --badge-new-text:                   #1a1a1a;
+  --whatsapp-brand:                   #25d366;
+  --whatsapp-brand-hover:             #1ebe5b;
+  --whatsapp-border-soft:             rgba(37, 211, 102, 0.4);
+  --whatsapp-shadow:                  0 4px 14px rgba(37, 211, 102, 0.35);
+  --whatsapp-shadow-hover:            0 6px 20px rgba(37, 211, 102, 0.45);
+  --logo-orange:                      #f97316;
+  --logo-blue:                        #3b82f6;
+  --logo-divider-ring:                rgb(56 189 248 / 0.4);
+
+  /* Third-party brand marks (social icons) */
+  --social-youtube:                   #ff0000;
+  --social-telegram:                  #229ed9;
+  --social-facebook:                  #1877f2;
+  --social-linkedin:                  #0a66c2;
+  --social-whatsapp:                  #25d366;
+  --social-instagram-accent:          #e1306c;
+  --social-ig-grad-1:                 #ffdc80;
+  --social-ig-grad-2:                 #f56040;
+  --social-ig-grad-3:                 #833ab4;
+
+  /* Semantic (errors, validation) */
+  --semantic-error-text:              #f87171;
+  --semantic-error-text-strong:       #ef4444;
+  --semantic-error-bg-soft:           rgba(127, 29, 29, 0.25);
+  --semantic-error-border-soft:       rgba(248, 113, 113, 0.4);
+  --semantic-error-box-text:          #fecaca;
+
+  /* Sidebar logo tile gradient (brand mark) */
+  --sb-logo-gradient-from:            #8b5cf6;
+  --sb-logo-gradient-to:              #6d28d9;
+  /* Sidebar top edge highlight (decorative line) */
+  --sb-edge-glow:                     rgb(139 92 246 / 0.5);
+
+  /* Subject grid cards — rotating border accents */
+  --subject-picker-accent-0:          #3b82f6;
+  --subject-picker-accent-1:          #10b981;
+  --subject-picker-accent-2:          #f59e0b;
+  --subject-picker-accent-3:          #f43f5e;
+
+  /* Login role icons / radio (alias brand roles) */
+  --login-icon-student-color:         #4f7eff;
+  --login-icon-tutor-color:           #f59e0b;
+  --login-icon-institute-color:       #8b5cf6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME MODE: default is dark (matches @theme). Inline script in app.html sets
+   html[data-theme] from localStorage before paint.
+═══════════════════════════════════════════════════════════════════════════ */
+
+html {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  /* Main column */
+  --page-bg:                          #eef2f7;
+  --page-text:                        #0f172a;
+  --page-text-muted:                  #64748b;
+  --page-link:                        #4f46e5;
+  --page-link-hover:                  #4338ca;
+  --page-card-bg:                     #ffffff;
+  --page-card-border:                 #e2e8f0;
+  --page-card-heading:                #0f172a;
+  --page-card-sub:                    #64748b;
+  --page-avatar-bg:                   #f1f5f9;
+  --page-avatar-text:                 #475569;
+
+  /* Sidebar — light */
+  --sb-bg-from:                       #f8fafc;
+  --sb-bg-to:                         #eef2ff;
+  --sb-border-color:                  rgba(79, 126, 255, 0.14);
+  --sb-brand-name-color:              #0f172a;
+  --sb-brand-role-color:              #64748b;
+  --sb-nav-text:                      #475569;
+  --sb-nav-icon:                      #64748b;
+  --sb-nav-hover-bg:                  rgba(79, 126, 255, 0.10);
+  --sb-nav-hover-text:                #0f172a;
+  --sb-nav-hover-icon:                #4f46e5;
+  --sb-nav-active-bg:                 rgba(79, 126, 255, 0.16);
+  --sb-nav-active-text:               #1e1b4b;
+  --sb-nav-active-icon:               #4f46e5;
+  --sb-nav-active-indicator:          #4f7eff;
+  --sb-nav-active-glow:               0 0 12px rgba(79, 126, 255, 0.25);
+  --sb-collapse-text:                 #64748b;
+  --sb-collapse-hover-bg:             rgba(79, 126, 255, 0.08);
+  --sb-collapse-hover-text:           #0f172a;
+  --sb-divider:                       rgba(79, 126, 255, 0.12);
+
+  /* Topbar — light */
+  --topbar-bg:                        rgba(255, 255, 255, 0.92);
+  --topbar-border:                    rgba(79, 126, 255, 0.12);
+  --topbar-shadow:                    0 1px 12px rgba(15, 23, 42, 0.06);
+  --topbar-search-bg:                 #f1f5f9;
+  --topbar-search-border:             #e2e8f0;
+  --topbar-search-border-focus:       rgba(79, 126, 255, 0.55);
+  --topbar-search-ring-focus:         rgba(79, 126, 255, 0.12);
+  --topbar-search-text:               #0f172a;
+  --topbar-search-placeholder:        #94a3b8;
+  --topbar-search-icon:               #94a3b8;
+  --topbar-icon-btn-bg:               #f1f5f9;
+  --topbar-icon-btn-border:           #e2e8f0;
+  --topbar-icon-btn-color:            #64748b;
+  --topbar-icon-btn-hover-border:     rgba(79, 126, 255, 0.35);
+  --topbar-icon-btn-hover-color:      #4f46e5;
+  --topbar-notif-dot:                 #4f7eff;
+  --topbar-profile-bg:                #f8fafc;
+  --topbar-profile-border:            #e2e8f0;
+  --topbar-profile-hover-border:      rgba(79, 126, 255, 0.4);
+  --topbar-profile-name:              #0f172a;
+  --topbar-profile-role:              #64748b;
+  --topbar-profile-avatar-bg:         rgba(79, 126, 255, 0.15);
+  --topbar-profile-avatar-text:       #4338ca;
+  --topbar-profile-chevron:           #64748b;
+  --topbar-dd-bg:                     #ffffff;
+  --topbar-dd-border:                 #e2e8f0;
+  --topbar-dd-shadow:                 0 20px 50px rgba(15, 23, 42, 0.12);
+  --topbar-dd-header-border:          #f1f5f9;
+  --topbar-dd-header-title:           #0f172a;
+  --topbar-dd-header-sub:             #64748b;
+  --topbar-dd-item-hover-bg:          #f1f5f9;
+  --topbar-dd-item-selected-bg:       #eef2ff;
+  --topbar-dd-item-selected-text:     #4338ca;
+  --topbar-dd-item-name:              #0f172a;
+  --topbar-dd-item-sub:               #64748b;
+  --topbar-dd-avatar-bg:              #f1f5f9;
+  --topbar-dd-avatar-text:            #475569;
+  --topbar-dd-check:                  #4f46e5;
+  --topbar-dd-footer-border:          #f1f5f9;
+  --topbar-dd-action-icon-bg:         #f1f5f9;
+  --topbar-dd-action-icon-color:      #64748b;
+  --topbar-dd-action-text:            #475569;
+  --topbar-dd-action-hover-bg:        #f1f5f9;
+  --topbar-dd-action-hover-text:      #0f172a;
+  --topbar-dd-logout-icon-bg:         rgba(239, 68, 68, 0.1);
+  --topbar-dd-logout-icon-color:      #dc2626;
+  --topbar-dd-logout-text:            #dc2626;
+  --topbar-dd-logout-hover-bg:        rgba(239, 68, 68, 0.08);
+  --topbar-dd-empty-text:             #94a3b8;
+
+  /* Dashboard / marketing panels (glass on dark, solid on light) */
+  --dash-glass-border:                rgba(15, 23, 42, 0.12);
+  --dash-glass-bg:                    rgba(255, 255, 255, 0.85);
+  --dash-glass-hover-border:          rgba(79, 126, 255, 0.25);
+  --dash-glass-hover-bg:              #ffffff;
+  --dash-cta-bg:                      #f1f5f9;
+  --dash-cta-hover-bg:                #e2e8f0;
+  --dash-cta-text:                    #0f172a;
+  --dash-cta-chevron:                 rgba(15, 23, 42, 0.45);
+  --dash-divider:                     rgba(15, 23, 42, 0.12);
+
+  /* Pagination — light surfaces */
+  --pagination-btn-bg:                #ffffff;
+  --pagination-btn-border:            #e2e8f0;
+  --pagination-btn-text:              #64748b;
+  --pagination-btn-hover-border:      #cbd5e1;
+  --pagination-btn-hover-text:        #0f172a;
+  --pagination-active-from:           #4f46e5;
+  --pagination-active-to:             #6366f1;
+  --pagination-active-text:           #ffffff;
+  --pagination-active-shadow:         0 2px 8px rgb(79 70 229 / 0.25);
+
+  /* Question tags on white cards (readable) */
+  --q-diff-easy-text:                 #047857;
+  --q-diff-medium-text:               #b45309;
+  --q-diff-hard-text:                 #be123c;
+  --q-kind-mcq-text:                  #0369a1;
+  --q-kind-msq-text:                  #6d28d9;
+  --q-kind-nat-text:                  #0e7490;
+  --q-kind-tf-text:                   #0f766e;
+  --q-kind-default-text:              #475569;
+  --question-card-hover-shadow:       0 4px 20px rgb(79 126 255 / 0.12);
+
+  /* Dashboard hero / cards in light context */
+  --marketing-tagline:                #6d28d9;
+  --dash-pyq-card-border:             rgba(15, 23, 42, 0.12);
+  --dash-pyq-card-ring:               rgba(15, 23, 42, 0.08);
+  --dash-pyq-card-shadow:             0 6px 20px -10px rgba(15, 23, 42, 0.12);
+  --dash-pyq-card-shadow-hover:       0 10px 24px -8px rgba(37, 99, 235, 0.15);
+
+  --semantic-error-text:              #ef4444;
+  --semantic-error-text-strong:       #dc2626;
+  --semantic-error-bg-soft:           #fef2f2;
+  --semantic-error-border-soft:       #fecaca;
+  --semantic-error-box-text:          #b91c1c;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL UI CLASSES (colors only reference variables above)
+═══════════════════════════════════════════════════════════════════════════ */
+
+.page-link-active {
+  border-color: transparent;
+  color: var(--pagination-active-text);
+  background: linear-gradient(
+    135deg,
+    var(--pagination-active-from),
+    var(--pagination-active-to)
+  );
+  box-shadow: var(--pagination-active-shadow);
+}
+
+html[data-theme='light'] .question-card:hover {
+  border-color: var(--question-card-hover-border);
+  box-shadow: var(--question-card-hover-shadow);
+}
+
+html[data-theme='dark'] .question-card:hover {
+  border-color: var(--question-card-hover-border);
+  box-shadow: var(--question-card-hover-shadow);
+}
+
+/* Student dashboard hero mascot: screen blend vanishes on light backgrounds */
+.student-dash-mascot {
+  mix-blend-mode: normal;
+}
+html[data-theme='dark'] .student-dash-mascot {
+  mix-blend-mode: screen;
+}
+
+.q-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.375rem;
+  border-width: 1px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.q-tag--easy {
+  background: var(--q-diff-easy-bg);
+  color: var(--q-diff-easy-text);
+  border-color: var(--q-diff-easy-border);
+}
+.q-tag--medium {
+  background: var(--q-diff-medium-bg);
+  color: var(--q-diff-medium-text);
+  border-color: var(--q-diff-medium-border);
+}
+.q-tag--hard {
+  background: var(--q-diff-hard-bg);
+  color: var(--q-diff-hard-text);
+  border-color: var(--q-diff-hard-border);
+}
+.q-tag-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+}
+.q-tag--easy .q-tag-dot {
+  background: var(--q-diff-easy-dot);
+}
+.q-tag--medium .q-tag-dot {
+  background: var(--q-diff-medium-dot);
+}
+.q-tag--hard .q-tag-dot {
+  background: var(--q-diff-hard-dot);
+}
+
+.q-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.375rem;
+  border-width: 1px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.q-kind--mcq {
+  background: var(--q-kind-mcq-bg);
+  color: var(--q-kind-mcq-text);
+  border-color: var(--q-kind-mcq-border);
+}
+.q-kind--msq {
+  background: var(--q-kind-msq-bg);
+  color: var(--q-kind-msq-text);
+  border-color: var(--q-kind-msq-border);
+}
+.q-kind--nat {
+  background: var(--q-kind-nat-bg);
+  color: var(--q-kind-nat-text);
+  border-color: var(--q-kind-nat-border);
+}
+.q-kind--tf {
+  background: var(--q-kind-tf-bg);
+  color: var(--q-kind-tf-text);
+  border-color: var(--q-kind-tf-border);
+}
+.q-kind--default {
+  background: var(--q-kind-default-bg);
+  color: var(--q-kind-default-text);
+  border-color: var(--q-kind-default-border);
+}
+
+/* Shared pagination control (exam list + question pages) */
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--pagination-btn-border);
+  background: var(--pagination-btn-bg);
+  color: var(--pagination-btn-text);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+  text-decoration: none;
+}
+.pagination-btn:hover {
+  border-color: var(--pagination-btn-hover-border);
+  color: var(--pagination-btn-hover-text);
+}
+.pagination-btn.page-link-active:hover {
+  border-color: transparent;
+  color: var(--pagination-active-text);
+}
+
+/* Semantic text (errors) — use instead of text-red-* */
+.text-semantic-error {
+  color: var(--semantic-error-text-strong);
+}
+.text-semantic-error-soft {
+  color: var(--semantic-error-text);
+}
+
+/* Subject picker tiles (exam → subjects grid) */
+.subject-picker-card--0 {
+  border-color: var(--subject-picker-accent-0);
+}
+.subject-picker-card--1 {
+  border-color: var(--subject-picker-accent-1);
+}
+.subject-picker-card--2 {
+  border-color: var(--subject-picker-accent-2);
+}
+.subject-picker-card--3 {
+  border-color: var(--subject-picker-accent-3);
+}
+
+/* Inline error alert (e.g. OAuth message on login card) */
+.alert-error-inline {
+  border-radius: var(--radius-item, 0.5rem);
+  border: 1px solid var(--semantic-error-border-soft);
+  background: var(--semantic-error-bg-soft);
+  color: var(--semantic-error-box-text);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }

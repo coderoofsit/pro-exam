@@ -11,10 +11,9 @@
 	let error = $state<string | null>(null);
 	let exam = $state<{ name?: { en?: string }; boardSlug: string; slug: string } | null>(null);
 
-	const chapterStoreState = $derived($chapterStore);
 	const hierarchy = $derived.by(() => {
-		if (!exam || !chapterStoreState) return null;
-		return chapterStoreState.hierarchyByKey[`${exam.boardSlug}:${exam.slug}`];
+		if (!exam) return null;
+		return chapterStore.getHierarchy(exam.boardSlug, exam.slug);
 	});
 
 	$effect(() => {
@@ -36,7 +35,7 @@
 				const h = await fetchChaptersHierarchy(e.boardSlug, e.slug);
 				chapterStore.setHierarchy(e.boardSlug, e.slug, h);
 			} catch (err) {
-				error = err instanceof Error ? err.message : 'Failed to fetch chapters';
+				error = err instanceof Error ? err.message : 'Failed to fetch subjects';
 			} finally {
 				loading = false;
 			}
@@ -46,24 +45,26 @@
 </script>
 
 <svelte:head>
-	<title>{exam?.name?.en ?? examSlug} Chapters</title>
+	<title>{exam?.name?.en ?? examSlug} — Subjects</title>
 </svelte:head>
 
 <div class="min-h-screen bg-[var(--page-bg)] text-[var(--page-text)]">
 	<div class="mx-auto max-w-7xl px-4 py-10">
 		<a
-			href="/student/exams"
-			class="mb-6 inline-block text-sm text-[var(--page-text-muted)] hover:text-[var(--page-link-hover)]"
+			href="/student/dashboard"
+			class="mb-6 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
 		>
-			← Back to Exams
+			← Back to Dashboard
 		</a>
 		<div class="mb-8">
 			<h1 class="text-3xl font-bold md:text-4xl">{exam?.name?.en ?? examSlug}</h1>
-			<p class="mt-2 text-base text-[var(--page-text-muted)]">Select a subject to view chapters and questions</p>
+			<p class="mt-2 text-base text-[var(--page-text-muted)]">Select a subject, then a chapter to view questions</p>
 		</div>
 
 		{#if loading}
-			<div class="flex min-h-[200px] items-center justify-center text-[var(--page-text-muted)]">Loading...</div>
+			<div class="flex min-h-[200px] items-center justify-center text-[var(--page-text-muted)]">
+				Loading subjects...
+			</div>
 		{:else if error}
 			<p class="text-semantic-error-soft">{error}</p>
 		{:else if hierarchy?.subjects && hierarchy.subjects.length === 0}
@@ -86,7 +87,13 @@
 							aria-hidden="true"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-								<path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+								<path
+									d="M7 17L17 7M17 7H9M17 7V15"
+									stroke="currentColor"
+									stroke-width="1.75"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
 							</svg>
 						</span>
 					</a>

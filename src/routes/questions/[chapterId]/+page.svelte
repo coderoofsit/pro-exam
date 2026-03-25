@@ -22,22 +22,21 @@
     Array.from({ length: paginationEndPage - paginationStartPage + 1 }, (_, i) => paginationStartPage + i)
   );
 
-  const DIFFICULTY_STYLE_MAP: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-    easy:   { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/25", dot: "bg-emerald-400" },
-    medium: { bg: "bg-amber-500/10",   text: "text-amber-400",   border: "border-amber-500/25",   dot: "bg-amber-400" },
-    hard:   { bg: "bg-rose-500/10",    text: "text-rose-400",    border: "border-rose-500/25",     dot: "bg-rose-400" },
-  };
-  const getDifficultyStyles = (difficulty: string) =>
-    DIFFICULTY_STYLE_MAP[difficulty.toLowerCase()] ?? DIFFICULTY_STYLE_MAP.medium;
+  function tagClassForDifficulty(d: string): string {
+    const k = d?.toLowerCase();
+    if (k === "easy") return "q-tag q-tag--easy";
+    if (k === "hard") return "q-tag q-tag--hard";
+    return "q-tag q-tag--medium";
+  }
 
-  const QUESTION_KIND_STYLE_MAP: Record<string, { bg: string; text: string; border: string }> = {
-    mcq:  { bg: "bg-sky-500/10",    text: "text-sky-300",    border: "border-sky-500/25" },
-    msq:  { bg: "bg-violet-500/10", text: "text-violet-300", border: "border-violet-500/25" },
-    nat:  { bg: "bg-cyan-500/10",   text: "text-cyan-300",   border: "border-cyan-500/25" },
-    tf:   { bg: "bg-teal-500/10",   text: "text-teal-300",   border: "border-teal-500/25" },
-  };
-  const getQuestionKindStyles = (kind: string) =>
-    QUESTION_KIND_STYLE_MAP[kind.toLowerCase()] ?? { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/25" };
+  function classForKind(k: string): string {
+    const c = k?.toLowerCase();
+    if (c === "mcq") return "q-kind q-kind--mcq";
+    if (c === "msq") return "q-kind q-kind--msq";
+    if (c === "nat") return "q-kind q-kind--nat";
+    if (c === "tf") return "q-kind q-kind--tf";
+    return "q-kind q-kind--default";
+  }
 </script>
 
 <svelte:head>
@@ -46,7 +45,6 @@
 </svelte:head>
 
 <style>
-  /* Ensure KaTeX / MathJax renders inline by default */
   :global(.math-inline) {
     display: inline !important;
   }
@@ -59,7 +57,6 @@
   :global(.katex) {
     font-size: 1.05em;
   }
-  /* Fix for math being split across lines in question content */
   .math-content :global(mjx-container),
   .math-content :global(.MathJax),
   .math-content :global(.katex-html) {
@@ -69,37 +66,21 @@
     margin: 0;
     line-height: 2;
   }
-
-  /* Option letter badge */
   .option-badge {
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: "SF Mono", "Fira Code", monospace;
   }
-
-  /* Subtle animated gradient border on hover */
   .question-card {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .question-card:hover {
-    border-color: rgb(99 102 241 / 0.35);
-    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.1), 0 4px 24px rgb(0 0 0 / 0.25);
-  }
-
-  /* Pagination link active state */
-  .page-link-active {
-    background: linear-gradient(135deg, #6366f1, #818cf8);
-    border-color: transparent;
-    color: white;
-    box-shadow: 0 2px 8px rgb(99 102 241 / 0.4);
-  }
 </style>
 
-<div class="min-h-screen bg-[#080c14] text-slate-100" style="font-family: 'Inter var', 'Inter', system-ui, sans-serif;">
-
-  <!-- Top bar -->
-  <div class="border-b border-slate-800/60 bg-[#0b1120]/80 backdrop-blur-sm sticky top-0 z-10">
-    <div class="mx-auto max-w-4xl px-5 py-3 flex items-center justify-between">
+<div class="min-h-screen bg-[var(--page-bg)] text-[var(--page-text)]" style="font-family: 'Inter var', 'Inter', system-ui, sans-serif;">
+  <div
+    class="sticky top-0 z-30 border-b border-[var(--page-card-border)] bg-[var(--page-card-bg)] shadow-sm"
+  >
+    <div class="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-3">
       <a
-        class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+        class="flex items-center gap-1.5 text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
         href="/"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -107,29 +88,28 @@
         </svg>
         Chapters
       </a>
-
-      <div class="flex items-center gap-4 text-xs text-slate-500">
+      <div class="flex items-center gap-4 text-xs text-[var(--page-text-muted)]">
         <span class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+          <span class="h-1.5 w-1.5 rounded-full bg-[var(--page-link)]"></span>
           {data.total} questions
         </span>
-        <span class="text-slate-700">|</span>
+        <span class="text-[var(--page-card-border)]">|</span>
         <span>Page {data.currentPage} of {data.lastPage}</span>
       </div>
     </div>
   </div>
 
-  <div class="mx-auto max-w-4xl px-5 py-10">
-
-    <!-- Header -->
+  <div class="mx-auto w-full max-w-4xl px-5 py-10">
     <div class="mb-8">
-      <h1 class="text-2xl font-semibold tracking-tight text-slate-50 mb-1">Questions</h1>
-      <p class="text-sm text-slate-500">{data.message}</p>
+      <h1 class="mb-1 text-2xl font-semibold tracking-tight text-[var(--page-text)]">Questions</h1>
+      <p class="text-sm text-[var(--page-text-muted)]">{data.message}</p>
     </div>
 
     {#if data.questions.length === 0}
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-12 text-center text-slate-500">
-        <svg class="w-8 h-8 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div
+        class="rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-12 text-center text-[var(--page-text-muted)]"
+      >
+        <svg class="mx-auto mb-3 h-8 w-8 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         No questions found.
@@ -138,50 +118,48 @@
       <div class="flex flex-col gap-4">
         {#each data.questions as question, index}
           {@const qNumber = (data.currentPage - 1) * data.limit + index + 1}
-          {@const difficultyStyles = getDifficultyStyles(question.difficulty)}
-          {@const kindStyles = getQuestionKindStyles(question.kind)}
 
-          <div class="question-card rounded-2xl border border-slate-800/80 bg-[#0d1526]/90 overflow-hidden">
-
-            <!-- Card header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/60">
-              <div class="flex items-center gap-3">
-                <span class="text-xs font-mono text-slate-600 bg-slate-800/60 rounded-md px-2 py-1">
-                  Q{qNumber}
-                </span>
-              </div>
+          <div
+            class="question-card overflow-hidden rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)]"
+          >
+            <div
+              class="flex items-center justify-between border-b border-[var(--page-card-border)] px-6 py-4"
+            >
+              <span
+                class="rounded-md bg-[var(--page-bg)] px-2 py-1 font-mono text-xs text-[var(--page-text-muted)]"
+              >
+                Q{qNumber}
+              </span>
               <div class="flex items-center gap-2">
-                <!-- Kind badge -->
-                <span class="inline-flex items-center gap-1.5 rounded-md border {kindStyles.border} {kindStyles.bg} px-2.5 py-1 text-xs font-semibold uppercase tracking-widest {kindStyles.text}">
-                  {question.kind}
-                </span>
-                <!-- Difficulty badge -->
-                <span class="inline-flex items-center gap-1.5 rounded-md border {difficultyStyles.border} {difficultyStyles.bg} px-2.5 py-1 text-xs font-medium {difficultyStyles.text}">
-                  <span class="w-1.5 h-1.5 rounded-full {difficultyStyles.dot}"></span>
+                <span class={classForKind(question.kind)}>{question.kind}</span>
+                <span class={tagClassForDifficulty(question.difficulty)}>
+                  <span class="q-tag-dot"></span>
                   {question.difficulty}
                 </span>
               </div>
             </div>
 
-            <!-- Question body -->
             <div class="px-6 py-5">
-              <!-- Question content: rendered as flowing inline math -->
-              <div class="math-content text-slate-100 text-[1.0625rem] leading-[1.85] overflow-x-auto">
+              <div
+                class="math-content overflow-x-auto text-[1.0625rem] leading-[1.85] text-[var(--page-text)]"
+              >
                 <MathText content={question.prompt.en.content} />
               </div>
 
-              <!-- Options -->
               {#if question.prompt.en.options && question.prompt.en.options.length > 0}
-                <div class="mt-5 grid gap-2.5" style="grid-template-columns: 1fr;">
+                <div class="mt-5 grid gap-2.5">
                   {#each question.prompt.en.options as option}
-                    <div class="group flex items-start gap-3.5 rounded-xl border border-slate-800/70 bg-slate-900/40 px-4 py-3.5 hover:border-indigo-500/30 hover:bg-indigo-950/20 transition-all duration-150 cursor-default">
-                      <!-- Option identifier circle -->
-                      <span class="option-badge mt-0.5 flex-shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-xs font-bold text-indigo-300 group-hover:bg-indigo-500/30 transition-colors">
+                    <div
+                      class="group flex items-start gap-3.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3.5 transition hover:border-[var(--page-link)]/35 hover:bg-[var(--page-bg)]"
+                    >
+                      <span
+                        class="option-badge mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]"
+                      >
                         {option.identifier}
                       </span>
-
-                      <!-- Option math content -->
-                      <div class="math-content flex-1 overflow-x-auto text-slate-200 text-[1.0625rem] leading-[1.85]">
+                      <div
+                        class="math-content flex-1 overflow-x-auto text-[1.0625rem] leading-[1.85] text-[var(--page-text)]"
+                      >
                         <MathText content={option.content} />
                       </div>
                     </div>
@@ -189,58 +167,48 @@
                 </div>
               {/if}
 
-              <!-- Explanation -->
               {#if question.prompt.en.explanation}
-                <details class="mt-5 group">
-                  <summary class="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-200 cursor-pointer select-none list-none transition-colors w-fit">
-                    <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <details class="group mt-5">
+                  <summary
+                    class="flex w-fit cursor-pointer list-none items-center gap-2 select-none text-sm font-medium text-[var(--page-text-muted)] hover:text-[var(--page-text)]"
+                  >
+                    <svg class="h-4 w-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                     Show explanation
                   </summary>
-
-                  <div class="mt-3 rounded-xl border border-indigo-500/20 bg-indigo-950/20 px-4 py-4">
-                    <div class="math-content text-indigo-100/80 text-sm leading-[1.85] overflow-x-auto">
+                  <div
+                    class="mt-3 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-4"
+                  >
+                    <div
+                      class="math-content overflow-x-auto text-sm leading-[1.85] text-[var(--page-text-muted)]"
+                    >
                       <MathText content={question.prompt.en.explanation} />
                     </div>
                   </div>
                 </details>
               {/if}
             </div>
-
           </div>
         {/each}
       </div>
 
-      <!-- Pagination -->
       <div class="mt-10 flex flex-wrap items-center justify-center gap-1.5">
         {#if data.currentPage > 1}
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(1)}>
-            ← First
-          </a>
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(data.currentPage - 1)}>
-            Prev
-          </a>
+          <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
+          <a class="pagination-btn" href={questionsPageUrl(data.currentPage - 1)}>Prev</a>
         {/if}
-
         {#each visiblePageNumbers as pageNumber}
           <a
-            class="rounded-lg border px-3.5 py-2 text-xs transition-all {pageNumber === data.currentPage
-              ? 'page-link-active'
-              : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:border-slate-600'}"
+            class="pagination-btn px-3.5 {pageNumber === data.currentPage ? 'page-link-active' : ''}"
             href={questionsPageUrl(pageNumber)}
           >
             {pageNumber}
           </a>
         {/each}
-
         {#if data.currentPage < data.lastPage}
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(data.currentPage + 1)}>
-            Next
-          </a>
-          <a class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all" href={questionsPageUrl(data.lastPage)}>
-            Last →
-          </a>
+          <a class="pagination-btn" href={questionsPageUrl(data.currentPage + 1)}>Next</a>
+          <a class="pagination-btn" href={questionsPageUrl(data.lastPage)}>Last →</a>
         {/if}
       </div>
     {/if}

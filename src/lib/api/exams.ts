@@ -1,5 +1,5 @@
 import { apiRequest } from '../../http/api';
-import { TOKEN } from '$lib/http';
+import { resolveApiToken } from './authToken';
 
 export type Exam = {
 	_id: string;
@@ -21,10 +21,8 @@ export type ExamResponse = {
 	data: Exam;
 };
 
-const getToken = () => (TOKEN.startsWith('Bearer ') ? TOKEN.slice(7) : TOKEN);
-
 export async function fetchExamBySlug(slug: string, token?: string | null): Promise<Exam> {
-	const t = token ?? getToken();
+	const t = resolveApiToken(token);
 	const response = await apiRequest<{ success: boolean; message: string; data: Exam }>({
 		endpoint: `/api/v1/exams/by-slug/${slug}`,
 		method: 'GET',
@@ -48,7 +46,7 @@ export async function fetchExamsPage(
 	limit: number = 8,
 	token?: string | null
 ): Promise<ExamsPageResponse> {
-	const t = token ?? getToken();
+	const t = resolveApiToken(token);
 	const response = await apiRequest<{
 		success: boolean;
 		message: string;

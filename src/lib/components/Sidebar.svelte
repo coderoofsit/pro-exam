@@ -55,7 +55,7 @@
     bg-[linear-gradient(160deg,var(--sb-bg-from)_0%,var(--sb-bg-to)_100%)]
     transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
     before:absolute before:inset-x-0 before:top-0 before:h-px
-    before:bg-[linear-gradient(90deg,transparent,rgba(139,92,246,0.5),transparent)]
+    before:bg-[linear-gradient(90deg,transparent,var(--sb-edge-glow),transparent)]
     before:pointer-events-none
     {sidebarCollapsed ? 'w-[var(--sb-width-collapsed)]' : 'w-[var(--sb-width-expanded)]'}
   "
@@ -66,8 +66,8 @@
     <div class="
       flex-shrink-0 w-9 h-9 rounded-[10px]
       flex items-center justify-center
-      bg-[linear-gradient(135deg,#8B5CF6_0%,#6D28D9_100%)]
-      shadow-[0_0_18px_rgba(139,92,246,0.55)]
+      bg-[linear-gradient(135deg,var(--sb-logo-gradient-from),var(--sb-logo-gradient-to))]
+      shadow-[var(--sb-logo-glow)]
       transition-shadow duration-200
     ">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -206,9 +206,11 @@
 
 </aside> -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { authStore, type AuthUser } from '$lib/stores/auth';
+  import { type ThemeMode, toggleThemeMode } from '$lib/theme';
 
   type Role = 'student' | 'tutor' | 'institute';
   type SidebarIcon = 'dashboard' | 'exams' | 'tests' | 'batch' | 'subscription';
@@ -226,6 +228,7 @@
   let profileDropdownOpen = $state(false);
   let selectedUserIndex = $state(0);
   let searchValue = $state('');
+  let themeMode = $state<ThemeMode>('dark');
 
   function toggleSidebar() { sidebarCollapsed = !sidebarCollapsed; }
   function toggleProfileDropdown() { profileDropdownOpen = !profileDropdownOpen; }
@@ -287,10 +290,19 @@
     if ($authStore.users.length === 0) { selectedUserIndex = 0; return; }
     if (selectedUserIndex > $authStore.users.length - 1) selectedUserIndex = 0;
   });
+
+  onMount(() => {
+    const t = document.documentElement.dataset.theme;
+    themeMode = t === 'light' || t === 'dark' ? t : 'dark';
+  });
+
+  function onToggleTheme() {
+    themeMode = toggleThemeMode(themeMode);
+  }
 </script>
 
 <!-- ── Root layout: h-dvh constrains to viewport so main content scrolls ── -->
-<div class="flex h-dvh min-h-0 bg-[var(--topbar-page-bg)] text-white font-sans">
+<div class="flex h-dvh min-h-0 bg-[var(--page-bg)] font-sans text-[var(--page-text)]">
 
   <!-- ════════════════════════════════════════
        SIDEBAR
@@ -302,7 +314,7 @@
     shadow-[4px_0_32px_rgba(5,7,13,0.6)]
     transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
     before:absolute before:inset-x-0 before:top-0 before:h-px before:pointer-events-none
-    before:bg-[linear-gradient(90deg,transparent,rgba(139,92,246,0.5),transparent)]
+    before:bg-[linear-gradient(90deg,transparent,var(--sb-edge-glow),transparent)]
     {sidebarCollapsed ? 'w-[var(--sb-width-collapsed)]' : 'w-[var(--sb-width-expanded)]'}
   ">
 
@@ -310,7 +322,7 @@
     <div class="flex items-center gap-3 px-4 py-[18px] min-h-[68px] border-b border-[var(--sb-divider)] flex-shrink-0">
       <div class="
         flex-shrink-0 w-9 h-9 rounded-[10px] flex items-center justify-center
-        bg-[linear-gradient(135deg,#8B5CF6_0%,#6D28D9_100%)]
+        bg-[linear-gradient(135deg,var(--sb-logo-gradient-from),var(--sb-logo-gradient-to))]
         shadow-[var(--sb-logo-glow)] transition-shadow duration-200
       ">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -483,9 +495,41 @@
         <!-- Right actions -->
         <div class="flex items-center gap-2.5 flex-shrink-0">
 
+          <!-- Theme: light / dark -->
+          <button
+            type="button"
+            onclick={onToggleTheme}
+            title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            class="
+              relative flex h-11 w-11 items-center justify-center rounded-xl
+              bg-[var(--topbar-icon-btn-bg)]
+              border border-[var(--topbar-icon-btn-border)]
+              text-[var(--topbar-icon-btn-color)]
+              transition-[border,color] duration-150
+              hover:border-[var(--topbar-icon-btn-hover-border)]
+              hover:text-[var(--topbar-icon-btn-hover-color)]
+            "
+          >
+            {#if themeMode === 'dark'}
+              <!-- Sun -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            {:else}
+              <!-- Moon -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 6.5 6.5 0 0 0 21 14.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            {/if}
+          </button>
+
           <!-- Bell -->
           <button
             type="button"
+            aria-label="Notifications"
+            title="Notifications"
             class="
               relative flex h-11 w-11 items-center justify-center rounded-xl
               bg-[var(--topbar-icon-btn-bg)]
@@ -660,10 +704,12 @@
       </div>
     </header>
 
-    <!-- ── Page content: min-h-0 allows flex child to shrink, overflow-auto enables scroll ── -->
-    <main id="layout-main-scroll" class="min-h-0 min-w-0 flex-1 overflow-auto p-6">
+    <!-- ── Page content: pt-0 on scroll root so content cannot paint into a fixed top padding band; pt-6 is on the inner wrapper so it scrolls with the page. ── -->
+    <main id="layout-main-scroll" class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] px-6 pb-6 pt-0">
       {#key page.url.pathname}
-        {@render children?.()}
+        <div class="min-h-0 pt-6">
+          {@render children?.()}
+        </div>
       {/key}
     </main>
   </div>

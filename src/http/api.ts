@@ -24,7 +24,10 @@ export type ApiErrorResponse = {
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
-const BASE_URL = 'http://localhost:8000';
+// const BASE_URL = 'http://localhost:8000';
+// const BASE_URL = 'https://test-exam-backend-5yh6.onrender.com';
+const BASE_URL = 'http://217.196.50.35:8005';
+
 
 export async function apiRequest<T>({
   endpoint,
