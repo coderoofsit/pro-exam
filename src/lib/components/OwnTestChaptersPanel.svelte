@@ -193,8 +193,6 @@
   class="own-test-chapters-root flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10"
   data-exam-slug={examSlug}
 >
-
-  <!-- ── Subject rail ── -->
   <aside
     class="own-test-subject-rail flex w-full shrink-0 flex-col gap-2
       lg:sticky lg:top-0 lg:z-10 lg:w-[260px] lg:self-start

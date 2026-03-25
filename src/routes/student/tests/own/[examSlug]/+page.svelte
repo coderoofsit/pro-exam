@@ -1,12 +1,17 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import OwnTestChaptersPanel from '$lib/components/OwnTestChaptersPanel.svelte';
+  import OwnTestChaptersPanelManual from '$lib/components/OwnTestChaptersPanelManual.svelte';
+  import { page } from '$app/state';
 
   let { data }: { data: PageData } = $props();
 
   const groupedSubjects = data.groupedSubjects ?? [];
   const error = data.error ?? null;
   const examSlug = data.examSlug ?? '';
+
+  const mode = $derived(page.url.searchParams.get('mode'));
+  const isManual = $derived(mode === 'manual');
 
   const examName = examSlug
     .split('-')
@@ -52,6 +57,8 @@
         <p class="own-empty-panel__title">No chapters found</p>
         <p class="own-empty-panel__sub">No syllabus data is available for this exam yet.</p>
       </div>
+    {:else if isManual}
+      <OwnTestChaptersPanelManual {groupedSubjects} {examSlug} />
     {:else}
       <OwnTestChaptersPanel {groupedSubjects} {examSlug} />
     {/if}
