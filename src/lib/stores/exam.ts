@@ -4,6 +4,9 @@ import type { Exam } from '$lib/api/exams';
 /** Page size for `/student/exams` and dashboard page-1 fetch — keeps a single cache entry for both routes. */
 export const STUDENT_EXAMS_PAGE_SIZE = 18;
 
+/** Page size for `/student/tests/own` page-1 fetch. */
+export const OWN_TESTS_EXAMS_PAGE_SIZE = 50;
+
 type ExamState = {
 	examsByPage: Record<number, Exam[]>;
 	/** Page size used when each page was last fetched (avoids mixing dashboard vs all-exams caches). */

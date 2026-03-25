@@ -48,7 +48,8 @@ export type ExamsPageResponse = {
 export async function fetchExamsPage(
 	page: number,
 	limit: number = 8,
-	token?: string | null
+	token?: string | null,
+	fetchFn?: typeof fetch
 ): Promise<ExamsPageResponse> {
 	const t = resolveApiToken(token);
 	const response = await apiRequest<{
@@ -59,7 +60,8 @@ export async function fetchExamsPage(
 		endpoint: `/api/v1/exams?page=${page}&limit=${limit}`,
 		method: 'GET',
 		token: t,
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		fetch: fetchFn
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch exams');
 	return response.data.data;
