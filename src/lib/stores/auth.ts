@@ -31,7 +31,8 @@ export type AuthState = {
   isAuthenticated: boolean;
 };
 
-const AUTH_STORAGE_KEY = "auth_token";
+/** Key used for JWT in `localStorage` (also read by API token resolution before store hydrates). */
+export const AUTH_STORAGE_KEY = "auth_token";
 const AUTH_PROFILE_ID_KEY = "auth_profile_id";
 
 const initialState: AuthState = {

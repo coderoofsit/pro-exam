@@ -269,6 +269,10 @@
   const sidebarNavItems = $derived(navItemsByRole[role]);
   const isDark = $derived($themeStore === 'dark');
 
+  /** Collapse app sidebar on own-test exam chapter page (wider content area). */
+  const isOwnTestExamRoute = $derived(/^\/student\/tests\/own\/[^/]+/.test(page.url.pathname));
+  const isCollapsed = $derived(isOwnTestExamRoute || sidebarCollapsed);
+
   function isActive(href: string): boolean {
     return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
   }
@@ -382,7 +386,7 @@
     transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
     before:absolute before:inset-x-0 before:top-0 before:h-px before:pointer-events-none
     before:bg-[linear-gradient(90deg,transparent,var(--sb-edge-glow),transparent)]
-    {sidebarCollapsed ? 'w-[var(--sb-width-collapsed)]' : 'w-[var(--sb-width-expanded)]'}
+    {isCollapsed ? 'w-[var(--sb-width-collapsed)]' : 'w-[var(--sb-width-expanded)]'}
   ">
 
     <div class="flex items-center gap-3 px-4 py-[18px] min-h-[68px] border-b border-[var(--sb-divider)] flex-shrink-0">
@@ -398,7 +402,7 @@
         </svg>
       </div>
 
-      {#if !sidebarCollapsed}
+      {#if !isCollapsed}
         <div class="flex flex-col min-w-0 overflow-hidden">
           <span class="
             block whitespace-nowrap overflow-hidden text-ellipsis tracking-tight
@@ -421,7 +425,7 @@
         <a
           id={navItem.id}
           href={navItem.href}
-          title={sidebarCollapsed ? navItem.label : undefined}
+          title={isCollapsed ? navItem.label : undefined}
           aria-current={active ? 'page' : undefined}
           class="
             relative flex items-center gap-3 px-3 py-2.5 rounded-xl no-underline whitespace-nowrap
@@ -479,7 +483,7 @@
             {/if}
           </span>
 
-          {#if !sidebarCollapsed}
+          {#if !isCollapsed}
             <span class="overflow-hidden text-ellipsis">{navItem.label}</span>
           {/if}
         </a>
@@ -488,28 +492,35 @@
 
     <div class="px-2.5 py-2.5 border-t border-[var(--sb-divider)] flex-shrink-0">
       <button
+        type="button"
         onclick={toggleSidebar}
-        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        aria-expanded={!sidebarCollapsed}
+        disabled={isOwnTestExamRoute}
+        title={isOwnTestExamRoute
+          ? 'Sidebar stays collapsed on this page'
+          : isCollapsed
+            ? 'Expand sidebar'
+            : 'Collapse sidebar'}
+        aria-expanded={!isCollapsed}
         class="
           w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
           border-none bg-transparent cursor-pointer
           text-[length:var(--sb-font-size-collapse)] font-medium tracking-[0.08em] uppercase
           text-[var(--sb-collapse-text)]
-          transition-[background,color] duration-150
-          hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]
+          transition-[background,color,opacity] duration-150
+          hover:enabled:bg-[var(--sb-collapse-hover-bg)] hover:enabled:text-[var(--sb-collapse-hover-text)]
+          disabled:cursor-not-allowed disabled:opacity-40
         "
       >
         <span class="
           flex-shrink-0 w-5 h-5 flex items-center justify-center
           transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-          {sidebarCollapsed ? 'rotate-180' : ''}
+          {isCollapsed ? 'rotate-180' : ''}
         ">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </span>
-        {#if !sidebarCollapsed}
+        {#if !isCollapsed}
           <span class="whitespace-nowrap">Collapse</span>
         {/if}
       </button>

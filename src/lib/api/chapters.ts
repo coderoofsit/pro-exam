@@ -132,6 +132,52 @@ export async function fetchChaptersByChapterGroupId(
 	return payload as ChaptersPageResponse;
 }
 
+export type LocalizedName = { en: string; hi?: string };
+
+/** Single chapter row under a unit (chapter group). */
+export type GroupedChapterItem = {
+	_id: string;
+	slug: string;
+	name: LocalizedName;
+};
+
+/** One unit (chapter group) with nested chapters. */
+export type GroupedChapterGroupRow = {
+	chapterGroup: {
+		_id: string;
+		slug: string;
+		name: LocalizedName;
+	};
+	data: GroupedChapterItem[];
+};
+
+/** One subject with its units. */
+export type GroupedSubjectRow = {
+	subject: {
+		_id: string;
+		slug: string;
+		name: LocalizedName;
+	};
+	data: GroupedChapterGroupRow[];
+};
+
+export type GroupedChaptersByExamApiBody = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: GroupedSubjectRow[];
+};
+
+/** Grouped chapters for `/api/v1/chapters?examSlug=…` (subjects → units → chapters). */
+export async function fetchGroupedChaptersByExamSlug(examSlug: string, fetchFn?: typeof fetch) {
+	console.log("exam slug apiu call")
+	return apiRequest<GroupedChaptersByExamApiBody>({
+		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}`,
+		method: 'GET',
+		fetch: fetchFn
+	});
+}
+
 export async function fetchChaptersPage(
 	boardSlug: string,
 	examSlug: string,

@@ -1,3 +1,5 @@
+import { resolveApiToken } from '$lib/api/authToken';
+
 export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type ApiRequestOptions = {
@@ -48,8 +50,9 @@ export async function apiRequest<T>({
       finalHeaders['Content-Type'] = 'application/json';
     }
 
-    if (token) {
-      finalHeaders['Authorization'] = `Bearer ${token}`;
+    const bearer = resolveApiToken(token);
+    if (bearer) {
+      finalHeaders['Authorization'] = `Bearer ${bearer}`;
     }
 
     const response = await customFetch(`${BASE_URL}${endpoint}`, {

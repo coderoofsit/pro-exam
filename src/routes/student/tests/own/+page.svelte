@@ -12,7 +12,7 @@
   <title>Create your own test — ExamFlow</title>
 </svelte:head>
 
-<div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
+<div class="own-test-page min-h-full font-sans transition-colors duration-300">
   <div class="max-w-5xl mx-auto px-4 py-8">
     {#if error}
       <div class="
