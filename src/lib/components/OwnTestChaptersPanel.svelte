@@ -1,20 +1,26 @@
 <script lang="ts">
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
+  import {
+  getMaxQuestionsForUnits,
+  type OwnTestSelectionSnapshot,
+  type OwnTestSubjectSelection,
+  type OwnTestUnitSelection
+} from '$lib/ownTest/questionDistribution';
 
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
     examSlug: string;
+    onNext?: (snapshot: OwnTestSelectionSnapshot) => void;
   };
 
-  let { groupedSubjects, examSlug }: Props = $props();
+  let { groupedSubjects, examSlug, onNext }: Props = $props();
 
-  let openSubjectSlug = $state<string>(''); // which subject's units are showing
-  let openUnitIds          = $state<Set<string>>(new Set());
+  let openSubjectSlug = $state<string>(''); 
+  let openUnitIds          = $state<Set<string>>(new Set());  
 
   let checkedUnits = $state<Set<string>>(new Set());
   let checkedChapters = $state<Set<string>>(new Set());
 
-  // On first load, open the first subject's unit list (accordions stay collapsed)
   $effect(() => {
     const first = groupedSubjects[0]?.subject?.slug;
     if (!first) return;
@@ -24,7 +30,6 @@
     }
   });
 
-  // ── Derived ────────────────────────────────────────────────────────────
   const openSubject = $derived(
     groupedSubjects.find(g => g.subject.slug === openSubjectSlug) ?? null
   );
@@ -34,12 +39,10 @@
     return idx >= 0 ? idx % 4 : 0;
   });
 
-  // Count of selected chapters per unit
   function selectedChaptersInUnit(unit: GroupedChapterGroupRow): number {
     return unit.data.filter(ch => checkedChapters.has(ch._id)).length;
   }
 
-  /** Units that have at least one chapter selected (partial or full) */
   function unitsWithAnyChapterInSubject(row: GroupedSubjectRow): number {
     return row.data.filter((u) => u.data.some((ch) => checkedChapters.has(ch._id))).length;
   }
@@ -62,7 +65,6 @@
     return { total, sel };
   }
 
-  /** use:setIndeterminate — sync native checkbox indeterminate for partial selection */
   function setIndeterminate(node: HTMLInputElement, value: boolean) {
     node.indeterminate = value;
     return {
@@ -71,8 +73,6 @@
       }
     };
   }
-
-  // ── Check helpers ──────────────────────────────────────────────────────
   function checkAllUnderSubject(slug: string) {
     const row = groupedSubjects.find((g) => g.subject.slug === slug);
     if (!row) return;
@@ -106,15 +106,10 @@
     return total > 0 && sel === total;
   }
 
-  // ── Subject interactions ───────────────────────────────────────────────
-
-  /** Clicking the card body — opens units, auto-checks if not already checked */
   function onSubjectCardClick(slug: string, e: MouseEvent) {
     if ((e.target as HTMLElement).closest('.own-check')) return;
-    // Show this subject's units panel; keep unit accordions collapsed until expanded
     openSubjectSlug = slug;
     openUnitIds = new Set();
-    // If nothing selected in this subject yet, select all chapters
     const row = groupedSubjects.find((g) => g.subject.slug === slug);
     if (row && subjectChapterStats(row).sel === 0) {
       checkAllUnderSubject(slug);
@@ -128,7 +123,6 @@
     }
   }
 
-  /** Clicking the checkbox — full → clear all; none/partial → select all */
   function toggleSubjectCheck(slug: string) {
     if (subjectIsFullySelected(slug)) {
       uncheckAllUnderSubject(slug);
@@ -137,7 +131,6 @@
     }
   }
 
-  // ── Unit interactions ──────────────────────────────────────────────────
   function toggleUnitCheck(unit: GroupedChapterGroupRow, e: Event) {
     e.stopPropagation();
     const id = unit.chapterGroup._id;
@@ -171,7 +164,6 @@
     openUnitIds = next;
   }
 
-  // Selected units summary for the top strip
   const selectedUnitsSummary = $derived.by(() => {
     const items: { name: string; accent: number }[] = [];
     for (const [si, row] of groupedSubjects.entries()) {
@@ -188,7 +180,6 @@
     return items;
   });
 
-  /** Subjects that have at least one chapter selected (for bottom bar) */
   const selectedSubjectsForBar = $derived.by(() => {
     const out: { id: string; name: string; accent: number }[] = [];
     for (const [i, row] of groupedSubjects.entries()) {
@@ -202,10 +193,53 @@
     }
     return out;
   });
+
+  function buildSelectionSnapshot(): OwnTestSelectionSnapshot | null {
+  const subjects: OwnTestSubjectSelection[] = [];
+
+  for (const [i, row] of groupedSubjects.entries()) {
+    if (subjectChapterStats(row).sel === 0) continue;
+
+    const units: OwnTestUnitSelection[] = [];
+
+    for (const unit of row.data) {
+      const chapterIds = unit.data
+        .filter((ch) => checkedChapters.has(ch._id))
+        .map((ch) => ch._id);
+
+      if (chapterIds.length === 0) continue;
+
+      units.push({
+        unitId: unit.chapterGroup._id,
+        unitName: unit.chapterGroup.name?.en ?? unit.chapterGroup.slug,
+        chapterIds
+      });
+    }
+
+    if (units.length === 0) continue;
+
+    subjects.push({
+      subjectId: row.subject._id,
+      subjectSlug: row.subject.slug,
+      subjectName: row.subject.name?.en ?? row.subject.slug,
+      accent: i % 4,
+      units,
+      maxQuestions: getMaxQuestionsForUnits(units.length)
+    });
+  }
+
+  return subjects.length ? { subjects } : null;
+}
+
+  function handleNextClick() {
+    const snap = buildSelectionSnapshot();
+    if (!snap) return;
+    onNext?.(snap);
+  }
 </script>
 
 <div
-  class="own-test-chapters-root flex flex-col gap-6"
+  class="own-test-chapters-root flex flex-col"
   data-exam-slug={examSlug}
 >
   <div
@@ -239,7 +273,6 @@
         onkeydown={(e) => onSubjectCardKeydown(row.subject.slug, e)}
       >
         <div class="own-subject-card__row">
-          <!-- Checkbox -->
           <label class="own-check">
             <input
               type="checkbox"
@@ -251,7 +284,6 @@
             <span class="own-check__visual" data-own-accent={accentIdx}></span>
           </label>
 
-          <!-- Name + meta -->
           <div class="min-w-0 flex-1">
             <p class="own-subject-card__title">{row.subject.name?.en ?? row.subject.slug}</p>
             <p class="own-subject-card__meta">
@@ -268,7 +300,6 @@
     {/each}
   </aside>
 
-  <!-- ── Units + chapters panel ── -->
   <div class="min-w-0 flex-1 lg:min-h-[min(60vh,480px)]">
     <div class="mb-4 lg:hidden">
       <h2 class="own-section-label">Units &amp; chapters</h2>
@@ -288,7 +319,6 @@
           <div class="own-unit" class:own-unit--open={isOpen}>
 
             <div class="own-unit__head">
-              <!-- Unit checkbox -->
               <label class="own-check">
                 <input
                   type="checkbox"
@@ -310,7 +340,6 @@
                   {unit.chapterGroup.name?.en ?? unit.chapterGroup.slug}
                 </span>
 
-                <!-- Chapter count badge -->
                 <span class="own-unit__count">
                   {selCh}/{totalCh}
                 </span>
@@ -371,7 +400,12 @@
         <span class="own-bottom-bar__empty">None selected</span>
       {/if}
     </div>
-    <button type="button" class="own-bottom-bar__next">
+    <button
+      type="button"
+      class="own-bottom-bar__next"
+      disabled={selectedSubjectsForBar.length === 0}
+      onclick={handleNextClick}
+    >
       Next
     </button>
   </footer>

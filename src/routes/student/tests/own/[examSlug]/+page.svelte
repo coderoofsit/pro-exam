@@ -2,6 +2,11 @@
   import type { PageData } from './$types';
   import OwnTestChaptersPanel from '$lib/components/OwnTestChaptersPanel.svelte';
   import OwnTestChaptersPanelManual from '$lib/components/OwnTestChaptersPanelManual.svelte';
+  import OwnTestQuestionDistributionModal from '$lib/components/OwnTestQuestionDistributionModal.svelte';
+  import type {
+    OwnTestSelectionSnapshot,
+    OwnTestSubjectQuestionDistribution
+  } from '$lib/ownTest/questionDistribution';
   import { page } from '$app/state';
 
   let { data }: { data: PageData } = $props();
@@ -17,6 +22,27 @@
     .split('-')
     .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
+
+  let distModalOpen = $state(false);
+  let distSnapshot = $state<OwnTestSelectionSnapshot | null>(null);
+
+  function handleChaptersNext(snapshot: OwnTestSelectionSnapshot) {
+    distSnapshot = snapshot;
+    distModalOpen = true;
+  }
+
+  function closeDistModal() {
+    distModalOpen = false;
+  }
+
+  function handleDistContinue(_payload: {
+    snapshot: OwnTestSelectionSnapshot;
+    totalsBySubjectId: Record<string, number>;
+    distributionBySubjectId: Record<string, OwnTestSubjectQuestionDistribution>;
+  }) {
+    console.log('Own test distribution payload:', _payload);
+    distModalOpen = false;
+  }
 </script>
 
 <svelte:head>
@@ -60,7 +86,14 @@
     {:else if isManual}
       <OwnTestChaptersPanelManual {groupedSubjects} {examSlug} />
     {:else}
-      <OwnTestChaptersPanel {groupedSubjects} {examSlug} />
+      <OwnTestChaptersPanel {groupedSubjects} {examSlug} onNext={handleChaptersNext} />
     {/if}
   </div>
 </div>
+
+<OwnTestQuestionDistributionModal
+  open={distModalOpen}
+  snapshot={distSnapshot}
+  onClose={closeDistModal}
+  onContinue={handleDistContinue}
+/>
