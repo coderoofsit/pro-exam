@@ -41,7 +41,18 @@ export const load: PageServerLoad = async ({ params }) => {
 			})
 		);
 
+		const examId = exam._id;
+		const boardId =
+			typeof (exam as { boardId?: string }).boardId === 'string'
+				? (exam as { boardId: string }).boardId
+				: typeof (exam as { board?: unknown }).board === 'object' &&
+					  (exam as { board?: { _id?: string } }).board?._id
+					? (exam as { board: { _id: string } }).board._id
+					: '';
+
 		const groupedSubjects: GroupedSubjectRow[] = subjects.map((s) => ({
+			examId,
+			boardId,
 			subject: {
 				_id: s._id,
 				slug: s.slug,
