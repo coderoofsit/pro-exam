@@ -20,23 +20,12 @@ export const load: PageServerLoad = async ({ params }) => {
 		// If backend isn't updated / returns wrong shape, fall back to the assembled strategy.
 		const apiRes = await fetchGroupedChaptersByExamSlug(examSlug);
 
-		if (apiRes.success && Array.isArray((apiRes.data as any)?.data) && (apiRes.data as any).data.length) {
-			const groupedSubjectsRaw = ((apiRes.data as any)?.data ?? []) as unknown[];
-			const groupedSubjects = groupedSubjectsRaw.filter((row): row is any => {
-				const r = row as any;
-				return Boolean(r?.subject?._id && r?.subject?.slug);
+		if (apiRes.success && Array.isArray(apiRes.data) && apiRes.data.length) {
+			const groupedSubjects = apiRes.data.filter((row) => {
+				return Boolean(row?.subject?._id && row?.subject?.slug);
 			});
 
 			if (groupedSubjects.length) {
-				const subjects = groupedSubjects
-					.map((row): SubjectNavRow => ({
-						_id: row.subject._id,
-						slug: row.subject.slug,
-						name: row.subject.name,
-						unitCount: row.data?.length ?? 0
-					}))
-					.filter((s) => Boolean(s._id && s.slug));
-
 				const chaptersBySubjectSlug: Record<string, ChapterCardRow[]> = {};
 
 				for (const row of groupedSubjects) {
@@ -57,6 +46,15 @@ export const load: PageServerLoad = async ({ params }) => {
 						return (a.chapter.order ?? 0) - (b.chapter.order ?? 0);
 					});
 				}
+
+				const subjects = groupedSubjects
+					.map((row): SubjectNavRow => ({
+						_id: row.subject._id,
+						slug: row.subject.slug,
+						name: row.subject.name,
+						unitCount: chaptersBySubjectSlug[row.subject.slug]?.length ?? 0
+					}))
+					.filter((s) => Boolean(s._id && s.slug && s.unitCount > 0));
 
 				const initialSubjectSlug = subjects[0]?.slug ?? '';
 

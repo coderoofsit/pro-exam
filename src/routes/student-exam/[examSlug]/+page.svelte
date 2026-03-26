@@ -37,14 +37,24 @@
 
 	let selectedSubjectSlug = $state('');
 	let showChapters = $state(false);
+	let hasRestoredState = $state(false);
 
 	$effect(() => {
-		if (browser) {
-			const stored = sessionStorage.getItem(`exam-${data.examSlug}-subject`);
-			if (stored && data.subjects.find(s => s.slug === stored)) {
-				selectedSubjectSlug = stored;
-				showChapters = true;
+		if (browser && !hasRestoredState) {
+			const referrer = document.referrer;
+			const isFromChapterPage = referrer.includes(`/student-exam/${data.examSlug}/`) && !referrer.endsWith(`/student-exam/${data.examSlug}`);
+			const isFromExamsOrDashboard = referrer.includes('/student/exams') || referrer.includes('/student/dashboard');
+			
+			if (isFromExamsOrDashboard) {
+				sessionStorage.removeItem(`exam-${data.examSlug}-subject`);
+			} else if (isFromChapterPage) {
+				const stored = sessionStorage.getItem(`exam-${data.examSlug}-subject`);
+				if (stored && data.subjects.find(s => s.slug === stored)) {
+					selectedSubjectSlug = stored;
+					showChapters = true;
+				}
 			}
+			hasRestoredState = true;
 		}
 	});
 
