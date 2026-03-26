@@ -1,5 +1,6 @@
 import { apiRequest } from '../../http/api';
 import { resolveApiToken } from './authToken';
+import { fetchExamBySlug } from './exams';
 
 export type Chapter = {
 	_id: string;
@@ -172,9 +173,13 @@ export type GroupedChaptersByExamApiBody = {
 
 /** Grouped chapters for `/api/v1/chapters?examSlug=…` (subjects → units → chapters). */
 export async function fetchGroupedChaptersByExamSlug(examSlug: string, fetchFn?: typeof fetch) {
+	// Must set `token` explicitly; this endpoint previously relied on callers,
+	// but the `custom` route calls it during SSR where `authStore` isn't available.
+	const t = resolveApiToken(null);
 	return apiRequest<GroupedChaptersByExamApiBody>({
-		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}`,
+		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}&grouped=1`,
 		method: 'GET',
+		token: t ?? null,
 		fetch: fetchFn
 	});
 }
@@ -201,4 +206,54 @@ export async function fetchChaptersPage(
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch chapters');
 	return response.data.data;
+}
+
+export type StudentExamSubjectsAndChapters = {
+	examSlug: string;
+	exam: any;
+	hierarchy: ChaptersHierarchyResponse;
+	chapterGroupsChapters: Record<string, Chapter[]>;
+};
+
+/**
+ * Fetches everything needed for the `student-exam/[examSlug]` experience:
+ * - exam (for boardSlug + title)
+ * - hierarchy (subjects -> chapterGroups)
+ * - chapters per chapterGroupId (preloaded so switching subjects is instant)
+ */
+export async function fetchStudentExamSubjectsAndChapters(
+	examSlug: string
+): Promise<StudentExamSubjectsAndChapters> {
+	const examFromApi = (await fetchExamBySlug(examSlug)) as any;
+
+	const boardSlug: string | undefined = examFromApi?.boardSlug ?? examFromApi?.board_slug;
+	const slug: string | undefined = examFromApi?.slug ?? examFromApi?._id ?? examSlug;
+
+	if (!boardSlug) throw new Error('Board slug not found for this exam');
+	if (!slug) throw new Error('Exam slug not found for this exam');
+
+	const hierarchy = await fetchChaptersHierarchy(boardSlug, slug);
+
+	const chapterGroups = hierarchy.subjects.flatMap((s) => s.chapterGroups ?? []);
+	const chapterGroupsChapters: Record<string, Chapter[]> = {};
+
+	await Promise.all(
+		chapterGroups.map(async (cg) => {
+			if (!cg?._id) return;
+			const res = await fetchChaptersByChapterGroupId(cg._id);
+			const chapters = Array.isArray(res) ? res : res.data;
+			chapterGroupsChapters[cg._id] = chapters ?? [];
+		})
+	);
+
+	return {
+		examSlug,
+		exam: {
+			...examFromApi,
+			boardSlug,
+			slug
+		},
+		hierarchy,
+		chapterGroupsChapters
+	};
 }

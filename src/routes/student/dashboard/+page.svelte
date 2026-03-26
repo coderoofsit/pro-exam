@@ -1,44 +1,40 @@
 <script lang="ts">
-	import { fromStore } from 'svelte/store';
-	import { examStore, STUDENT_EXAMS_PAGE_SIZE } from '$lib/stores/exam';
-	import { fetchExamsPage } from '$lib/api/exams';
 	import type { Exam } from '$lib/api/exams';
 
-	const DASHBOARD_EXAMS_PAGE = 1;
+	let { data } = $props<{ data: { exams: Exam[]; message: string | null } }>();
+
 	const FEATURED_EXAMS_COUNT = 7;
 
-	const exams = fromStore(examStore);
-
-	let isExamsLoading = $state(false);
+	let exams = $state<Exam[]>([]);
 	let examsFetchError = $state<string | null>(null);
 
-	const pageOneExams = $derived(exams.current.examsByPage[DASHBOARD_EXAMS_PAGE] ?? []);
-	const featuredExams = $derived(pageOneExams.slice(0, FEATURED_EXAMS_COUNT) as Exam[]);
-	/** Must read `$examStore` so this updates after fetch (`hasPage` uses `get()` internally). */
-	const hasExamsLoaded = $derived.by(() => {
-		$examStore;
-		return examStore.hasPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE);
+	$effect(() => {
+		exams = data.exams;
+		examsFetchError = data.message;
 	});
 
-	$effect(() => {
-		if (examStore.hasPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE) || isExamsLoading) return;
-		isExamsLoading = true;
-		examsFetchError = null;
-		fetchExamsPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE)
-			.then((res) => {
-				examStore.setExamsPage(DASHBOARD_EXAMS_PAGE, res.data, {
-					total: res.total,
-					lastPage: res.lastPage,
-					limit: res.limit
-				});
-			})
-			.catch((e) => {
-				examsFetchError = e instanceof Error ? e.message : 'Failed to fetch exams';
-			})
-			.finally(() => {
-				isExamsLoading = false;
-			});
-	});
+	const featuredExams = $derived(exams.slice(0, FEATURED_EXAMS_COUNT));
+
+	// API type currently doesn't include `slug`, but backend responses likely do.
+	// Fallback to `_id` so the page remains functional even if slug is missing.
+	function getExamSlug(exam: Exam): string {
+		return (exam as any).slug ?? exam._id;
+	}
+
+	function getExamNameEn(exam: Exam): string {
+		const n = (exam as any).name;
+		if (typeof n === 'string') return n;
+		if (n && typeof n === 'object') return typeof n.en === 'string' ? n.en : '';
+		return '';
+	}
+
+	function getExamSub(exam: Exam): string | null {
+		const n = (exam as any).name;
+		if (n && typeof n === 'object' && typeof n.hi === 'string') return n.hi;
+		// Some endpoints might return description instead of hi.
+		if (typeof (exam as any).description === 'string') return (exam as any).description;
+		return null;
+	}
 
 </script>
 
@@ -47,9 +43,7 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
-	{#if isExamsLoading && !hasExamsLoaded}
-		<div class="flex min-h-[40vh] items-center justify-center text-[var(--page-text-muted)]">Loading…</div>
-	{:else if examsFetchError}
+	{#if examsFetchError}
 		<div class="flex min-h-[40vh] items-center justify-center text-semantic-error">{examsFetchError}</div>
 	{:else}
 		<!-- Hero banner -->
@@ -95,7 +89,7 @@
 			>
 				{#each featuredExams as exam (exam._id)}
 					<a
-						href="/student/exams/{exam.slug}/subject"
+						href="/student/exams/{getExamSlug(exam)}/subject"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 					>
 						{#if exam.image}
@@ -108,24 +102,24 @@
 							<div
 								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
 							>
-								{exam.name.en[0]?.toUpperCase() ?? '?'}
+								{getExamNameEn(exam)[0]?.toUpperCase() ?? '?'}
 							</div>
 						{/if}
 						<span
 							class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
 						>
-							{exam.name.en}
+							{getExamNameEn(exam)}
 						</span>
-						{#if exam.name.hi}
+						{#if getExamSub(exam)}
 							<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
-								{exam.name.hi}
+								{getExamSub(exam)}
 							</span>
 						{/if}
 					</a>
 				{/each}
 			</div>
 
-			{#if featuredExams.length === 0 && !isExamsLoading}
+			{#if featuredExams.length === 0}
 				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 			{/if}
 		</section>
@@ -149,7 +143,7 @@
 			>
 				{#each featuredExams as exam (exam._id)}
 					<a
-						href="/student/exams/{exam.slug}/subject"
+						href="/student/exams/{getExamSlug(exam)}/subject"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 					>
 						{#if exam.image}
@@ -162,24 +156,24 @@
 							<div
 								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
 							>
-								{exam.name.en[0]?.toUpperCase() ?? '?'}
+								{getExamNameEn(exam)[0]?.toUpperCase() ?? '?'}
 							</div>
 						{/if}
 						<span
 							class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
 						>
-							{exam.name.en}
+							{getExamNameEn(exam)}
 						</span>
-						{#if exam.name.hi}
+						{#if getExamSub(exam)}
 							<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
-								{exam.name.hi}
+								{getExamSub(exam)}
 							</span>
 						{/if}
 					</a>
 				{/each}
 			</div>
 
-			{#if featuredExams.length === 0 && !isExamsLoading}
+			{#if featuredExams.length === 0}
 				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 			{/if}
 		</section>

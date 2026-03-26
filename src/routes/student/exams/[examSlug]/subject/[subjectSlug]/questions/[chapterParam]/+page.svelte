@@ -1,183 +1,95 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import MathText from '$lib/components/MathText.svelte';
-	import { fetchQuestionsByChapter, type Question } from '$lib/api/questions';
+	import type { Question } from '$lib/api/questions';
+	import type { Chapter, ChaptersHierarchyResponse } from '$lib/api/chapters';
+	import { chapterQuestionsPath } from '$lib/chapterRoutes';
 	import { chapterStore } from '$lib/stores/chapter';
-	import { examStore } from '$lib/stores/exam';
-	import { fetchChaptersByChapterGroupId, fetchChaptersHierarchy, fetchChapterBySlug } from '$lib/api/chapters';
-	import { fetchExamBySlug } from '$lib/api/exams';
-	import { chapterQuestionsPath, isMongoObjectIdString } from '$lib/chapterRoutes';
-	import type { Chapter } from '$lib/api/chapters';
+	import { questionStore } from '$lib/stores/question';
 
-	const QUESTIONS_PAGE_LIMIT = 10;
+	let { data } = $props<{
+		data: {
+			examSlug: string;
+			boardSlug: string;
+			subjectSlug: string;
+			chapterParam: string;
+			safePage: number;
+			resolvedChapterId: string | null;
+			hierarchy: ChaptersHierarchyResponse | null;
+			subject: any | null;
+			chapterGroupsChapters: Record<string, Chapter[]>;
+			questions: Question[];
+			paginationMeta: { total: number; lastPage: number; limit: number } | null;
+			message: string | null;
+		};
+	}>();
 
-	/** Dedupe concurrent fetches for the same chapter + page (effect can re-run before the first completes). */
-	const pendingQuestionFetchKeys = new Set<string>();
+	let examSlug = $state('');
+	let subjectSlug = $state('');
+	let chapterParam = $state('');
+	let safePage = $state(1);
 
-	let isQuestionsLoading = $state(false);
+	let hierarchy = $state<ChaptersHierarchyResponse | null>(null);
+	let subject = $state<any | null>(null);
+
+	// Template expects `chapterStoreState.chaptersByChapterGroupId[...]`.
+	let chapterStoreState = $state<{ chaptersByChapterGroupId: Record<string, Chapter[]> }>({
+		chaptersByChapterGroupId: {}
+	});
+
+	// SSR already fetched questions for this page.
+	const isQuestionsLoading = false;
 	let questionsFetchError = $state<string | null>(null);
-	let hierarchyLoading = $state(false);
-
-	const examSlug = $derived($page.params.examSlug);
-	const subjectSlug = $derived($page.params.subjectSlug);
-	const chapterParam = $derived($page.params.chapterParam ?? '');
-	const currentPageParam = $derived(Number($page.url.searchParams.get('page') || '1'));
-	const safePage = $derived(Number.isNaN(currentPageParam) || currentPageParam < 1 ? 1 : currentPageParam);
 
 	let resolvedChapterId = $state<string | null>(null);
-
-	const chapterStoreState = $derived($chapterStore);
-	let exam = $state<{ boardSlug: string; slug: string; name?: { en?: string } } | null>(null);
-	const hierarchy = $derived.by(() => {
-		if (!exam || !chapterStoreState) return null;
-		return chapterStoreState.hierarchyByKey[`${exam.boardSlug}:${exam.slug}`];
-	});
-	const subject = $derived.by(() => {
-		const h = hierarchy;
-		if (!h?.subjects) return null;
-		return h.subjects.find((s) => s.slug === subjectSlug) ?? null;
-	});
-
-	import { questionStore } from '$lib/stores/question';
-	const questionStoreState = $derived($questionStore);
-	const displayQuestionsCorrect = $derived.by(() => {
-		if (!resolvedChapterId) return [];
-		const ch = questionStoreState?.byChapter?.[resolvedChapterId];
-		return ch?.questionsByPage?.[safePage] ?? [];
-	});
-	const paginationMeta = $derived.by(() => {
-		if (!resolvedChapterId) return undefined;
-		const ch = questionStoreState?.byChapter?.[resolvedChapterId];
-		return ch ? { total: ch.total, lastPage: ch.lastPage, limit: ch.limit } : undefined;
-	});
-	/** Must read `$questionStore` so this updates when cache fills (`hasPage` uses `get()` internally). */
-	const hasCurrentPageInStore = $derived.by(() => {
-		$questionStore;
-		const cid = resolvedChapterId;
-		if (!cid) return false;
-		return questionStore.hasPage(cid, safePage);
-	});
+	let displayQuestionsCorrect = $state<Question[]>([]);
+	let paginationMeta = $state<{ total: number; lastPage: number; limit: number } | null>(null);
 
 	$effect(() => {
-		/** Re-run when hierarchy / chapter lists or exam cache update so we resolve from store before calling APIs. */
-		$chapterStore;
-		$examStore;
+		examSlug = data.examSlug;
+		subjectSlug = data.subjectSlug;
+		chapterParam = data.chapterParam;
+		safePage = data.safePage;
 
-		const p = chapterParam;
-		if (!p) {
-			resolvedChapterId = null;
-			return;
-		}
-		if (isMongoObjectIdString(p)) {
-			resolvedChapterId = p;
-			return;
-		}
-		const slug = decodeURIComponent(p);
+		hierarchy = data.hierarchy;
+		subject = data.subject;
+		chapterStoreState = { chaptersByChapterGroupId: data.chapterGroupsChapters };
 
-		const ex = examStore.getExamBySlug(examSlug ?? '') ?? exam;
-		if (ex?.boardSlug && examSlug && subjectSlug) {
-			const idFromStore = chapterStore.findChapterIdBySlug(ex.boardSlug, ex.slug, subjectSlug, slug);
-			if (idFromStore) {
-				resolvedChapterId = idFromStore;
-				return;
+		questionsFetchError = data.message;
+		resolvedChapterId = data.resolvedChapterId;
+		displayQuestionsCorrect = data.questions;
+		paginationMeta = data.paginationMeta;
+	});
+
+	// Seed stores from SSR data so navigation can reuse caches.
+	$effect(() => {
+		if (!browser) return;
+		if (!data?.boardSlug) return;
+		if (data.hierarchy) {
+			if (!chapterStore.hasHierarchy(data.boardSlug, data.examSlug)) {
+				chapterStore.setHierarchy(data.boardSlug, data.examSlug, data.hierarchy);
 			}
 		}
 
-		let cancelled = false;
-		fetchChapterBySlug(slug)
-			.then((c) => {
-				if (!cancelled) {
-					resolvedChapterId = c._id;
-					if (examSlug && subjectSlug) {
-						chapterStore.rememberChapterRoute(examSlug, subjectSlug, slug, c._id);
-					}
-				}
-			})
-			.catch(() => {
-				if (!cancelled) resolvedChapterId = null;
-			});
-		return () => {
-			cancelled = true;
-		};
-	});
-
-	$effect(() => {
-		const cid = resolvedChapterId;
-		if (!cid || !examSlug) return;
-		if (questionStore.hasPage(cid, safePage)) {
-			isQuestionsLoading = false;
-			return;
+		for (const [chapterGroupId, chapters] of Object.entries(data.chapterGroupsChapters ?? {})) {
+			if (!chapterGroupId) continue;
+			if (chapterStore.hasChaptersForChapterGroup(chapterGroupId)) continue;
+			if (Array.isArray(chapters) && chapters.length) {
+				chapterStore.setChaptersByChapterGroupId(chapterGroupId, chapters);
+			}
 		}
-		const fetchKey = `${cid}:${safePage}`;
-		if (pendingQuestionFetchKeys.has(fetchKey)) return;
 
-		pendingQuestionFetchKeys.add(fetchKey);
-		isQuestionsLoading = true;
-		questionsFetchError = null;
-		fetchQuestionsByChapter(cid, safePage, QUESTIONS_PAGE_LIMIT)
-			.then((result) => {
-				questionStore.setQuestionsPage(cid, safePage, result.data, {
-					total: result.total,
-					lastPage: result.lastPage,
-					limit: result.limit
-				});
-			})
-			.catch((e) => {
-				questionsFetchError = e instanceof Error ? e.message : 'Failed to fetch questions';
-			})
-			.finally(() => {
-				pendingQuestionFetchKeys.delete(fetchKey);
-				isQuestionsLoading = false;
-			});
-	});
-
-	$effect(() => {
-		$examStore;
-		$chapterStore;
-		if (!examSlug || !subjectSlug) return;
-		const exFromStore = examStore.getExamBySlug(examSlug);
-		if (exFromStore) exam = exFromStore;
-		const ex = exFromStore ?? exam;
-		if (!ex) {
-			fetchExamBySlug(examSlug)
-				.then((e) => {
-					exam = e;
-					examStore.setExamBySlug(e);
-					if (!chapterStore.hasHierarchy(e.boardSlug, e.slug)) {
-						return fetchChaptersHierarchy(e.boardSlug, e.slug);
-					}
-				})
-				.then((h) => {
-					if (h && exam) chapterStore.setHierarchy(exam.boardSlug, exam.slug, h);
-				})
-				.finally(() => (hierarchyLoading = false));
-			hierarchyLoading = true;
-			return;
+		if (data.resolvedChapterId && data.paginationMeta) {
+			const cid = data.resolvedChapterId;
+			const page = data.safePage;
+			if (!questionStore.hasPage(cid, page)) {
+				questionStore.setQuestionsPage(cid, page, data.questions, data.paginationMeta);
+			}
 		}
-		exam = ex;
-		if (chapterStore.hasHierarchy(ex.boardSlug, ex.slug)) return;
-		if (hierarchyLoading) return;
-		hierarchyLoading = true;
-		fetchChaptersHierarchy(ex.boardSlug, ex.slug)
-			.then((h) => chapterStore.setHierarchy(ex.boardSlug, ex.slug, h))
-			.finally(() => (hierarchyLoading = false));
 	});
 
-	$effect(() => {
-		const subj = subject;
-		if (!subj?.chapterGroups?.length) return;
-		const missing = subj.chapterGroups.filter((cg) => !chapterStore.hasChaptersForChapterGroup(cg._id));
-		if (missing.length === 0) return;
-		Promise.all(missing.map((cg) => fetchChaptersByChapterGroupId(cg._id)))
-			.then((results) => {
-				missing.forEach((cg, i) => {
-					const res = results[i];
-					const chapters = Array.isArray(res) ? res : (res as { data: Chapter[] }).data;
-					chapterStore.setChaptersByChapterGroupId(cg._id, chapters);
-				});
-			})
-			.catch(() => {});
-	});
+	// Template uses this only in the loading branch.
+	const hasCurrentPageInStore = true;
 
 	const PAGINATION_WINDOW = 2;
 	const questionsPageUrl = (p: number) =>

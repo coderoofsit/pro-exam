@@ -32,8 +32,9 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 const BASE_URL =
   (typeof import.meta !== 'undefined' &&
     (import.meta as any).env?.VITE_PUBLIC_API_URL) ||
-  (typeof process !== 'undefined' && process.env?.VITE_PUBLIC_API_URL) || 
-  "http://localhost:8000" ||
+  // Avoid referencing `process` directly (Node types not present in TS config).
+  ((globalThis as any)?.process?.env?.VITE_PUBLIC_API_URL as string | undefined) || 
+  // "http://localhost:8000" ||
   'https://test-exam-backend-5yh6.onrender.com';
 
 export async function apiRequest<T>({

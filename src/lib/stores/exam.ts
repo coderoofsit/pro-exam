@@ -34,7 +34,10 @@ function createExamStore() {
 			store.update((s) => {
 				const nextBySlug = { ...s.examsBySlug };
 				for (const e of exams) {
-					nextBySlug[e.slug] = e;
+					// `Exam` typing currently doesn't include `slug`, but runtime exam objects do.
+					const slug = (e as any).slug as string | undefined;
+					if (!slug) continue;
+					nextBySlug[slug] = e;
 				}
 				const next: ExamState = {
 					...s,
@@ -52,9 +55,11 @@ function createExamStore() {
 		},
 		/** Store a single exam (e.g. after fetchExamBySlug) so getExamBySlug works without list pagination. */
 		setExamBySlug(exam: Exam) {
+			const slug = (exam as any).slug as string | undefined;
+			if (!slug) return;
 			store.update((s) => ({
 				...s,
-				examsBySlug: { ...s.examsBySlug, [exam.slug]: exam }
+				examsBySlug: { ...s.examsBySlug, [slug]: exam }
 			}));
 		},
 		setPagination(total: number, lastPage: number, limit: number) {
@@ -80,7 +85,7 @@ function createExamStore() {
 			const direct = state.examsBySlug[slug];
 			if (direct) return direct;
 			for (const exams of Object.values(state.examsByPage)) {
-				const found = exams.find((e) => e.slug === slug);
+				const found = exams.find((e) => (e as any).slug === slug);
 				if (found) return found;
 			}
 			return undefined;
