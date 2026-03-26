@@ -7,6 +7,8 @@ export type ApiRequestOptions = {
   method?: ApiMethod;
   data?: unknown;
   token?: string | null;
+  /** When true, no `Authorization` header is sent (no token, no env fallback). Use for public SSR fetches. */
+  skipAuth?: boolean;
   headers?: Record<string, string>;
   fetch?: typeof globalThis.fetch;
 };
@@ -39,6 +41,7 @@ export async function apiRequest<T>({
   method = 'GET',
   data,
   token,
+  skipAuth = false,
   headers = {},
   fetch: customFetch = fetch
 }: ApiRequestOptions): Promise<ApiResponse<T>> {
@@ -51,7 +54,7 @@ export async function apiRequest<T>({
       finalHeaders['Content-Type'] = 'application/json';
     }
 
-    const bearer = resolveApiToken(token);
+    const bearer = skipAuth ? undefined : resolveApiToken(token);
     if (bearer) {
       finalHeaders['Authorization'] = `Bearer ${bearer}`;
     }

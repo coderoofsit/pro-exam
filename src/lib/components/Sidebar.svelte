@@ -250,6 +250,7 @@
       { id: 'sidebar-dashboard', label: 'Dashboard', href: '/student/dashboard', icon: 'dashboard' },
       { id: 'sidebar-exams', label: 'Exams', href: '/student/exams', icon: 'exams' },
       { id: 'sidebar-tests', label: 'Tests', href: '/student/tests', icon: 'tests' },
+      { id: 'sidebar-batch', label: 'Batch', href: '/student/batch', icon: 'batch' },
       { id: 'sidebar-subscription', label: 'Subscription', href: '/student/subscription', icon: 'subscription' }
     ],
     tutor: [

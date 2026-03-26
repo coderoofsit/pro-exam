@@ -732,6 +732,42 @@
   --sh-social-btn-hover-bg:         rgba(139, 92, 246, 0.08);
   --sh-social-btn-hover-text:       #ffffff;
 
+  /* ── PYQ PAPERS PAGE (dark) — must live here so PYQ / batch test rows inherit
+     dark surfaces; light-theme values in :root would otherwise show white cards. */
+  --pyq-page-bg:                    #0C0E1A;
+  --pyq-header-text:                #A1A1AA;
+  --pyq-header-count:               #ffffff;
+  --pyq-sort-btn-bg:                rgba(255, 255, 255, 0.05);
+  --pyq-sort-btn-border:            rgba(139, 92, 246, 0.22);
+  --pyq-sort-btn-text:              #A1A1AA;
+  --pyq-sort-btn-hover-bg:          rgba(139, 92, 246, 0.10);
+  --pyq-sort-btn-hover-border:      rgba(139, 92, 246, 0.50);
+  --pyq-sort-btn-hover-text:        #C4B5FD;
+  --pyq-accordion-bg:               rgba(255, 255, 255, 0.03);
+  --pyq-accordion-border:           rgba(139, 92, 246, 0.18);
+  --pyq-accordion-hover-bg:         rgba(139, 92, 246, 0.06);
+  --pyq-accordion-hover-border:     rgba(139, 92, 246, 0.40);
+  --pyq-accordion-title:            #ffffff;
+  --pyq-accordion-count:            #A1A1AA;
+  --pyq-accordion-chevron:          #52525B;
+  --pyq-accordion-chevron-active:   #A78BFA;
+  --pyq-accordion-active-bg:        rgba(139, 92, 246, 0.05);
+  --pyq-accordion-active-border:    rgba(139, 92, 246, 0.40);
+  --pyq-paper-bg:                   rgba(255, 255, 255, 0.03);
+  --pyq-paper-border:               rgba(139, 92, 246, 0.14);
+  --pyq-paper-hover-bg:             rgba(139, 92, 246, 0.08);
+  --pyq-paper-hover-border:         rgba(139, 92, 246, 0.40);
+  --pyq-paper-hover-shadow:         0 4px 20px rgba(139, 92, 246, 0.15);
+  --pyq-paper-title:                #ffffff;
+  --pyq-paper-meta:                 #A1A1AA;
+  --pyq-paper-meta-label:           #71717A;
+  --pyq-paper-badge-bg:             rgba(139, 92, 246, 0.12);
+  --pyq-paper-badge-border:         rgba(139, 92, 246, 0.28);
+  --pyq-paper-badge-text:           #C4B5FD;
+  --pyq-paper-arrow-bg:             rgba(139, 92, 246, 0.12);
+  --pyq-paper-arrow-color:          #A78BFA;
+  --pyq-paper-arrow-hover-bg:       rgba(139, 92, 246, 0.25);
+  --pyq-accordion-divider:          rgba(139, 92, 246, 0.12);
 
   /* ─── APP SHELL & MAIN CONTENT ───────────────────────────────────────────
      Main column background and typography. --topbar-page-bg aliases --page-bg.
@@ -2538,4 +2574,44 @@ html[data-theme='dark'] .student-dash-mascot {
 .own-chapter__next:focus-visible {
   outline: 2px solid var(--own-palette);
   outline-offset: 2px;
+}
+
+/* Student batch cards — diagonal ribbon + status colors (light + dark themes) */
+.student-batch-card__ribbon-text {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--sh-exam-card-border);
+  color: var(--sh-exam-card-title);
+  background: color-mix(in srgb, var(--sh-exam-card-arrow-bg) 92%, var(--sh-exam-card-border));
+}
+.student-batch-card__ribbon-text[data-status='active'],
+.student-batch-card__status[data-status='active'] {
+  border-color: var(--pc-success-border);
+  color: var(--pc-success-text);
+  background: var(--pc-success-bg);
+}
+.student-batch-card__ribbon-text[data-status='upcoming'],
+.student-batch-card__status[data-status='upcoming'] {
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #b45309;
+  background: rgba(251, 191, 36, 0.12);
+}
+[data-theme='dark'] .student-batch-card__ribbon-text[data-status='upcoming'],
+[data-theme='dark'] .student-batch-card__status[data-status='upcoming'] {
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+.student-batch-card__status {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.125rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--sh-exam-card-border);
+  color: var(--sh-exam-card-title);
+  background: color-mix(in srgb, var(--sh-exam-card-bg) 88%, var(--sh-exam-card-border));
 }
