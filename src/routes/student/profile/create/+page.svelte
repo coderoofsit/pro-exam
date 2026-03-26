@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { authStore } from "$lib/stores/auth";
-  import { examStore } from "$lib/stores/exams";
+  import { examStore } from "$lib/stores/exam";
   import ProfileCreateForm from "$lib/components/profile/ProfileCreateForm.svelte";
   import { createMembershipProfile } from "$lib/api/auth";
   import type { Exam } from "$lib/api/exams";
