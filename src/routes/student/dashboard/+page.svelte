@@ -183,10 +183,8 @@
 				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 			{/if}
 		</section>
-
-		<!-- CTA row: PYQ Mock Tests + Create Your Own Test -->
 		<section class="mt-10 min-w-0" aria-label="Quick actions">
-			<div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<a
 					href="/student/tests/pyq"
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
@@ -228,6 +226,30 @@
 						</svg>
 					</span>
 					<span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Create Your Own Test</span>
+					<span
+						class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]"
+					>
+						Updated
+					</span>
+					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
+				</a>
+				<a
+					href="/student/tests/batch"
+					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
+				>
+					<span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-cyan)]" aria-hidden="true">
+						<svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+							<path
+								d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
+								stroke="currentColor"
+								stroke-width="1.6"
+								stroke-linecap="round"
+							/>
+							<rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+							<path d="M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+						</svg>
+					</span>
+					<span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Your Batch Tests</span>
 					<span
 						class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]"
 					>

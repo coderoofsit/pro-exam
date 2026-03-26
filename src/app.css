@@ -1842,6 +1842,29 @@ html[data-theme='dark'] .student-dash-mascot {
   opacity: 0.92;
 }
 
+.own-q-modal-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--page-text-muted) 18%, transparent);
+}
+
+.own-q-modal-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.own-q-modal-error-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--semantic-error-text, #dc2626);
+}
+
 .own-q-modal-footer {
   display: flex;
   flex-shrink: 0;
@@ -1899,6 +1922,66 @@ html[data-theme='dark'] .student-dash-mascot {
 
 .own-q-modal-btn--primary:disabled:hover {
   background: var(--own-next-btn-bg);
+}
+
+/* Own test — created success modal (OwnTestCreatedSuccessModal.svelte) */
+.own-success-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, #0f172a 52%, transparent);
+}
+
+.own-success-modal-sheet {
+  display: flex;
+  width: 100%;
+  max-width: 22rem;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--page-card-border);
+  background: var(--page-card-bg);
+  color: var(--page-text);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+}
+
+.own-success-modal-icon {
+  margin-bottom: 0.5rem;
+  color: color-mix(in srgb, var(--own-next-btn-bg) 92%, #fff);
+}
+
+.own-success-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--page-card-heading);
+}
+
+.own-success-modal-sub {
+  margin: 0.5rem 0 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--page-text-muted);
+}
+
+.own-success-modal-sub strong {
+  color: var(--page-text);
+  font-weight: 600;
+}
+
+.own-success-modal-actions {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .own-test-subject-rail {

@@ -37,7 +37,7 @@
   let fileInputEl = $state<HTMLInputElement | null>(null);
 
   const filteredExams = $derived(
-    exams.filter((e) => e.name.toLowerCase().includes(examSearch.toLowerCase()))
+    exams.filter((e) => e.name.en.toLowerCase().includes(examSearch.toLowerCase()))
   );
 
   const isFormValid = $derived(
@@ -79,7 +79,7 @@
   }
 
   function getExamName(id: string) {
-    return exams.find((e) => e._id === id)?.name ?? id;
+    return exams.find((e) => e._id === id)?.name.en ?? id;
   }
 
   function closeDropdown() {
@@ -247,7 +247,7 @@
 
                           <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-[var(--pc-select-item-text)] {picked ? 'text-[var(--pc-select-item-selected-text)]' : ''}">
-                              {exam.name}
+                              {exam.name.en}
                             </p>
                             {#if exam.description}
                               <p class="truncate text-xs text-[var(--pc-select-item-sub)]">{exam.description}</p>

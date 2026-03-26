@@ -4,6 +4,8 @@ import { BASE_URL } from '$lib/http';
 
 export type ExamApiItem = {
   _id: string;
+  slug?: string;
+  boardSlug?: string;
   name: {
     en: string;
     hi?: string;
@@ -11,9 +13,15 @@ export type ExamApiItem = {
   image?: string | null;
 };
 
+/** Exam as used across the app (lists, store, by-slug fetch). */
 export type Exam = {
   _id: string;
-  name: string;
+  slug: string;
+  boardSlug: string;
+  name: {
+    en: string;
+    hi?: string;
+  };
   description?: string;
   image?: string | null;
 };
@@ -71,7 +79,12 @@ export async function fetchExamsPage(
 function mapExam(item: ExamApiItem): Exam {
   return {
     _id: item._id,
-    name: item.name?.en ?? 'Unnamed Exam',
+    slug: item.slug ?? '',
+    boardSlug: item.boardSlug ?? '',
+    name: {
+      en: item.name?.en ?? 'Unnamed Exam',
+      hi: item.name?.hi
+    },
     description: item.name?.hi ?? '',
     image: item.image ?? null
   };

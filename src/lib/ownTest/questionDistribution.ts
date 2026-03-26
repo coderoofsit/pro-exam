@@ -32,7 +32,21 @@ export type OwnTestSubjectSelection = {
 };
 
 export type OwnTestSelectionSnapshot = {
+	examId: string;
+	boardId: string;
 	subjects: OwnTestSubjectSelection[];
+};
+
+/** Payload shape when confirming question distribution (Continue). */
+export type OwnTestDistributionContinueData = {
+	subjects: {
+		id: string;
+		chapterGroup: {
+			id: string;
+			chapters: string[];
+			numberOfQuestions: number;
+		}[];
+	}[];
 };
 
 export const QUESTIONS_PER_SELECTED_UNIT = 100;

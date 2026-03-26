@@ -1,5 +1,6 @@
 <script lang="ts">
   import type {
+    OwnTestDistributionContinueData,
     OwnTestSelectionSnapshot,
     OwnTestSubjectQuestionDistribution
   } from '$lib/ownTest/questionDistribution';
@@ -8,18 +9,30 @@
     getMaxQuestionsForUnit
   } from '$lib/ownTest/questionDistribution';
 
+  type ContinuePayload = {
+    snapshot: OwnTestSelectionSnapshot;
+    totalsBySubjectId: Record<string, number>;
+    distributionBySubjectId: Record<string, OwnTestSubjectQuestionDistribution>;
+    data: OwnTestDistributionContinueData;
+  };
+
   type Props = {
     open: boolean;
     snapshot: OwnTestSelectionSnapshot | null;
     onClose: () => void;
-    onContinue?: (payload: {
-      snapshot: OwnTestSelectionSnapshot;
-      totalsBySubjectId: Record<string, number>;
-      distributionBySubjectId: Record<string, OwnTestSubjectQuestionDistribution>;
-    }) => void;
+    onContinue?: (payload: ContinuePayload) => void | Promise<void>;
+    submitting?: boolean;
+    errorMessage?: string | null;
   };
 
-  let { open, snapshot, onClose, onContinue }: Props = $props();
+  let {
+    open,
+    snapshot,
+    onClose,
+    onContinue,
+    submitting = false,
+    errorMessage = null
+  }: Props = $props();
 
   let totalsInput = $state<Record<string, string>>({});
   let unitInputs = $state<Record<string, Record<string, string>>>({});
@@ -138,15 +151,16 @@
   });
 
   function handleBackdrop(e: MouseEvent) {
+    if (submitting) return;
     if (e.target === e.currentTarget) onClose();
   }
 
   function handleKey(e: KeyboardEvent) {
-    if (e.key === 'Escape' && open) onClose();
+    if (e.key === 'Escape' && open && !submitting) onClose();
   }
 
-  function handleContinue() {
-    if (!snapshot || hasInvalidSubjects) return;
+  async function handleContinue() {
+    if (!snapshot || hasInvalidSubjects || submitting) return;
 
     const totalsBySubjectId: Record<string, number> = {};
     const distributionBySubjectId: Record<string, OwnTestSubjectQuestionDistribution> = {};
@@ -176,11 +190,29 @@
       };
     }
 
-    onContinue?.({
+    const data: OwnTestDistributionContinueData = {
+      subjects: snapshot.subjects.map((subject) => ({
+        id: subject.subjectId,
+        chapterGroup: subject.units.map((unit) => ({
+          id: unit.unitId,
+          chapters: [...unit.chapterIds],
+          numberOfQuestions: clampUnitRaw(
+            subject.subjectId,
+            unit.unitId,
+            unitInputs[subject.subjectId]?.[unit.unitId] ?? '0'
+          )
+        }))
+      }))
+    };
+
+    const payload: ContinuePayload = {
       snapshot,
       totalsBySubjectId,
-      distributionBySubjectId
-    });
+      distributionBySubjectId,
+      data
+    };
+
+    if (onContinue) await Promise.resolve(onContinue(payload));
   }
 </script>
 
@@ -203,7 +235,13 @@
           Set how many questions to draw per subject, then adjust the count for each selected unit.
           Continue is enabled only when the subject total matches the sum of all unit counts.
         </p>
-        <button type="button" class="own-q-modal-close" onclick={onClose} aria-label="Close">
+        <button
+          type="button"
+          class="own-q-modal-close"
+          onclick={onClose}
+          disabled={submitting}
+          aria-label="Close"
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M18 6L6 18M6 6l12 12"
@@ -273,17 +311,27 @@
       </div>
 
       <div class="own-q-modal-actions">
-        <button type="button" class="own-q-modal-btn own-q-modal-btn--ghost" onclick={onClose}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="own-q-modal-btn own-q-modal-btn--primary"
-          onclick={handleContinue}
-          disabled={hasInvalidSubjects}
-        >
-          Continue
-        </button>
+        {#if errorMessage}
+          <p class="own-q-modal-error-text">{errorMessage}</p>
+        {/if}
+        <div class="own-q-modal-actions-row">
+          <button
+            type="button"
+            class="own-q-modal-btn own-q-modal-btn--ghost"
+            onclick={onClose}
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="own-q-modal-btn own-q-modal-btn--primary"
+            onclick={() => void handleContinue()}
+            disabled={hasInvalidSubjects || submitting}
+          >
+            {submitting ? 'Creating…' : 'Continue'}
+          </button>
+        </div>
       </div>
     </div>
   </div>

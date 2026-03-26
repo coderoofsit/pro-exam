@@ -196,6 +196,8 @@
 
   function buildSelectionSnapshot(): OwnTestSelectionSnapshot | null {
   const subjects: OwnTestSubjectSelection[] = [];
+  let examId = '';
+  let boardId = '';
 
   for (const [i, row] of groupedSubjects.entries()) {
     if (subjectChapterStats(row).sel === 0) continue;
@@ -218,6 +220,11 @@
 
     if (units.length === 0) continue;
 
+    if (!examId) {
+      examId = row.examId;
+      boardId = row.boardId;
+    }
+
     subjects.push({
       subjectId: row.subject._id,
       subjectSlug: row.subject.slug,
@@ -228,7 +235,7 @@
     });
   }
 
-  return subjects.length ? { subjects } : null;
+  return subjects.length ? { examId, boardId, subjects } : null;
 }
 
   function handleNextClick() {

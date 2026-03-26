@@ -93,7 +93,7 @@
             <ExamPaper
               id={item._id}
               name={item?.name?.en ?? 'Unnamed'}
-              image={item?.image}
+              image={item?.image ?? null}
               slug={item?.slug ?? ''}
               href={'/student/tests/own/' +
                 (item?.slug ?? '') +

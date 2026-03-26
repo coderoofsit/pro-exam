@@ -151,8 +151,10 @@ export type GroupedChapterGroupRow = {
 	data: GroupedChapterItem[];
 };
 
-/** One subject with its units. */
+/** One subject with its units (`/api/v1/chapters?examSlug=…`). */
 export type GroupedSubjectRow = {
+	examId: string;
+	boardId: string;
 	subject: {
 		_id: string;
 		slug: string;
@@ -170,7 +172,6 @@ export type GroupedChaptersByExamApiBody = {
 
 /** Grouped chapters for `/api/v1/chapters?examSlug=…` (subjects → units → chapters). */
 export async function fetchGroupedChaptersByExamSlug(examSlug: string, fetchFn?: typeof fetch) {
-	console.log("exam slug apiu call")
 	return apiRequest<GroupedChaptersByExamApiBody>({
 		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}`,
 		method: 'GET',
