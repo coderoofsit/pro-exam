@@ -89,7 +89,7 @@
 			>
 				{#each featuredExams as exam (exam._id)}
 					<a
-						href="/student/exams/{getExamSlug(exam)}/subject"
+						href="/student-exam/{getExamSlug(exam)}"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 					>
 						{#if exam.image}
@@ -143,7 +143,7 @@
 			>
 				{#each featuredExams as exam (exam._id)}
 					<a
-						href="/student/exams/{getExamSlug(exam)}/subject"
+						href="/student-exam/{getExamSlug(exam)}"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 					>
 						{#if exam.image}

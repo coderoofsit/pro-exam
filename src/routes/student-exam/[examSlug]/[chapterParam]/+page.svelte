@@ -11,11 +11,13 @@
 	let { data } = $props<{ data: PageData }>();
 
 	let selectedQuestionIndex = $state<number | null>(null);
-	let previewQuestions = $state<Question[]>([]);
-	let previewStartNumber = $state(0);
+	let reviewPage = $state(1);
+	let previewAllQuestions = $state<Question[]>([]);
+	let previewBaseNumber = $state(0);
+	let previewNextPageToFetch = $state<number | null>(null);
 	let sidebarCollapsed = $state(false);
 
-	const PREVIEW_SIZE = 6;
+	const REVIEW_PAGE_SIZE = 5;
 	const PAGINATION_WINDOW = 2;
 
 	const filteredChapters = $derived(data.allChapters);
@@ -90,47 +92,74 @@
 		),
 	);
 
-	async function openQuestionPreview(index: number) {
-		selectedQuestionIndex = index;
+	const reviewQuestions = $derived.by((): Question[] => {
+		const start = (reviewPage - 1) * REVIEW_PAGE_SIZE;
+		return previewAllQuestions.slice(start, start + REVIEW_PAGE_SIZE);
+	});
 
-		const limit = displayPaginationMeta?.limit ?? 10;
-		previewStartNumber = (data.safePage - 1) * limit + index + 1;
+	const canReviewPrev = $derived(reviewPage > 1);
+	const canReviewNext = $derived.by(() => {
+		const haveAnotherLoadedPage = reviewPage * REVIEW_PAGE_SIZE < previewAllQuestions.length;
+		const canFetchMore =
+			displayPaginationMeta &&
+			previewNextPageToFetch !== null &&
+			previewNextPageToFetch <= displayPaginationMeta.lastPage;
+		return haveAnotherLoadedPage || Boolean(canFetchMore);
+	});
 
-		const currentQuestions = displayQuestions.slice(index);
-		previewQuestions = currentQuestions;
+	async function ensureReviewLoaded(minCount: number) {
+		if (!displayPaginationMeta) return;
+		if (previewNextPageToFetch === null) return;
 
-		if (currentQuestions.length >= PREVIEW_SIZE || !displayPaginationMeta) {
-			previewQuestions = currentQuestions.slice(0, PREVIEW_SIZE);
-			return;
-		}
-
-		let allQuestions = [...currentQuestions];
-		let nextPage = data.safePage + 1;
-
-		while (allQuestions.length < PREVIEW_SIZE && nextPage <= displayPaginationMeta.lastPage) {
+		while (previewAllQuestions.length < minCount && previewNextPageToFetch <= displayPaginationMeta.lastPage) {
 			try {
-				const res = await fetch(`/student-exam/${data.examSlug}/${encodeURIComponent(data.chapterParam)}/api?page=${nextPage}`);
+				const res = await fetch(
+					`/student-exam/${data.examSlug}/${encodeURIComponent(data.chapterParam)}/api?page=${previewNextPageToFetch}`,
+				);
 
 				if (!res.ok) break;
-
 				const jsonData = await res.json();
-				const nextQuestions = jsonData.questions ?? [];
+				const nextQuestions = (jsonData.questions ?? []) as Question[];
 				if (nextQuestions.length === 0) break;
-				allQuestions = [...allQuestions, ...nextQuestions];
-				nextPage++;
+
+				previewAllQuestions = [...previewAllQuestions, ...nextQuestions];
+				previewNextPageToFetch = previewNextPageToFetch + 1;
 			} catch (err) {
-				console.error("Preview fetch failed:", err);
+				console.error("Review fetch failed:", err);
 				break;
 			}
 		}
+	}
 
-		previewQuestions = allQuestions.slice(0, PREVIEW_SIZE);
+	async function openQuestionPreview(index: number) {
+		selectedQuestionIndex = index;
+		reviewPage = 1;
+
+		const limit = displayPaginationMeta?.limit ?? 10;
+		previewBaseNumber = (data.safePage - 1) * limit + index + 1;
+
+		previewAllQuestions = displayQuestions.slice(index);
+		previewNextPageToFetch = displayPaginationMeta ? data.safePage + 1 : null;
+		await ensureReviewLoaded(REVIEW_PAGE_SIZE);
+	}
+
+	async function goReviewPrev() {
+		if (reviewPage <= 1) return;
+		reviewPage = reviewPage - 1;
+	}
+
+	async function goReviewNext() {
+		const next = reviewPage + 1;
+		reviewPage = next;
+		await ensureReviewLoaded(next * REVIEW_PAGE_SIZE);
 	}
 
 	function closeQuestionPreview() {
 		selectedQuestionIndex = null;
-		previewQuestions = [];
-		previewStartNumber = 0;
+		reviewPage = 1;
+		previewAllQuestions = [];
+		previewBaseNumber = 0;
+		previewNextPageToFetch = null;
 	}
 </script>
 
@@ -302,17 +331,38 @@
 					{:else}
 						<div class="flex-1 overflow-y-auto pb-6">
 							<div class="rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-4">
-								<div class="mb-4 flex items-center justify-between gap-3">
+								<div class="-mx-4 -mt-4 mb-4 flex items-center justify-between gap-3 border-b border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3 sticky top-0 z-10">
 									<div class="text-sm font-semibold text-[var(--page-text)]">
-										Practice (next 6)
+										Practice (5 per page)
+									</div>
+									<div class="flex items-center gap-2">
+										<button
+											type="button"
+											class="rounded-lg border border-[var(--page-card-border)] px-3 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] disabled:opacity-50"
+											disabled={!canReviewPrev}
+											onclick={goReviewPrev}
+										>
+											Prev
+										</button>
+										<div class="text-xs text-[var(--page-text-muted)]">
+											Page {reviewPage}
+										</div>
+										<button
+											type="button"
+											class="rounded-lg border border-[var(--page-card-border)] px-3 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] disabled:opacity-50"
+											disabled={!canReviewNext}
+											onclick={goReviewNext}
+										>
+											Next
+										</button>
 									</div>
 								</div>
 
 								<div class="flex flex-col gap-4">
-									{#each previewQuestions as q, i (q._id)}
+									{#each reviewQuestions as q, i (q._id)}
 										<div class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
 											<div class="mb-2 text-xs font-medium text-[var(--page-text-muted)]">
-												Q{previewStartNumber + i}
+												Q{previewBaseNumber + (reviewPage - 1) * REVIEW_PAGE_SIZE + i}
 											</div>
 
 											<div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
