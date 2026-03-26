@@ -10,10 +10,13 @@
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
     examSlug: string;
+    /** Fallbacks when grouped API rows omit ids (required for create-random-test). */
+    examId?: string;
+    boardId?: string;
     onNext?: (snapshot: OwnTestSelectionSnapshot) => void;
   };
 
-  let { groupedSubjects, examSlug, onNext }: Props = $props();
+  let { groupedSubjects, examSlug, examId = '', boardId = '', onNext }: Props = $props();
 
   let openSubjectSlug = $state<string>(''); 
   let openUnitIds          = $state<Set<string>>(new Set());  
@@ -196,8 +199,8 @@
 
   function buildSelectionSnapshot(): OwnTestSelectionSnapshot | null {
   const subjects: OwnTestSubjectSelection[] = [];
-  let examId = '';
-  let boardId = '';
+  let resolvedExamId = (examId || '').trim();
+  let resolvedBoardId = (boardId || '').trim();
 
   for (const [i, row] of groupedSubjects.entries()) {
     if (subjectChapterStats(row).sel === 0) continue;
@@ -220,9 +223,11 @@
 
     if (units.length === 0) continue;
 
-    if (!examId) {
-      examId = row.examId;
-      boardId = row.boardId;
+    if (!resolvedExamId || !resolvedBoardId) {
+      const rExam = (row.examId ?? '').trim();
+      const rBoard = (row.boardId ?? '').trim();
+      if (rExam) resolvedExamId = resolvedExamId || rExam;
+      if (rBoard) resolvedBoardId = resolvedBoardId || rBoard;
     }
 
     subjects.push({
@@ -235,7 +240,7 @@
     });
   }
 
-  return subjects.length ? { examId, boardId, subjects } : null;
+  return subjects.length ? { examId: resolvedExamId, boardId: resolvedBoardId, subjects } : null;
 }
 
   function handleNextClick() {

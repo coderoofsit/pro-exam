@@ -6,6 +6,8 @@ export type ExamApiItem = {
   _id: string;
   slug?: string;
   boardSlug?: string;
+  boardId?: string;
+  board?: { _id?: string };
   name: {
     en: string;
     hi?: string;
@@ -18,6 +20,8 @@ export type Exam = {
   _id: string;
   slug: string;
   boardSlug: string;
+  boardId?: string;
+  board?: { _id?: string };
   name: {
     en: string;
     hi?: string;
@@ -33,13 +37,18 @@ export type ExamsResponse = {
   data?: ExamApiItem[];
 };
 
-export async function fetchExamBySlug(slug: string, token?: string | null): Promise<Exam> {
+export async function fetchExamBySlug(
+	slug: string,
+	token?: string | null,
+	fetchFn?: typeof fetch
+): Promise<Exam> {
 	const t = resolveApiToken(token);
 	const response = await apiRequest<{ success: boolean; message: string; data: Exam }>({
-		endpoint: `/api/v1/exams/by-slug/${slug}`,
+		endpoint: `/api/v1/exams/by-slug/${encodeURIComponent(slug)}`,
 		method: 'GET',
 		token: t,
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		fetch: fetchFn
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch exam');
 	return response.data.data;
@@ -81,6 +90,8 @@ function mapExam(item: ExamApiItem): Exam {
     _id: item._id,
     slug: item.slug ?? '',
     boardSlug: item.boardSlug ?? '',
+    boardId: item.boardId ?? item.board?._id,
+    board: item.board,
     name: {
       en: item.name?.en ?? 'Unnamed Exam',
       hi: item.name?.hi

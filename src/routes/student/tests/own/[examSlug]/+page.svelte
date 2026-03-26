@@ -19,6 +19,8 @@
   const groupedSubjects = $derived(data.groupedSubjects ?? []);
   const error = $derived(data.error ?? null);
   const examSlug = $derived(data.examSlug ?? '');
+  const examIdFromPage = $derived(data.examId ?? '');
+  const boardIdFromPage = $derived(data.boardId ?? '');
 
   const mode = $derived(page.url.searchParams.get('mode'));
   const isManual = $derived(mode === 'manual');
@@ -57,10 +59,19 @@
     createTestError = null;
     creatingTest = true;
 
+    const boardId = snapshot.boardId?.trim() || boardIdFromPage;
+    const examId = snapshot.examId?.trim() || examIdFromPage;
+    if (!boardId || !examId) {
+      createTestError =
+        'Missing exam or board for this test. Please refresh the page or pick another exam.';
+      creatingTest = false;
+      return;
+    }
+
     try {
       const res = await createRandomCustomTest({
-        boardId: snapshot.boardId,
-        examId: snapshot.examId,
+        boardId,
+        examId,
         name: {
           en: `Custom Test ${examName} ${istDate}`
         },
@@ -140,7 +151,13 @@
     {:else if isManual}
       <OwnTestChaptersPanelManual {groupedSubjects} {examSlug} />
     {:else}
-      <OwnTestChaptersPanel {groupedSubjects} {examSlug} onNext={handleChaptersNext} />
+      <OwnTestChaptersPanel
+        {groupedSubjects}
+        {examSlug}
+        examId={examIdFromPage}
+        boardId={boardIdFromPage}
+        onNext={handleChaptersNext}
+      />
     {/if}
   </div>
 </div>
