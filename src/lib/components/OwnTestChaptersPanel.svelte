@@ -187,12 +187,30 @@
     }
     return items;
   });
+
+  /** Subjects that have at least one chapter selected (for bottom bar) */
+  const selectedSubjectsForBar = $derived.by(() => {
+    const out: { id: string; name: string; accent: number }[] = [];
+    for (const [i, row] of groupedSubjects.entries()) {
+      if (subjectChapterStats(row).sel > 0) {
+        out.push({
+          id: row.subject._id,
+          name: row.subject.name?.en ?? row.subject.slug,
+          accent: i % 4
+        });
+      }
+    }
+    return out;
+  });
 </script>
 
 <div
-  class="own-test-chapters-root flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10"
+  class="own-test-chapters-root flex flex-col gap-6"
   data-exam-slug={examSlug}
 >
+  <div
+    class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10"
+  >
   <aside
     class="own-test-subject-rail flex w-full shrink-0 flex-col gap-2
       lg:sticky lg:top-0 lg:z-10 lg:w-[260px] lg:self-start
@@ -336,4 +354,25 @@
       <p class="text-sm own-muted-text">Select a subject to view units.</p>
     {/if}
   </div>
+  </div>
+
+  <footer class="own-bottom-bar" aria-label="Selection summary">
+    <div class="own-bottom-bar__subject">
+      <span class="own-bottom-bar__label">Selected subjects</span>
+      {#if selectedSubjectsForBar.length > 0}
+        <ul class="own-bottom-bar__list" role="list">
+          {#each selectedSubjectsForBar as s (s.id)}
+            <li class="own-bottom-bar__item">
+              <span class="own-selected-strip__tag" data-own-accent={s.accent}>{s.name}</span>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <span class="own-bottom-bar__empty">None selected</span>
+      {/if}
+    </div>
+    <button type="button" class="own-bottom-bar__next">
+      Next
+    </button>
+  </footer>
 </div>

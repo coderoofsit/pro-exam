@@ -502,6 +502,15 @@
   --own-unit-border-mix:            55%;
   --own-chapter-surface:            transparent;
   --own-chapter-border-mix:         42%;
+  /* Bottom bar (OwnTestChaptersPanel) */
+  --own-bottom-bar-bg:              rgba(255, 255, 255, 0.95);
+  --own-bottom-bar-border:          #e2e8f0;
+  --own-bottom-bar-shadow:          0 -4px 24px rgba(15, 23, 42, 0.06);
+  --own-bottom-bar-label:           #64748b;
+  --own-next-btn-bg:                #4f7eff;
+  --own-next-btn-bg-hover:          #3a6aee;
+  --own-next-btn-text:              #ffffff;
+  --own-next-btn-shadow:            0 4px 14px rgba(79, 126, 255, 0.28);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1137,6 +1146,16 @@ html[data-theme="light"] {
   --semantic-error-bg-soft:           #fef2f2;
   --semantic-error-border-soft:       #fecaca;
   --semantic-error-box-text:          #b91c1c;
+
+  /* Own test chapters — bottom bar (light) */
+  --own-bottom-bar-bg:                rgba(255, 255, 255, 0.95);
+  --own-bottom-bar-border:            #e2e8f0;
+  --own-bottom-bar-shadow:            0 -4px 24px rgba(15, 23, 42, 0.06);
+  --own-bottom-bar-label:             #64748b;
+  --own-next-btn-bg:                  #4f7eff;
+  --own-next-btn-bg-hover:            #3a6aee;
+  --own-next-btn-text:                #ffffff;
+  --own-next-btn-shadow:              0 4px 14px rgba(79, 126, 255, 0.28);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1435,6 +1454,14 @@ html[data-theme='dark'] .student-dash-mascot {
   --own-unit-border-mix:            58%;
   --own-chapter-surface:            transparent;
   --own-chapter-border-mix:         45%;
+  --own-bottom-bar-bg:              rgba(255, 255, 255, 0.04);
+  --own-bottom-bar-border:          rgba(139, 92, 246, 0.22);
+  --own-bottom-bar-shadow:          0 -8px 32px rgba(5, 7, 13, 0.45);
+  --own-bottom-bar-label:           #a1a1aa;
+  --own-next-btn-bg:                linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --own-next-btn-bg-hover:          linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --own-next-btn-text:              #ffffff;
+  --own-next-btn-shadow:            0 4px 20px rgba(99, 102, 241, 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1450,6 +1477,83 @@ html[data-theme='dark'] .student-dash-mascot {
 /* Panel root: default copy color (titles/body inherit; accents keep their own colors). */
 .own-test-chapters-root {
   color: var(--own-title);
+}
+
+.own-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--own-bottom-bar-border);
+  background: var(--own-bottom-bar-bg);
+  box-shadow: var(--own-bottom-bar-shadow);
+}
+
+.own-bottom-bar__subject {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.own-bottom-bar__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--own-bottom-bar-label);
+}
+
+.own-bottom-bar__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.own-bottom-bar__item {
+  margin: 0;
+}
+
+.own-bottom-bar__empty {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--own-muted);
+}
+
+.own-bottom-bar__next {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.5rem;
+  border: none;
+  border-radius: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--own-next-btn-text);
+  background: var(--own-next-btn-bg);
+  box-shadow: var(--own-next-btn-shadow);
+  transition:
+    background 0.15s ease,
+    transform 0.12s ease;
+}
+
+.own-bottom-bar__next:hover {
+  background: var(--own-next-btn-bg-hover);
+}
+
+.own-bottom-bar__next:focus-visible {
+  outline: 2px solid var(--color-brand-primary, #4f7eff);
+  outline-offset: 2px;
 }
 
 .own-test-subject-rail {
@@ -1523,18 +1627,21 @@ html[data-theme='dark'] .student-dash-mascot {
   color: var(--own-muted);
 }
 
-/* Subject cards — border/glow from palette index 0–3 (no scale / no ring = no clip) */
+/* Subject cards — thin border + glow; checked state uses a light accent fill (no extra thick ring) */
 .own-subject-card {
   position: relative;
   display: block;
   width: 100%;
   border-radius: 14px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   background: var(--own-subject-card-bg);
   padding: 1rem;
   text-align: left;
   cursor: pointer;
-  transition: box-shadow 0.2s ease, filter 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
+    background 0.2s ease;
 }
 .own-subject-card:hover {
   filter: brightness(1.06);
@@ -1555,18 +1662,21 @@ html[data-theme='dark'] .student-dash-mascot {
   border-color: var(--own-accent-3);
   box-shadow: var(--own-accent-3-glow);
 }
-/* Selected: double ring via outer box-shadow only (stays inside padded rail) */
 .own-subject-card--selected[data-own-accent="0"] {
-  box-shadow: var(--own-accent-0-glow), 0 0 0 2px var(--own-accent-0);
+  background: color-mix(in srgb, var(--own-accent-0) 16%, transparent);
+  box-shadow: var(--own-accent-0-glow);
 }
 .own-subject-card--selected[data-own-accent="1"] {
-  box-shadow: var(--own-accent-1-glow), 0 0 0 2px var(--own-accent-1);
+  background: color-mix(in srgb, var(--own-accent-1) 16%, transparent);
+  box-shadow: var(--own-accent-1-glow);
 }
 .own-subject-card--selected[data-own-accent="2"] {
-  box-shadow: var(--own-accent-2-glow), 0 0 0 2px var(--own-accent-2);
+  background: color-mix(in srgb, var(--own-accent-2) 18%, transparent);
+  box-shadow: var(--own-accent-2-glow);
 }
 .own-subject-card--selected[data-own-accent="3"] {
-  box-shadow: var(--own-accent-3-glow), 0 0 0 2px var(--own-accent-3);
+  background: color-mix(in srgb, var(--own-accent-3) 16%, transparent);
+  box-shadow: var(--own-accent-3-glow);
 }
 
 .own-subject-card__title {
