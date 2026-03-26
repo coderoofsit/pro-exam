@@ -1,7 +1,26 @@
 <script lang="ts">
-	import type { Exam } from '$lib/api/exams';
+	import type { Exam as ExamApi } from '$lib/api/exams';
 
-	let { exams, boardName }: { exams: Exam[]; boardName: string } = $props();
+	// Backend payloads don't always match the strict frontend `Exam` type (slug/name i18n can vary).
+	// Use `any` internally so routing works reliably.
+	let { exams, boardName }: { exams: ExamApi[]; boardName: string } = $props();
+
+	function getExamSlug(exam: any): string {
+		return exam?.slug ?? exam?._id ?? '';
+	}
+
+	function getExamNameEn(exam: any): string {
+		const n = exam?.name;
+		if (typeof n === 'string') return n;
+		if (n && typeof n === 'object') return typeof n.en === 'string' ? n.en : '';
+		return '';
+	}
+
+	function getExamNameHi(exam: any): string | null {
+		const n = exam?.name;
+		if (n && typeof n === 'object' && typeof n.hi === 'string') return n.hi;
+		return null;
+	}
 </script>
 
 <div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
@@ -27,7 +46,7 @@
 		>
 			{#each exams as exam (exam._id)}
 				<a
-					href="/student/exams/{exam.slug}/subject"
+					href="/student-exam/{getExamSlug(exam)}"
 					class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 				>
 					{#if exam.image}
@@ -40,17 +59,17 @@
 						<div
 							class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
 						>
-							{exam.name.en[0]?.toUpperCase() ?? '?'}
+							{getExamNameEn(exam)[0]?.toUpperCase() ?? '?'}
 						</div>
 					{/if}
 					<span
 						class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
 					>
-						{exam.name.en}
+						{getExamNameEn(exam)}
 					</span>
-					{#if exam.name.hi}
+					{#if getExamNameHi(exam)}
 						<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
-							{exam.name.hi}
+							{getExamNameHi(exam)}
 						</span>
 					{/if}
 				</a>

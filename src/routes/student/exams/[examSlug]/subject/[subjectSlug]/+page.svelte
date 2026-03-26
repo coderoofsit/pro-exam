@@ -1,31 +1,32 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { chapterStore } from '$lib/stores/chapter';
-	import { examStore } from '$lib/stores/exam';
-	import { fetchChaptersByChapterGroupId, fetchChaptersHierarchy } from '$lib/api/chapters';
-	import { fetchExamBySlug } from '$lib/api/exams';
+	import { browser } from '$app/environment';
 	import { chapterQuestionsPath } from '$lib/chapterRoutes';
-	import type { Chapter } from '$lib/api/chapters';
+	import type { Chapter, ChaptersHierarchyResponse } from '$lib/api/chapters';
+	import { chapterStore } from '$lib/stores/chapter';
 
-	const examSlug = $derived($page.params.examSlug);
-	const subjectSlug = $derived($page.params.subjectSlug);
+	let { data } = $props<{
+		data: {
+			examSlug: string;
+			subjectSlug: string;
+			exam: any | null;
+			hierarchy: ChaptersHierarchyResponse | null;
+			chapterGroupsChapters: Record<string, Chapter[]>;
+			message: string | null;
+		};
+	}>();
 
-	let loading = $state(false);
-	let exam = $state<{ boardSlug: string; slug: string; name?: { en?: string } } | null>(null);
-	let chaptersLoading = $state(false);
-	let error = $state<string | null>(null);
+	const examSlug = $derived(data.examSlug);
+	const subjectSlug = $derived(data.subjectSlug);
 
-	const chapterStoreState = $derived($chapterStore);
-
-	const hierarchy = $derived.by(() => {
-		if (!exam || !chapterStoreState) return null;
-		return chapterStoreState.hierarchyByKey[`${exam.boardSlug}:${exam.slug}`];
-	});
+	function getExamTitleEn(exam: any, fallback: string) {
+		const n = exam?.name;
+		if (typeof n === 'string') return n;
+		if (n && typeof n === 'object' && typeof n.en === 'string') return n.en;
+		return fallback;
+	}
 
 	const subject = $derived.by(() => {
-		const h = hierarchy;
-		if (!h?.subjects) return null;
-		return h.subjects.find((s) => s.slug === subjectSlug) ?? null;
+		return data.hierarchy?.subjects?.find((s: any) => s.slug === subjectSlug) ?? null;
 	});
 
 	type ChapterWithGroup = {
@@ -33,84 +34,54 @@
 		groupName: string;
 		groupOrder: number;
 	};
-	const allChapters = $derived.by(() => {
+
+	const allChapters = $derived.by((): ChapterWithGroup[] => {
 		const subj = subject;
-		const cs = chapterStoreState;
-		if (!subj?.chapterGroups || !cs) return [];
+		if (!subj) return [];
+
 		const out: ChapterWithGroup[] = [];
-		for (const cg of subj.chapterGroups) {
-			const chapters = cs.chaptersByChapterGroupId[cg._id];
-			if (chapters) {
-				for (const ch of chapters) {
-					out.push({
-						chapter: ch,
-						groupName: cg.name?.en ?? cg.slug ?? '',
-						groupOrder: cg.order ?? 0
-					});
-				}
+		for (const cg of subj.chapterGroups ?? []) {
+			const chapters = data.chapterGroupsChapters[cg._id] ?? [];
+			for (const ch of chapters) {
+				out.push({
+					chapter: ch,
+					groupName: cg.name?.en ?? cg.slug ?? '',
+					groupOrder: cg.order ?? 0
+				});
 			}
 		}
+
 		return out.sort((a, b) => {
 			if (a.groupOrder !== b.groupOrder) return a.groupOrder - b.groupOrder;
 			return a.chapter.order - b.chapter.order;
 		});
 	});
 
+	// Seed stores from SSR data so later navigation can reuse cached hierarchy/chapter lists.
 	$effect(() => {
-		if (!examSlug || !subjectSlug) return;
-		const exFromStore = examStore.getExamBySlug(examSlug);
-		if (exFromStore) exam = exFromStore;
-		const ex = exFromStore ?? exam;
-		if (!ex) {
-			loading = true;
-			error = null;
-			fetchExamBySlug(examSlug)
-				.then((e) => {
-					exam = e;
-					if (!chapterStore.hasHierarchy(e.boardSlug, e.slug)) {
-						return fetchChaptersHierarchy(e.boardSlug, e.slug);
-					}
-				})
-				.then((h) => {
-					if (h && exam) chapterStore.setHierarchy(exam.boardSlug, exam.slug, h);
-				})
-				.catch((e) => (error = e instanceof Error ? e.message : 'Failed to load'))
-				.finally(() => (loading = false));
-			return;
-		}
-		exam = ex;
-		if (chapterStore.hasHierarchy(ex.boardSlug, ex.slug)) return;
-		if (loading) return;
-		loading = true;
-		error = null;
-		fetchChaptersHierarchy(ex.boardSlug, ex.slug)
-			.then((h) => chapterStore.setHierarchy(ex.boardSlug, ex.slug, h))
-			.catch((e) => (error = e instanceof Error ? e.message : 'Failed to load'))
-			.finally(() => (loading = false));
-	});
+		if (!browser) return;
+		if (!data?.exam?.boardSlug || !data?.exam?.slug) return;
+		if (!data?.hierarchy) return;
 
-	$effect(() => {
-		const subj = subject;
-		if (!subj?.chapterGroups?.length) return;
-		if (chaptersLoading) return;
-		const missing = subj.chapterGroups.filter((cg) => !chapterStore.hasChaptersForChapterGroup(cg._id));
-		if (missing.length === 0) return;
-		chaptersLoading = true;
-		Promise.all(missing.map((cg) => fetchChaptersByChapterGroupId(cg._id)))
-			.then((results) => {
-				missing.forEach((cg, i) => {
-					const res = results[i];
-					const chapters = Array.isArray(res) ? res : (res as { data: Chapter[] }).data;
-					chapterStore.setChaptersByChapterGroupId(cg._id, chapters);
-				});
-			})
-			.catch(() => {})
-			.finally(() => (chaptersLoading = false));
+		const boardSlug = data.exam.boardSlug as string;
+		const examSlugForKey = data.exam.slug as string;
+
+		if (!chapterStore.hasHierarchy(boardSlug, examSlugForKey)) {
+			chapterStore.setHierarchy(boardSlug, examSlugForKey, data.hierarchy);
+		}
+
+		for (const [chapterGroupId, chapters] of Object.entries(data.chapterGroupsChapters ?? {})) {
+			if (!chapterGroupId) continue;
+			if (chapterStore.hasChaptersForChapterGroup(chapterGroupId)) continue;
+			if (Array.isArray(chapters) && chapters.length) {
+				chapterStore.setChaptersByChapterGroupId(chapterGroupId, chapters);
+			}
+		}
 	});
 </script>
 
 <svelte:head>
-	<title>{subject?.name?.en ?? subjectSlug} — {exam?.name?.en ?? examSlug}</title>
+	<title>{subject?.name?.en ?? subjectSlug} — {data.exam ? getExamTitleEn(data.exam, examSlug) : examSlug}</title>
 </svelte:head>
 
 <div class="flex min-h-0 items-start bg-[var(--page-bg)] text-[var(--page-text)]">
@@ -127,9 +98,9 @@
 			Back to subjects
 		</a>
 		<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Subjects</h2>
-		{#if hierarchy?.subjects}
+		{#if data.hierarchy?.subjects}
 			<nav class="space-y-0.5">
-				{#each hierarchy.subjects as s (s._id)}
+				{#each data.hierarchy.subjects as s (s._id)}
 					{#if s.slug === subjectSlug}
 						<div
 							class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm font-medium text-[var(--page-text)]"
@@ -140,10 +111,10 @@
 							<div class="mt-2 pl-3">
 								{#each subject.chapterGroups as cg (cg._id)}
 									<div class="mb-2 text-xs font-medium text-[var(--page-text-muted)]">{cg.name?.en ?? cg.slug}</div>
-									{#if chapterStoreState?.chaptersByChapterGroupId[cg._id]}
-										{#each chapterStoreState.chaptersByChapterGroupId[cg._id] as ch (ch._id)}
+									{#if data.chapterGroupsChapters[cg._id]?.length}
+										{#each data.chapterGroupsChapters[cg._id] as ch (ch._id)}
 											<a
-												href={chapterQuestionsPath(examSlug ?? '', subjectSlug ?? '', ch)}
+												href={chapterQuestionsPath(examSlug, subjectSlug, ch)}
 												class="mb-1 block truncate rounded px-2 py-1 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
 											>
 												{ch.order}. {ch.name?.en ?? ch.slug}
@@ -171,16 +142,10 @@
 			<h1 class="mb-2 text-2xl font-bold text-[var(--page-text)]">{subject?.name?.en ?? subjectSlug}</h1>
 			<p class="mb-6 text-sm text-[var(--page-text-muted)]">Select a chapter to view questions</p>
 
-			{#if loading}
-				<div class="flex min-h-[200px] items-center justify-center text-[var(--page-text-muted)]">Loading...</div>
-			{:else if error}
-				<p class="text-semantic-error-soft">{error}</p>
+			{#if data.message}
+				<p class="text-semantic-error-soft">{data.message}</p>
 			{:else if !subject}
 				<p class="text-[var(--page-text-muted)]">Subject not found.</p>
-			{:else if chaptersLoading}
-				<div class="flex min-h-[120px] items-center justify-center text-[var(--page-text-muted)]">
-					Loading chapters...
-				</div>
 			{:else if allChapters.length === 0}
 				<p class="text-[var(--page-text-muted)]">No chapters found for this subject.</p>
 			{:else}

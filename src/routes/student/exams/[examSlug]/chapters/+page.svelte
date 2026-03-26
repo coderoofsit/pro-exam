@@ -1,52 +1,39 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
+	import type { ChaptersHierarchyResponse } from '$lib/api/chapters';
 	import { chapterStore } from '$lib/stores/chapter';
-	import { examStore } from '$lib/stores/exam';
-	import { fetchExamBySlug } from '$lib/api/exams';
-	import { fetchChaptersHierarchy } from '$lib/api/chapters';
 
-	const examSlug = $derived($page.params.examSlug);
+	let { data } = $props<{
+		data: {
+			examSlug: string;
+			exam: any | null;
+			hierarchy: ChaptersHierarchyResponse | null;
+			message: string | null;
+		};
+	}>();
 
-	let loading = $state(false);
-	let error = $state<string | null>(null);
-	let exam = $state<{ name?: { en?: string }; boardSlug: string; slug: string } | null>(null);
+	function getExamTitleEn(exam: any, fallback: string) {
+		const n = exam?.name;
+		if (typeof n === 'string') return n;
+		if (n && typeof n === 'object' && typeof n.en === 'string') return n.en;
+		return fallback;
+	}
 
-	const chapterStoreState = $derived($chapterStore);
-	const hierarchy = $derived.by(() => {
-		if (!exam || !chapterStoreState) return null;
-		return chapterStoreState.hierarchyByKey[`${exam.boardSlug}:${exam.slug}`];
-	});
-
+	// Seed store from SSR data so navigation can reuse it without refetch.
 	$effect(() => {
-		if (!examSlug) return;
-		const examFromStore = examStore.getExamBySlug(examSlug);
-		const boardSlug = examFromStore?.boardSlug ?? exam?.boardSlug;
-		if (boardSlug && chapterStore.hasHierarchy(boardSlug, examSlug)) {
-			exam = examFromStore ?? exam;
-			return;
-		}
-		if (loading) return;
-		loading = true;
-		error = null;
-		(async () => {
-			try {
-				const e = examFromStore ?? (await fetchExamBySlug(examSlug));
-				exam = e;
-				if (chapterStore.hasHierarchy(e.boardSlug, e.slug)) return;
-				const h = await fetchChaptersHierarchy(e.boardSlug, e.slug);
-				chapterStore.setHierarchy(e.boardSlug, e.slug, h);
-			} catch (err) {
-				error = err instanceof Error ? err.message : 'Failed to fetch chapters';
-			} finally {
-				loading = false;
-			}
-		})();
-	});
+		if (!browser) return;
+		if (!data?.exam?.boardSlug || !data?.exam?.slug) return;
+		if (!data?.hierarchy) return;
 
+		const boardSlug = data.exam.boardSlug as string;
+		const examSlugForKey = data.exam.slug as string;
+		if (chapterStore.hasHierarchy(boardSlug, examSlugForKey)) return;
+		chapterStore.setHierarchy(boardSlug, examSlugForKey, data.hierarchy);
+	});
 </script>
 
 <svelte:head>
-	<title>{exam?.name?.en ?? examSlug} Chapters</title>
+	<title>{data.exam ? getExamTitleEn(data.exam, data.examSlug) : data.examSlug} Chapters</title>
 </svelte:head>
 
 <div class="min-h-screen bg-[var(--page-bg)] text-[var(--page-text)]">
@@ -58,21 +45,19 @@
 			← Back to Exams
 		</a>
 		<div class="mb-8">
-			<h1 class="text-3xl font-bold md:text-4xl">{exam?.name?.en ?? examSlug}</h1>
+			<h1 class="text-3xl font-bold md:text-4xl">{data.exam ? getExamTitleEn(data.exam, data.examSlug) : data.examSlug}</h1>
 			<p class="mt-2 text-base text-[var(--page-text-muted)]">Select a subject to view chapters and questions</p>
 		</div>
 
-		{#if loading}
-			<div class="flex min-h-[200px] items-center justify-center text-[var(--page-text-muted)]">Loading...</div>
-		{:else if error}
-			<p class="text-semantic-error-soft">{error}</p>
-		{:else if hierarchy?.subjects && hierarchy.subjects.length === 0}
+		{#if data.message}
+			<p class="text-semantic-error-soft">{data.message}</p>
+		{:else if data.hierarchy?.subjects && data.hierarchy.subjects.length === 0}
 			<p class="text-[var(--page-text-muted)]">No subjects found for this exam.</p>
-		{:else if hierarchy?.subjects}
+		{:else if data.hierarchy?.subjects}
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{#each hierarchy.subjects as subject, i (subject._id)}
+				{#each data.hierarchy.subjects as subject, i (subject._id)}
 					<a
-						href="/student/exams/{examSlug}/subject/{subject.slug}"
+						href="/student/exams/{data.examSlug}/subject/{subject.slug}"
 						class="group flex min-h-[120px] items-start gap-4 rounded-2xl border-2 bg-[var(--page-card-bg)] p-5 text-left text-[var(--page-card-heading)] shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md subject-picker-card--{i % 4}"
 					>
 						<div class="flex min-w-0 flex-1 flex-col">
