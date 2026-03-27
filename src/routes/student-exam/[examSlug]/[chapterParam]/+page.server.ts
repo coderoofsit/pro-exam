@@ -4,14 +4,42 @@ import { fetchQuestionsByChapter } from '$lib/api/questions';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
-const QUESTIONS_PAGE_LIMIT = 10;
+const QUESTIONS_PAGE_LIMIT = 25;
+const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
+const ALLOWED_KINDS = ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as const;
+
+function parseDifficulties(values: string[]): string[] {
+	const allowed = new Set(ALLOWED_DIFFICULTIES);
+	const tokens = values
+		.flatMap((v) => v.split(','))
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean);
+	const unique = Array.from(new Set(tokens));
+	const filtered = unique.filter((d) => allowed.has(d as (typeof ALLOWED_DIFFICULTIES)[number]));
+	return filtered.length ? filtered : ['easy'];
+}
+
+function parseKinds(values: string[]): string[] {
+	const allowed = new Set(ALLOWED_KINDS);
+	const tokens = values
+		.flatMap((v) => v.split(','))
+		.map((s) => s.trim().toUpperCase())
+		.filter(Boolean);
+	const unique = Array.from(new Set(tokens));
+	return unique.filter((k) => allowed.has(k as (typeof ALLOWED_KINDS)[number]));
+}
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const examSlug = params.examSlug;
 	const chapterParam = params.chapterParam;
+	const activeDifficulties = parseDifficulties(url.searchParams.getAll('difficulty'));
+	const activeKinds = parseKinds(url.searchParams.getAll('kind'));
 
 	const currentPageParam = Number(url.searchParams.get('page') || '1');
 	const safePage = Number.isNaN(currentPageParam) || currentPageParam < 1 ? 1 : currentPageParam;
+	const previewMode = String(url.searchParams.get('preview') ?? '') === '1';
+	const reviewStartParam = Number(url.searchParams.get('reviewStart') || '');
+	const requestedReviewStart = Number.isNaN(reviewStartParam) || reviewStartParam < 0 ? null : reviewStartParam;
 
 	try {
 		const chaptersRes = await fetchGroupedChaptersByExamSlug(examSlug);
@@ -56,28 +84,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		}
 
 		const questionsRes = resolvedChapterId
-			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT)
+			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT, {
+					difficulty: activeDifficulties,
+					kind: activeKinds.length ? activeKinds : null
+				})
 			: null;
 
-		// Preload all question pages on server for review mode so client doesn't need extra API calls
-		// and can paginate both forward and backward across page boundaries.
-		let reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
-		if (resolvedChapterId && questionsRes && questionsRes.lastPage > 1) {
-			const otherPages = Array.from({ length: questionsRes.lastPage }, (_, i) => i + 1).filter((p) => p !== safePage);
-			const rest = await Promise.all(
-				otherPages.map((p) => fetchQuestionsByChapter(resolvedChapterId, p, QUESTIONS_PAGE_LIMIT))
-			);
-
-			const byPage = new Map<number, Question[]>();
-			byPage.set(safePage, questionsRes.data ?? []);
-			for (let i = 0; i < otherPages.length; i++) {
-				byPage.set(otherPages[i], rest[i]?.data ?? []);
-			}
-
-			reviewPoolQuestions = Array.from({ length: questionsRes.lastPage }, (_, i) => i + 1).flatMap(
-				(pageNo) => byPage.get(pageNo) ?? []
-			);
-		}
+		// Only use the current page for the initial review pool.
+		// This keeps API calls to a single page per request.
+		const reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
 
 		return {
 			examSlug,
@@ -87,6 +102,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			chapter,
 			allChapters: currentSubjectChapters,
 			subjectSlug,
+			activeDifficulties,
+			activeKinds,
+			previewMode,
+			requestedReviewStart,
 			questions: questionsRes?.data ?? [],
 			reviewPoolQuestions,
 			paginationMeta: questionsRes
@@ -103,6 +122,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			chapter: null,
 			allChapters: [],
 			subjectSlug: null,
+			activeDifficulties,
+			activeKinds,
+			previewMode,
+			requestedReviewStart,
 			questions: [],
 			reviewPoolQuestions: [],
 			paginationMeta: null,
@@ -119,6 +142,10 @@ export type PageData = {
 	chapter: any | null;
 	allChapters: any[];
 	subjectSlug: string | null;
+	activeDifficulties: string[];
+	activeKinds: string[];
+	previewMode: boolean;
+	requestedReviewStart: number | null;
 	questions: Question[];
 	reviewPoolQuestions: Question[];
 	paginationMeta: { total: number; lastPage: number; limit: number } | null;

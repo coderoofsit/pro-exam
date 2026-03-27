@@ -7,17 +7,24 @@
 	import { navigating } from "$app/stores";
 
 	type Question = PageData["questions"][number];
+	type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: number };
 
 	let { data } = $props<{ data: PageData }>();
 
 	let selectedQuestionIndex = $state<number | null>(null);
-	let reviewPage = $state(1);
+	let reviewStartIndex = $state(0);
 	let previewAllQuestions = $state<Question[]>([]);
 	let previewBaseNumber = $state(0);
+	let lastReviewDatasetKey = $state<string | null>(null);
 	let sidebarCollapsed = $state(false);
+	let filterDrawerOpen = $state(false);
+	let draftDifficulties = $state<string[]>(['easy']);
+	let draftKinds = $state<string[]>([]);
 
 	const REVIEW_PAGE_SIZE = 5;
 	const PAGINATION_WINDOW = 2;
+	const difficultyOptions = ['easy', 'medium', 'hard'] as const;
+	const kindOptions = ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as const;
 
 	const filteredChapters = $derived(data.allChapters);
 	const isLoading = $derived($navigating !== null);
@@ -28,41 +35,129 @@
 		}
 	});
 
+	$effect(() => {
+		draftDifficulties = data.activeDifficulties;
+		draftKinds = data.activeKinds;
+	});
+
+	$effect(() => {
+		// If filters/page/chapter changes while review is open, re-seed review data so it reflects new filters.
+		const d = [...data.activeDifficulties].sort().join(',');
+		const k = data.activeKinds.length ? [...data.activeKinds].sort().join(',') : 'all';
+		const key = `${data.resolvedChapterId ?? 'none'}::d=${d}::k=${k}::p=${data.safePage}`;
+
+		if (selectedQuestionIndex === null) {
+			lastReviewDatasetKey = key;
+			return;
+		}
+
+		if (lastReviewDatasetKey === key) return;
+		lastReviewDatasetKey = key;
+
+		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
+		previewAllQuestions = pool;
+		const limit = reviewPageLimit();
+		const pageStart = (data.safePage - 1) * limit;
+
+		previewBaseNumber = 1;
+		reviewStartIndex = data.requestedReviewStart ?? pageStart;
+		selectedQuestionIndex = 0;
+	});
+
+	$effect(() => {
+		// Open preview mode from SSR query (preview=1&reviewStart=...)
+		if (!data.previewMode) return;
+		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
+		const carry = readCarry();
+		previewAllQuestions =
+			carry?.direction === 'prepend'
+				? [...carry.questions, ...pool]
+				: carry?.direction === 'append'
+					? [...pool, ...carry.questions]
+					: pool;
+		previewBaseNumber = 1;
+		const limit = reviewPageLimit();
+		const pageStart = (data.safePage - 1) * limit;
+		reviewStartIndex = data.requestedReviewStart ?? pageStart;
+		selectedQuestionIndex = 0;
+	});
+
+	const storeChapterKey = $derived.by(() => {
+		if (!data.resolvedChapterId) return null;
+		const d = [...data.activeDifficulties].sort().join(',');
+		const k = data.activeKinds.length ? [...data.activeKinds].sort().join(',') : 'all';
+		return `${data.resolvedChapterId}::d=${d}::k=${k}`;
+	});
+
 	const hasCurrentPage = $derived.by(() => {
-		if (!data.resolvedChapterId) return false;
+		if (!storeChapterKey) return false;
 		$questionStore;
-		return questionStore.hasPage(data.resolvedChapterId, data.safePage);
+		return questionStore.hasPage(storeChapterKey, data.safePage);
 	});
 
 	const displayQuestions = $derived.by(() => {
-		if (!data.resolvedChapterId) return data.questions;
+		if (!storeChapterKey) return data.questions;
 		$questionStore;
 		return hasCurrentPage
-			? questionStore.getQuestionsForPage(data.resolvedChapterId, data.safePage) ?? []
+			? questionStore.getQuestionsForPage(storeChapterKey, data.safePage) ?? []
 			: data.questions;
 	});
 
 	const displayPaginationMeta = $derived.by(() => {
-		if (!data.resolvedChapterId) return data.paginationMeta;
+		if (!storeChapterKey) return data.paginationMeta;
 		$questionStore;
 		return hasCurrentPage
-			? questionStore.getPagination(data.resolvedChapterId) ?? data.paginationMeta
+			? questionStore.getPagination(storeChapterKey) ?? data.paginationMeta
 			: data.paginationMeta;
 	});
 
 	$effect(() => {
 		if (!browser) return;
-		if (!data.resolvedChapterId) return;
+		if (!storeChapterKey) return;
 		if (!data.questions.length) return;
 		if (hasCurrentPage) return;
 
-		questionStore.setQuestionsPage(data.resolvedChapterId, data.safePage, data.questions, data.paginationMeta ?? undefined);
+		questionStore.setQuestionsPage(storeChapterKey, data.safePage, data.questions, data.paginationMeta ?? undefined);
 	});
 
-	const questionsPageUrl = (p: number) =>
-		p <= 1
-			? `/student-exam/${data.examSlug}/${encodeURIComponent(data.chapterParam)}`
-			: `/student-exam/${data.examSlug}/${encodeURIComponent(data.chapterParam)}?page=${p}`;
+	const chapterBaseUrl = (chapterParamOverride?: string) =>
+		`/student-exam/${data.examSlug}/${encodeURIComponent(chapterParamOverride ?? data.chapterParam)}`;
+
+	const activeFiltersQuery = (opts?: { page?: number }) => {
+		const params = new URLSearchParams();
+		params.set('difficulty', data.activeDifficulties.join(','));
+		if (data.activeKinds.length) params.set('kind', data.activeKinds.join(','));
+		params.set('page', String(opts?.page ?? 1));
+		return params.toString();
+	};
+
+	const chapterHref = (
+		chapterParamValue: string,
+		opts?: { page?: number; preview?: boolean; reviewStart?: number; carry?: boolean }
+	) => {
+		const params = new URLSearchParams(activeFiltersQuery(opts));
+		if (opts?.preview) params.set('preview', '1');
+		if (typeof opts?.reviewStart === 'number') params.set('reviewStart', String(opts.reviewStart));
+		if (opts?.carry) params.set('carry', '1');
+		return `${chapterBaseUrl(chapterParamValue)}?${params.toString()}`;
+	};
+
+	const questionsPageUrl = (p: number) => `${chapterBaseUrl()}?${activeFiltersQuery({ page: p })}`;
+
+	async function applyFilters() {
+		const params = new URLSearchParams();
+		params.set('difficulty', draftDifficulties.length ? draftDifficulties.join(',') : 'easy');
+		if (draftKinds.length) params.set('kind', draftKinds.join(','));
+		params.set('page', '1');
+		const qs = params.toString();
+		await goto(`${chapterBaseUrl()}?${qs}`);
+		filterDrawerOpen = false;
+	}
+
+	async function clearKindFilter() {
+		draftKinds = [];
+		await applyFilters();
+	}
 
 	const paginationStartPage = $derived(
 		displayPaginationMeta
@@ -91,15 +186,64 @@
 		),
 	);
 
+	function reviewPageLimit(): number {
+		return displayPaginationMeta?.limit ?? 25;
+	}
+
+	function reviewTotal(): number {
+		return displayPaginationMeta?.total ?? 0;
+	}
+
+	function pageForGlobalIndex(globalIndex: number, limit: number): number {
+		return Math.floor(globalIndex / limit) + 1;
+	}
+
+	function offsetForGlobalIndex(globalIndex: number, limit: number): number {
+		return globalIndex % limit;
+	}
+
 	const reviewQuestions = $derived.by((): Question[] => {
-		const start = (reviewPage - 1) * REVIEW_PAGE_SIZE;
-		return previewAllQuestions.slice(start, start + REVIEW_PAGE_SIZE);
+		const limit = reviewPageLimit();
+		const pageStart = (data.safePage - 1) * limit;
+		const localStart = Math.max(0, reviewStartIndex - pageStart);
+		return previewAllQuestions.slice(localStart, localStart + REVIEW_PAGE_SIZE);
 	});
 
-	const canReviewPrev = $derived(reviewPage > 1);
+	const canReviewPrev = $derived(reviewStartIndex > 0);
 	const canReviewNext = $derived.by(() => {
-		return reviewPage * REVIEW_PAGE_SIZE < previewAllQuestions.length;
+		const total = reviewTotal();
+		if (!total) return false;
+		return reviewStartIndex + REVIEW_PAGE_SIZE < total;
 	});
+	const reviewPageNumber = $derived(Math.floor(reviewStartIndex / REVIEW_PAGE_SIZE) + 1);
+
+	type CarryPayload = { direction: 'prepend' | 'append'; questions: Question[] };
+	const carryStorageKey = () => {
+		const d = [...data.activeDifficulties].sort().join(',');
+		const k = data.activeKinds.length ? [...data.activeKinds].sort().join(',') : 'all';
+		return `review-carry::${data.resolvedChapterId ?? 'none'}::d=${d}::k=${k}`;
+	};
+
+	function writeCarry(payload: CarryPayload) {
+		if (!browser) return;
+		try {
+			sessionStorage.setItem(carryStorageKey(), JSON.stringify(payload));
+		} catch {}
+	}
+
+	function readCarry(): CarryPayload | null {
+		if (!browser) return null;
+		try {
+			const raw = sessionStorage.getItem(carryStorageKey());
+			if (!raw) return null;
+			sessionStorage.removeItem(carryStorageKey());
+			const parsed = JSON.parse(raw) as CarryPayload;
+			if (!parsed || !Array.isArray(parsed.questions)) return null;
+			return parsed;
+		} catch {
+			return null;
+		}
+	}
 
 	async function openQuestionPreview(index: number) {
 		selectedQuestionIndex = index;
@@ -107,29 +251,103 @@
 		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
 		previewAllQuestions = pool;
 
-		const limit = displayPaginationMeta?.limit ?? 10;
+		const limit = reviewPageLimit();
 		previewBaseNumber = 1;
-		// Open review on the page that contains the clicked question in the full pooled sequence.
 		const globalIndex = (data.safePage - 1) * limit + index;
-		reviewPage = Math.floor(globalIndex / REVIEW_PAGE_SIZE) + 1;
+		// Start from the clicked question as the first item in review.
+		reviewStartIndex = globalIndex;
+
+		// If we clicked near the end of the page, carry remaining questions and SSR-navigate to next page
+		// so the review panel can still show 5 questions (current tail + next head).
+		const remainingOnPage = pool.length - index;
+		const lastPage = displayPaginationMeta?.lastPage ?? data.paginationMeta?.lastPage ?? 1;
+		if (browser && remainingOnPage < REVIEW_PAGE_SIZE && data.safePage < lastPage) {
+			writeCarry({ direction: 'prepend', questions: pool.slice(index) });
+			await goto(chapterHref(data.chapterParam, { page: data.safePage + 1, preview: true, reviewStart: globalIndex, carry: true }));
+			return;
+		}
 	}
 
 	async function goReviewPrev() {
-		if (reviewPage <= 1) return;
-		reviewPage = reviewPage - 1;
+		if (!canReviewPrev) return;
+		const next = Math.max(0, reviewStartIndex - REVIEW_PAGE_SIZE);
+		const limit = reviewPageLimit();
+		const targetPage = pageForGlobalIndex(next, limit);
+		if (targetPage !== data.safePage) {
+			// When moving backward across pages, append the first few questions from current page
+			// so previous page can render a full set of 5 if needed.
+			const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
+			writeCarry({ direction: 'append', questions: pool.slice(0, REVIEW_PAGE_SIZE) });
+			await goto(chapterHref(data.chapterParam, { page: targetPage, preview: true, reviewStart: next, carry: true }));
+			return;
+		}
+		reviewStartIndex = next;
 	}
 
 	async function goReviewNext() {
 		if (!canReviewNext) return;
-		const next = reviewPage + 1;
-		reviewPage = next;
+		const next = reviewStartIndex + REVIEW_PAGE_SIZE;
+		const limit = reviewPageLimit();
+		const targetPage = pageForGlobalIndex(next, limit);
+		if (targetPage !== data.safePage) {
+			// Carry remaining questions from current page so next page can show 5 immediately.
+			const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
+			const pageStart = (data.safePage - 1) * limit;
+			const localStart = Math.max(0, next - pageStart);
+			writeCarry({ direction: 'prepend', questions: pool.slice(localStart) });
+			await goto(chapterHref(data.chapterParam, { page: targetPage, preview: true, reviewStart: next, carry: true }));
+			return;
+		}
+		reviewStartIndex = next;
 	}
 
 	function closeQuestionPreview() {
 		selectedQuestionIndex = null;
-		reviewPage = 1;
+		reviewStartIndex = 0;
 		previewAllQuestions = [];
 		previewBaseNumber = 0;
+	}
+
+	function imageSrc(image: ImageLike): string {
+		if (typeof image === "string") return image;
+		return image?.url ?? "";
+	}
+
+	function imageAlt(image: ImageLike): string {
+		if (typeof image === "string") return "";
+		return image?.alt ?? "";
+	}
+
+	function imageKey(image: ImageLike): string {
+		// Prefer computed URL if present; otherwise fall back to stable Cloudinary fields.
+		if (typeof image === "string") return image;
+		const url = image?.url;
+		if (url) return url;
+		const publicId = image?.publicId;
+		const version = image?.version;
+		if (publicId) return `${publicId}::${version ?? ""}`;
+		return "";
+	}
+
+	function promptImagesOnly(q: Question): ImageLike[] {
+		const promptImages = (q as any)?.prompt?.en?.images ?? [];
+		if (!Array.isArray(promptImages) || promptImages.length === 0) return [];
+
+		// De-dupe using imageKey instead of only `url`, so it also works when `url` is missing.
+		const optionKeys = new Set(
+			((q as any)?.prompt?.en?.options ?? [])
+				.flatMap((opt: any) => (Array.isArray(opt?.images) ? opt.images : []))
+				.map((img: any) => imageKey(img as ImageLike))
+				.filter(Boolean),
+		);
+
+		if (optionKeys.size === 0) return promptImages as ImageLike[];
+
+		return (promptImages as any[]).filter((img) => {
+			const k = imageKey(img as ImageLike);
+			if (!k) return true; // if we can't identify it, keep it
+			return !optionKeys.has(k);
+		});
 	}
 </script>
 
@@ -163,7 +381,7 @@
 					<nav class="space-y-1">
 						{#each filteredChapters as ch (ch._id)}
 							<a
-								href={`/student-exam/${data.examSlug}/${encodeURIComponent(ch.slug ?? ch._id)}`}
+								href={chapterHref(String(ch.slug ?? ch._id), { page: 1 })}
 								class="block truncate rounded px-2 py-1.5 text-sm transition {ch._id === data.resolvedChapterId
 									? 'border border-[var(--page-link)]/40 bg-[var(--page-link)]/10 font-medium text-[var(--page-link)]'
 									: 'text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]'}"
@@ -190,7 +408,7 @@
 		{/if}
 
 		<main class="flex flex-1 flex-col">
-			<div class="mx-auto flex h-full w-full max-w-4xl flex-col px-6">
+			<div class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6">
 				{#if selectedQuestionIndex !== null}
 					<div class="py-6">
 						<button
@@ -209,14 +427,31 @@
 					</div>
 				{:else}
 					<div class="py-6">
-						<h1 class="text-2xl font-bold md:text-3xl">
-							{data.chapter?.name?.en ?? data.chapterParam}
-						</h1>
+						<div class="flex items-start justify-between gap-3">
+							<div>
+								<h1 class="text-2xl font-bold md:text-3xl">
+									{data.chapter?.name?.en ?? data.chapterParam}
+								</h1>
+								{#if displayPaginationMeta}
+									<p class="mt-2 text-sm text-[var(--page-text-muted)]">
+										{displayPaginationMeta.total} questions • Page {data.safePage}
+										of {displayPaginationMeta.lastPage}
+									</p>
+								{/if}
+							</div>
+							<button
+								type="button"
+								class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+								onclick={() => (filterDrawerOpen = true)}
+							>
+								Filters
+							</button>
+						</div>
 						{#if displayPaginationMeta}
-							<p class="mt-2 text-sm text-[var(--page-text-muted)]">
-								{displayPaginationMeta.total} questions • Page {data.safePage}
-								of {displayPaginationMeta.lastPage}
-							</p>
+							<div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--page-text-muted)]">
+								<span class="rounded bg-[var(--page-card-bg)] px-2 py-1">Difficulty: {data.activeDifficulties.join(', ')}</span>
+								<span class="rounded bg-[var(--page-card-bg)] px-2 py-1">Type: {data.activeKinds.length ? data.activeKinds.join(', ') : 'ALL'}</span>
+							</div>
 						{/if}
 					</div>
 
@@ -256,6 +491,21 @@
 												</div>
 												<div class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
 													<MathText content={q.prompt.en.content} />
+													{#if promptImagesOnly(q).length}
+														<div class="mt-3 flex flex-wrap gap-2.5">
+															{#each promptImagesOnly(q) as img, imgIdx (`main-${q._id}-${imgIdx}`)}
+																{@const src = imageSrc(img as ImageLike)}
+																{#if src}
+																	<img
+																		src={src}
+																		alt={imageAlt(img as ImageLike)}
+																		class="max-h-40 max-w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																		loading="lazy"
+																	/>
+																{/if}
+															{/each}
+														</div>
+													{/if}
 												</div>
 											</div>
 										</button>
@@ -305,7 +555,7 @@
 											Prev
 										</button>
 										<div class="text-xs text-[var(--page-text-muted)]">
-											Page {reviewPage}
+											Page {reviewPageNumber}
 										</div>
 										<button
 											type="button"
@@ -322,11 +572,26 @@
 									{#each reviewQuestions as q, i (q._id)}
 										<div class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
 											<div class="mb-2 text-xs font-medium text-[var(--page-text-muted)]">
-												Q{previewBaseNumber + (reviewPage - 1) * REVIEW_PAGE_SIZE + i}
+												Q{previewBaseNumber + reviewStartIndex + i}
 											</div>
 
 											<div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
 												<MathText content={q.prompt.en.content} />
+												{#if promptImagesOnly(q).length}
+													<div class="mt-3 flex flex-wrap gap-2.5">
+														{#each promptImagesOnly(q) as img, imgIdx (`preview-${q._id}-${imgIdx}`)}
+															{@const src = imageSrc(img as ImageLike)}
+															{#if src}
+																<img
+																	src={src}
+																	alt={imageAlt(img as ImageLike)}
+																	class="max-h-56 max-w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																	loading="lazy"
+																/>
+															{/if}
+														{/each}
+													</div>
+												{/if}
 											</div>
 
 											{#if q.prompt.en.options?.length}
@@ -336,8 +601,23 @@
 															<span class="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">
 																{option.identifier}
 															</span>
-															<div class="flex-1 overflow-x-auto">
+															<div class="min-w-0 flex-1 break-words">
 																<MathText content={option.content} />
+																{#if option.images?.length}
+																	<div class="mt-2 flex flex-wrap gap-2">
+																		{#each option.images as img, imgIdx (`opt-${q._id}-${option.identifier}-${imgIdx}`)}
+																			{@const src = imageSrc(img as ImageLike)}
+																			{#if src}
+																				<img
+																					src={src}
+																					alt={imageAlt(img as ImageLike)}
+																					class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain"
+																					loading="lazy"
+																				/>
+																			{/if}
+																		{/each}
+																	</div>
+																{/if}
 															</div>
 														</div>
 													{/each}
@@ -354,3 +634,87 @@
 		</main>
 	</div>
 </div>
+
+{#if filterDrawerOpen}
+	<div
+		class="fixed inset-0 z-30 bg-black/40"
+		role="button"
+		tabindex="0"
+		onclick={() => (filterDrawerOpen = false)}
+		onkeydown={(e) => (e.key === 'Escape' ? (filterDrawerOpen = false) : null)}
+	></div>
+	<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-4 shadow-xl">
+		<div class="mb-4 flex items-center justify-between">
+			<h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
+			<button
+				type="button"
+				class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
+				onclick={() => (filterDrawerOpen = false)}
+			>
+				Close
+			</button>
+		</div>
+
+		<div class="space-y-5">
+			<div>
+				<div class="mb-2 text-sm font-medium text-[var(--page-text)]">Difficulty</div>
+				<div class="flex flex-wrap gap-2">
+					{#each difficultyOptions as option}
+						<button
+							type="button"
+							onclick={() => {
+								const next = draftDifficulties.includes(option)
+									? draftDifficulties.filter((d) => d !== option)
+									: [...draftDifficulties, option];
+								draftDifficulties = next.length ? next : ['easy'];
+							}}
+							class="rounded border px-2.5 py-1.5 text-xs {draftDifficulties.includes(option)
+								? 'border-[var(--page-link)] bg-[var(--page-link)]/10 text-[var(--page-link)]'
+								: 'border-[var(--page-card-border)] text-[var(--page-text-muted)]'}"
+						>
+							{option}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div>
+				<div class="mb-2 text-sm font-medium text-[var(--page-text)]">Type</div>
+				<div class="grid gap-2">
+					{#each kindOptions as option}
+						<button
+							type="button"
+							onclick={() => {
+								draftKinds = draftKinds.includes(option)
+									? draftKinds.filter((k) => k !== option)
+									: [...draftKinds, option];
+							}}
+							class="rounded border px-2.5 py-1.5 text-left text-xs {draftKinds.includes(option)
+								? 'border-[var(--page-link)] bg-[var(--page-link)]/10 text-[var(--page-link)]'
+								: 'border-[var(--page-card-border)] text-[var(--page-text-muted)]'}"
+						>
+							{option}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="flex items-center gap-2 pt-1">
+				<button
+					type="button"
+					class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
+					onclick={clearKindFilter}
+				>
+					Clear type
+				</button>
+				<button
+					type="button"
+					class="rounded-lg border border-[var(--page-link)] bg-[var(--page-link)] px-3 py-1.5 text-sm text-white"
+					onclick={applyFilters}
+				>
+					Apply
+				</button>
+			</div>
+		</div>
+	</aside>
+{/if}

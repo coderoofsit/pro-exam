@@ -4,15 +4,24 @@ import { resolveApiToken } from './authToken';
 export type QuestionOption = {
 	identifier: string;
 	content: string;
-	images?: string[];
+	images?: QuestionImage[];
+};
+
+export type QuestionImage = {
+	url?: string;
+	publicId?: string;
+	version?: number;
+	width?: number;
+	height?: number;
+	alt?: string;
 };
 
 export type QuestionPrompt = {
 	content: string;
-	images?: string[];
+	images?: QuestionImage[];
 	options?: QuestionOption[];
 	explanation?: string;
-	explanationImages?: string[];
+	explanationImages?: QuestionImage[];
 };
 
 export type Question = {
@@ -37,17 +46,25 @@ export async function fetchQuestionsByChapter(
 	chapterId: string,
 	page: number = 1,
 	limit: number = 10,
+	filters?: { difficulty?: string[] | null; kind?: string[] | null },
 	token?: string | null
 ): Promise<QuestionsPageResponse> {
 	const t = resolveApiToken(token);
 	const safePage = Number.isNaN(page) || page < 1 ? 1 : page;
 	const safeLimit = Math.min(100, Math.max(1, limit));
+	const params = new URLSearchParams({
+		chapterId,
+		page: String(safePage),
+		limit: String(safeLimit)
+	});
+	if (filters?.difficulty?.length) params.set('difficulty', filters.difficulty.join(','));
+	if (filters?.kind?.length) params.set('kind', filters.kind.join(','));
 	const response = await apiRequest<{
 		success: boolean;
 		message: string;
 		data: QuestionsPageResponse;
 	}>({
-		endpoint: `/api/v1/questions?chapterId=${encodeURIComponent(chapterId)}&page=${safePage}&limit=${safeLimit}`,
+		endpoint: `/api/v1/questions?${params.toString()}`,
 		method: 'GET',
 		token: t,
 		headers: { 'Content-Type': 'application/json' }
