@@ -7,7 +7,6 @@ export type ApiRequestOptions = {
   method?: ApiMethod;
   data?: unknown;
   token?: string | null;
-  /** When true, no `Authorization` header is sent (no token, no env fallback). Use for public SSR fetches. */
   skipAuth?: boolean;
   headers?: Record<string, string>;
   fetch?: typeof globalThis.fetch;
@@ -29,13 +28,15 @@ export type ApiErrorResponse = {
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
-const BASE_URL =
-  (typeof import.meta !== 'undefined' &&
-    (import.meta as any).env?.VITE_PUBLIC_API_URL) ||
-  // Avoid referencing `process` directly (Node types not present in TS config).
-  ((globalThis as any)?.process?.env?.VITE_PUBLIC_API_URL as string | undefined) || 
-  // "http://localhost:8000" ||
-  'https://test-exam-backend-5yh6.onrender.com';
+export const PUBLIC_API_BASE_URL = (
+	(typeof import.meta !== 'undefined' &&
+		(import.meta as ImportMeta & { env?: { VITE_PUBLIC_API_URL?: string } }).env
+			?.VITE_PUBLIC_API_URL) ||
+	((globalThis as unknown as { process?: { env?: { VITE_PUBLIC_API_URL?: string } } })
+		.process?.env?.VITE_PUBLIC_API_URL as string | undefined) ||
+	// 'http://localhost:8000'|| 
+  "https://test-exam-backend-5yh6.onrender.com"
+).replace(/\/+$/, '');
 
 export async function apiRequest<T>({
   endpoint,
@@ -60,7 +61,7 @@ export async function apiRequest<T>({
       finalHeaders['Authorization'] = `Bearer ${bearer}`;
     }
 
-    const response = await customFetch(`${BASE_URL}${endpoint}`, {
+    const response = await customFetch(`${PUBLIC_API_BASE_URL}${endpoint}`, {
       method,
       headers: finalHeaders,
       body: data !== undefined ? JSON.stringify(data) : undefined

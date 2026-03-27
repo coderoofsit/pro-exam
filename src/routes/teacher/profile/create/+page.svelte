@@ -7,7 +7,9 @@
   import type { Exam } from "$lib/api/exams";
   import type { ProfileCreateSubmitPayload } from "$lib/components/profile/ProfileCreateForm.svelte";
 
-  let { data } = $props<{ data: { exams: Exam[] } }>();
+  let { data } = $props<{
+    data: { exams: Exam[]; examsLoadError?: string | null };
+  }>();
 
   let loading = $state(false);
   let submitError = $state("");
@@ -89,6 +91,16 @@
     }
   }
 </script>
+
+{#if data.examsLoadError}
+  <div
+    class="mx-auto mb-4 max-w-2xl rounded-xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]"
+    role="alert"
+  >
+    Could not load the exam list ({data.examsLoadError}). Check your connection, refresh the page, or
+    ensure <code class="rounded bg-black/10 px-1">VITE_PUBLIC_API_URL</code> is set on the server.
+  </div>
+{/if}
 
 <ProfileCreateForm
   role="teacher"

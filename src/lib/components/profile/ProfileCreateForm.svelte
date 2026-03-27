@@ -100,13 +100,6 @@
 
 <div class="min-h-screen bg-[var(--pc-page-bg)] font-sans flex items-start justify-center px-4 py-12">
   <div class="w-full max-w-xl">
-    <div class="mb-8 text-center">
-      <h1 class="text-2xl font-bold tracking-tight text-[var(--pc-heading)]">Create Profile</h1>
-      <p class="mt-1.5 text-sm text-[var(--pc-subheading)]">
-        Set up your {role} profile to get started
-      </p>
-    </div>
-
     <div class="rounded-card px-8 py-8 bg-[var(--pc-card-bg)] border border-[var(--pc-card-border)] shadow-[var(--pc-card-shadow)] backdrop-blur-sm">
       <div class="mb-8 flex flex-col items-center gap-3">
         <div class="relative group">

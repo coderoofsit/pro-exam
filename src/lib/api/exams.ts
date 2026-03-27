@@ -1,6 +1,5 @@
 import { apiRequest } from '../../http/api';
 import { resolveApiToken } from './authToken';
-import { BASE_URL } from '$lib/http';
 
 export type ExamApiItem = {
   _id: string;
@@ -102,52 +101,72 @@ function mapExam(item: ExamApiItem): Exam {
 }
 
 export async function getExamsServer(fetchFn: typeof fetch) {
-  const res = await fetchFn(`${BASE_URL}/api/v1/exams/all`, {
-    method: 'GET'
-  });
+	const response = await apiRequest<ExamsResponse>({
+		endpoint: '/api/v1/exams/all',
+		method: 'GET',
+		skipAuth: true,
+		fetch: fetchFn
+	});
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch exams: ${res.status}`);
-  }
+	if (!response.success) {
+		throw new Error(response.message || 'Failed to fetch exams');
+	}
 
-  const result: ExamsResponse = await res.json();
+	const payload = response.data;
+	if (!payload?.success) {
+		throw new Error(payload?.message || 'Failed to fetch exams');
+	}
 
-  if (!result.success) {
-    throw new Error(result.message || 'Failed to fetch exams');
-  }
+	return {
+		exams: (payload.data ?? []).map(mapExam),
+		message: payload.message
+	};
+}
 
-  return {
-    exams: (result.data ?? []).map(mapExam),
-    message: result.message
-  };
+/** SSR-safe: never throws — avoids 500 on profile/create when the API is unreachable. */
+export async function getExamsServerSafe(fetchFn: typeof fetch): Promise<{
+	exams: Exam[];
+	message: string | null;
+	examsLoadError: string | null;
+}> {
+	try {
+		const { exams, message } = await getExamsServer(fetchFn);
+		return { exams, message: message ?? null, examsLoadError: null };
+	} catch (e) {
+		const msg = e instanceof Error ? e.message : 'Failed to load exams';
+		return { exams: [], message: null, examsLoadError: msg };
+	}
 }
 
 export async function getExamsClient() {
-  const res = await fetch(`${BASE_URL}/api/v1/exams/all`, {
-    method: 'GET'
-  });
+	const response = await apiRequest<ExamsResponse>({
+		endpoint: '/api/v1/exams/all',
+		method: 'GET',
+		skipAuth: true
+	});
 
-  let result: ExamsResponse | null = null;
+	if (!response.success) {
+		return {
+			success: false as const,
+			message: response.message || 'Failed to fetch exams',
+			exams: [] as Exam[]
+		};
+	}
 
-  try {
-    result = await res.json();
-  } catch {
-    result = null;
-  }
+	const payload = response.data;
+	if (!payload?.success) {
+		return {
+			success: false as const,
+			message: payload?.message || 'Failed to fetch exams',
+			exams: [] as Exam[]
+		};
+	}
 
-  if (!res.ok) {
-    return {
-      success: false as const,
-      message: result?.message || `Failed to fetch exams: ${res.status}`,
-      exams: [] as Exam[]
-    };
-  }
-
-  return {
-    success: true as const,
-    message: result?.message || 'Exams fetched successfully',
-    exams: (result?.data ?? []).map(mapExam)
-  };
+	return {
+		success: true as const,
+		message: payload.message || 'Exams fetched successfully',
+		exams: (payload.data ?? []).map(mapExam)
+	};
 }
 
 export type ExamName = {
