@@ -59,6 +59,22 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT)
 			: null;
 
+		// Preload remaining question pages on server for review mode so client doesn't need extra API calls.
+		let reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
+		if (resolvedChapterId && questionsRes && questionsRes.lastPage > safePage) {
+			const nextPages = Array.from(
+				{ length: questionsRes.lastPage - safePage },
+				(_, i) => safePage + i + 1
+			);
+			const rest = await Promise.all(
+				nextPages.map((p) => fetchQuestionsByChapter(resolvedChapterId, p, QUESTIONS_PAGE_LIMIT))
+			);
+			reviewPoolQuestions = [
+				...(questionsRes.data ?? []),
+				...rest.flatMap((r) => r?.data ?? [])
+			];
+		}
+
 		return {
 			examSlug,
 			chapterParam,
@@ -68,6 +84,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			allChapters: currentSubjectChapters,
 			subjectSlug,
 			questions: questionsRes?.data ?? [],
+			reviewPoolQuestions,
 			paginationMeta: questionsRes
 				? { total: questionsRes.total, lastPage: questionsRes.lastPage, limit: questionsRes.limit }
 				: null,
@@ -83,6 +100,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			allChapters: [],
 			subjectSlug: null,
 			questions: [],
+			reviewPoolQuestions: [],
 			paginationMeta: null,
 			message: e instanceof Error ? e.message : 'Failed to load'
 		};
@@ -98,6 +116,7 @@ export type PageData = {
 	allChapters: any[];
 	subjectSlug: string | null;
 	questions: Question[];
+	reviewPoolQuestions: Question[];
 	paginationMeta: { total: number; lastPage: number; limit: number } | null;
 	message: string | null;
 };

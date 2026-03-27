@@ -138,15 +138,16 @@
 			{:else}
 				<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)]">
 					<div class="flex-1 overflow-y-auto p-4">
-						<a
-							href="/student/exams"
-							class="mb-4 flex items-center gap-2 text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
+						<button
+							type="button"
+							onclick={backToSubjects}
+							class="mb-2 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
 								<path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 							</svg>
-							Back to Exams
-						</a>
+							Back to Subjects
+						</button>
 						<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Subjects</h2>
 						<nav class="space-y-1">
 							{#each data.subjects as s (s._id)}

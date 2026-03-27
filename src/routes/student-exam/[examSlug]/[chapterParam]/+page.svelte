@@ -14,7 +14,6 @@
 	let reviewPage = $state(1);
 	let previewAllQuestions = $state<Question[]>([]);
 	let previewBaseNumber = $state(0);
-	let previewNextPageToFetch = $state<number | null>(null);
 	let sidebarCollapsed = $state(false);
 
 	const REVIEW_PAGE_SIZE = 5;
@@ -99,48 +98,19 @@
 
 	const canReviewPrev = $derived(reviewPage > 1);
 	const canReviewNext = $derived.by(() => {
-		const haveAnotherLoadedPage = reviewPage * REVIEW_PAGE_SIZE < previewAllQuestions.length;
-		const canFetchMore =
-			displayPaginationMeta &&
-			previewNextPageToFetch !== null &&
-			previewNextPageToFetch <= displayPaginationMeta.lastPage;
-		return haveAnotherLoadedPage || Boolean(canFetchMore);
+		return reviewPage * REVIEW_PAGE_SIZE < previewAllQuestions.length;
 	});
-
-	async function ensureReviewLoaded(minCount: number) {
-		if (!displayPaginationMeta) return;
-		if (previewNextPageToFetch === null) return;
-
-		while (previewAllQuestions.length < minCount && previewNextPageToFetch <= displayPaginationMeta.lastPage) {
-			try {
-				const res = await fetch(
-					`/student-exam/${data.examSlug}/${encodeURIComponent(data.chapterParam)}/api?page=${previewNextPageToFetch}`,
-				);
-
-				if (!res.ok) break;
-				const jsonData = await res.json();
-				const nextQuestions = (jsonData.questions ?? []) as Question[];
-				if (nextQuestions.length === 0) break;
-
-				previewAllQuestions = [...previewAllQuestions, ...nextQuestions];
-				previewNextPageToFetch = previewNextPageToFetch + 1;
-			} catch (err) {
-				console.error("Review fetch failed:", err);
-				break;
-			}
-		}
-	}
 
 	async function openQuestionPreview(index: number) {
 		selectedQuestionIndex = index;
-		reviewPage = 1;
+
+		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
+		previewAllQuestions = pool;
 
 		const limit = displayPaginationMeta?.limit ?? 10;
-		previewBaseNumber = (data.safePage - 1) * limit + index + 1;
-
-		previewAllQuestions = displayQuestions.slice(index);
-		previewNextPageToFetch = displayPaginationMeta ? data.safePage + 1 : null;
-		await ensureReviewLoaded(REVIEW_PAGE_SIZE);
+		previewBaseNumber = (data.safePage - 1) * limit + 1;
+		// Open review on the page that contains the clicked question so Prev/Next both work.
+		reviewPage = Math.floor(index / REVIEW_PAGE_SIZE) + 1;
 	}
 
 	async function goReviewPrev() {
@@ -149,9 +119,9 @@
 	}
 
 	async function goReviewNext() {
+		if (!canReviewNext) return;
 		const next = reviewPage + 1;
 		reviewPage = next;
-		await ensureReviewLoaded(next * REVIEW_PAGE_SIZE);
 	}
 
 	function closeQuestionPreview() {
@@ -159,7 +129,6 @@
 		reviewPage = 1;
 		previewAllQuestions = [];
 		previewBaseNumber = 0;
-		previewNextPageToFetch = null;
 	}
 </script>
 
@@ -189,16 +158,6 @@
 					</button>
 					<div class="mb-3 flex items-center justify-between">
 						<h2 class="text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Chapters</h2>
-						<button
-							type="button"
-							onclick={() => sidebarCollapsed = true}
-							class="rounded p-1 text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
-							title="Collapse sidebar"
-						>
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-								<path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
 					</div>
 					<nav class="space-y-1">
 						{#each filteredChapters as ch (ch._id)}
