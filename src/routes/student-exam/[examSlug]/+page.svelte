@@ -123,12 +123,12 @@
 									<button
 										type="button"
 										onclick={() => selectSubject(s.slug)}
-										class="group flex flex-col rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md"
+										class="group flex flex-col rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 text-left shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
 									>
-										<h2 class="text-base font-semibold leading-snug text-[var(--page-card-heading)]">
+										<h2 class="text-lg font-semibold leading-snug text-[var(--sh-exam-card-title)]">
 											{s.name?.en ?? s.slug}
 										</h2>
-										<p class="mt-2 text-sm text-[var(--page-card-sub)]">{s.unitCount} chapters</p>
+										<p class="mt-2 text-sm text-[var(--page-text-muted)]">{s.unitCount} chapters</p>
 									</button>
 								{/each}
 							</div>
@@ -136,27 +136,27 @@
 					{/if}
 				</div>
 			{:else}
-				<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)]">
+				<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]">
 					<div class="flex-1 overflow-y-auto p-4">
 						<button
 							type="button"
 							onclick={backToSubjects}
-							class="mb-2 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+							class="mb-3 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
 								<path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 							</svg>
 							Back to Subjects
 						</button>
-						<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Subjects</h2>
-						<nav class="space-y-1">
+						<h2 class="mb-3 mt-2 text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70">Subjects</h2>
+						<nav class="space-y-1.5">
 							{#each data.subjects as s (s._id)}
 								<button
 									type="button"
 									onclick={() => selectSubject(s.slug)}
-									class="block w-full truncate rounded px-2 py-1.5 text-left text-sm transition {s.slug === selectedSubjectSlug
-										? 'border border-[var(--page-link)]/40 bg-[var(--page-link)]/10 font-medium text-[var(--page-link)]'
-										: 'text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]'}"
+									class="block w-full truncate rounded-lg px-3 py-2 text-left text-sm transition font-[var(--sb-font-nav)] {s.slug === selectedSubjectSlug
+										? 'bg-[var(--sb-nav-active-bg)] text-[var(--sb-nav-active-text)] shadow-[var(--sb-nav-active-glow)]'
+										: 'text-[var(--sb-nav-text)] hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]'}"
 								>
 									{s.name?.en ?? s.slug}
 								</button>
@@ -165,10 +165,10 @@
 					</div>
 				</aside>
 
-				<main class="flex flex-1 flex-col">
-					<div class="mx-auto flex h-full w-full max-w-4xl flex-col px-6 py-10">
+				<main class="flex flex-1 flex-col overflow-hidden min-h-0">
+					<div class="mx-auto flex h-full w-full max-w-4xl flex-col px-6 py-10 overflow-hidden min-h-0">
 						{#if selectedSubject}
-							<div class="mb-6">
+							<div class="mb-6 shrink-0">
 								<h2 class="text-2xl font-bold">{selectedSubject.name?.en ?? selectedSubject.slug}</h2>
 								<p class="mt-1 text-sm text-[var(--page-text-muted)]">{displayChapters.length} chapters</p>
 							</div>
@@ -182,13 +182,14 @@
 									{#each displayChapters as { chapter, groupName } (chapter._id)}
 										<a
 											href={`/student-exam/${data.examSlug}/${encodeURIComponent(chapter.slug ?? chapter._id)}`}
-											class="group flex flex-col rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-5 text-left text-[var(--page-card-heading)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md"
+											class="group relative flex flex-col rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-5 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)] overflow-hidden"
 										>
+											<div class="absolute top-0 left-0 w-full h-1 bg-[var(--sh-tool-card-hover-border)] opacity-0 transition-opacity group-hover:opacity-100"></div>
 											<h2 class="text-base font-semibold leading-snug">
 												{chapter.order}. {chapter.name?.en ?? chapter.slug}
 											</h2>
-											<p class="mt-1 text-xs text-[var(--page-card-sub)]">{groupName}</p>
-											<p class="mt-2 text-sm text-[var(--page-card-sub)]">View questions →</p>
+											<p class="mt-1.5 text-xs opacity-70">{groupName}</p>
+											<p class="mt-4 text-sm font-medium text-[var(--sh-section-link)] transition group-hover:text-[var(--sh-section-link-hover)] flex items-center gap-1">View questions <span class="group-hover:translate-x-1 transition-transform inline-block">→</span></p>
 										</a>
 									{/each}
 								</div>

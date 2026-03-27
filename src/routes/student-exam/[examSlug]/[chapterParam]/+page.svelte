@@ -363,28 +363,28 @@
 <div class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]">
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
 		{#if selectedQuestionIndex === null && !sidebarCollapsed}
-			<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)]">
+			<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]">
 				<div class="flex-1 overflow-y-auto p-4">
 					<button
 						type="button"
 						onclick={() => goto(`/student-exam/${data.examSlug}`)}
-						class="mb-4 flex items-center gap-2 text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
+						class="mb-4 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
 							<path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 						</svg>
-						Back
+						Back to Subjects
 					</button>
-					<div class="mb-3 flex items-center justify-between">
-						<h2 class="text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Chapters</h2>
+					<div class="mb-3 mt-2 flex items-center justify-between">
+						<h2 class="text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70">Chapters</h2>
 					</div>
-					<nav class="space-y-1">
+					<nav class="space-y-1.5">
 						{#each filteredChapters as ch (ch._id)}
 							<a
 								href={chapterHref(String(ch.slug ?? ch._id), { page: 1 })}
-								class="block truncate rounded px-2 py-1.5 text-sm transition {ch._id === data.resolvedChapterId
-									? 'border border-[var(--page-link)]/40 bg-[var(--page-link)]/10 font-medium text-[var(--page-link)]'
-									: 'text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]'}"
+								class="block truncate rounded-lg px-3 py-2 text-sm transition font-[var(--sb-font-nav)] {ch._id === data.resolvedChapterId
+									? 'bg-[var(--sb-nav-active-bg)] text-[var(--sb-nav-active-text)] shadow-[var(--sb-nav-active-glow)]'
+									: 'text-[var(--sb-nav-text)] hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]'}"
 							>
 								{ch.order}. {ch.name?.en ?? ch.slug}
 							</a>
@@ -398,7 +398,7 @@
 			<button
 				type="button"
 				onclick={() => sidebarCollapsed = false}
-				class="fixed left-4 top-4 z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] text-[var(--page-text-muted)] shadow-sm transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+				class="fixed left-4 top-4 z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-icon)] shadow-sm transition hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-icon)]"
 				title="Expand sidebar"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -407,10 +407,10 @@
 			</button>
 		{/if}
 
-		<main class="flex flex-1 flex-col">
-			<div class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6">
+		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
+			<div class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0">
 				{#if selectedQuestionIndex !== null}
-					<div class="py-6">
+					<div class="py-6 shrink-0">
 						<button
 							type="button"
 							onclick={closeQuestionPreview}
@@ -426,7 +426,7 @@
 						{data.message}
 					</div>
 				{:else}
-					<div class="py-6">
+					<div class="py-6 shrink-0">
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<h1 class="text-2xl font-bold md:text-3xl">
@@ -482,11 +482,11 @@
 									{#each displayQuestions as q, index (q._id)}
 										<button
 											type="button"
-											class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3.5 text-left"
+											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-5 py-4 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
 											onclick={() => openQuestionPreview(index)}
 										>
 											<div class="flex items-baseline gap-3">
-												<div class="shrink-0 text-xs font-medium text-[var(--page-text-muted)]">
+												<div class="shrink-0 text-xs font-medium text-[var(--page-text-muted)] opacity-70 mt-1">
 													Q{(data.safePage - 1) * (displayPaginationMeta?.limit ?? 10) + index + 1}
 												</div>
 												<div class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
@@ -515,7 +515,7 @@
 						</div>
 
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
-							<div class="border-t border-[var(--page-card-border)] py-6">
+							<div class="border-t border-[var(--page-card-border)] py-6 shrink-0">
 								<div class="flex flex-wrap items-center justify-center gap-1.5">
 									{#if data.safePage > 1}
 										<a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
@@ -540,26 +540,26 @@
 						{/if}
 					{:else}
 						<div class="flex-1 overflow-y-auto pb-6">
-							<div class="rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-4">
-								<div class="-mx-4 -mt-4 mb-4 flex items-center justify-between gap-3 border-b border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3 sticky top-0 z-10">
-									<div class="text-sm font-semibold text-[var(--page-text)]">
+							<div class="p-2 md:p-4">
+								<div class="mb-6 flex items-center justify-between gap-3 sticky top-0 z-10 bg-[var(--page-bg)] py-2">
+									<div class="text-sm font-bold text-[var(--page-text)]">
 										Practice (5 per page)
 									</div>
 									<div class="flex items-center gap-2">
 										<button
 											type="button"
-											class="rounded-lg border border-[var(--page-card-border)] px-3 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] disabled:opacity-50"
+											class="rounded-full border border-[var(--sh-exam-card-border)] px-4 py-1.5 text-xs text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 disabled:opacity-50"
 											disabled={!canReviewPrev}
 											onclick={goReviewPrev}
 										>
 											Prev
 										</button>
-										<div class="text-xs text-[var(--page-text-muted)]">
+										<div class="text-xs font-medium text-[var(--page-text-muted)] px-1">
 											Page {reviewPageNumber}
 										</div>
 										<button
 											type="button"
-											class="rounded-lg border border-[var(--page-card-border)] px-3 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)] disabled:opacity-50"
+											class="rounded-full border border-[var(--sh-exam-card-border)] px-4 py-1.5 text-xs text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 disabled:opacity-50"
 											disabled={!canReviewNext}
 											onclick={goReviewNext}
 										>
@@ -570,11 +570,10 @@
 
 								<div class="flex flex-col gap-4">
 									{#each reviewQuestions as q, i (q._id)}
-										<div class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
-											<div class="mb-2 text-xs font-medium text-[var(--page-text-muted)]">
+										<div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-sm">
+											<div class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--page-text-muted)] opacity-70">
 												Q{previewBaseNumber + reviewStartIndex + i}
 											</div>
-
 											<div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
 												<MathText content={q.prompt.en.content} />
 												{#if promptImagesOnly(q).length}
@@ -595,10 +594,10 @@
 											</div>
 
 											{#if q.prompt.en.options?.length}
-												<div class="mt-4 grid gap-2.5">
+												<div class="mt-5 grid gap-2.5">
 													{#each q.prompt.en.options as option (option.identifier)}
-														<div class="flex items-start gap-3.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3.5">
-															<span class="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">
+														<div class="flex items-start gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)]/40 px-4 py-4 transition hover:bg-[var(--page-bg)]/60">
+															<span class="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">
 																{option.identifier}
 															</span>
 															<div class="min-w-0 flex-1 break-words">
@@ -637,13 +636,13 @@
 
 {#if filterDrawerOpen}
 	<div
-		class="fixed inset-0 z-30 bg-black/40"
+		class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-opacity"
 		role="button"
 		tabindex="0"
 		onclick={() => (filterDrawerOpen = false)}
 		onkeydown={(e) => (e.key === 'Escape' ? (filterDrawerOpen = false) : null)}
 	></div>
-	<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-4 shadow-xl">
+	<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl">
 		<div class="mb-4 flex items-center justify-between">
 			<h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
 			<button
@@ -657,8 +656,8 @@
 
 		<div class="space-y-5">
 			<div>
-				<div class="mb-2 text-sm font-medium text-[var(--page-text)]">Difficulty</div>
-				<div class="flex flex-wrap gap-2">
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
+				<div class="flex flex-wrap gap-2.5">
 					{#each difficultyOptions as option}
 						<button
 							type="button"
@@ -668,9 +667,9 @@
 									: [...draftDifficulties, option];
 								draftDifficulties = next.length ? next : ['easy'];
 							}}
-							class="rounded border px-2.5 py-1.5 text-xs {draftDifficulties.includes(option)
-								? 'border-[var(--page-link)] bg-[var(--page-link)]/10 text-[var(--page-link)]'
-								: 'border-[var(--page-card-border)] text-[var(--page-text-muted)]'}"
+							class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {draftDifficulties.includes(option)
+								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)] shadow-[0_0_10px_rgba(79,126,255,0.15)]'
+								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 						>
 							{option}
 						</button>
@@ -679,8 +678,8 @@
 			</div>
 
 			<div>
-				<div class="mb-2 text-sm font-medium text-[var(--page-text)]">Type</div>
-				<div class="grid gap-2">
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
+				<div class="grid gap-2.5">
 					{#each kindOptions as option}
 						<button
 							type="button"
@@ -689,9 +688,9 @@
 									? draftKinds.filter((k) => k !== option)
 									: [...draftKinds, option];
 							}}
-							class="rounded border px-2.5 py-1.5 text-left text-xs {draftKinds.includes(option)
-								? 'border-[var(--page-link)] bg-[var(--page-link)]/10 text-[var(--page-link)]'
-								: 'border-[var(--page-card-border)] text-[var(--page-text-muted)]'}"
+							class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {draftKinds.includes(option)
+								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)] shadow-[0_0_10px_rgba(79,126,255,0.15)]'
+								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 						>
 							{option}
 						</button>
@@ -699,17 +698,17 @@
 				</div>
 			</div>
 
-			<div class="flex items-center gap-2 pt-1">
+			<div class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]">
 				<button
 					type="button"
-					class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
+					class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)] transition"
 					onclick={clearKindFilter}
 				>
 					Clear type
 				</button>
 				<button
 					type="button"
-					class="rounded-lg border border-[var(--page-link)] bg-[var(--page-link)] px-3 py-1.5 text-sm text-white"
+					class="flex-1 rounded-xl border border-[var(--page-link)] bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white shadow-[var(--shadow-item)] hover:shadow-[var(--shadow-item-hover)] hover:-translate-y-0.5 transition"
 					onclick={applyFilters}
 				>
 					Apply

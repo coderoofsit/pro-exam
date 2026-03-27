@@ -4,9 +4,11 @@
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
     examSlug: string;
+    examId: string;
+    boardId: string;
   };
 
-  let { groupedSubjects, examSlug }: Props = $props();
+  let { groupedSubjects, examSlug, examId, boardId }: Props = $props();
 
   let openSubjectSlug = $state<string>('');
   let openUnitIds = $state<Set<string>>(new Set());
@@ -55,7 +57,7 @@
 
   /** Next step: manual chapter builder (mode preserved in query). */
   function chapterHref(chSlug: string) {
-    const q = new URLSearchParams({ mode: 'manual' });
+    const q = new URLSearchParams({ mode: 'manual', examId, boardId });
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
   }
 </script>
