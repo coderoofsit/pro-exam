@@ -3,8 +3,8 @@ export const THEME_STORAGE_KEY = 'examflow-theme';
 export type ThemeMode = 'light' | 'dark';
 
 export function getStoredTheme(): ThemeMode {
-	if (typeof localStorage === 'undefined') return 'dark';
-	const v = localStorage.getItem(THEME_STORAGE_KEY);
+	if (typeof sessionStorage === 'undefined') return 'dark';
+	const v = sessionStorage.getItem(THEME_STORAGE_KEY);
 	return v === 'light' || v === 'dark' ? v : 'dark';
 }
 
@@ -12,7 +12,7 @@ export function applyTheme(mode: ThemeMode): void {
 	if (typeof document === 'undefined') return;
 	document.documentElement.dataset.theme = mode;
 	try {
-		localStorage.setItem(THEME_STORAGE_KEY, mode);
+		sessionStorage.setItem(THEME_STORAGE_KEY, mode);
 	} catch {
 		/* ignore */
 	}

@@ -3,7 +3,6 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { authStore, type AuthUser } from '$lib/stores/auth';
-  import { type ThemeMode, toggleThemeMode } from '$lib/theme';
   import { getMembershipUsers, type MembershipUser } from '$lib/api/auth';
   import { themeStore } from '$lib/stores/theme';
 
@@ -23,7 +22,6 @@
   let profileDropdownOpen = $state(false);
   let selectedUserIndex = $state(0);
   let searchValue = $state('');
-  let themeMode = $state<ThemeMode>('dark');
   let isLoadingUsers = $state(false);
 
   function toggleSidebar() {
@@ -164,13 +162,8 @@
     }
   });
 
-  onMount(() => {
-    const t = document.documentElement.dataset.theme;
-    themeMode = t === 'light' || t === 'dark' ? t : 'dark';
-  });
-
   function onToggleTheme() {
-    themeMode = toggleThemeMode(themeMode);
+    themeStore.toggle();
   }
 </script>
 <div class="flex h-dvh min-h-0 bg-[var(--page-bg)] font-sans text-[var(--page-text)]">
@@ -362,8 +355,8 @@
           <button
             type="button"
             onclick={onToggleTheme}
-            title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={$themeStore === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={$themeStore === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             class="
               relative flex h-11 w-11 items-center justify-center rounded-xl
               bg-[var(--topbar-icon-btn-bg)]
@@ -374,7 +367,7 @@
               hover:text-[var(--topbar-icon-btn-hover-color)]
             "
           >
-            {#if themeMode === 'dark'}
+            {#if $themeStore === 'dark'}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
                 <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>

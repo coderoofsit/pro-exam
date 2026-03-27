@@ -1,33 +1,25 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
-
-type Theme = 'light' | 'dark';
+import { applyTheme, getStoredTheme, type ThemeMode } from '$lib/theme';
 
 function createThemeStore() {
-  const stored = browser ? (localStorage.getItem('theme') as Theme | null) : null;
-  const initial: Theme = stored ?? 'dark';
+  const initial: ThemeMode = browser ? getStoredTheme() : 'dark';
 
-  const { subscribe, set, update } = writable<Theme>(initial);
+  const { subscribe, set, update } = writable<ThemeMode>(initial);
 
-  function apply(theme: Theme) {
-    if (!browser) return;
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }
-
-  if (browser) apply(initial);
+  if (browser) applyTheme(initial);
 
   return {
     subscribe,
     toggle() {
-      update(t => {
-        const next: Theme = t === 'dark' ? 'light' : 'dark';
-        apply(next);
+      update((t) => {
+        const next: ThemeMode = t === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
         return next;
       });
     },
-    set(theme: Theme) {
-      apply(theme);
+    set(theme: ThemeMode) {
+      applyTheme(theme);
       set(theme);
     }
   };
