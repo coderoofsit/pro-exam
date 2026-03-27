@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { authStore, type AuthUser } from '$lib/stores/auth';
-  import { getMembershipUsers, type MembershipUser } from '$lib/api/auth';
+  import {
+    getMembershipUsers,
+    selectMembershipProfile,
+    type MembershipUser
+  } from '$lib/api/auth';
   import { themeStore } from '$lib/stores/theme';
 
   type Role = 'student' | 'tutor' | 'institute';
@@ -23,12 +26,19 @@
   let selectedUserIndex = $state(0);
   let searchValue = $state('');
   let isLoadingUsers = $state(false);
+  let selectingMembershipDefault = $state(false);
+  /** Prevents repeated GET /membership (effect re-runs, dev double-mount, failed attempts). */
+  let membershipFetchCompleted = $state(false);
+
+  /** Full-bleed, no extra top inset — timer + question should sit under the app topbar. */
+  const isTestAttemptRoute = $derived(page.url.pathname.startsWith('/student/test-attempt'));
 
   function toggleSidebar() {
     sidebarCollapsed = !sidebarCollapsed;
   }
 
   function toggleProfileDropdown() {
+    if (selectingMembershipDefault) return;
     profileDropdownOpen = !profileDropdownOpen;
   }
 
@@ -63,6 +73,14 @@
   const isOwnTestExamRoute = $derived(/^\/student\/tests\/own\/[^/]+/.test(page.url.pathname));
   const isCollapsed = $derived(isOwnTestExamRoute || sidebarCollapsed);
 
+  /** Subscription routes: show default profile’s plan status in the topbar. */
+  const showSubscriptionStatusInTopbar = $derived(page.url.pathname.includes('/subscription'));
+
+  /** Default membership profile — used for subscription UI and sorting. */
+  const defaultProfileUser = $derived(
+    $authStore.users.find((u) => u.defaultProfile) ?? $authStore.users[0] ?? null
+  );
+
   function isActive(href: string): boolean {
     return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
   }
@@ -74,9 +92,39 @@
     return `${first}${last}`.trim() || 'U';
   }
 
-  function selectUser(index: number) {
-    selectedUserIndex = index;
-    profileDropdownOpen = false;
+  async function selectUser(index: number) {
+    const user = $authStore.users[index];
+    if (!user) return;
+
+    if (user.defaultProfile) {
+      selectedUserIndex = index;
+      profileDropdownOpen = false;
+      return;
+    }
+
+    /** Membership row id + profile id from GET /membership (not login `profileId`). */
+    const membershipId = user._id;
+    const userProfiledId = user.userProfileId ?? user._id;
+
+    selectingMembershipDefault = true;
+    try {
+      const res = await selectMembershipProfile({
+        membershipId,
+        userProfiledId,
+        token: $authStore.token
+      });
+
+      if (!res.success) {
+        console.error('Failed to set default profile', res.message);
+        return;
+      }
+
+      await reloadMembershipFromServer();
+      selectedUserIndex = 0;
+      profileDropdownOpen = false;
+    } finally {
+      selectingMembershipDefault = false;
+    }
   }
 
   async function handleLogout() {
@@ -97,12 +145,41 @@
   await goto(profileCreatePathByRole[role]);
 }
 
+  function usersHaveMembershipShape(users: AuthUser[]) {
+    return (
+      users.length > 0 &&
+      users.some((u) => 'subscription' in u || 'defaultProfile' in u)
+    );
+  }
+
+  function applyMembershipApiUsers(apiUsers: MembershipUser[]) {
+    const mappedUsers = mapMembershipUsers(apiUsers);
+    authStore.setUsers(mappedUsers);
+    selectedUserIndex = 0;
+  }
+
   function mapMembershipUsers(users: MembershipUser[]): AuthUser[] {
-    return users.map((user) => ({
+    const sorted = [...users].sort((a, b) => {
+      const ap = a.defaultProfile ? 1 : 0;
+      const bp = b.defaultProfile ? 1 : 0;
+      return bp - ap;
+    });
+    return sorted.map((user) => ({
       _id: user._id,
+      userProfileId: user.userProfileId,
       firstName: user.firstName,
       lastName: user.lastName,
       image: user.image,
+      defaultProfile: user.defaultProfile,
+      subscription: user.subscription
+        ? {
+            isSubscribed: !!user.subscription.isSubscribed,
+            isTrial: !!user.subscription.isTrial,
+            planId: user.subscription.planId ?? null,
+            expiry: user.subscription.expiry ?? null,
+            trialUsed: !!user.subscription.trialUsed
+          }
+        : null,
       instituteId: null,
       teacherId: null,
       adminId: null
@@ -113,9 +190,10 @@
     if (isLoadingUsers) return;
 
     const token = $authStore.token;
-
     if (!token) return;
-    if ($authStore.users.length > 0) return;
+
+    if (usersHaveMembershipShape($authStore.users)) return;
+    if (membershipFetchCompleted) return;
 
     isLoadingUsers = true;
 
@@ -129,26 +207,45 @@
       if (!membershipResponse?.ok) return;
 
       const apiUsers = membershipResponse.data?.users ?? [];
-      const mappedUsers = mapMembershipUsers(apiUsers);
-
-      authStore.setUsers(mappedUsers);
+      applyMembershipApiUsers(apiUsers);
     } catch (error) {
       console.error('Failed to load membership users', error);
     } finally {
       isLoadingUsers = false;
+      membershipFetchCompleted = true;
     }
   }
 
-  onMount(() => {
-    loadUsersIfMissing();
-  });
+  async function reloadMembershipFromServer() {
+    const token = $authStore.token;
+    if (!token) return;
+
+    isLoadingUsers = true;
+    try {
+      const response = await getMembershipUsers(token);
+      if (!response.success) return;
+
+      const membershipResponse = response.data;
+      if (!membershipResponse?.ok) return;
+
+      const apiUsers = membershipResponse.data?.users ?? [];
+      applyMembershipApiUsers(apiUsers);
+    } catch (error) {
+      console.error('Failed to reload membership users', error);
+    } finally {
+      isLoadingUsers = false;
+      membershipFetchCompleted = true;
+    }
+  }
 
   const currentUser = $derived($authStore.users[selectedUserIndex] ?? $authStore.users[0] ?? null);
 
   $effect(() => {
-    if ($authStore.token && $authStore.users.length === 0) {
-      loadUsersIfMissing();
+    if (!$authStore.token) {
+      membershipFetchCompleted = false;
+      return;
     }
+    void loadUsersIfMissing();
   });
 
   $effect(() => {
@@ -337,7 +434,7 @@
           <input
             bind:value={searchValue}
             type="text"
-            placeholder="Search exams, tests, subscriptions..."
+            placeholder="Search exams, tests, batches..."
             class="
               h-11 w-full rounded-xl pl-11 pr-4 text-sm outline-none
               bg-[var(--topbar-search-bg)]
@@ -351,6 +448,7 @@
           />
         </div>
         <div class="flex items-center gap-2.5 flex-shrink-0">
+
 
           <button
             type="button"
@@ -403,12 +501,14 @@
             <button
               type="button"
               onclick={toggleProfileDropdown}
+              disabled={selectingMembershipDefault}
               class="
                 flex items-center gap-2.5 rounded-xl px-3 py-2
                 bg-[var(--topbar-profile-bg)]
                 border border-[var(--topbar-profile-border)]
                 transition-[border] duration-150
                 hover:border-[var(--topbar-profile-hover-border)]
+                disabled:pointer-events-none disabled:opacity-60
               "
             >
               {#if currentUser?.image}
@@ -451,21 +551,25 @@
                 shadow-[var(--topbar-dd-shadow)]
               ">
                 <div class="border-b border-[var(--topbar-dd-header-border)] px-4 py-3.5">
-                  <p class="text-sm font-semibold text-[var(--topbar-dd-header-title)]">Switch user</p>
-                  <p class="mt-0.5 text-xs text-[var(--topbar-dd-header-sub)]">Choose a user from auth store</p>
+                  <p class="text-sm font-semibold text-[var(--topbar-dd-header-title)]">Switch profile</p>
+                  <p class="mt-0.5 text-xs text-[var(--topbar-dd-header-sub)]">
+                    Default profile is listed first. Subscription status in the top bar uses your default profile.
+                  </p>
                 </div>
                 <div class="max-h-[240px] overflow-y-auto px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {#if $authStore.users.length > 0}
                     {#each $authStore.users as user, index}
                       <button
                         type="button"
-                        onclick={() => selectUser(index)}
+                        onclick={() => void selectUser(index)}
+                        disabled={selectingMembershipDefault}
                         class="
                           flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left
                           transition-colors duration-150
                           {selectedUserIndex === index
                             ? 'bg-[var(--topbar-dd-item-selected-bg)]'
                             : 'hover:bg-[var(--topbar-dd-item-hover-bg)]'}
+                          disabled:pointer-events-none disabled:opacity-60
                         "
                       >
                         {#if user.image}
@@ -484,6 +588,11 @@
                           <p class="truncate text-sm font-semibold text-[var(--topbar-dd-item-name)]">
                             {user.firstName} {user.lastName}
                           </p>
+                          {#if user.defaultProfile}
+                            <p class="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--topbar-dd-header-sub)]">
+                              Default
+                            </p>
+                          {/if}
                         </div>
 
                         {#if selectedUserIndex === index}
@@ -546,9 +655,18 @@
         </div>
       </div>
     </header>
-    <main id="layout-main-scroll" class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] px-6 pb-6 pt-0">
+    <main
+      id="layout-main-scroll"
+      class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-0 {isTestAttemptRoute
+        ? 'flex flex-col px-0 pb-0'
+        : 'px-6 pb-6'}"
+    >
       {#key page.url.pathname}
-        <div class="min-h-0 pt-6">
+        <div
+          class="{isTestAttemptRoute
+            ? 'flex min-h-0 flex-1 flex-col'
+            : 'min-h-0 pt-6'}"
+        >
           {@render children?.()}
         </div>
       {/key}

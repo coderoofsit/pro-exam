@@ -1038,6 +1038,75 @@
   --login-icon-student-color:         #4f7eff;
   --login-icon-tutor-color:           #f59e0b;
   --login-icon-institute-color:       #8b5cf6;
+
+   /* ── TEST ATTEMPT PAGE ───────────────────────────────────────────────── */
+  --ta-page-bg:                     #0C0E1A;
+ 
+  --ta-header-bg:                   rgba(10, 10, 20, 0.90);
+  --ta-header-border:               rgba(139, 92, 246, 0.15);
+  --ta-header-shadow:               0 1px 24px rgba(5, 7, 13, 0.5);
+  --ta-header-title:                #ffffff;
+  --ta-header-sub:                  #A1A1AA;
+  --ta-timer-bg:                    rgba(234, 88, 12, 0.12);
+  --ta-timer-border:                rgba(234, 88, 12, 0.30);
+  --ta-timer-text:                  #fb923c;
+  --ta-timer-warn-bg:               rgba(220, 38, 38, 0.12);
+  --ta-timer-warn-border:           rgba(220, 38, 38, 0.30);
+  --ta-timer-warn-text:             #f87171;
+ 
+  --ta-qpanel-bg:                   rgba(255, 255, 255, 0.03);
+  --ta-qpanel-border:               rgba(139, 92, 246, 0.18);
+  --ta-qpanel-shadow:               0 4px 24px rgba(5, 7, 13, 0.4);
+  --ta-qnum-bg:                     rgba(139, 92, 246, 0.15);
+  --ta-qnum-text:                   #A78BFA;
+  --ta-qtext:                       #ffffff;
+ 
+  --ta-opt-bg:                      rgba(255, 255, 255, 0.03);
+  --ta-opt-border:                  rgba(139, 92, 246, 0.18);
+  --ta-opt-text:                    #D4D4D8;
+  --ta-opt-hover-bg:                rgba(139, 92, 246, 0.08);
+  --ta-opt-hover-border:            rgba(139, 92, 246, 0.45);
+  --ta-opt-selected-bg:             rgba(139, 92, 246, 0.15);
+  --ta-opt-selected-border:         #8B5CF6;
+  --ta-opt-selected-text:           #ffffff;
+  --ta-opt-label-bg:                rgba(255, 255, 255, 0.08);
+  --ta-opt-label-text:              #A1A1AA;
+  --ta-opt-label-selected-bg:       #8B5CF6;
+  --ta-opt-label-selected-text:     #ffffff;
+ 
+  --ta-nav-btn-bg:                  rgba(255, 255, 255, 0.05);
+  --ta-nav-btn-border:              rgba(139, 92, 246, 0.20);
+  --ta-nav-btn-text:                #A1A1AA;
+  --ta-nav-btn-hover-bg:            rgba(139, 92, 246, 0.10);
+  --ta-nav-btn-hover-border:        rgba(139, 92, 246, 0.50);
+  --ta-nav-btn-hover-text:          #C4B5FD;
+  --ta-nav-btn-primary-bg:          linear-gradient(135deg, #8B5CF6 0%, #4f7eff 100%);
+  --ta-nav-btn-primary-text:        #ffffff;
+  --ta-nav-btn-primary-shadow:      0 4px 16px rgba(139, 92, 246, 0.40);
+ 
+  --ta-palette-bg:                  rgba(255, 255, 255, 0.02);
+  --ta-palette-border:              rgba(139, 92, 246, 0.18);
+  --ta-palette-title:               #ffffff;
+  --ta-palette-sub:                 #A1A1AA;
+ 
+  --ta-pill-unattempted-bg:         rgba(255, 255, 255, 0.05);
+  --ta-pill-unattempted-border:     rgba(139, 92, 246, 0.20);
+  --ta-pill-unattempted-text:       #71717A;
+  --ta-pill-attempted-bg:           rgba(34, 197, 94, 0.12);
+  --ta-pill-attempted-border:       rgba(34, 197, 94, 0.30);
+  --ta-pill-attempted-text:         #4ADE80;
+  --ta-pill-current-bg:             #8B5CF6;
+  --ta-pill-current-text:           #ffffff;
+  --ta-pill-current-shadow:         0 0 0 3px rgba(139, 92, 246, 0.30);
+ 
+  --ta-legend-text:                 #71717A;
+ 
+  --ta-submit-bg:                   linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --ta-submit-text:                 #ffffff;
+  --ta-submit-shadow:               0 4px 16px rgba(34, 197, 94, 0.35);
+  --ta-submit-hover-shadow:         0 6px 24px rgba(34, 197, 94, 0.50);
+ 
+  --ta-divider:                     rgba(139, 92, 246, 0.12);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1192,6 +1261,85 @@ html[data-theme="light"] {
   --own-next-btn-bg-hover:            #3a6aee;
   --own-next-btn-text:                #ffffff;
   --own-next-btn-shadow:              0 4px 14px rgba(79, 126, 255, 0.28);
+
+
+  /* ── TEST ATTEMPT PAGE ───────────────────────────────────────────────── */
+  --ta-page-bg:                     #f5f7ff;
+ 
+  /* Header / topbar */
+  --ta-header-bg:                   #ffffff;
+  --ta-header-border:               #e2e8f0;
+  --ta-header-shadow:               0 1px 0 #e2e8f0;
+  --ta-header-title:                #1a1f36;
+  --ta-header-sub:                  #64748b;
+  --ta-timer-bg:                    #fff7ed;
+  --ta-timer-border:                #fed7aa;
+  --ta-timer-text:                  #ea580c;
+  --ta-timer-warn-bg:               #fef2f2;
+  --ta-timer-warn-border:           #fecaca;
+  --ta-timer-warn-text:             #dc2626;
+ 
+  /* Question panel */
+  --ta-qpanel-bg:                   #ffffff;
+  --ta-qpanel-border:               #e2e8f0;
+  --ta-qpanel-shadow:               0 2px 12px rgba(79, 126, 255, 0.06);
+  --ta-qnum-bg:                     #eef2ff;
+  --ta-qnum-text:                   #4f7eff;
+  --ta-qtext:                       #1a1f36;
+ 
+  /* Options */
+  --ta-opt-bg:                      #f8faff;
+  --ta-opt-border:                  #e2e8f0;
+  --ta-opt-text:                    #1a1f36;
+  --ta-opt-hover-bg:                #eef2ff;
+  --ta-opt-hover-border:            #4f7eff;
+  --ta-opt-selected-bg:             #eef2ff;
+  --ta-opt-selected-border:         #4f7eff;
+  --ta-opt-selected-text:           #1a1f36;
+  --ta-opt-label-bg:                #e2e8f0;
+  --ta-opt-label-text:              #64748b;
+  --ta-opt-label-selected-bg:       #4f7eff;
+  --ta-opt-label-selected-text:     #ffffff;
+ 
+  /* Navigation buttons (prev / next) */
+  --ta-nav-btn-bg:                  #ffffff;
+  --ta-nav-btn-border:              #e2e8f0;
+  --ta-nav-btn-text:                #64748b;
+  --ta-nav-btn-hover-bg:            #eef2ff;
+  --ta-nav-btn-hover-border:        #4f7eff;
+  --ta-nav-btn-hover-text:          #4f7eff;
+  --ta-nav-btn-primary-bg:          linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
+  --ta-nav-btn-primary-text:        #ffffff;
+  --ta-nav-btn-primary-shadow:      0 4px 16px rgba(79, 126, 255, 0.30);
+ 
+  /* Question palette (right panel) */
+  --ta-palette-bg:                  #ffffff;
+  --ta-palette-border:              #e2e8f0;
+  --ta-palette-title:               #1a1f36;
+  --ta-palette-sub:                 #64748b;
+ 
+  /* Palette pills */
+  --ta-pill-unattempted-bg:         #f1f5f9;
+  --ta-pill-unattempted-border:     #e2e8f0;
+  --ta-pill-unattempted-text:       #64748b;
+  --ta-pill-attempted-bg:           #dcfce7;
+  --ta-pill-attempted-border:       #86efac;
+  --ta-pill-attempted-text:         #16a34a;
+  --ta-pill-current-bg:             #4f7eff;
+  --ta-pill-current-text:           #ffffff;
+  --ta-pill-current-shadow:         0 0 0 3px rgba(79, 126, 255, 0.25);
+ 
+  /* Legend */
+  --ta-legend-text:                 #64748b;
+ 
+  /* Submit button */
+  --ta-submit-bg:                   linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --ta-submit-text:                 #ffffff;
+  --ta-submit-shadow:               0 4px 16px rgba(34, 197, 94, 0.30);
+  --ta-submit-hover-shadow:         0 6px 24px rgba(34, 197, 94, 0.45);
+ 
+  /* Section divider */
+  --ta-divider:                     #e2e8f0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
