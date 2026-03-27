@@ -59,20 +59,24 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT)
 			: null;
 
-		// Preload remaining question pages on server for review mode so client doesn't need extra API calls.
+		// Preload all question pages on server for review mode so client doesn't need extra API calls
+		// and can paginate both forward and backward across page boundaries.
 		let reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
-		if (resolvedChapterId && questionsRes && questionsRes.lastPage > safePage) {
-			const nextPages = Array.from(
-				{ length: questionsRes.lastPage - safePage },
-				(_, i) => safePage + i + 1
-			);
+		if (resolvedChapterId && questionsRes && questionsRes.lastPage > 1) {
+			const otherPages = Array.from({ length: questionsRes.lastPage }, (_, i) => i + 1).filter((p) => p !== safePage);
 			const rest = await Promise.all(
-				nextPages.map((p) => fetchQuestionsByChapter(resolvedChapterId, p, QUESTIONS_PAGE_LIMIT))
+				otherPages.map((p) => fetchQuestionsByChapter(resolvedChapterId, p, QUESTIONS_PAGE_LIMIT))
 			);
-			reviewPoolQuestions = [
-				...(questionsRes.data ?? []),
-				...rest.flatMap((r) => r?.data ?? [])
-			];
+
+			const byPage = new Map<number, Question[]>();
+			byPage.set(safePage, questionsRes.data ?? []);
+			for (let i = 0; i < otherPages.length; i++) {
+				byPage.set(otherPages[i], rest[i]?.data ?? []);
+			}
+
+			reviewPoolQuestions = Array.from({ length: questionsRes.lastPage }, (_, i) => i + 1).flatMap(
+				(pageNo) => byPage.get(pageNo) ?? []
+			);
 		}
 
 		return {

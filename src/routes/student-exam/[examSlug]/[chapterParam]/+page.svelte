@@ -108,9 +108,10 @@
 		previewAllQuestions = pool;
 
 		const limit = displayPaginationMeta?.limit ?? 10;
-		previewBaseNumber = (data.safePage - 1) * limit + 1;
-		// Open review on the page that contains the clicked question so Prev/Next both work.
-		reviewPage = Math.floor(index / REVIEW_PAGE_SIZE) + 1;
+		previewBaseNumber = 1;
+		// Open review on the page that contains the clicked question in the full pooled sequence.
+		const globalIndex = (data.safePage - 1) * limit + index;
+		reviewPage = Math.floor(globalIndex / REVIEW_PAGE_SIZE) + 1;
 	}
 
 	async function goReviewPrev() {
