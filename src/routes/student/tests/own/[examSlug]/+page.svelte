@@ -14,6 +14,23 @@
     OwnTestSubjectSelection,
     OwnTestUnitSelection
   } from '$lib/ownTest/questionDistribution';
+
+  const MINUTES_PER_QUESTION = 1.5;
+
+  function durationMinutesForQuestionCount(count: number): number {
+    const n = Math.max(0, Math.floor(Number.isFinite(count) ? count : 0));
+    return Math.max(1, Math.ceil(n * MINUTES_PER_QUESTION));
+  }
+
+  function totalQuestionsFromDistributionPayload(data: OwnTestDistributionContinueData): number {
+    let sum = 0;
+    for (const subj of data.subjects) {
+      for (const cg of subj.chapterGroup) {
+        sum += Math.max(0, Math.floor(Number(cg.numberOfQuestions) || 0));
+      }
+    }
+    return sum;
+  }
   import { getMaxQuestionsForUnits } from '$lib/ownTest/questionDistribution';
   import { formatIstDateDdMmYyyy } from '$lib/utils/istDate';
   import { page } from '$app/state';
@@ -203,6 +220,14 @@
     }
 
     try {
+      const manualQuestionCount = manualSelectedRows.length
+        ? manualSelectedRows.length
+        : manualSelectedIds.size;
+      const randomQuestionCount = totalQuestionsFromDistributionPayload(data);
+      const durationMinutes = durationMinutesForQuestionCount(
+        distMode === 'manual' ? manualQuestionCount : randomQuestionCount
+      );
+
       const res =
         distMode === 'manual'
           ? await createManualCustomTest({
@@ -211,11 +236,7 @@
               name: { en: `Custom Test ${examName} ${istDate}` },
               kind: 'CUSTOM',
               settings: {
-                durationMinutes: null,
-                startDate: null,
-                startTime: null,
-                endDate: null,
-                endTime: null
+                durationMinutes
               },
               questions: manualSelectedRows.length
                 ? manualSelectedRows.map((r, idx) => ({ questionId: r.id, order: idx }))
@@ -229,11 +250,7 @@
               },
               kind: 'CUSTOM',
               settings: {
-                durationMinutes: null,
-                startDate: null,
-                startTime: null,
-                endDate: null,
-                endTime: null
+                durationMinutes
               },
               subjects: data.subjects
             });
