@@ -2,15 +2,19 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/state';
   import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
-  import type { GetTestUserItem } from '$lib/api/tests';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
+    collectQuestionIdsFromAttemptQuestions,
     createTestAttempt,
     findAttemptIdInApiResponse,
     peelTestAttemptEnvelope
   } from '$lib/api/testAttempts';
+  import TestAttemptAnalysisModal from '$lib/components/TestAttemptAnalysisModal.svelte';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
+
+  /** Mirrors `GetTestUserItem` from the tests load (`+page.server.ts`). */
+  type GetTestUserItem = NonNullable<PageData['items']>[number];
 
   let { data }: { data: PageData } = $props();
 
@@ -105,6 +109,13 @@
     return 'Untitled test';
   }
 
+  /** API sets `attempted` from lookups; also trust `attemptId` if present (avoids stale `attempted` alone). */
+  function hasExistingAttempt(item: GetTestUserItem) {
+    if (item.attempted) return true;
+    const id = item.attemptId;
+    return typeof id === 'string' && id.trim().length > 0;
+  }
+
   function hrefWithParams(overrides: Record<string, string | number | undefined | null>) {
     const u = new URL(page.url);
     for (const [k, v] of Object.entries(overrides)) {
@@ -118,12 +129,26 @@
     return hrefWithParams({ page: p });
   }
 
-  function viewAnalysisHref(item: GetTestUserItem) {
-    const q = new URLSearchParams({ testId: item._id, view: 'analysis' });
-    const b = item.batchId?.trim();
-    if (b) q.set('batchId', b);
-    return `/student/test-attempt?${q.toString()}`;
+  /** Same page + query — data loaded in `+page.server.ts` for SSR. */
+  function analysisHref(item: GetTestUserItem) {
+    const aid = item.attemptId?.trim();
+    if (!aid) return '#';
+    const u = new URL(page.url);
+    u.searchParams.set('analysisAttemptId', aid);
+    u.searchParams.set('analysisTestName', testName(item));
+    return `${u.pathname}${u.search}`;
   }
+
+  function closeAttemptAnalysis() {
+    const u = new URL(page.url);
+    u.searchParams.delete('analysisAttemptId');
+    u.searchParams.delete('analysisTestName');
+    void goto(`${u.pathname}${u.search}`, { replaceState: true, keepFocus: true, noScroll: true });
+  }
+
+  const analysisModalOpen = $derived(
+    !!(data.analysisAttemptId && (data.attemptAnalysis != null || data.attemptAnalysisError != null))
+  );
 
   function isTestStatusPending(item: GetTestUserItem) {
     return (item.status ?? '').trim().toLowerCase() === 'pending';
@@ -179,6 +204,7 @@
             fetchedAt: Date.now(),
             testName: testName(item),
             attemptId: attemptIdResolved,
+            questionIds: collectQuestionIdsFromAttemptQuestions(questions),
             durationMinutes:
               typeof payload.durationMinutes === 'number'
                 ? payload.durationMinutes
@@ -466,9 +492,9 @@
                   <div
                     class="flex w-full shrink-0 items-center justify-center gap-2 border-t border-[var(--pyq-paper-border)] px-4 py-4 sm:w-auto sm:justify-end sm:border-0 sm:px-4 sm:py-4 sm:pl-0"
                   >
-                    {#if item.attempted}
+                    {#if hasExistingAttempt(item)}
                       <a
-                        href={viewAnalysisHref(item)}
+                        href={analysisHref(item)}
                         class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
@@ -586,3 +612,11 @@
     </div>
   </div>
 {/if}
+
+<TestAttemptAnalysisModal
+  open={analysisModalOpen}
+  testName={(data.analysisTestName ?? '').trim() || 'Test'}
+  summary={data.attemptAnalysis}
+  error={data.attemptAnalysisError}
+  onclose={closeAttemptAnalysis}
+/>

@@ -34,6 +34,23 @@ function normalizeForTestUi(raw: TestAttemptQuestion[]) {
 	});
 }
 
+function mergeQuestionIdsIntoNormalized(
+	normalized: ReturnType<typeof normalizeForTestUi>,
+	questionIds: string[] | undefined
+) {
+	if (!questionIds?.length) return normalized;
+	return normalized.map((q, i) => {
+		const id = questionIds[i]?.trim();
+		if (!id) return q;
+		return {
+			...q,
+			_id: q._id ?? id,
+			questionId: id,
+			id: q.id ?? id
+		};
+	});
+}
+
 export const load: PageLoad = ({ url }) => {
 	if (!browser) {
 		return {
@@ -110,7 +127,10 @@ export const load: PageLoad = ({ url }) => {
 				: 60;
 
 		return {
-			questions: normalizeForTestUi(questionList),
+			questions: mergeQuestionIdsIntoNormalized(
+				normalizeForTestUi(questionList),
+				parsed.questionIds
+			),
 			testName: parsed.testName ?? 'Test',
 			durationMinutes: dm,
 			questionCount: qc,

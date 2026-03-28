@@ -1,10 +1,12 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { onDestroy, onMount, tick } from 'svelte';
   import MathText from '$lib/components/MathText.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     extractQuestionId,
+    submitTestAttempt,
     updateTestAttemptQuestion,
     type BatchTestAttemptSession
   } from '$lib/api/testAttempts';
@@ -38,6 +40,7 @@
     attemptId?: string | null;
     testId: string;
     batchId: string;
+    /** Called after PATCH + submit APIs succeed and the finish screen is shown (optional). */
     onSubmit?: (answers: Record<number, string>) => void;
   };
 
@@ -63,6 +66,9 @@
   let showConfirm = $state(false);
   let questionEnteredAt = $state(Date.now());
   let navBusy = $state(false);
+  let submitInFlight = $state(false);
+  let showFinishScreen = $state(false);
+  let submitFinishError = $state<string | null>(null);
 
   const total = $derived(questions.length);
   const displayTotal = $derived(
@@ -107,11 +113,15 @@
     }
   }
 
+  function sessionBatchKey(b: string) {
+    return (b ?? '').trim();
+  }
+
   function writeSessionPatch(patch: Partial<BatchTestAttemptSession>) {
     if (!browser) return;
     const prev = readSession();
     if (!prev) return;
-    if (prev.testId !== testId || prev.batchId !== batchId) return;
+    if (prev.testId !== testId || sessionBatchKey(prev.batchId ?? '') !== sessionBatchKey(batchId)) return;
     sessionStorage.setItem(
       BATCH_TEST_ATTEMPT_STORAGE_KEY,
       JSON.stringify({ ...prev, ...patch })
@@ -134,8 +144,11 @@
     const direct = extractQuestionId(q);
     if (direct) return direct;
     if (typeof q === 'object' && q !== null && 'prompt' in q) {
-      return extractQuestionId((q as { prompt?: unknown }).prompt);
+      const fromPrompt = extractQuestionId((q as { prompt?: unknown }).prompt);
+      if (fromPrompt) return fromPrompt;
     }
+    const fromSession = readSession()?.questionIds?.[index]?.trim();
+    if (fromSession) return fromSession;
     return undefined;
   }
 
@@ -186,6 +199,7 @@
   async function goTo(index: number) {
     if (submitted || navBusy || index < 0 || index >= total) return;
     if (index === currentIndex) return;
+    await tick();
     await flushQuestionForIndex(currentIndex);
     currentIndex = index;
     questionEnteredAt = Date.now();
@@ -194,13 +208,14 @@
   async function markAndNext() {
     if (submitted || navBusy) return;
     marked = new Set([...marked, currentIndex]);
+    await tick();
     await flushQuestionForIndex(currentIndex);
     questionEnteredAt = Date.now();
     if (currentIndex < total - 1) currentIndex++;
   }
 
   onMount(() => {
-    if (!browser || !testId || !batchId) {
+    if (!browser || !testId.trim()) {
       persistenceReady = true;
       questionEnteredAt = Date.now();
       return;
@@ -214,7 +229,7 @@
         ? Date.parse(s.expiresAt)
         : NaN;
 
-    if (s && s.testId === testId && s.batchId === batchId) {
+    if (s && s.testId === testId && sessionBatchKey(s.batchId ?? '') === sessionBatchKey(batchId)) {
       if (!Number.isNaN(serverExpires) && serverExpires > 0) {
         timerEndsAt = serverExpires;
       } else if (s.timerEndsAt != null && s.timerEndsAt > Date.now()) {
@@ -264,8 +279,8 @@
       const endMs = !Number.isNaN(serverExpires) && serverExpires > 0
         ? serverExpires
         : timerEndsAt;
-      if (endMs != null && Date.now() >= endMs && !submitted) {
-        handleSubmit();
+      if (endMs != null && Date.now() >= endMs && !submitted && !submitInFlight) {
+        void handleSubmit();
       }
     }, 1000);
 
@@ -274,7 +289,7 @@
   });
 
   $effect(() => {
-    if (!persistenceReady || !browser || !testId || !batchId) return;
+    if (!persistenceReady || !browser || !testId.trim()) return;
     void answers;
     void marked;
     void currentIndex;
@@ -293,31 +308,98 @@
     writeSessionPatch(patch);
   });
 
-  async function selectOption(identifier: string) {
+  function selectOption(identifier: string) {
     if (submitted || navBusy) return;
     answers = { ...answers, [currentIndex]: identifier };
-    await flushQuestionForIndex(currentIndex, { answerOverride: [identifier] });
-    questionEnteredAt = Date.now();
   }
 
-  async function clearCurrentAnswer() {
+  function clearCurrentAnswer() {
     if (submitted || navBusy) return;
     const a = { ...answers };
     delete a[currentIndex];
     answers = a;
-    await flushQuestionForIndex(currentIndex, { answerOverride: null });
-    questionEnteredAt = Date.now();
   }
 
-  async function handleSubmit() {
-    if (!submitted) {
-      await flushQuestionForIndex(currentIndex);
+  let finishRedirectTimer: ReturnType<typeof setTimeout> | null = null;
+  let finishNavigated = false;
+
+  function clearFinishRedirectTimer() {
+    if (finishRedirectTimer != null) {
+      clearTimeout(finishRedirectTimer);
+      finishRedirectTimer = null;
     }
-    stopTick?.();
-    stopTick = null;
-    submitted = true;
-    showConfirm = false;
-    onSubmit?.(answers);
+  }
+
+  function goToTestsList() {
+    if (finishNavigated) return;
+    finishNavigated = true;
+    clearFinishRedirectTimer();
+    goto('/student/tests');
+  }
+
+  function scheduleTestsRedirect() {
+    clearFinishRedirectTimer();
+    finishRedirectTimer = setTimeout(() => {
+      finishRedirectTimer = null;
+      if (!finishNavigated) {
+        finishNavigated = true;
+        goto('/student/tests');
+      }
+    }, 3200);
+  }
+
+  onDestroy(() => {
+    clearFinishRedirectTimer();
+  });
+
+  async function handleSubmit() {
+    if (submitted || submitInFlight) return;
+    submitInFlight = true;
+    submitFinishError = null;
+    try {
+      await tick();
+      await flushQuestionForIndex(currentIndex);
+
+      const aid = resolveAttemptId();
+      if (aid) {
+        const submitRes = await submitTestAttempt(aid, {});
+        if (!submitRes.success) {
+          submitFinishError = submitRes.message ?? 'Could not submit the attempt.';
+          if (import.meta.env.DEV) {
+            console.warn('submitTestAttempt', submitRes.status, submitRes.message);
+          }
+        }
+      } else if (import.meta.env.DEV) {
+        console.warn('[TestAttempt] submit skipped: missing attemptId');
+      }
+
+      stopTick?.();
+      stopTick = null;
+      submitted = true;
+      showConfirm = false;
+
+      try {
+        sessionStorage.removeItem(BATCH_TEST_ATTEMPT_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+
+      showFinishScreen = true;
+      onSubmit?.(answers);
+      scheduleTestsRedirect();
+    } catch (e) {
+      console.error('handleSubmit', e);
+      submitFinishError =
+        e instanceof Error ? e.message : 'Something went wrong while submitting.';
+      stopTick?.();
+      stopTick = null;
+      submitted = true;
+      showConfirm = false;
+      showFinishScreen = true;
+      scheduleTestsRedirect();
+    } finally {
+      submitInFlight = false;
+    }
   }
 
   function pillState(index: number): 'current' | 'attempted' | 'marked' | 'unattempted' {
@@ -328,7 +410,7 @@
   }
 
   function openSubmitConfirm() {
-    if (!submitted) showConfirm = true;
+    if (!submitted && !submitInFlight) showConfirm = true;
   }
 </script>
 
@@ -397,7 +479,7 @@
               <button
                 type="button"
                 onclick={() => void selectOption(opt.identifier)}
-                disabled={submitted || navBusy}
+                disabled={submitted || navBusy || submitInFlight}
                 class="
                   group flex w-full items-center gap-4 text-left
                   px-4 py-3.5 rounded-xl
@@ -448,7 +530,7 @@
           <button
             type="button"
             onclick={() => void goTo(currentIndex - 1)}
-            disabled={currentIndex === 0 || submitted || navBusy}
+            disabled={currentIndex === 0 || submitted || navBusy || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium
               bg-[var(--ta-nav-btn-bg)] border-[var(--ta-nav-btn-border)]
@@ -478,7 +560,7 @@
             <button
               type="button"
               onclick={() => void clearCurrentAnswer()}
-              disabled={submitted || navBusy}
+              disabled={submitted || navBusy || submitInFlight}
               class="
                 rounded-lg border border-[var(--ta-divider)] px-3 py-1.5 text-xs font-medium
                 text-[var(--ta-header-sub)]
@@ -494,7 +576,7 @@
           <button
             type="button"
             onclick={() => void markAndNext()}
-            disabled={submitted || navBusy}
+            disabled={submitted || navBusy || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold
               border-amber-500/40 bg-amber-500/10 text-amber-100
@@ -509,7 +591,7 @@
             type="button"
             onclick={() =>
               void (isLast ? openSubmitConfirm() : goTo(currentIndex + 1))}
-            disabled={submitted || navBusy}
+            disabled={submitted || navBusy || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold
               text-[var(--ta-nav-btn-primary-text)]
@@ -581,7 +663,7 @@
     <button
       type="button"
       onclick={openSubmitConfirm}
-      disabled={submitted}
+      disabled={submitted || submitInFlight}
       class="
         flex-shrink-0 inline-flex items-center gap-2
         px-4 py-2 rounded-xl text-xs font-semibold
@@ -623,7 +705,7 @@
             <button
               type="button"
               onclick={() => void goTo(i)}
-              disabled={submitted || navBusy}
+              disabled={submitted || navBusy || submitInFlight}
               title="Question {i + 1}"
               class="
                 flex h-9 w-full items-center justify-center rounded-lg text-xs font-bold
@@ -750,15 +832,64 @@
         </button>
         <button
           type="button"
-          onclick={handleSubmit}
+          onclick={() => void handleSubmit()}
+          disabled={submitInFlight}
           class="
             flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white
             shadow-md shadow-red-900/30 transition-colors hover:bg-red-700
+            disabled:cursor-not-allowed disabled:opacity-70
           "
         >
-          Submit
+          {submitInFlight ? 'Submitting…' : 'Submit'}
         </button>
       </div>
+    </div>
+  </div>
+{/if}
+
+{#if showFinishScreen}
+  <div
+    class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--ta-page-bg)] px-6 py-10"
+    role="status"
+    aria-live="polite"
+  >
+    <div
+      class="relative w-full max-w-md rounded-2xl border border-[var(--ta-qpanel-border)] bg-[var(--ta-qpanel-bg)] p-8 text-center shadow-[0_24px_64px_rgba(5,7,13,0.45)]"
+    >
+      <div class="mb-6 flex justify-center">
+        <span
+          class="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-500/40"
+        >
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M5 13l4 4L19 7"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
+      <h2 class="text-xl font-bold text-[var(--ta-header-title)]">Test finished</h2>
+      <p class="mt-2 text-sm text-[var(--ta-header-sub)]">
+        {testName} — your attempt has been submitted.
+      </p>
+      {#if submitFinishError}
+        <p class="mt-4 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+          {submitFinishError}
+        </p>
+      {/if}
+      <p class="mt-4 text-xs text-[var(--ta-palette-sub)]">
+        Redirecting to your tests in a few seconds…
+      </p>
+      <button
+        type="button"
+        onclick={() => goToTestsList()}
+        class="mt-6 w-full rounded-xl bg-[var(--ta-nav-btn-primary-bg)] py-3 text-sm font-semibold text-[var(--ta-nav-btn-primary-text)] shadow-[var(--ta-nav-btn-primary-shadow)] transition hover:opacity-95"
+      >
+        Back to my tests
+      </button>
     </div>
   </div>
 {/if}

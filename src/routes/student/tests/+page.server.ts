@@ -1,8 +1,38 @@
-import { fetchGetTestUser } from '$lib/api/tests';
+import { fetchGetTestUser, type GetTestUserItem } from '$lib/api/tests';
+import { fetchTestAttemptById, type TestAttemptSummary } from '$lib/api/testAttempts';
 import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 import type { PageServerLoad } from './$types';
 
 const DEFAULT_LIMIT = 20;
+
+async function loadAttemptAnalysis(
+	url: URL,
+	fetchFn: typeof fetch,
+	token: string | null
+): Promise<{
+	analysisAttemptId: string | null;
+	analysisTestName: string | null;
+	attemptAnalysis: TestAttemptSummary | null;
+	attemptAnalysisError: string | null;
+}> {
+	const analysisAttemptId = (url.searchParams.get('analysisAttemptId') ?? '').trim();
+	const analysisTestName = (url.searchParams.get('analysisTestName') ?? '').trim();
+	const base = {
+		analysisAttemptId: analysisAttemptId || null,
+		analysisTestName: analysisTestName || null,
+		attemptAnalysis: null as TestAttemptSummary | null,
+		attemptAnalysisError: null as string | null
+	};
+	if (!analysisAttemptId) return base;
+	if (!token) {
+		return { ...base, attemptAnalysisError: 'Sign in to view analysis.' };
+	}
+	const ar = await fetchTestAttemptById(analysisAttemptId, fetchFn, { token });
+	if (ar.success) {
+		return { ...base, attemptAnalysis: ar.data };
+	}
+	return { ...base, attemptAnalysisError: ar.message };
+}
 
 export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 	const pageNum = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
@@ -16,11 +46,13 @@ export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 	const kind = (url.searchParams.get('kind') ?? '').trim();
 	const status = (url.searchParams.get('status') ?? '').trim();
 
-	const token = getAuthTokenFromCookies(cookies);
+	const token = getAuthTokenFromCookies(cookies) ?? null;
+	const analysis = await loadAttemptAnalysis(url, fetch, token);
 
 	if (!token) {
 		return {
-			items: [],
+			...analysis,
+			items: [] as GetTestUserItem[],
 			pagination: null,
 			filterOptions: null,
 			teacherGroups: [],
@@ -44,6 +76,7 @@ export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 
 	if (!res.success) {
 		return {
+			...analysis,
 			items: [],
 			pagination: null,
 			filterOptions: null,
@@ -64,7 +97,8 @@ export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 	const payload = body?.data;
 	if (!payload) {
 		return {
-			items: [],
+			...analysis,
+			items: [] as GetTestUserItem[],
 			pagination: null,
 			filterOptions: null,
 			teacherGroups: [],
@@ -81,6 +115,7 @@ export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 	}
 
 	return {
+		...analysis,
 		items: payload.items ?? [],
 		pagination: payload.pagination ?? null,
 		filterOptions: payload.filterOptions ?? null,
