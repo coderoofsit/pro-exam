@@ -329,7 +329,7 @@
 		{/if}
 
 		<div
-			class="pointer-events-none fixed bottom-0 left-0 right-0 z-[50] flex justify-center border-t border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 md:left-[var(--sb-width-expanded)]"
+			class="pointer-events-none fixed bottom-0 left-0 right-0 z-[50] flex justify-center border-t border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 md:left-[var(--sb-left-offset)]"
 		>
 			<div
 				class="pointer-events-auto flex w-full max-w-2xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -349,7 +349,7 @@
 
 				<button
 					type="button"
-					class="rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:bg-[var(--sh-exam-card-arrow-bg)] disabled:text-[var(--sh-exam-card-title)] disabled:opacity-45 disabled:ring-1 disabled:ring-[var(--sh-exam-card-hover-border)] enabled:cursor-pointer enabled:border-2 enabled:border-[var(--accent-cta-pink)] enabled:bg-[color-mix(in_srgb,var(--accent-cta-pink)_20%,var(--sh-exam-card-arrow-bg))] enabled:text-[var(--sh-exam-card-title)] enabled:shadow-[0_6px_22px_-6px_rgba(0,0,0,0.22)] enabled:hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_32%,var(--sh-exam-card-arrow-bg))] enabled:hover:shadow-[0_10px_28px_-8px_rgba(0,0,0,0.28)] enabled:active:scale-[0.98] sm:shrink-0"
+					class="btn-cta-subscription sm:shrink-0"
 					disabled={!selectedPlanId || submittingTrial || submittingPaid}
 					onclick={onContinue}
 				>

@@ -320,12 +320,9 @@
           <span class="own-bottom-bar__label">Selected questions</span>
           {#if manualSelectedCount > 0}
             <ul class="own-bottom-bar__list" role="list">
-              <li class="own-bottom-bar__item">
-                <span class="own-selected-strip__tag" data-own-accent="0">{manualSelectedCount}</span>
-              </li>
               {#each manualSelectedSubjectsForBar as s (s.id)}
                 <li class="own-bottom-bar__item">
-                  <span class="own-selected-strip__tag" data-own-accent={s.accent}>{s.name}</span>
+                  <span class="own-bottom-bar__chip">{s.name}</span>
                 </li>
               {/each}
             </ul>
@@ -335,7 +332,7 @@
         </div>
         <button
           type="button"
-          class="own-bottom-bar__next"
+          class="btn-cta-subscription btn-cta-subscription--sm ml-auto shrink-0"
           disabled={manualSelectedCount === 0}
           onclick={handleManualNext}
         >

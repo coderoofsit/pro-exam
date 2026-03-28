@@ -2,6 +2,8 @@ import { apiRequest } from "../../http/api";
 
 export type PaperItem = {
   _id: string;
+  /** When present, use for POST /test-attempts; otherwise `_id` is used (PYQ paper-as-test). */
+  testId?: string;
   name: string;
   slug: string;
   shift: string;

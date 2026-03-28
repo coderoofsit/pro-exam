@@ -23,7 +23,9 @@
 
   const statusKey = $derived(batch.status?.toLowerCase() ?? '');
 
-  const detailHref = $derived(`/student/batch/${encodeURIComponent(batch._id)}`);
+  const detailHref = $derived(
+    `/student/batch/${encodeURIComponent(batch.slug?.trim() || batch._id)}`
+  );
 </script>
 
 <a
@@ -34,10 +36,6 @@
     rounded-2xl p-4 min-h-[132px]
     bg-[var(--sh-exam-card-bg)]
     border border-[var(--sh-exam-card-border)]
-    transition-all duration-200
-    hover:border-[var(--sh-exam-card-hover-border)]
-    hover:shadow-[var(--sh-exam-card-hover-shadow)]
-    hover:-translate-y-0.5
     no-underline text-inherit
     block
   "

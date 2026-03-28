@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
+  import MathText from '$lib/components/MathText.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     extractQuestionId,
@@ -331,6 +332,27 @@
   }
 </script>
 
+<style>
+  /* Wide math still scrolls (trackpad / shift+wheel); hide native bars (incl. Win arrow buttons). */
+  .ta-math-content {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .ta-math-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ta-math-content :global(mjx-container),
+  .ta-math-content :global(.MathJax),
+  .ta-math-content :global(.katex-html) {
+    display: inline !important;
+  }
+  .ta-math-content :global(p) {
+    margin: 0;
+    line-height: 1.85;
+  }
+</style>
+
 <div
   class="flex min-h-0 flex-1 flex-col bg-[var(--ta-page-bg)] font-sans transition-colors duration-300"
   data-attempt-id={attemptId ?? ''}
@@ -363,9 +385,11 @@
             </span>
           </div>
 
-          <p class="mb-6 text-base font-medium leading-relaxed text-[var(--ta-qtext)]">
-            {prompt?.content ?? ''}
-          </p>
+          <div
+            class="ta-math-content mb-6 overflow-x-auto text-base font-medium leading-relaxed text-[var(--ta-qtext)]"
+          >
+            <MathText content={prompt?.content ?? ''} />
+          </div>
 
           <div class="flex flex-col gap-3">
             {#each prompt?.options ?? [] as opt}
@@ -395,13 +419,13 @@
                 >
                   {opt.identifier}
                 </span>
-                <span
-                  class="flex-1 text-sm font-medium {selected
+                <div
+                  class="ta-math-content min-w-0 flex-1 overflow-x-auto text-sm font-medium {selected
                     ? 'text-[var(--ta-opt-selected-text)]'
                     : 'text-[var(--ta-opt-text)]'}"
                 >
-                  {opt.content}
-                </span>
+                  <MathText content={opt.content} />
+                </div>
                 {#if selected}
                   <span class="flex-shrink-0 text-[var(--ta-opt-label-selected-bg)]">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

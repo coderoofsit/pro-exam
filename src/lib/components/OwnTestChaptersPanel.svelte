@@ -18,8 +18,11 @@
 
   let { groupedSubjects, examSlug, examId = '', boardId = '', onNext }: Props = $props();
 
-  let openSubjectSlug = $state<string>(''); 
-  let openUnitIds          = $state<Set<string>>(new Set());  
+  let openSubjectSlug = $state<string>('');
+  let openUnitIds = $state<Set<string>>(new Set());
+
+  /** Subject rail (left column): closed by default; user can open to pick subjects. */
+  let subjectRailOpen = $state(false);
 
   let checkedUnits = $state<Set<string>>(new Set());
   let checkedChapters = $state<Set<string>>(new Set());
@@ -161,6 +164,27 @@
     checkedUnits = nu;
   }
 
+  /** Chapters only — does not toggle the unit row checkbox directly; syncs unit state from chapter selection. */
+  function selectAllChaptersInUnit(unit: GroupedChapterGroupRow) {
+    if (!unit.data.length) return;
+    const nc = new Set(checkedChapters);
+    for (const ch of unit.data) nc.add(ch._id);
+    checkedChapters = nc;
+    const nu = new Set(checkedUnits);
+    nu.add(unit.chapterGroup._id);
+    checkedUnits = nu;
+  }
+
+  function unselectAllChaptersInUnit(unit: GroupedChapterGroupRow) {
+    if (!unit.data.length) return;
+    const nc = new Set(checkedChapters);
+    for (const ch of unit.data) nc.delete(ch._id);
+    checkedChapters = nc;
+    const nu = new Set(checkedUnits);
+    nu.delete(unit.chapterGroup._id);
+    checkedUnits = nu;
+  }
+
   function toggleUnitOpen(unitId: string) {
     const next = new Set(openUnitIds);
     if (next.has(unitId)) next.delete(unitId); else next.add(unitId);
@@ -284,22 +308,71 @@
     if (!snap) return;
     onNext?.(snap);
   }
+
+  function toggleSubjectRail() {
+    subjectRailOpen = !subjectRailOpen;
+  }
 </script>
 
 <div
   class="own-test-chapters-root flex flex-col"
   data-exam-slug={examSlug}
 >
+  {#if !subjectRailOpen}
+    <div class="own-subject-rail-head">
+      <button
+        type="button"
+        class="own-subject-rail-toggle"
+        onclick={toggleSubjectRail}
+        aria-expanded={subjectRailOpen}
+        aria-controls="own-subject-rail"
+      >
+        <svg class="own-subject-rail-toggle__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M4 6h16M4 12h10M4 18h16"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+          />
+        </svg>
+        Subjects
+      </button>
+      {#if openSubject}
+        <p class="own-subject-rail-sub truncate" title={openSubject.subject.name?.en ?? openSubject.subject.slug}>
+          {openSubject.subject.name?.en ?? openSubject.subject.slug}
+        </p>
+      {/if}
+    </div>
+  {/if}
+
   <div
     class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10"
   >
   <aside
+    id="own-subject-rail"
     class="own-test-subject-rail flex w-full shrink-0 flex-col gap-2
       lg:sticky lg:top-0 lg:z-10 lg:w-[260px] lg:self-start
       lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto
-      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+      {subjectRailOpen ? '' : 'hidden'}"
     aria-label="Subjects"
+    aria-hidden={!subjectRailOpen}
   >
+    <div class="flex items-center justify-between gap-2 lg:pt-0.5">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--sh-ai-sub)]"
+        >Subjects</span
+      >
+      <button
+        type="button"
+        class="rounded-lg px-2 py-1 text-xs font-semibold text-[var(--accent-cta-pink)] transition hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)]"
+        onclick={() => {
+          subjectRailOpen = false;
+        }}
+        aria-controls="own-subject-rail"
+      >
+        Hide
+      </button>
+    </div>
     {#each groupedSubjects as row, i (row.subject._id)}
       {@const accentIdx = i % 4}
       {@const isOpen = openSubjectSlug === row.subject.slug}
@@ -403,6 +476,28 @@
 
             {#if isOpen}
               <div class="own-unit__body">
+                {#if totalCh > 0}
+                  <div
+                    class="own-unit__chapter-actions"
+                    role="group"
+                    aria-label="Chapters in {unit.chapterGroup.name?.en ?? unit.chapterGroup.slug}"
+                  >
+                    <button
+                      type="button"
+                      class="own-unit__chapter-action"
+                      onclick={() => selectAllChaptersInUnit(unit)}
+                    >
+                      Select all
+                    </button>
+                    <button
+                      type="button"
+                      class="own-unit__chapter-action"
+                      onclick={() => unselectAllChaptersInUnit(unit)}
+                    >
+                      Unselect all
+                    </button>
+                  </div>
+                {/if}
                 <ul class="mt-3 flex flex-col gap-2">
                   {#each unit.data as ch (ch._id)}
                     <li>
@@ -438,12 +533,9 @@
       <span class="own-bottom-bar__label">Selected chapters</span>
       {#if selectedChapterCount > 0}
         <ul class="own-bottom-bar__list" role="list">
-          <li class="own-bottom-bar__item">
-            <span class="own-selected-strip__tag" data-own-accent="0">{selectedChapterCount}</span>
-          </li>
           {#each selectedSubjectsForBar as s (s.id)}
             <li class="own-bottom-bar__item">
-              <span class="own-selected-strip__tag" data-own-accent={s.accent}>{s.name}</span>
+              <span class="own-bottom-bar__chip">{s.name}</span>
             </li>
           {/each}
         </ul>
@@ -453,7 +545,7 @@
     </div>
     <button
       type="button"
-      class="own-bottom-bar__next"
+      class="btn-cta-subscription btn-cta-subscription--sm ml-auto shrink-0"
       disabled={selectedChapterCount === 0}
       onclick={handleNextClick}
     >

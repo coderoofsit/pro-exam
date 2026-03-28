@@ -9,7 +9,7 @@ export type StudentBatchCreator = {
 export type StudentBatchItem = {
 	_id: string;
 	name: string;
-	/** Human-readable slug from API (list may still show it); detail route uses `_id`. */
+	/** Human-readable slug — used in `/student/batch/[slug]` URLs; detail API still uses `_id`. */
 	slug: string;
 	numberOfStudents: number;
 	numberOfTeachers: number;
@@ -68,6 +68,8 @@ export async function fetchStudentBatches(
 export type StudentBatchDetailPayload = {
 	batch: {
 		_id: string;
+		/** Present when loaded by slug; optional for older payloads. */
+		slug?: string;
 		name: string;
 		status: string;
 		isActive: boolean;
@@ -120,8 +122,7 @@ export type FetchStudentBatchDetailParams = {
 };
 
 /**
- * SSR: pass `token` from `getAuthTokenFromCookies(cookies)`.
- * `batchId` is the batch Mongo `_id` (same as `GET /api/v1/batch/student/:batchId`).
+ * `GET /api/v1/batch/student/:batchId` — **batchId** must be the batch Mongo `_id`.
  */
 export async function fetchStudentBatchDetail(
 	batchId: string,
@@ -144,4 +145,49 @@ export async function fetchStudentBatchDetail(
 		fetch: fetchFn,
 		...(options?.token ? { token: options.token } : {})
 	});
+}
+
+const MONGO_ID_RE = /^[a-f0-9]{24}$/i;
+
+/**
+ * URL uses a human **slug**; the detail API expects Mongo **_id**.
+ * - If `segment` is already a 24-char hex id, returns it.
+ * - Otherwise loads the student batch list and finds the row with matching `slug` (paginates up to `maxPages`).
+ */
+export async function resolveStudentBatchIdFromUrlSegment(
+	segment: string,
+	fetchFn: typeof fetch,
+	options: { token: string; maxPages?: number }
+): Promise<string | null> {
+	const s = segment.trim();
+	if (!s) return null;
+	if (MONGO_ID_RE.test(s)) return s;
+
+	const maxPages = Math.min(50, Math.max(1, options.maxPages ?? 30));
+	const limit = 100;
+
+	// Fast path: search may match name/slug on the first page
+	const searchFirst = await fetchStudentBatches(
+		{ page: 1, limit, search: s },
+		fetchFn,
+		{ token: options.token }
+	);
+	if (searchFirst.success && searchFirst.data?.data) {
+		const hit = searchFirst.data.data.find((b) => b.slug === s || b._id === s);
+		if (hit) return hit._id;
+	}
+
+	for (let page = 1; page <= maxPages; page++) {
+		const res = await fetchStudentBatches({ page, limit, search: '' }, fetchFn, {
+			token: options.token
+		});
+		if (!res.success || !res.data) return null;
+		const items = res.data.data ?? [];
+		const hit = items.find((b) => b.slug === s);
+		if (hit) return hit._id;
+		const lastPage = res.data.lastPage ?? 1;
+		if (page >= lastPage) break;
+	}
+
+	return null;
 }

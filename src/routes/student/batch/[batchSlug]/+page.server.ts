@@ -1,5 +1,6 @@
 import {
 	fetchStudentBatchDetail,
+	resolveStudentBatchIdFromUrlSegment,
 	type StudentBatchAssignedTest,
 	type StudentBatchDetailPayload
 } from '$lib/api/batch';
@@ -9,17 +10,18 @@ import type { PageServerLoad } from './$types';
 const DEFAULT_LIMIT = 20;
 
 export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
-	const batchId = (params.batchId ?? '').trim();
+	const batchSlug = (params.batchSlug ?? '').trim();
 	const pageNum = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
 
 	const token = getAuthTokenFromCookies(cookies);
 
-	if (!batchId) {
+	if (!batchSlug) {
 		return {
 			batch: null as StudentBatchDetailPayload['batch'] | null,
 			tests: [] as StudentBatchAssignedTest[],
 			error: 'Invalid batch link.',
-			batchId,
+			batchSlug: '',
+			batchId: '',
 			ssrAuthMissing: false as const,
 			currentPage: 1,
 			lastPage: 1,
@@ -33,7 +35,8 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 			batch: null,
 			tests: [],
 			error: null as string | null,
-			batchId,
+			batchSlug,
+			batchId: '',
 			ssrAuthMissing: true as const,
 			currentPage: 1,
 			lastPage: 1,
@@ -42,8 +45,27 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 		};
 	}
 
+	const batchIdForApi = await resolveStudentBatchIdFromUrlSegment(batchSlug, fetch, {
+		token
+	});
+
+	if (!batchIdForApi) {
+		return {
+			batch: null,
+			tests: [],
+			error: 'Batch not found.',
+			batchSlug,
+			batchId: '',
+			ssrAuthMissing: false as const,
+			currentPage: 1,
+			lastPage: 1,
+			total: 0,
+			limit: DEFAULT_LIMIT
+		};
+	}
+
 	const res = await fetchStudentBatchDetail(
-		batchId,
+		batchIdForApi,
 		{ page: pageNum, limit: DEFAULT_LIMIT },
 		fetch,
 		{ token }
@@ -54,7 +76,8 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 			batch: null,
 			tests: [],
 			error: res.message,
-			batchId,
+			batchSlug,
+			batchId: '',
 			ssrAuthMissing: false as const,
 			currentPage: 1,
 			lastPage: 1,
@@ -65,11 +88,13 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 
 	const body = res.data;
 	const payload = body.data;
+	const batchId = payload.batch?._id ?? '';
 
 	return {
 		batch: payload.batch,
 		tests: payload.data ?? [],
 		error: null as string | null,
+		batchSlug,
 		batchId,
 		ssrAuthMissing: false as const,
 		currentPage: payload.currentPage ?? 1,

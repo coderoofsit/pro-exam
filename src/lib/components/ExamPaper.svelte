@@ -28,23 +28,30 @@
   class="
     group relative flex flex-col justify-between
     rounded-2xl p-4 min-h-[120px] overflow-hidden
+    border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))]
     bg-[var(--sh-exam-card-bg)]
-    border border-[var(--sh-exam-card-border)]
+    shadow-[0_1px_2px_rgba(15,23,42,0.06)]
     transition-all duration-200 no-underline
-    hover:border-[var(--sh-exam-card-hover-border)]
-    hover:shadow-[var(--sh-exam-card-hover-shadow)]
+    hover:border-[var(--accent-cta-pink)]
+    hover:bg-[color-mix(in_srgb,var(--sh-exam-card-border)_18%,var(--sh-exam-card-bg))]
+    hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.2)]
     hover:-translate-y-0.5
   "
 >
   <span class="
     absolute top-3 right-3
     flex h-7 w-7 items-center justify-center rounded-full
+    border border-[var(--sh-exam-card-border)]
     bg-[var(--sh-exam-card-arrow-bg)]
-    text-[var(--sh-exam-card-arrow-color)]
-    transition-colors duration-150
-    group-hover:bg-[var(--sh-exam-card-arrow-hover-bg)]
   ">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      class="text-[var(--accent-cta-pink)]"
+      aria-hidden="true"
+    >
       <path d="M7 17L17 7M17 7H7M17 7v10"
         stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round"/>

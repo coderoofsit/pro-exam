@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { authStore, type AuthUser } from '$lib/stores/auth';
@@ -29,6 +30,8 @@
   let selectingMembershipDefault = $state(false);
   /** Prevents repeated GET /membership (effect re-runs, dev double-mount, failed attempts). */
   let membershipFetchCompleted = $state(false);
+  /** Tracks route transitions so we auto-collapse nav once when entering “create own test” exam flow. */
+  let wasOwnTestExamRoute = $state(false);
 
   /** Full-bleed, no extra top inset — timer + question should sit under the app topbar. */
   const isTestAttemptRoute = $derived(page.url.pathname.startsWith('/student/test-attempt'));
@@ -71,7 +74,22 @@
   const sidebarNavItems = $derived(navItemsByRole[role]);
   const isDark = $derived($themeStore === 'dark');
   const isOwnTestExamRoute = $derived(/^\/student\/tests\/own\/[^/]+/.test(page.url.pathname));
-  const isCollapsed = $derived(isOwnTestExamRoute || sidebarCollapsed);
+  const isCollapsed = $derived(sidebarCollapsed);
+
+  $effect(() => {
+    if (isOwnTestExamRoute && !wasOwnTestExamRoute) {
+      sidebarCollapsed = true;
+    }
+    wasOwnTestExamRoute = isOwnTestExamRoute;
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    document.documentElement.style.setProperty(
+      '--sb-left-offset',
+      isCollapsed ? 'var(--sb-width-collapsed)' : 'var(--sb-width-expanded)'
+    );
+  });
 
   /** Subscription routes: show default profile’s plan status in the topbar. */
   const showSubscriptionStatusInTopbar = $derived(page.url.pathname.includes('/subscription'));
@@ -380,12 +398,7 @@
       <button
         type="button"
         onclick={toggleSidebar}
-        disabled={isOwnTestExamRoute}
-        title={isOwnTestExamRoute
-          ? 'Sidebar stays collapsed on this page'
-          : isCollapsed
-            ? 'Expand sidebar'
-            : 'Collapse sidebar'}
+        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         aria-expanded={!isCollapsed}
         class="
           w-full flex items-center gap-3 px-3 py-2.5 rounded-xl

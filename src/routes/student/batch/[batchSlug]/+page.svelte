@@ -31,6 +31,7 @@
 
   let startingTestId = $state<string | null>(null);
   let startTestError = $state<string | null>(null);
+  let pendingStartModalOpen = $state(false);
 
   function testTitle(t: StudentBatchAssignedTest) {
     const n = t.name;
@@ -46,6 +47,22 @@
 
   function viewAnalysisHref(t: StudentBatchAssignedTest) {
     return `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batchId=${encodeURIComponent(batchId)}&view=analysis`;
+  }
+
+  function isTestStatusPending(t: StudentBatchAssignedTest) {
+    return (t.status ?? '').trim().toLowerCase() === 'pending';
+  }
+
+  function onStartTestClick(t: StudentBatchAssignedTest) {
+    if (isTestStatusPending(t)) {
+      pendingStartModalOpen = true;
+      return;
+    }
+    void onStartTest(t);
+  }
+
+  function closePendingStartModal() {
+    pendingStartModalOpen = false;
   }
 
   /** POST /api/v1/test-attempts, then navigate (replaces anchor-only navigation with no request). */
@@ -207,9 +224,6 @@
                 {batchInitials(batch.name)}
               </div>
               <div class="min-w-0 flex-1 pt-0.5">
-                <p class="text-[11px] font-semibold uppercase tracking-widest text-[var(--sh-ai-sub)]">
-                  Your batch
-                </p>
                 <h1 class="mt-1 text-lg font-semibold leading-snug text-[var(--sh-exam-card-title)]">
                   {batch.name}
                 </h1>
@@ -421,10 +435,6 @@
                             <span class="opacity-40">·</span>
                             <span>{t.settings.durationMinutes} min</span>
                           {/if}
-                          {#if t.totalMarks != null}
-                            <span class="opacity-40">·</span>
-                            <span>{t.totalMarks} marks</span>
-                          {/if}
                         </div>
                       </div>
                     </div>
@@ -435,16 +445,7 @@
                       {#if t.attempted}
                         <a
                           href={viewAnalysisHref(t)}
-                          class="
-                            inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold
-                            bg-[var(--sh-exam-card-bg)]
-                            border border-[var(--sh-exam-card-border)]
-                            text-[var(--sh-exam-card-title)]
-                            no-underline
-                            transition-all duration-200
-                            hover:border-[var(--sh-exam-card-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)]
-                            sm:flex-initial sm:min-w-[8.5rem]
-                          "
+                          class="btn-cta-subscription-outline sm:flex-initial sm:min-w-[8.5rem] flex-1"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80">
                             <path
@@ -459,20 +460,9 @@
                       {:else}
                         <button
                           type="button"
-                          class="
-                            inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold
-                            bg-[var(--sh-exam-card-arrow-bg)]
-                            border border-[var(--sh-exam-card-hover-border)]
-                            text-[var(--sh-exam-card-title)]
-                            transition-all duration-200
-                            hover:bg-[var(--sh-exam-card-arrow-hover-bg)]
-                            active:scale-[0.99]
-                            enabled:cursor-pointer
-                            disabled:cursor-not-allowed disabled:opacity-60
-                            sm:flex-initial sm:min-w-[8.5rem]
-                          "
+                          class="btn-cta-subscription-outline flex-1 sm:flex-initial sm:min-w-[8.5rem]"
                           disabled={!!startingTestId}
-                          onclick={() => void onStartTest(t)}
+                          onclick={() => onStartTestClick(t)}
                         >
                           {#if startingTestId === t._id}
                             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
@@ -484,7 +474,7 @@
                               height="14"
                               viewBox="0 0 24 24"
                               fill="none"
-                              class="text-[var(--sh-exam-card-arrow-color)]"
+                              class="opacity-80"
                               aria-hidden="true"
                             >
                               <path
@@ -563,3 +553,35 @@
     {/if}
   </div>
 </div>
+
+{#if pendingStartModalOpen}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pending-test-modal-title"
+    onclick={(e) => e.target === e.currentTarget && closePendingStartModal()}
+  >
+    <div
+      class="w-full max-w-md rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-xl"
+      onclick={(e) => e.stopPropagation()}
+    >
+      <h2 id="pending-test-modal-title" class="text-lg font-bold text-[var(--sh-section-title)]">
+        Test not started yet
+      </h2>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--sh-ai-sub)]">
+        This test is still <span class="font-semibold text-[var(--sh-section-title)]">pending</span>. It will be
+        available to start once your institute opens the test window.
+      </p>
+      <button
+        type="button"
+        class="btn-cta-subscription mt-6 w-full px-6 py-2.5 text-sm"
+        onclick={closePendingStartModal}
+      >
+        OK
+      </button>
+    </div>
+  </div>
+{/if}

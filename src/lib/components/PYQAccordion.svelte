@@ -1,9 +1,16 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import {
+    BATCH_TEST_ATTEMPT_STORAGE_KEY,
+    createTestAttempt,
+    findAttemptIdInApiResponse,
+    peelTestAttemptEnvelope
+  } from '$lib/api/testAttempts';
 
   // ── Types ──────────────────────────────────────────────────────────────
   export type PaperItem = {
     _id: string;
+    testId?: string;
     name: string;
     slug: string;
     shift: string;
@@ -38,28 +45,77 @@
   let selectedYear   = $state<number | 'all'>('all');
   let filterDropOpen = $state(false);
   let openYears      = $state<Set<number>>(new Set());
+  let startingPaperId = $state<string | null>(null);
+  let startPaperError = $state<string | null>(null);
 
-  // ── Modal state ────────────────────────────────────────────────────────
-  let modalPaper = $state<PaperItem | null>(null);
-  let modalYear  = $state<number | null>(null);
-
-  function openModal(paper: PaperItem, year: number) {
-    modalPaper = paper;
-    modalYear  = year;
-  }
-
-  function closeModal() {
-    modalPaper = null;
-    modalYear  = null;
-  }
-
-  function handleStartTest() {
-    if (!modalPaper) return;
-    goto(`/student/test-attempt/${examSlug}/${modalPaper.slug}`);
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') closeModal();
+  async function startPaperTest(paper: PaperItem) {
+    if (startingPaperId) return;
+    const testId = (paper.testId ?? '').trim() || paper._id;
+    startPaperError = null;
+    startingPaperId = paper._id;
+    try {
+      const res = await createTestAttempt({ testId, batchId: null });
+      if (!res.success) {
+        startPaperError = res.message || 'Could not start test';
+        return;
+      }
+      const body = res.data as Record<string, unknown> | undefined;
+      const peeled = peelTestAttemptEnvelope(body ?? res.data);
+      const payload =
+        peeled && typeof peeled === 'object' ? (peeled as Record<string, unknown>) : {};
+      const attemptIdResolved =
+        (typeof payload.attemptId === 'string' && payload.attemptId.trim()) ||
+        (typeof payload.attempt_id === 'string' && payload.attempt_id.trim()) ||
+        findAttemptIdInApiResponse(res.data);
+      const questions = Array.isArray(payload.questions) ? payload.questions : [];
+      if (!questions.length) {
+        startPaperError = 'No questions returned for this test.';
+        return;
+      }
+      try {
+        sessionStorage.setItem(
+          BATCH_TEST_ATTEMPT_STORAGE_KEY,
+          JSON.stringify({
+            testId,
+            batchId: '',
+            questions,
+            fetchedAt: Date.now(),
+            testName: paper.name,
+            attemptId: attemptIdResolved,
+            durationMinutes:
+              typeof payload.durationMinutes === 'number'
+                ? payload.durationMinutes
+                : typeof payload.duration_minutes === 'number'
+                  ? payload.duration_minutes
+                  : undefined,
+            questionCount:
+              typeof payload.questionCount === 'number'
+                ? payload.questionCount
+                : typeof payload.question_count === 'number'
+                  ? payload.question_count
+                  : undefined,
+            startedAt:
+              typeof payload.startedAt === 'string'
+                ? payload.startedAt
+                : typeof payload.started_at === 'string'
+                  ? payload.started_at
+                  : undefined,
+            expiresAt:
+              typeof payload.expiresAt === 'string'
+                ? payload.expiresAt
+                : typeof payload.expires_at === 'string'
+                  ? payload.expires_at
+                  : undefined
+          })
+        );
+      } catch {
+        startPaperError = 'Could not save test data in this browser.';
+        return;
+      }
+      await goto(`/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=`);
+    } finally {
+      startingPaperId = null;
+    }
   }
 
   // ── Derived ────────────────────────────────────────────────────────────
@@ -118,11 +174,18 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 <!-- ════════════════════════════════════════════════════════
      TOOLBAR
 ════════════════════════════════════════════════════════ -->
+{#if startPaperError}
+  <div
+    class="mb-4 flex items-center gap-3 rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]"
+    role="alert"
+  >
+    {startPaperError}
+  </div>
+{/if}
+
 <div class="flex items-center justify-between gap-3 mb-5 flex-wrap">
 
   <p class="text-sm text-[var(--pyq-header-text)]">
@@ -141,20 +204,20 @@
         onclick={() => { filterDropOpen = !filterDropOpen; }}
         class="
           inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium
-          bg-[var(--pyq-sort-btn-bg)] border border-[var(--pyq-sort-btn-border)]
+          bg-[var(--pyq-sort-btn-bg)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--pyq-sort-btn-border))]
           text-[var(--pyq-sort-btn-text)] transition-all duration-150
-          hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:border-[var(--pyq-sort-btn-hover-border)]
-          hover:text-[var(--pyq-sort-btn-hover-text)]
-          {filterDropOpen ? 'border-[var(--pyq-sort-btn-hover-border)] text-[var(--pyq-sort-btn-hover-text)] bg-[var(--pyq-sort-btn-hover-bg)]' : ''}
+          hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,var(--pyq-sort-btn-bg))] hover:border-[var(--accent-cta-pink)]
+          hover:text-[var(--pyq-header-count)]
+          {filterDropOpen ? 'border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,var(--pyq-sort-btn-bg))] text-[var(--pyq-header-count)]' : ''}
         "
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="text-[var(--accent-cta-pink)]">
           <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/>
           <path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         {selectedYear === 'all' ? 'All Years' : String(selectedYear)}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-          class="transition-transform duration-200 {filterDropOpen ? 'rotate-180' : ''}">
+          class="text-[var(--accent-cta-pink)] transition-transform duration-200 {filterDropOpen ? 'rotate-180' : ''}">
           <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8"
             stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -227,17 +290,19 @@
       title="Sort {sortOrder === 'desc' ? 'oldest first' : 'newest first'}"
       class="
         inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium
-        bg-[var(--pyq-sort-btn-bg)] border border-[var(--pyq-sort-btn-border)]
+        bg-[var(--pyq-sort-btn-bg)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--pyq-sort-btn-border))]
         text-[var(--pyq-sort-btn-text)] transition-all duration-150
-        hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:border-[var(--pyq-sort-btn-hover-border)]
-        hover:text-[var(--pyq-sort-btn-hover-text)]
+        hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,var(--pyq-sort-btn-bg))] hover:border-[var(--accent-cta-pink)]
+        hover:text-[var(--pyq-header-count)]
       ">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M7 3v18M7 21l-3-3M7 21l3-3M17 21V3M17 3l-3 3M17 3l3 3"
-          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--pyq-sort-btn-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_10%,var(--pyq-sort-btn-bg))] text-[var(--accent-cta-pink)]">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M7 3v18M7 21l-3-3M7 21l3-3M17 21V3M17 3l-3 3M17 3l3 3"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
       Sort
-      <span class="font-bold opacity-70">{sortOrder === 'desc' ? '↓' : '↑'}</span>
+      <span class="font-bold text-[var(--accent-cta-pink)]">{sortOrder === 'desc' ? '↓' : '↑'}</span>
     </button>
   </div>
 </div>
@@ -268,13 +333,13 @@
           {yearLabel(group.year)}
         </span>
         <span class="
-          flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full
-          transition-all duration-200
-          {isOpen
-            ? 'bg-[var(--pyq-paper-arrow-bg)] text-[var(--pyq-accordion-chevron-active)] rotate-180'
-            : 'text-[var(--pyq-accordion-chevron)]'}
+          flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full border
+          border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--pyq-accordion-border))]
+          bg-[color-mix(in_srgb,var(--accent-cta-pink)_10%,var(--pyq-accordion-bg))]
+          text-[var(--accent-cta-pink)] transition-all duration-200
+          {isOpen ? 'rotate-180 border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_18%,var(--pyq-accordion-bg))]' : ''}
         ">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8"
               stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -286,64 +351,48 @@
         <div class="px-4 pb-4">
           <div class="border-t border-[var(--pyq-accordion-divider)] mb-3"></div>
 
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-3">
             {#each group.papers as paper (paper._id)}
-              <!-- Button instead of <a> — opens modal instead of navigating -->
-              <button
-                type="button"
-                onclick={() => openModal(paper, group.year)}
-                class="
-                  group flex items-center justify-between gap-4 w-full text-left
-                  rounded-xl px-4 py-3
-                  bg-[var(--pyq-paper-bg)]
-                  border border-[var(--pyq-paper-border)]
-                  transition-all duration-150
-                  hover:bg-[var(--pyq-paper-hover-bg)]
-                  hover:border-[var(--pyq-paper-hover-border)]
-                  hover:shadow-[var(--pyq-paper-hover-shadow)]
-                "
+              <div
+                class="flex flex-col gap-4 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] pl-0 transition-all duration-200 sm:flex-row sm:items-center sm:justify-between sm:gap-6 hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-[var(--pyq-paper-hover-shadow)]"
               >
-                <!-- Name -->
-                <p class="min-w-0 flex-1 text-sm font-semibold text-[var(--pyq-paper-title)] truncate">
-                  {paper.name}
-                </p>
-
-                <!-- Meta -->
-                <div class="hidden sm:flex items-center gap-3 flex-shrink-0 text-xs text-[var(--pyq-paper-meta)]">
-                  {#if paper.examSchedule?.date}
-                    <span>{paper.examSchedule.date}</span>
-                    <span class="opacity-30">·</span>
-                  {/if}
-                  {#if paper.examSchedule?.duration}
-                    <span>{paper.examSchedule.duration}</span>
-                    <span class="opacity-30">·</span>
-                  {/if}
-                  <span>{paper.questionCount ?? 0} Qs</span>
-                  {#if paper.shift}
-                    <span class="opacity-30">·</span>
-                    <span class="
-                      px-2 py-0.5 rounded-full font-medium
-                      bg-[var(--pyq-paper-badge-bg)]
-                      border border-[var(--pyq-paper-badge-border)]
-                      text-[var(--pyq-paper-badge-text)]
-                    ">{paper.shift}</span>
-                  {/if}
+                <div class="min-w-0 flex-1 self-stretch px-4 py-4 sm:pl-5">
+                  <p class="font-semibold text-[var(--pyq-paper-title)]">{paper.name}</p>
+                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--pyq-paper-meta)]">
+                    {#if paper.examSchedule?.date}
+                      <span>{paper.examSchedule.date}</span>
+                      <span class="opacity-50">·</span>
+                    {/if}
+                    {#if paper.examSchedule?.duration}
+                      <span>{paper.examSchedule.duration}</span>
+                      <span class="opacity-50">·</span>
+                    {/if}
+                    <span>{paper.questionCount ?? 0} questions</span>
+                    {#if paper.shift}
+                      <span class="opacity-50">·</span>
+                      <span
+                        class="rounded-md bg-[color-mix(in_srgb,var(--pyq-paper-border)_40%,transparent)] px-2 py-0.5 font-medium uppercase tracking-wide"
+                        >{paper.shift}</span
+                      >
+                    {/if}
+                  </div>
                 </div>
-
-                <!-- Arrow -->
-                <span class="
-                  flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full
-                  bg-[var(--pyq-paper-arrow-bg)] text-[var(--pyq-paper-arrow-color)]
-                  transition-colors duration-150
-                  group-hover:bg-[var(--pyq-paper-arrow-hover-bg)]
-                ">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                    <path d="M7 17L17 7M17 7H7M17 7v10"
-                      stroke="currentColor" stroke-width="2.2"
-                      stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </button>
+                <div
+                  class="flex w-full shrink-0 items-center justify-center gap-2 border-t border-[var(--pyq-paper-border)] px-4 py-4 sm:w-auto sm:justify-end sm:border-0 sm:px-4 sm:py-4 sm:pl-0"
+                >
+                  <button
+                    type="button"
+                    class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
+                    disabled={startingPaperId !== null}
+                    onclick={() => startPaperTest(paper)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
+                      <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
+                    </svg>
+                    {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
+                  </button>
+                </div>
+              </div>
             {/each}
           </div>
         </div>
@@ -351,134 +400,3 @@
     </div>
   {/each}
 </div>
-
-<!-- ════════════════════════════════════════════════════════
-     PAPER DETAIL MODAL
-════════════════════════════════════════════════════════ -->
-{#if modalPaper}
-  <!-- Backdrop -->
-  <button
-    class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm cursor-default"
-    aria-label="Close modal"
-    onclick={closeModal}
-  ></button>
-
-  <!-- Panel -->
-  <div
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modal-title"
-    class="
-      fixed left-1/2 top-1/2 z-50
-      -translate-x-1/2 -translate-y-1/2
-      w-[calc(100vw-2rem)] max-w-md
-      rounded-2xl overflow-hidden
-      bg-[var(--pyq-accordion-bg)]
-      border border-[var(--pyq-accordion-active-border)]
-      shadow-[0_24px_64px_rgba(5,7,13,0.5)]
-    "
-  >
-
-    <!-- Modal header -->
-    <div class="flex items-start justify-between gap-3 px-6 pt-6 pb-4 border-b border-[var(--pyq-accordion-divider)]">
-      <div class="min-w-0">
-        <p class="text-[11px] font-semibold uppercase tracking-widest text-[var(--pyq-paper-badge-text)] mb-1">
-          {examTitle()} · {modalYear}
-        </p>
-        <h2 id="modal-title" class="text-base font-bold text-[var(--pyq-accordion-title)] leading-snug">
-          {modalPaper.name}
-        </h2>
-      </div>
-      <!-- Close button -->
-      <button
-        type="button"
-        onclick={closeModal}
-        aria-label="Close"
-        class="
-          flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-xl
-          bg-[var(--pyq-paper-bg)] text-[var(--pyq-accordion-chevron)]
-          hover:bg-[var(--pyq-accordion-hover-bg)] hover:text-[var(--pyq-accordion-title)]
-          transition-colors duration-150
-        "
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Modal body: details grid -->
-    <div class="px-6 py-5 grid grid-cols-2 gap-3">
-
-      {#if modalPaper.examSchedule?.date}
-        <div class="flex flex-col gap-1 rounded-xl p-3 bg-[var(--pyq-paper-bg)] border border-[var(--pyq-paper-border)]">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--pyq-paper-meta-label)]">Date</span>
-          <span class="text-sm font-medium text-[var(--pyq-accordion-title)]">{modalPaper.examSchedule.date}</span>
-        </div>
-      {/if}
-
-      {#if modalPaper.examSchedule?.timing}
-        <div class="flex flex-col gap-1 rounded-xl p-3 bg-[var(--pyq-paper-bg)] border border-[var(--pyq-paper-border)]">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--pyq-paper-meta-label)]">Timing</span>
-          <span class="text-sm font-medium text-[var(--pyq-accordion-title)]">{modalPaper.examSchedule.timing}</span>
-        </div>
-      {/if}
-
-      {#if modalPaper.examSchedule?.duration}
-        <div class="flex flex-col gap-1 rounded-xl p-3 bg-[var(--pyq-paper-bg)] border border-[var(--pyq-paper-border)]">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--pyq-paper-meta-label)]">Duration</span>
-          <span class="text-sm font-medium text-[var(--pyq-accordion-title)]">{modalPaper.examSchedule.duration}</span>
-        </div>
-      {/if}
-
-      <div class="flex flex-col gap-1 rounded-xl p-3 bg-[var(--pyq-paper-bg)] border border-[var(--pyq-paper-border)]">
-        <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--pyq-paper-meta-label)]">Questions</span>
-        <span class="text-sm font-medium text-[var(--pyq-accordion-title)]">{modalPaper.questionCount ?? 0}</span>
-      </div>
-
-      {#if modalPaper.shift}
-        <div class="flex flex-col gap-1 rounded-xl p-3 bg-[var(--pyq-paper-bg)] border border-[var(--pyq-paper-border)]">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--pyq-paper-meta-label)]">Shift</span>
-          <span class="text-sm font-medium text-[var(--pyq-accordion-title)]">{modalPaper.shift}</span>
-        </div>
-      {/if}
-
-    </div>
-
-    <!-- Modal footer: actions -->
-    <div class="flex items-center justify-between gap-3 px-6 pb-6">
-      <button
-        type="button"
-        onclick={closeModal}
-        class="
-          flex-1 h-11 rounded-xl text-sm font-medium
-          bg-[var(--pyq-paper-bg)] border border-[var(--pyq-paper-border)]
-          text-[var(--pyq-accordion-chevron)]
-          hover:bg-[var(--pyq-accordion-hover-bg)] hover:text-[var(--pyq-accordion-title)]
-          transition-colors duration-150
-        "
-      >
-        Cancel
-      </button>
-
-      <button
-        type="button"
-        onclick={handleStartTest}
-        class="
-          flex-1 h-11 rounded-xl text-sm font-semibold
-          bg-[linear-gradient(135deg,#8B5CF6_0%,#4f7eff_100%)]
-          text-white
-          shadow-[0_4px_20px_rgba(139,92,246,0.35)]
-          hover:shadow-[0_6px_28px_rgba(139,92,246,0.55)]
-          transition-shadow duration-150
-          flex items-center justify-center gap-2
-        "
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-          <path d="M5 3l14 9-14 9V3Z" fill="currentColor"/>
-        </svg>
-        Start Test
-      </button>
-    </div>
-  </div>
-{/if}

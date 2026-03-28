@@ -31,6 +31,7 @@
 
   let startingTestId = $state<string | null>(null);
   let startTestError = $state<string | null>(null);
+  let pendingStartModalOpen = $state(false);
 
   /** Filters panel (dropdown) open — toggled by icon; selects stay in DOM when hidden so values still submit. */
   let filtersOpen = $state(false);
@@ -122,6 +123,22 @@
     const b = item.batchId?.trim();
     if (b) q.set('batchId', b);
     return `/student/test-attempt?${q.toString()}`;
+  }
+
+  function isTestStatusPending(item: GetTestUserItem) {
+    return (item.status ?? '').trim().toLowerCase() === 'pending';
+  }
+
+  function onStartTestClick(item: GetTestUserItem) {
+    if (isTestStatusPending(item)) {
+      pendingStartModalOpen = true;
+      return;
+    }
+    void onStartTest(item);
+  }
+
+  function closePendingStartModal() {
+    pendingStartModalOpen = false;
   }
 
   async function onStartTest(item: GetTestUserItem) {
@@ -304,12 +321,12 @@
               bind:value={searchDraft}
               placeholder="Search by name…"
               aria-label="Search tests"
-              class="min-h-[2.75rem] min-w-0 flex-1 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none ring-0 placeholder:text-[var(--sh-ai-sub)] focus:border-[var(--sh-exam-card-hover-border)]"
+              class="min-h-[2.75rem] min-w-0 flex-1 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--sh-ai-sub)] hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_42%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_30%,transparent)]"
             />
             {#if filterOptions}
               <button
                 type="button"
-                class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-title)] transition hover:border-[var(--sh-exam-card-hover-border)]"
+                class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-title)] transition-colors duration-200 hover:border-[var(--accent-cta-pink)] hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_8%,var(--sh-exam-card-bg))]"
                 aria-expanded={filtersOpen}
                 aria-controls="tests-filter-panel"
                 aria-label={filtersOpen ? 'Hide filters' : 'Show filters'}
@@ -337,7 +354,7 @@
           {#if filterOptions}
             <div
               id="tests-filter-panel"
-              class="mt-3 grid gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4 sm:grid-cols-2 lg:grid-cols-4 {filtersOpen
+              class="mt-3 grid gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4 transition-colors duration-200 hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--sh-exam-card-border))] sm:grid-cols-2 lg:grid-cols-4 {filtersOpen
                 ? ''
                 : 'hidden'}"
             >
@@ -346,7 +363,7 @@
                 <select
                   name="creatorUserId"
                   value={data.creatorUserId ?? ''}
-                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none focus:border-[var(--sh-exam-card-hover-border)]"
+                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_28%,transparent)]"
                 >
                   <option value="">All creators</option>
                   {#each filterOptions.creators ?? [] as c (c.userId)}
@@ -361,7 +378,7 @@
                 <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Exam</span>
                 <select
                   value={data.examId ?? ''}
-                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none focus:border-[var(--sh-exam-card-hover-border)]"
+                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_28%,transparent)]"
                   onchange={(e) => onFilterSelect('examId', e.currentTarget.value)}
                 >
                   <option value="">All exams</option>
@@ -376,7 +393,7 @@
                 <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Kind</span>
                 <select
                   value={data.kind ?? ''}
-                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none focus:border-[var(--sh-exam-card-hover-border)]"
+                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_28%,transparent)]"
                   onchange={(e) => onFilterSelect('kind', e.currentTarget.value)}
                 >
                   <option value="">All</option>
@@ -391,7 +408,7 @@
                 <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Status</span>
                 <select
                   value={data.status ?? ''}
-                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none focus:border-[var(--sh-exam-card-hover-border)]"
+                  class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_28%,transparent)]"
                   onchange={(e) => onFilterSelect('status', e.currentTarget.value)}
                 >
                   <option value="">All</option>
@@ -427,9 +444,9 @@
             {#each items as item (item._id)}
               <li>
                 <div
-                  class="flex flex-col gap-4 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] pl-0 sm:flex-row sm:items-center sm:justify-between"
+                  class="flex flex-col gap-4 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] pl-0 transition-all duration-200 sm:flex-row sm:items-center sm:justify-between sm:gap-6 hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-[var(--pyq-paper-hover-shadow)]"
                 >
-                  <div class="min-w-0 flex-1 px-4 pt-4 sm:py-4 sm:pl-5">
+                  <div class="min-w-0 flex-1 self-stretch px-4 py-4 sm:pl-5">
                     <p class="font-semibold text-[var(--pyq-paper-title)]">{testName(item)}</p>
                     <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--pyq-paper-meta)]">
                       <span class="rounded-md bg-[color-mix(in_srgb,var(--pyq-paper-border)_40%,transparent)] px-2 py-0.5 font-medium uppercase tracking-wide">{item.kind}</span>
@@ -447,27 +464,45 @@
                     </div>
                   </div>
                   <div
-                    class="flex shrink-0 items-stretch gap-2 border-t border-[var(--pyq-paper-border)] px-4 pb-4 sm:border-0 sm:px-4 sm:pb-4 sm:pl-0"
+                    class="flex w-full shrink-0 items-center justify-center gap-2 border-t border-[var(--pyq-paper-border)] px-4 py-4 sm:w-auto sm:justify-end sm:border-0 sm:px-4 sm:py-4 sm:pl-0"
                   >
                     {#if item.attempted}
                       <a
                         href={viewAnalysisHref(item)}
-                        class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-xs font-semibold text-[var(--sh-exam-card-title)] no-underline transition hover:border-[var(--sh-exam-card-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] sm:flex-initial sm:min-w-[8.5rem]"
+                        class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
+                          <path
+                            d="M4 19V5M4 19l4-4M4 19l-4-4M20 5v14M20 5l-4 4M20 5l4 4"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                          />
+                        </svg>
                         View Analysis
                       </a>
                     {:else}
                       <button
                         type="button"
-                        class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2.5 text-xs font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[var(--sh-exam-card-hover-border)] transition enabled:cursor-pointer enabled:hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-initial sm:min-w-[8.5rem]"
+                        class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
                         disabled={!!startingTestId}
-                        onclick={() => void onStartTest(item)}
+                        onclick={() => onStartTestClick(item)}
                       >
                         {#if startingTestId === item._id}
                           <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
                           ></span>
                           Starting…
                         {:else}
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            class="opacity-80"
+                            aria-hidden="true"
+                          >
+                            <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
+                          </svg>
                           Start Test
                         {/if}
                       </button>
@@ -519,3 +554,35 @@
     </section>
   </div>
 </div>
+
+{#if pendingStartModalOpen}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tests-pending-test-modal-title"
+    onclick={(e) => e.target === e.currentTarget && closePendingStartModal()}
+  >
+    <div
+      class="w-full max-w-md rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-xl"
+      onclick={(e) => e.stopPropagation()}
+    >
+      <h2 id="tests-pending-test-modal-title" class="text-lg font-bold text-[var(--sh-section-title)]">
+        Test not started yet
+      </h2>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--sh-ai-sub)]">
+        This test is still <span class="font-semibold text-[var(--sh-section-title)]">pending</span>. It will be
+        available to start once your institute opens the test window.
+      </p>
+      <button
+        type="button"
+        class="btn-cta-subscription mt-6 w-full px-6 py-2.5 text-sm"
+        onclick={closePendingStartModal}
+      >
+        OK
+      </button>
+    </div>
+  </div>
+{/if}

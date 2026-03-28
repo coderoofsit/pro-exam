@@ -75,6 +75,8 @@
   --sb-font-size-collapse:          0.6875rem;
   --sb-width-expanded:              240px;
   --sb-width-collapsed:             72px;
+  /** Synced from Sidebar.svelte for fixed footers (own test bottom bar, etc.) */
+  --sb-left-offset:                 var(--sb-width-collapsed);
 
   /* ── TOPBAR ──────────────────────────────────────────────────────────── */
   --topbar-page-bg:                 #f5f7ff;
@@ -226,6 +228,9 @@
   --sh-exam-card-arrow-bg:          #eef2ff;
   --sh-exam-card-arrow-color:       #4f7eff;
   --sh-exam-card-arrow-hover-bg:    #dde8ff;
+  /* Shared with subscription / batch CTAs (dark theme overrides in [data-theme="dark"]) */
+  --accent-cta-pink:                #ec4899;
+  --accent-cta-cyan:                #06b6d4;
   --sh-toolbox-label:               #8b5cf6;
   --sh-toolbox-sub:                 #94a3b8;
   --sh-tool-card-bg:                #ffffff;
@@ -1665,7 +1670,7 @@ html[data-theme='dark'] .student-dash-mascot {
   padding-bottom: calc(8.25rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Pinned to viewport bottom (scrolls with page chrome, not content) */
+/* Pinned to viewport bottom — full width, subscription-style bar; offset for app sidebar (collapsed on own-test routes) */
 .own-bottom-bar {
   position: fixed;
   bottom: 0;
@@ -1675,22 +1680,32 @@ html[data-theme='dark'] .student-dash-mascot {
   box-sizing: border-box;
   display: flex;
   width: 100%;
-  max-width: 72rem;
+  max-width: none;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 0.75rem;
-  padding: 0.875rem max(1rem, env(safe-area-inset-left)) 0.875rem max(1rem, env(safe-area-inset-right));
-  padding-bottom: max(0.875rem, env(safe-area-inset-bottom));
-  border-radius: 1rem;
-  border: 1px solid var(--own-bottom-bar-border);
-  background: var(--own-bottom-bar-bg);
-  box-shadow: var(--own-bottom-bar-shadow);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  margin: 0;
+  padding: 1rem 0 max(1rem, env(safe-area-inset-bottom)) 0;
+  padding-left: max(50px, env(safe-area-inset-left));
+  padding-right: max(50px, env(safe-area-inset-right));
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--sh-exam-card-border);
+  background: color-mix(in srgb, var(--sh-exam-card-bg) 92%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@media (min-width: 768px) {
+  .own-bottom-bar {
+    left: var(--sb-left-offset);
+    right: 0;
+    width: auto;
+    padding-left: max(50px, env(safe-area-inset-left));
+    padding-right: max(50px, env(safe-area-inset-right));
+  }
 }
 
 .own-bottom-bar__subject {
@@ -1704,9 +1719,9 @@ html[data-theme='dark'] .student-dash-mascot {
 .own-bottom-bar__label {
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--own-bottom-bar-label);
+  color: var(--sh-ai-sub, var(--own-bottom-bar-label));
 }
 
 .own-bottom-bar__list {
@@ -1725,48 +1740,23 @@ html[data-theme='dark'] .student-dash-mascot {
 .own-bottom-bar__empty {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--own-muted);
+  line-height: 1.45;
+  color: var(--sh-ai-sub, var(--own-muted));
 }
 
-.own-bottom-bar__next {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  padding: 0 1.5rem;
-  border: none;
-  border-radius: 0.875rem;
-  font-size: 0.9375rem;
+/* Subject name chips in bottom bar — neutral (not pink) */
+.own-bottom-bar__chip {
+  font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
-  color: var(--own-next-btn-text);
-  background: var(--own-next-btn-bg);
-  box-shadow: var(--own-next-btn-shadow);
-  transition:
-    background 0.15s ease,
-    transform 0.12s ease;
+  padding: 0.2rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--sh-exam-card-border);
+  white-space: nowrap;
+  color: var(--sh-section-title, var(--own-title));
+  background: color-mix(in srgb, var(--sh-exam-card-border) 18%, var(--sh-exam-card-bg));
 }
 
-.own-bottom-bar__next:hover {
-  background: var(--own-next-btn-bg-hover);
-}
-
-.own-bottom-bar__next:focus-visible {
-  outline: 2px solid var(--color-brand-primary, #4f7eff);
-  outline-offset: 2px;
-}
-
-.own-bottom-bar__next:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-  box-shadow: none;
-  filter: none;
-}
-
-.own-bottom-bar__next:disabled:hover {
-  background: var(--own-next-btn-bg);
-}
+/* Next: use global .btn-cta-subscription on the button (OwnTestChaptersPanel + own exam page) */
 
 /* Own test — question distribution modal (OwnTestQuestionDistributionModal.svelte) */
 .own-q-modal-backdrop {
@@ -2234,137 +2224,140 @@ html[data-theme='dark'] .student-dash-mascot {
 .own-section-label {
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--own-muted);
+  color: var(--sh-ai-sub, var(--own-muted));
 }
 
-/* Subject cards — thin border + glow; checked state uses a light accent fill (no extra thick ring) */
+/* Subject rail cards — same language as subscription plan cards + ExamPaper (pink border, neutral fill) */
 .own-subject-card {
   position: relative;
   display: block;
   width: 100%;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: var(--own-subject-card-bg);
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 26%, var(--sh-exam-card-border));
+  background: var(--sh-exam-card-bg);
   padding: 1rem;
   text-align: left;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   transition:
+    border-color 0.2s ease,
     box-shadow 0.2s ease,
-    filter 0.2s ease,
-    background 0.2s ease;
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 .own-subject-card:hover {
-  filter: brightness(1.06);
+  border-color: var(--accent-cta-pink);
+  background: color-mix(in srgb, var(--sh-exam-card-border) 18%, var(--sh-exam-card-bg));
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
-.own-subject-card[data-own-accent="0"] {
-  border-color: var(--own-accent-0);
-  box-shadow: var(--own-accent-0-glow);
+.own-subject-card--open {
+  border-color: var(--accent-cta-pink);
+  box-shadow: 0 8px 28px -12px rgba(0, 0, 0, 0.18);
 }
-.own-subject-card[data-own-accent="1"] {
-  border-color: var(--own-accent-1);
-  box-shadow: var(--own-accent-1-glow);
+.own-subject-card--selected {
+  border-color: var(--accent-cta-pink);
+  background: var(--sh-exam-card-bg);
+  box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.15);
 }
-.own-subject-card[data-own-accent="2"] {
-  border-color: var(--own-accent-2);
-  box-shadow: var(--own-accent-2-glow);
-}
-.own-subject-card[data-own-accent="3"] {
-  border-color: var(--own-accent-3);
-  box-shadow: var(--own-accent-3-glow);
-}
-.own-subject-card--selected[data-own-accent="0"] {
-  background: color-mix(in srgb, var(--own-accent-0) 16%, transparent);
-  box-shadow: var(--own-accent-0-glow);
-}
-.own-subject-card--selected[data-own-accent="1"] {
-  background: color-mix(in srgb, var(--own-accent-1) 16%, transparent);
-  box-shadow: var(--own-accent-1-glow);
-}
-.own-subject-card--selected[data-own-accent="2"] {
-  background: color-mix(in srgb, var(--own-accent-2) 18%, transparent);
-  box-shadow: var(--own-accent-2-glow);
-}
-.own-subject-card--selected[data-own-accent="3"] {
-  background: color-mix(in srgb, var(--own-accent-3) 16%, transparent);
-  box-shadow: var(--own-accent-3-glow);
+.own-subject-card--selected.own-subject-card--open {
+  background: var(--sh-exam-card-bg);
 }
 
 .own-subject-card__title {
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
-  color: var(--own-title);
+  color: var(--page-text, var(--sh-section-title, var(--own-title)));
+}
+
+/* Subject rail: open / close toggle */
+.own-subject-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.own-subject-rail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 32%, var(--sh-exam-card-border));
+  background: var(--sh-exam-card-bg);
+  color: var(--page-text, var(--sh-section-title));
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.own-subject-rail-toggle:hover {
+  border-color: var(--accent-cta-pink);
+  background: color-mix(in srgb, var(--sh-exam-card-border) 12%, var(--sh-exam-card-bg));
+}
+
+.own-subject-rail-toggle:focus-visible {
+  outline: 2px solid var(--accent-cta-pink);
+  outline-offset: 2px;
+}
+
+.own-subject-rail-toggle .own-subject-rail-toggle__icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  color: var(--accent-cta-pink);
+}
+
+.own-subject-rail-sub {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--page-text, var(--sh-section-title));
 }
 .own-subject-card__meta {
   margin-top: 0.2rem;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: var(--own-muted);
+  line-height: 1.35;
+  color: var(--sh-ai-sub, var(--own-muted));
 }
 
 .own-subject-card__meta--sel {
   font-weight: 700;
-  color: var(--own-title);
+  color: var(--sh-section-title, var(--own-title));
 }
 
-.own-subject-card__arrow {
-  display: flex;
-  height: 2rem;
-  width: 2rem;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  border: 1px solid;
-  background: transparent;
-  transition: border-color 0.15s ease;
-}
-.own-subject-card[data-own-accent="0"] .own-subject-card__arrow {
-  border-color: color-mix(in srgb, var(--own-accent-0) 42%, transparent);
-  color: var(--own-accent-0);
-}
-.own-subject-card[data-own-accent="1"] .own-subject-card__arrow {
-  border-color: color-mix(in srgb, var(--own-accent-1) 42%, transparent);
-  color: var(--own-accent-1);
-}
-.own-subject-card[data-own-accent="2"] .own-subject-card__arrow {
-  border-color: color-mix(in srgb, var(--own-accent-2) 42%, transparent);
-  color: var(--own-accent-2);
-}
-.own-subject-card[data-own-accent="3"] .own-subject-card__arrow {
-  border-color: color-mix(in srgb, var(--own-accent-3) 42%, transparent);
-  color: var(--own-accent-3);
-}
-
-/* Units + chapters — inherit active subject accent */
-.own-units[data-own-palette="0"] {
-  --own-palette: var(--own-accent-0);
-  --own-palette-glow: var(--own-accent-0-glow);
-}
-.own-units[data-own-palette="1"] {
-  --own-palette: var(--own-accent-1);
-  --own-palette-glow: var(--own-accent-1-glow);
-}
-.own-units[data-own-palette="2"] {
-  --own-palette: var(--own-accent-2);
-  --own-palette-glow: var(--own-accent-2-glow);
-}
-.own-units[data-own-palette="3"] {
-  --own-palette: var(--own-accent-3);
-  --own-palette-glow: var(--own-accent-3-glow);
+/* Units + chapters — single pink accent (subscription / ExamPaper) */
+.own-units[data-own-palette='0'],
+.own-units[data-own-palette='1'],
+.own-units[data-own-palette='2'],
+.own-units[data-own-palette='3'] {
+  --own-palette: var(--accent-cta-pink);
+  --own-palette-glow: 0 8px 28px -10px rgba(236, 72, 153, 0.22);
 }
 
 .own-unit {
   overflow: hidden;
   border-radius: 1rem;
-  border: 1px solid color-mix(in srgb, var(--own-palette) var(--own-unit-border-mix), transparent);
-  background: var(--own-unit-surface);
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 28%, var(--sh-exam-card-border));
+  background: var(--sh-exam-card-bg);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .own-unit--open {
-  border-color: var(--own-palette);
+  border-color: var(--accent-cta-pink);
   box-shadow: var(--own-palette-glow);
 }
 
@@ -2379,13 +2372,13 @@ html[data-theme='dark'] .student-dash-mascot {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--own-title);
+  color: var(--sh-section-title, var(--own-title));
   font-size: 0.875rem;
   font-weight: 600;
   transition: background 0.15s ease;
 }
 .own-unit__trigger:hover {
-  background: color-mix(in srgb, var(--own-palette) 6%, transparent);
+  background: color-mix(in srgb, var(--sh-exam-card-border) 14%, var(--sh-exam-card-bg));
 }
 
 .own-unit__chev {
@@ -2396,8 +2389,9 @@ html[data-theme='dark'] .student-dash-mascot {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  color: var(--own-palette);
-  background: color-mix(in srgb, var(--own-palette) 14%, transparent);
+  border: 1px solid var(--sh-exam-card-border);
+  background: var(--sh-exam-card-arrow-bg);
+  color: var(--accent-cta-pink);
   transition: transform 0.2s ease;
 }
 .own-unit--open .own-unit__chev {
@@ -2405,8 +2399,44 @@ html[data-theme='dark'] .student-dash-mascot {
 }
 
 .own-unit__body {
-  border-top: 1px solid color-mix(in srgb, var(--own-palette) 22%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--accent-cta-pink) 18%, var(--sh-exam-card-border));
   padding: 0 1rem 1rem;
+}
+
+.own-unit__chapter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0.5rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--sh-exam-card-border) 55%, transparent);
+}
+
+.own-unit__chapter-action {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 35%, var(--sh-exam-card-border));
+  background: color-mix(in srgb, var(--color-brand-primary) 6%, var(--sh-exam-card-bg));
+  color: var(--color-brand-primary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.own-unit__chapter-action:hover {
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--sh-exam-card-bg));
+  border-color: var(--color-brand-primary);
+}
+
+.own-unit__chapter-action:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
 }
 
 .own-chapter {
@@ -2415,12 +2445,12 @@ html[data-theme='dark'] .student-dash-mascot {
   justify-content: space-between;
   gap: 0.75rem;
   border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--own-palette) var(--own-chapter-border-mix), transparent);
-  background: var(--own-chapter-surface);
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 22%, var(--sh-exam-card-border));
+  background: var(--sh-exam-card-bg);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--own-title);
+  color: var(--sh-section-title, var(--own-title));
 }
 
 .own-chapter__arrow {
@@ -2431,8 +2461,9 @@ html[data-theme='dark'] .student-dash-mascot {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  color: var(--own-palette);
-  background: color-mix(in srgb, var(--own-palette) 12%, transparent);
+  border: 1px solid var(--sh-exam-card-border);
+  background: var(--sh-exam-card-arrow-bg);
+  color: var(--accent-cta-pink);
 }
 
 /* ── Extensions: tick checkboxes, rail, unit head, chapter rows, selected strip ── */
@@ -2479,34 +2510,13 @@ html[data-theme='dark'] .student-dash-mascot {
   box-sizing: border-box;
 }
 
-.own-check__visual[data-own-accent='0'] {
-  border-color: color-mix(in srgb, var(--own-accent-0) 60%, transparent);
-}
-.own-check__visual[data-own-accent='1'] {
-  border-color: color-mix(in srgb, var(--own-accent-1) 60%, transparent);
-}
-.own-check__visual[data-own-accent='2'] {
-  border-color: color-mix(in srgb, var(--own-accent-2) 60%, transparent);
-}
-.own-check__visual[data-own-accent='3'] {
-  border-color: color-mix(in srgb, var(--own-accent-3) 60%, transparent);
+.own-check__visual[data-own-accent] {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--sh-exam-card-border));
 }
 
-.own-check input:checked + .own-check__visual[data-own-accent='0'] {
-  background: var(--own-accent-0);
-  border-color: var(--own-accent-0);
-}
-.own-check input:checked + .own-check__visual[data-own-accent='1'] {
-  background: var(--own-accent-1);
-  border-color: var(--own-accent-1);
-}
-.own-check input:checked + .own-check__visual[data-own-accent='2'] {
-  background: var(--own-accent-2);
-  border-color: var(--own-accent-2);
-}
-.own-check input:checked + .own-check__visual[data-own-accent='3'] {
-  background: var(--own-accent-3);
-  border-color: var(--own-accent-3);
+.own-check input:checked + .own-check__visual[data-own-accent] {
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
 }
 
 .own-check input:checked + .own-check__visual::after {
@@ -2514,33 +2524,21 @@ html[data-theme='dark'] .student-dash-mascot {
   display: block;
   width: 10px;
   height: 6px;
-  border-left: 2px solid #000;
-  border-bottom: 2px solid #000;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
   transform: rotate(-45deg) translate(1px, -1px);
-  opacity: 0.75;
+  opacity: 1;
 }
 
-[data-theme="dark"] .own-check input:checked + .own-check__visual::after {
-  border-left-color: rgba(255, 255, 255, 0.92);
-  border-bottom-color: rgba(255, 255, 255, 0.92);
+[data-theme='dark'] .own-check input:checked + .own-check__visual::after {
+  border-left-color: #ffffff;
+  border-bottom-color: #ffffff;
 }
 
-/* Partial selection (native indeterminate) — dash, not tick */
-.own-check input:indeterminate + .own-check__visual[data-own-accent='0'] {
-  background: color-mix(in srgb, var(--own-accent-0) 28%, transparent);
-  border-color: var(--own-accent-0);
-}
-.own-check input:indeterminate + .own-check__visual[data-own-accent='1'] {
-  background: color-mix(in srgb, var(--own-accent-1) 28%, transparent);
-  border-color: var(--own-accent-1);
-}
-.own-check input:indeterminate + .own-check__visual[data-own-accent='2'] {
-  background: color-mix(in srgb, var(--own-accent-2) 28%, transparent);
-  border-color: var(--own-accent-2);
-}
-.own-check input:indeterminate + .own-check__visual[data-own-accent='3'] {
-  background: color-mix(in srgb, var(--own-accent-3) 28%, transparent);
-  border-color: var(--own-accent-3);
+/* Partial selection (native indeterminate) — dash, not tick (white on brand blue tint) */
+.own-check input:indeterminate + .own-check__visual[data-own-accent] {
+  background: color-mix(in srgb, var(--color-brand-primary) 22%, var(--sh-exam-card-bg));
+  border-color: var(--color-brand-primary);
 }
 
 .own-check input:indeterminate + .own-check__visual::after {
@@ -2551,18 +2549,18 @@ html[data-theme='dark'] .student-dash-mascot {
   margin: 0;
   border: none;
   border-radius: 1px;
-  background: var(--own-title);
-  opacity: 0.8;
+  background: #ffffff;
+  opacity: 1;
   transform: none;
 }
 
 .own-check input:checked + .own-check__visual:not([data-own-accent]) {
-  background: var(--own-accent-0);
-  border-color: var(--own-accent-0);
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
 }
 
 .own-check input:focus-visible + .own-check__visual {
-  outline: 2px solid var(--own-check-ring, var(--own-accent-0));
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
 }
 
@@ -2585,11 +2583,10 @@ html[data-theme='dark'] .student-dash-mascot {
   font-weight: 600;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid;
+  border: 1px solid var(--sh-exam-card-border);
   white-space: nowrap;
-  border-color: color-mix(in srgb, var(--own-palette) 40%, transparent);
-  color: var(--own-palette);
-  background: color-mix(in srgb, var(--own-palette) 10%, transparent);
+  color: var(--sh-ai-sub, var(--own-muted));
+  background: color-mix(in srgb, var(--sh-exam-card-border) 18%, var(--sh-exam-card-bg));
 }
 
 .own-chapter-row {
@@ -2597,14 +2594,15 @@ html[data-theme='dark'] .student-dash-mascot {
   align-items: center;
   gap: 0.625rem;
   border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--own-palette) var(--own-chapter-border-mix), transparent);
-  background: var(--own-chapter-surface);
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 20%, var(--sh-exam-card-border));
+  background: var(--sh-exam-card-bg);
   padding: 0.625rem 0.875rem;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .own-chapter-row:hover {
-  background: color-mix(in srgb, var(--own-palette) 6%, transparent);
+  background: color-mix(in srgb, var(--sh-exam-card-border) 12%, var(--sh-exam-card-bg));
+  border-color: color-mix(in srgb, var(--accent-cta-pink) 35%, var(--sh-exam-card-border));
 }
 
 .own-chapter-row .own-check {
@@ -2614,7 +2612,7 @@ html[data-theme='dark'] .student-dash-mascot {
 .own-chapter-row .own-chapter__label {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--own-title);
+  color: var(--sh-section-title, var(--own-title));
   line-height: 1.4;
 }
 
@@ -2656,25 +2654,13 @@ html[data-theme='dark'] .student-dash-mascot {
   white-space: nowrap;
 }
 
-.own-selected-strip__tag[data-own-accent='0'] {
-  border-color: color-mix(in srgb, var(--own-accent-0) 50%, transparent);
-  color: var(--own-accent-0);
-  background: color-mix(in srgb, var(--own-accent-0) 12%, transparent);
-}
-.own-selected-strip__tag[data-own-accent='1'] {
-  border-color: color-mix(in srgb, var(--own-accent-1) 50%, transparent);
-  color: var(--own-accent-1);
-  background: color-mix(in srgb, var(--own-accent-1) 12%, transparent);
-}
-.own-selected-strip__tag[data-own-accent='2'] {
-  border-color: color-mix(in srgb, var(--own-accent-2) 50%, transparent);
-  color: var(--own-accent-2);
-  background: color-mix(in srgb, var(--own-accent-2) 12%, transparent);
-}
+.own-selected-strip__tag[data-own-accent='0'],
+.own-selected-strip__tag[data-own-accent='1'],
+.own-selected-strip__tag[data-own-accent='2'],
 .own-selected-strip__tag[data-own-accent='3'] {
-  border-color: color-mix(in srgb, var(--own-accent-3) 50%, transparent);
-  color: var(--own-accent-3);
-  background: color-mix(in srgb, var(--own-accent-3) 12%, transparent);
+  border-color: var(--sh-exam-card-border);
+  color: var(--sh-section-title, var(--own-title));
+  background: color-mix(in srgb, var(--sh-exam-card-border) 14%, var(--sh-exam-card-bg));
 }
 
 /* Own test — manual panel (no checkboxes; chapter → link) */
@@ -2762,4 +2748,101 @@ html[data-theme='dark'] .student-dash-mascot {
   border: 1px solid var(--sh-exam-card-border);
   color: var(--sh-exam-card-title);
   background: color-mix(in srgb, var(--sh-exam-card-bg) 88%, var(--sh-exam-card-border));
+}
+
+/* Student batch list cards — hover matches subscription CTA (pink border + lift) */
+a.student-batch-card {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+a.student-batch-card:hover {
+  border-color: var(--accent-cta-pink);
+  box-shadow: 0 6px 22px -6px rgba(0, 0, 0, 0.18);
+  transform: translateY(-0.125rem);
+}
+
+/* Shared primary CTA — subscription “Continue” + batch “Start Test” */
+.btn-cta-subscription {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  cursor: pointer;
+  border: 2px solid var(--accent-cta-pink);
+  background: color-mix(in srgb, var(--accent-cta-pink) 20%, var(--sh-exam-card-arrow-bg));
+  color: var(--sh-exam-card-title);
+  box-shadow: 0 6px 22px -6px rgba(0, 0, 0, 0.22);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease,
+    opacity 0.15s ease,
+    border-color 0.15s ease;
+}
+.btn-cta-subscription:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-cta-pink) 32%, var(--sh-exam-card-arrow-bg));
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.28);
+}
+.btn-cta-subscription:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-cta-subscription:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  border-width: 1px;
+  border-color: var(--sh-exam-card-hover-border);
+  background: var(--sh-exam-card-arrow-bg);
+  box-shadow: none;
+}
+.btn-cta-subscription--sm {
+  padding: 0.625rem 1rem;
+  font-size: 0.75rem;
+}
+
+/* Secondary — batch “View Analysis” + “Start Test” (rest = soft tint + border; stronger on hover) */
+.btn-cta-subscription-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 38%, var(--sh-exam-card-border));
+  background: color-mix(in srgb, var(--accent-cta-pink) 10%, var(--sh-exam-card-bg));
+  color: var(--sh-exam-card-title);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+.btn-cta-subscription-outline:hover {
+  border-color: var(--accent-cta-pink);
+  background: color-mix(in srgb, var(--accent-cta-pink) 16%, var(--sh-exam-card-bg));
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.2);
+}
+.btn-cta-subscription-outline:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-cta-subscription-outline:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.btn-cta-subscription-outline:disabled:hover {
+  border-color: color-mix(in srgb, var(--accent-cta-pink) 38%, var(--sh-exam-card-border));
+  background: color-mix(in srgb, var(--accent-cta-pink) 10%, var(--sh-exam-card-bg));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transform: none;
 }

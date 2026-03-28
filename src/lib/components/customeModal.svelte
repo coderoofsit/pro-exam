@@ -149,10 +149,11 @@
     max-width: 480px;
     border-radius: 1.5rem 1.5rem 0 0;
     padding: 0 1.25rem 2rem;
-    background: var(--pc-card-bg, #ffffff);
-    border: 1px solid var(--pc-card-border, #e2e8f0);
+    background: var(--sh-exam-card-bg, var(--pc-card-bg, #ffffff));
+    border: 1px solid
+      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
     border-bottom: none;
-    box-shadow: var(--pc-card-shadow, 0 -8px 48px rgba(79,126,255,0.09));
+    box-shadow: var(--pc-card-shadow, 0 -8px 48px rgba(15, 23, 42, 0.08));
     animation: ctm-slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -162,7 +163,8 @@
     }
     .ctm-sheet {
       border-radius: 1.5rem;
-      border-bottom: 1px solid var(--pc-card-border, #e2e8f0);
+      border-bottom: 1px solid
+        color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
       margin-bottom: 0;
     }
     .ctm-handle { display: none; }
@@ -200,6 +202,7 @@
     margin: 0;
     line-height: 1.2;
   }
+  /* Close / Back — same chrome as ExamPaper + modal cards: pink-tint border, neutral fill, pink glyph */
   .ctm-close {
     flex-shrink: 0;
     display: flex;
@@ -208,42 +211,57 @@
     width: 2rem;
     height: 2rem;
     border-radius: 9999px;
-    border: 1px solid var(--pc-input-border, #e2e8f0);
-    background: var(--pc-input-bg, #f8faff);
-    color: var(--color-content-secondary, #64748b);
+    border: 1px solid
+      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+    background: var(--sh-exam-card-bg, #ffffff);
+    color: var(--accent-cta-pink, #ec4899);
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
     margin-top: 0.1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   }
   .ctm-close:hover {
-    border-color: var(--color-brand-primary, #4f7eff);
-    color: var(--color-brand-primary, #4f7eff);
-    background: var(--color-brand-primary-light, #eef2ff);
+    border-color: var(--accent-cta-pink, #ec4899);
+    background: color-mix(
+      in srgb,
+      var(--sh-exam-card-border, #e2e8f0) 18%,
+      var(--sh-exam-card-bg, #ffffff)
+    );
+    color: var(--accent-cta-pink, #ec4899);
+    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.15);
   }
 
   .ctm-back {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.65rem 0.35rem 0.4rem;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem 0.4rem 0.45rem;
     border-radius: 9999px;
-    border: 1px solid var(--pc-input-border, #e2e8f0);
-    background: var(--pc-input-bg, #f8faff);
-    color: var(--color-content-secondary, #64748b);
+    border: 1px solid
+      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+    background: var(--sh-exam-card-bg, #ffffff);
+    color: var(--sh-exam-card-title, var(--pc-heading, #1a1f36));
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
     margin-top: 0.1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   }
   .ctm-back:hover {
-    border-color: var(--color-brand-primary, #4f7eff);
-    color: var(--color-brand-primary, #4f7eff);
-    background: var(--color-brand-primary-light, #eef2ff);
+    border-color: var(--accent-cta-pink, #ec4899);
+    background: color-mix(
+      in srgb,
+      var(--sh-exam-card-border, #e2e8f0) 18%,
+      var(--sh-exam-card-bg, #ffffff)
+    );
+    color: var(--sh-exam-card-title, var(--pc-heading, #1a1f36));
+    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.15);
   }
   .ctm-back__icon {
     flex-shrink: 0;
+    color: var(--accent-cta-pink, #ec4899);
   }
 
   /* ── Cards grid ── */
@@ -253,7 +271,7 @@
     gap: 0.75rem;
   }
 
-  /* ── Card base ── */
+  /* ── Card base (matches ExamPaper: light pink border, neutral fill, pink on hover border) ── */
   .ctm-card {
     display: flex;
     align-items: center;
@@ -261,22 +279,29 @@
     width: 100%;
     padding: 1.125rem 1.125rem;
     border-radius: 1rem;
-    border: 1.5px solid var(--sh-exam-card-border, #e2e8f0);
+    border: 1.5px solid
+      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
     background: var(--sh-exam-card-bg, #ffffff);
     cursor: pointer;
     text-align: left;
-    transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s, background 0.18s;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s, background 0.2s;
   }
   .ctm-card:hover {
-    border-color: var(--sh-exam-card-hover-border, #4f7eff);
-    box-shadow: var(--sh-exam-card-hover-shadow, 0 4px 24px rgba(79,126,255,0.14));
-    transform: translateY(-1px);
+    border-color: var(--accent-cta-pink, #ec4899);
+    background: color-mix(
+      in srgb,
+      var(--sh-exam-card-border, #e2e8f0) 18%,
+      var(--sh-exam-card-bg, #ffffff)
+    );
+    box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
   }
   .ctm-card:active {
     transform: translateY(0);
   }
 
-  /* ── Icon bubble ── */
+  /* ── Icon bubble (neutral surface, pink glyph — same idea as ExamPaper avatar) ── */
   .ctm-card__icon {
     flex-shrink: 0;
     display: flex;
@@ -285,25 +310,14 @@
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 0.875rem;
-    transition: background 0.18s;
+    border: 1px solid var(--sh-exam-card-border, #e2e8f0);
+    background: var(--sh-exam-card-arrow-bg, #f1f5f9);
+    color: var(--accent-cta-pink, #ec4899);
+    transition: background 0.2s, border-color 0.2s;
   }
-
-  /* Manual — blue */
-  .ctm-card--manual .ctm-card__icon {
-    background: var(--color-brand-primary-light, #eef2ff);
-    color: var(--color-brand-primary, #4f7eff);
-  }
-  .ctm-card--manual:hover .ctm-card__icon {
-    background: color-mix(in srgb, var(--color-brand-primary, #4f7eff) 16%, transparent);
-  }
-
-  /* Random — purple/secondary */
-  .ctm-card--random .ctm-card__icon {
-    background: var(--color-brand-institute-light, #f5f3ff);
-    color: var(--color-brand-institute, #8b5cf6);
-  }
-  .ctm-card--random:hover .ctm-card__icon {
-    background: color-mix(in srgb, var(--color-brand-institute, #8b5cf6) 16%, transparent);
+  .ctm-card:hover .ctm-card__icon {
+    border-color: var(--sh-exam-card-border, #e2e8f0);
+    background: var(--sh-exam-card-arrow-bg, #f1f5f9);
   }
 
   /* ── Body text ── */
@@ -325,7 +339,7 @@
     line-height: 1.4;
   }
 
-  /* ── Arrow chip ── */
+  /* ── Arrow chip: neutral circle, pink arrow only (ExamPaper chevron) ── */
   .ctm-card__arrow {
     flex-shrink: 0;
     display: flex;
@@ -334,21 +348,15 @@
     width: 2rem;
     height: 2rem;
     border-radius: 9999px;
-    transition: background 0.18s, color 0.18s;
+    border: 1px solid var(--sh-exam-card-border, #e2e8f0);
+    background: var(--sh-exam-card-arrow-bg, #f1f5f9);
+    color: var(--accent-cta-pink, #ec4899);
+    transition: border-color 0.2s, background 0.2s;
   }
-  .ctm-card--manual .ctm-card__arrow {
-    background: var(--sh-exam-card-arrow-bg, #eef2ff);
-    color: var(--sh-exam-card-arrow-color, #4f7eff);
-  }
-  .ctm-card--manual:hover .ctm-card__arrow {
-    background: var(--sh-exam-card-arrow-hover-bg, #dde8ff);
-  }
-  .ctm-card--random .ctm-card__arrow {
-    background: var(--color-brand-institute-light, #f5f3ff);
-    color: var(--color-brand-institute, #8b5cf6);
-  }
-  .ctm-card--random:hover .ctm-card__arrow {
-    background: color-mix(in srgb, var(--color-brand-institute, #8b5cf6) 18%, transparent);
+  .ctm-card:hover .ctm-card__arrow {
+    border-color: var(--sh-exam-card-border, #e2e8f0);
+    background: var(--sh-exam-card-arrow-bg, #f1f5f9);
+    color: var(--accent-cta-pink, #ec4899);
   }
 
   /* ── Animations ── */
