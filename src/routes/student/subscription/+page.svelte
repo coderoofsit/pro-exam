@@ -2,6 +2,19 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
 
+  /** UTC ISO string → calendar date in Asia/Kolkata (date only). */
+  function expiryUtcToIstDate(iso: string | null | undefined) {
+    if (!iso) return '';
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return '';
+    return new Date(t).toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
   function goToPlans() {
     void goto('/student/subscription/plans');
   }
@@ -38,7 +51,7 @@
       aria-labelledby="sub-status-heading"
     >
       <h2 id="sub-status-heading" class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-        Your default profile
+        Your profile
       </h2>
       <p class="mt-1 text-base font-semibold text-[var(--sh-section-title)]">
         {defaultProfile.firstName}
@@ -52,9 +65,9 @@
               {#if !sub.isSubscribed}
                 No active subscription
               {:else if sub.isTrial}
-                Active — trial
+                Active — TRAIL
               {:else}
-                Active — paid plan
+                Active — PAID
               {/if}
             </dd>
           </div>
@@ -64,6 +77,14 @@
               {sub.trialUsed ? 'Already used' : 'Available'}
             </dd>
           </div>
+          {#if sub.expiry}
+            <div class="sm:col-span-2">
+              <dt class="text-xs text-[var(--sh-ai-sub)]">Expires</dt>
+              <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
+                {expiryUtcToIstDate(sub.expiry)}
+              </dd>
+            </div>
+          {/if}
         </dl>
       {:else}
         <p class="mt-3 text-sm text-[var(--sh-ai-sub)]">Subscription details will appear here once loaded.</p>
@@ -162,7 +183,7 @@
   aria-label="Upgrade subscription"
 >
   <div
-    class="pointer-events-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_96%,var(--sh-exam-card-arrow-bg))] px-4 py-3 shadow-[0_-4px_28px_rgba(0,0,0,0.1)] backdrop-blur-sm sm:px-5"
+    class="subscription-bottom-bar pointer-events-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border border-[var(--sh-exam-card-border)] px-4 py-3 shadow-[0_-4px_28px_rgba(0,0,0,0.1)] backdrop-blur-sm sm:px-5"
   >
     <div class="min-w-0 flex-1">
       <p class="text-sm font-semibold text-[var(--sh-section-title)] sm:text-base">
@@ -174,10 +195,19 @@
     </div>
     <button
       type="button"
-      class="shrink-0 rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[var(--sh-exam-card-hover-border)] transition hover:opacity-95 active:scale-[0.99] sm:px-5"
+      class="shrink-0 cursor-pointer rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[var(--sh-exam-card-hover-border)] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))] active:scale-[0.99] sm:px-5"
       onclick={goToPlans}
     >
       Upgrade
     </button>
   </div>
 </div>
+
+<style>
+  .subscription-bottom-bar {
+    background: color-mix(in srgb, var(--sh-exam-card-bg) 96%, var(--sh-exam-card-arrow-bg));
+  }
+  :global([data-theme='dark']) .subscription-bottom-bar {
+    background: color-mix(in srgb, var(--sh-exam-card-bg) 55%, rgba(255, 255, 255, 0.1));
+  }
+</style>
