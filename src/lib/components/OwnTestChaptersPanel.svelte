@@ -197,6 +197,42 @@
     return out;
   });
 
+  const selectedChapterCount = $derived(checkedChapters.size);
+
+  const selectionSummary = $derived.by(() => {
+    const out: Array<{
+      subjectId: string;
+      subjectName: string;
+      accent: number;
+      units: Array<{ unitId: string; unitName: string; chapters: Array<{ id: string; name: string }> }>;
+    }> = [];
+
+    for (const [i, row] of groupedSubjects.entries()) {
+      const units: Array<{ unitId: string; unitName: string; chapters: Array<{ id: string; name: string }> }> = [];
+      for (const unit of row.data) {
+        const chapters = unit.data
+          .filter((ch) => checkedChapters.has(ch._id))
+          .map((ch) => ({ id: ch._id, name: ch.name?.en ?? ch.slug }));
+        if (chapters.length === 0) continue;
+        units.push({
+          unitId: unit.chapterGroup._id,
+          unitName: unit.chapterGroup.name?.en ?? unit.chapterGroup.slug,
+          chapters
+        });
+      }
+
+      if (units.length === 0) continue;
+      out.push({
+        subjectId: row.subject._id,
+        subjectName: row.subject.name?.en ?? row.subject.slug,
+        accent: i % 4,
+        units
+      });
+    }
+
+    return out;
+  });
+
   function buildSelectionSnapshot(): OwnTestSelectionSnapshot | null {
   const subjects: OwnTestSubjectSelection[] = [];
   let resolvedExamId = (examId || '').trim();
@@ -399,9 +435,12 @@
 
   <footer class="own-bottom-bar" aria-label="Selection summary">
     <div class="own-bottom-bar__subject">
-      <span class="own-bottom-bar__label">Selected subjects</span>
-      {#if selectedSubjectsForBar.length > 0}
+      <span class="own-bottom-bar__label">Selected chapters</span>
+      {#if selectedChapterCount > 0}
         <ul class="own-bottom-bar__list" role="list">
+          <li class="own-bottom-bar__item">
+            <span class="own-selected-strip__tag" data-own-accent="0">{selectedChapterCount}</span>
+          </li>
           {#each selectedSubjectsForBar as s (s.id)}
             <li class="own-bottom-bar__item">
               <span class="own-selected-strip__tag" data-own-accent={s.accent}>{s.name}</span>
@@ -415,7 +454,7 @@
     <button
       type="button"
       class="own-bottom-bar__next"
-      disabled={selectedSubjectsForBar.length === 0}
+      disabled={selectedChapterCount === 0}
       onclick={handleNextClick}
     >
       Next

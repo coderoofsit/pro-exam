@@ -128,3 +128,28 @@ export async function createRandomCustomTest(
 		token: t
 	});
 }
+
+export type CreateManualCustomTestBody = {
+	boardId: string;
+	examId: string;
+	name: { en: string };
+	kind: string;
+	settings: {
+		durationMinutes: null;
+		startDate: null;
+		startTime: null;
+		endDate: null;
+		endTime: null;
+	};
+	questions: Array<{ questionId: string; order?: number }>;
+};
+
+export async function createManualCustomTest(body: CreateManualCustomTestBody, token?: string | null) {
+	const t = resolveApiToken(token);
+	return apiRequest<unknown>({
+		endpoint: '/api/v1/tests',
+		method: 'POST',
+		data: body,
+		token: t
+	});
+}

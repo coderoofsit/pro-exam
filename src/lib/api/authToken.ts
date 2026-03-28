@@ -25,6 +25,13 @@ export function resolveApiToken(override?: string | null): string | undefined {
 			const fromLs = normalizeBearer(localStorage.getItem(AUTH_STORAGE_KEY));
 			if (fromLs) return fromLs;
 		}
+		if (typeof document !== 'undefined' && typeof document.cookie === 'string') {
+			const m = document.cookie.match(
+				new RegExp(`(?:^|;\\s*)${AUTH_STORAGE_KEY.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}=([^;]*)`)
+			);
+			const fromCookie = normalizeBearer(m ? decodeURIComponent(m[1]) : null);
+			if (fromCookie) return fromCookie;
+		}
 		const fromStore = normalizeBearer(get(authStore).token);
 		if (fromStore) return fromStore;
 		return undefined;

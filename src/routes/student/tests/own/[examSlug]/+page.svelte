@@ -4,13 +4,17 @@
   import OwnTestChaptersPanelManual from '$lib/components/OwnTestChaptersPanelManual.svelte';
   import OwnTestCreatedSuccessModal from '$lib/components/OwnTestCreatedSuccessModal.svelte';
   import OwnTestQuestionDistributionModal from '$lib/components/OwnTestQuestionDistributionModal.svelte';
-  import { createRandomCustomTest } from '$lib/api/tests';
+  import { createManualCustomTest, createRandomCustomTest } from '$lib/api/tests';
   import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
   import type {
     OwnTestDistributionContinueData,
     OwnTestSelectionSnapshot,
-    OwnTestSubjectQuestionDistribution
+    OwnTestSubjectQuestionDistribution,
+    OwnTestSubjectSelection,
+    OwnTestUnitSelection
   } from '$lib/ownTest/questionDistribution';
+  import { getMaxQuestionsForUnits } from '$lib/ownTest/questionDistribution';
   import { formatIstDateDdMmYyyy } from '$lib/utils/istDate';
   import { page } from '$app/state';
 
@@ -25,19 +29,149 @@
   const mode = $derived(page.url.searchParams.get('mode'));
   const isManual = $derived(mode === 'manual');
 
-  const examName = examSlug
-    .split('-')
-    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  const examName = $derived.by(() =>
+    examSlug
+      .split('-')
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+  );
 
   let distModalOpen = $state(false);
   let distSnapshot = $state<OwnTestSelectionSnapshot | null>(null);
+  let distMode = $state<'random' | 'manual'>('random');
   let creatingTest = $state(false);
   let createTestError = $state<string | null>(null);
   let successModalOpen = $state(false);
+  let manualSelectedIds = $state<Set<string>>(new Set());
+  let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
+
+  const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
+  const manualSelectedCount = $derived(manualSelectedIds.size);
+
+  const manualSelectedChapterIds = $derived.by(() => {
+    const out = new Set<string>();
+    for (const r of manualSelectedRows) {
+      if (r.chapterId) out.add(r.chapterId);
+    }
+    return out;
+  });
+
+  const manualSelectedSubjectsForBar = $derived.by(() => {
+    const out: { id: string; name: string; accent: number }[] = [];
+    if (manualSelectedChapterIds.size === 0) return out;
+
+    for (const [i, row] of groupedSubjects.entries()) {
+      let hit = false;
+      for (const unit of row.data ?? []) {
+        for (const ch of unit.data ?? []) {
+          if (manualSelectedChapterIds.has(String(ch._id))) {
+            hit = true;
+            break;
+          }
+        }
+        if (hit) break;
+      }
+      if (!hit) continue;
+      out.push({
+        id: row.subject._id,
+        name: row.subject.name?.en ?? row.subject.slug,
+        accent: i % 4
+      });
+    }
+    return out;
+  });
+
+  $effect(() => {
+    if (!browser || !isManual) return;
+    try {
+      const raw = sessionStorage.getItem(manualSelectionKey);
+      if (!raw) {
+        manualSelectedIds = new Set();
+        manualSelectedRows = [];
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) {
+        manualSelectedIds = new Set();
+        manualSelectedRows = [];
+        return;
+      }
+
+      // Back-compat: old format string[]
+      if (parsed.every((x) => typeof x === 'string')) {
+        const ids = (parsed as string[]).filter(Boolean);
+        manualSelectedRows = ids.map((id) => ({ id, chapterId: '' }));
+        manualSelectedIds = new Set(ids);
+        return;
+      }
+
+      const rows = (parsed as any[])
+        .map((r) => ({ id: String(r?.id ?? ''), chapterId: String(r?.chapterId ?? '') }))
+        .filter((r) => r.id);
+      manualSelectedRows = rows;
+      manualSelectedIds = new Set(rows.map((r) => r.id));
+    } catch {
+      manualSelectedIds = new Set();
+      manualSelectedRows = [];
+    }
+  });
 
   function handleChaptersNext(snapshot: OwnTestSelectionSnapshot) {
     createTestError = null;
+    distMode = 'random';
+    distSnapshot = snapshot;
+    distModalOpen = true;
+  }
+
+  function buildManualSnapshot(): OwnTestSelectionSnapshot | null {
+    const selectedChapterIds = new Set(
+      manualSelectedRows.map((r) => String(r.chapterId || '').trim()).filter(Boolean)
+    );
+    if (selectedChapterIds.size === 0) return null;
+
+    const subjects: OwnTestSubjectSelection[] = [];
+
+    for (const [i, row] of groupedSubjects.entries()) {
+      const units: OwnTestUnitSelection[] = [];
+
+      for (const unit of row.data ?? []) {
+        const chapterIds = (unit.data ?? [])
+          .filter((ch) => selectedChapterIds.has(String(ch._id)))
+          .map((ch) => String(ch._id));
+
+        if (chapterIds.length === 0) continue;
+        units.push({
+          unitId: String(unit.chapterGroup._id),
+          unitName: unit.chapterGroup.name?.en ?? unit.chapterGroup.slug,
+          chapterIds
+        });
+      }
+
+      if (units.length === 0) continue;
+      subjects.push({
+        subjectId: String(row.subject._id),
+        subjectSlug: row.subject.slug,
+        subjectName: row.subject.name?.en ?? row.subject.slug,
+        accent: i % 4,
+        units,
+        maxQuestions: getMaxQuestionsForUnits(units.length)
+      });
+    }
+
+    if (subjects.length === 0) return null;
+
+    return {
+      examId: String(examIdFromPage ?? '').trim(),
+      boardId: String(boardIdFromPage ?? '').trim(),
+      subjects
+    };
+  }
+
+  function handleManualNext() {
+    createTestError = null;
+    const snapshot = buildManualSnapshot();
+    if (!snapshot) return;
+    distMode = 'manual';
     distSnapshot = snapshot;
     distModalOpen = true;
   }
@@ -69,28 +203,53 @@
     }
 
     try {
-      const res = await createRandomCustomTest({
-        boardId,
-        examId,
-        name: {
-          en: `Custom Test ${examName} ${istDate}`
-        },
-        kind: 'CUSTOM',
-        settings: {
-          durationMinutes: null,
-          startDate: null,
-          startTime: null,
-          endDate: null,
-          endTime: null
-        },
-        subjects: data.subjects
-      });
+      const res =
+        distMode === 'manual'
+          ? await createManualCustomTest({
+              boardId,
+              examId,
+              name: { en: `Custom Test ${examName} ${istDate}` },
+              kind: 'CUSTOM',
+              settings: {
+                durationMinutes: null,
+                startDate: null,
+                startTime: null,
+                endDate: null,
+                endTime: null
+              },
+              questions: manualSelectedRows.length
+                ? manualSelectedRows.map((r, idx) => ({ questionId: r.id, order: idx }))
+                : Array.from(manualSelectedIds).map((id, idx) => ({ questionId: id, order: idx }))
+            })
+          : await createRandomCustomTest({
+              boardId,
+              examId,
+              name: {
+                en: `Custom Test ${examName} ${istDate}`
+              },
+              kind: 'CUSTOM',
+              settings: {
+                durationMinutes: null,
+                startDate: null,
+                startTime: null,
+                endDate: null,
+                endTime: null
+              },
+              subjects: data.subjects
+            });
 
       if (!res.success) {
         createTestError = res.message;
         return;
       }
 
+      if (distMode === 'manual' && browser) {
+        try {
+          sessionStorage.removeItem(manualSelectionKey);
+        } catch {}
+        manualSelectedIds = new Set();
+        manualSelectedRows = [];
+      }
       distModalOpen = false;
       distSnapshot = null;
       successModalOpen = true;
@@ -108,6 +267,7 @@
     successModalOpen = false;
     void goto('/student/test-attempt');
   }
+
 </script>
 
 <svelte:head>
@@ -149,7 +309,39 @@
         <p class="own-empty-panel__sub">No syllabus data is available for this exam yet.</p>
       </div>
     {:else if isManual}
-      <OwnTestChaptersPanelManual {groupedSubjects} {examSlug} />
+      <OwnTestChaptersPanelManual
+        {groupedSubjects}
+        {examSlug}
+        examId={examIdFromPage}
+        boardId={boardIdFromPage}
+      />
+      <footer class="own-bottom-bar mt-5" aria-label="Selection summary">
+        <div class="own-bottom-bar__subject">
+          <span class="own-bottom-bar__label">Selected questions</span>
+          {#if manualSelectedCount > 0}
+            <ul class="own-bottom-bar__list" role="list">
+              <li class="own-bottom-bar__item">
+                <span class="own-selected-strip__tag" data-own-accent="0">{manualSelectedCount}</span>
+              </li>
+              {#each manualSelectedSubjectsForBar as s (s.id)}
+                <li class="own-bottom-bar__item">
+                  <span class="own-selected-strip__tag" data-own-accent={s.accent}>{s.name}</span>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <span class="own-bottom-bar__empty">None selected</span>
+          {/if}
+        </div>
+        <button
+          type="button"
+          class="own-bottom-bar__next"
+          disabled={manualSelectedCount === 0}
+          onclick={handleManualNext}
+        >
+          Next
+        </button>
+      </footer>
     {:else}
       <OwnTestChaptersPanel
         {groupedSubjects}
