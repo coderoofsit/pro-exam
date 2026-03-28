@@ -34,11 +34,26 @@ export type LoginResponse = {
   data?: GoogleLoginData;
 };
 
+/** Per-profile subscription from GET /api/v1/users/membership */
+export type MembershipSubscription = {
+	isSubscribed: boolean;
+	isTrial: boolean;
+	planId: string | null;
+	expiry: string | null;
+	trialUsed: boolean;
+};
+
 export type MembershipUser = {
-  _id: string;
-  firstName?: string;
-  lastName?: string;
-  image?: string;
+	/** Membership row id — use as `membershipId` for select-membership. */
+	_id: string;
+	/** Actual user profile id — use as `userProfiledId` when switching default profile. */
+	userProfileId?: string;
+	firstName?: string;
+	lastName?: string;
+	image?: string;
+	/** When true, this profile is the account default — shown first in the topbar list. */
+	defaultProfile?: boolean;
+	subscription?: MembershipSubscription | null;
 };
 
 export type MembershipResponse = {
@@ -76,6 +91,24 @@ export async function getMembershipUsers(token?: string | null) {
     endpoint: '/api/v1/users/membership',
     method: 'GET',
     token
+  });
+}
+
+/** POST /api/v1/users/select-membership — set which profile is the account default. */
+export async function selectMembershipProfile(params: {
+  membershipId: string;
+  /** Backend key name (typo preserved for API compatibility). */
+  userProfiledId: string;
+  token?: string | null;
+}) {
+  return apiRequest<{ ok?: boolean; message?: string; data?: unknown }>({
+    endpoint: '/api/v1/users/select-membership',
+    method: 'POST',
+    data: {
+      membershipId: params.membershipId,
+      userProfiledId: params.userProfiledId
+    },
+    token: params.token
   });
 }
 

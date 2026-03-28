@@ -5,6 +5,7 @@ import type {
   LoginResponse,
   LoginUser,
   LinkedProfile,
+  MembershipSubscription,
 } from "$lib/api/auth";
 
 export type AuthLinkedProfile = {
@@ -14,13 +15,18 @@ export type AuthLinkedProfile = {
 };
 
 export type AuthUser = {
+  /** Membership row id from GET /membership (distinct per listed profile). */
   _id: string;
+  /** Profile document id — required for select-membership when present on API. */
+  userProfileId?: string;
   firstName?: string;
   lastName?: string;
   image?: string;
   instituteId?: AuthLinkedProfile | null;
   teacherId?: AuthLinkedProfile | null;
   adminId?: AuthLinkedProfile | null;
+  defaultProfile?: boolean;
+  subscription?: MembershipSubscription | null;
 };
 
 export type AuthState = {

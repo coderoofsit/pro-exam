@@ -1,8 +1,14 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/state';
   import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
   import type { StudentBatchAssignedTest } from '$lib/api/batch';
+  import {
+    BATCH_TEST_ATTEMPT_STORAGE_KEY,
+    createTestAttempt,
+    findAttemptIdInApiResponse,
+    peelTestAttemptEnvelope
+  } from '$lib/api/testAttempts';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
 
@@ -23,6 +29,9 @@
   const currentPage = $derived(data.currentPage ?? 1);
   const showPagination = $derived(lastPage > 1);
 
+  let startingTestId = $state<string | null>(null);
+  let startTestError = $state<string | null>(null);
+
   function testTitle(t: StudentBatchAssignedTest) {
     const n = t.name;
     if (n && typeof n === 'object' && 'en' in n && typeof n.en === 'string') return n.en;
@@ -35,12 +44,80 @@
     return `${u.pathname}${u.search}`;
   }
 
-  function startTestHref(t: StudentBatchAssignedTest) {
-    return `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batch=${encodeURIComponent(batchId)}`;
+  function viewAnalysisHref(t: StudentBatchAssignedTest) {
+    return `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batchId=${encodeURIComponent(batchId)}&view=analysis`;
   }
 
-  function viewAnalysisHref(t: StudentBatchAssignedTest) {
-    return `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batch=${encodeURIComponent(batchId)}&view=analysis`;
+  /** POST /api/v1/test-attempts, then navigate (replaces anchor-only navigation with no request). */
+  async function onStartTest(t: StudentBatchAssignedTest) {
+    if (!batchId || startingTestId) return;
+    startTestError = null;
+    startingTestId = t._id;
+    try {
+      const res = await createTestAttempt({ testId: t.testId, batchId });
+      if (!res.success) {
+        startTestError = res.message || 'Could not start test';
+        return;
+      }
+      const body = res.data as Record<string, unknown> | undefined;
+      const peeled = peelTestAttemptEnvelope(body ?? res.data);
+      const payload =
+        peeled && typeof peeled === 'object' ? (peeled as Record<string, unknown>) : {};
+      const attemptIdResolved =
+        (typeof payload.attemptId === 'string' && payload.attemptId.trim()) ||
+        (typeof payload.attempt_id === 'string' && payload.attempt_id.trim()) ||
+        findAttemptIdInApiResponse(res.data);
+      const questions = Array.isArray(payload.questions) ? payload.questions : [];
+      if (!questions.length) {
+        startTestError = 'No questions returned for this test.';
+        return;
+      }
+      try {
+        sessionStorage.setItem(
+          BATCH_TEST_ATTEMPT_STORAGE_KEY,
+          JSON.stringify({
+            testId: t.testId,
+            batchId,
+            questions,
+            fetchedAt: Date.now(),
+            testName: testTitle(t),
+            attemptId: attemptIdResolved,
+            durationMinutes:
+              typeof payload.durationMinutes === 'number'
+                ? payload.durationMinutes
+                : typeof payload.duration_minutes === 'number'
+                  ? payload.duration_minutes
+                  : undefined,
+            questionCount:
+              typeof payload.questionCount === 'number'
+                ? payload.questionCount
+                : typeof payload.question_count === 'number'
+                  ? payload.question_count
+                  : undefined,
+            startedAt:
+              typeof payload.startedAt === 'string'
+                ? payload.startedAt
+                : typeof payload.started_at === 'string'
+                  ? payload.started_at
+                  : undefined,
+            expiresAt:
+              typeof payload.expiresAt === 'string'
+                ? payload.expiresAt
+                : typeof payload.expires_at === 'string'
+                  ? payload.expires_at
+                  : undefined
+          })
+        );
+      } catch {
+        startTestError = 'Could not save test data in this browser.';
+        return;
+      }
+      await goto(
+        `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batchId=${encodeURIComponent(batchId)}`
+      );
+    } finally {
+      startingTestId = null;
+    }
   }
 
   function batchInitials(name: string) {
@@ -250,7 +327,14 @@
 
         <!-- Tests list -->
         <div class="min-w-0 flex-1">
-        
+          {#if startTestError}
+            <div
+              class="mb-4 rounded-xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]"
+              role="alert"
+            >
+              {startTestError}
+            </div>
+          {/if}
 
           {#if tests.length === 0}
             <div
@@ -373,34 +457,44 @@
                           View Analysis
                         </a>
                       {:else}
-                        <a
-                          href={startTestHref(t)}
+                        <button
+                          type="button"
                           class="
                             inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold
                             bg-[var(--sh-exam-card-arrow-bg)]
                             border border-[var(--sh-exam-card-hover-border)]
                             text-[var(--sh-exam-card-title)]
-                            no-underline
                             transition-all duration-200
                             hover:bg-[var(--sh-exam-card-arrow-hover-bg)]
                             active:scale-[0.99]
+                            enabled:cursor-pointer
+                            disabled:cursor-not-allowed disabled:opacity-60
                             sm:flex-initial sm:min-w-[8.5rem]
                           "
+                          disabled={!!startingTestId}
+                          onclick={() => void onStartTest(t)}
                         >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            class="text-[var(--sh-exam-card-arrow-color)]"
-                          >
-                            <path
-                              d="M8 5v14l11-7-11-7z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                          Start Test
-                        </a>
+                          {#if startingTestId === t._id}
+                            <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                            ></span>
+                            Starting…
+                          {:else}
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              class="text-[var(--sh-exam-card-arrow-color)]"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M8 5v14l11-7-11-7z"
+                                fill="currentColor"
+                              />
+                            </svg>
+                            Start Test
+                          {/if}
+                        </button>
                       {/if}
                     </div>
                   </div>
