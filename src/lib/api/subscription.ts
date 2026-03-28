@@ -106,3 +106,82 @@ export async function verifySubscriptionPayment(params: {
 		token: params.token
 	});
 }
+
+/** GET /api/v1/subscription — last subscription for the authenticated user. */
+export type SubscriptionPlanSnapshot = {
+	tier: number;
+	role: string;
+	name: string;
+	durationDays: number;
+	currency: string;
+	price: number;
+	isTrial: boolean;
+};
+
+export type SubscriptionPeriod = {
+	planId: string;
+	planSnapshot: SubscriptionPlanSnapshot;
+	purchasedAt: string;
+	startsAt: string;
+	endsAt: string;
+	source: string;
+	isTrial: boolean;
+};
+
+export type UserSubscriptionRecord = {
+	_id: string;
+	userId: string;
+	startsDate: string;
+	endsDate: string;
+	status: string;
+	autoRenew: boolean;
+	canceledAt: string | null;
+	cancelReason: string | null;
+	current: SubscriptionPeriod;
+	next: SubscriptionPeriod[];
+	subscriptionExpiredNotifiedAt?: string | null;
+	preExpiredNotifiedAt?: string | null;
+	createdAt: string;
+	updatedAt: string;
+	__v?: number;
+};
+
+export type UserSubscriptionApiBody = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: UserSubscriptionRecord | null;
+};
+
+export async function fetchUserSubscription(options?: {
+	token?: string | null;
+	fetch?: typeof fetch;
+}) {
+	return apiRequest<UserSubscriptionApiBody>({
+		endpoint: '/api/v1/subscription',
+		method: 'GET',
+		fetch: options?.fetch,
+		...(options?.token !== undefined ? { token: options.token } : {})
+	});
+}
+
+/** PATCH /api/v1/subscription/auto-renew/:id — enable / disable auto-renew. */
+export type SubscriptionAutoRenewPatchBody = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+};
+
+export async function patchSubscriptionAutoRenew(params: {
+	subscriptionId: string;
+	autoRenew: boolean;
+	token?: string | null;
+}) {
+	const id = encodeURIComponent(params.subscriptionId.trim());
+	return apiRequest<SubscriptionAutoRenewPatchBody>({
+		endpoint: `/api/v1/subscription/auto-renew/${id}`,
+		method: 'PATCH',
+		data: { autoRenew: params.autoRenew },
+		token: params.token
+	});
+}
