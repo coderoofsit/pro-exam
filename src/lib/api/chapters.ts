@@ -89,7 +89,8 @@ export async function fetchChaptersByBoardAndExam(
 export async function fetchChaptersHierarchy(
 	boardSlug: string,
 	examSlug: string,
-	token?: string | null
+	token?: string | null,
+	fetchFn?: typeof fetch
 ): Promise<ChaptersHierarchyResponse> {
 	const t = resolveApiToken(token);
 	const response = await apiRequest<{
@@ -100,7 +101,8 @@ export async function fetchChaptersHierarchy(
 		endpoint: `/api/v1/chapters?boardSlug=${encodeURIComponent(boardSlug)}&examSlug=${encodeURIComponent(examSlug)}`,
 		method: 'GET',
 		token: t,
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		fetch: fetchFn
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch hierarchy');
 	return response.data.data;

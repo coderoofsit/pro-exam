@@ -23,6 +23,7 @@
 
 	const REVIEW_PAGE_SIZE = 5;
 	const PAGINATION_WINDOW = 2;
+
 	const difficultyOptions = ['easy', 'medium', 'hard'] as const;
 	const kindOptions = ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as const;
 
@@ -202,10 +203,24 @@
 		return globalIndex % limit;
 	}
 
-	const reviewQuestions = $derived.by((): Question[] => {
+	/** Global index of previewAllQuestions[0] (handles carry prepend/append vs plain API page). */
+	const reviewPoolBaseGlobal = $derived.by((): number => {
 		const limit = reviewPageLimit();
 		const pageStart = (data.safePage - 1) * limit;
-		const localStart = Math.max(0, reviewStartIndex - pageStart);
+		const pool = previewAllQuestions;
+		const api = displayQuestions as Question[];
+		if (!pool.length || !api.length) return pageStart;
+		if (pool.length === api.length) return pageStart;
+		const mergedStartsWithApi =
+			pool.length >= api.length &&
+			pool.slice(0, api.length).every((q, i) => q._id === api[i]?._id);
+		if (mergedStartsWithApi) return pageStart;
+		return pageStart - (pool.length - api.length);
+	});
+
+	const reviewQuestions = $derived.by((): Question[] => {
+		const base = reviewPoolBaseGlobal;
+		const localStart = Math.max(0, reviewStartIndex - base);
 		return previewAllQuestions.slice(localStart, localStart + REVIEW_PAGE_SIZE);
 	});
 
@@ -253,18 +268,37 @@
 
 		const limit = reviewPageLimit();
 		previewBaseNumber = 1;
-		const globalIndex = (data.safePage - 1) * limit + index;
-		// Start from the clicked question as the first item in review.
+		const pageStart = (data.safePage - 1) * limit;
+		const globalIndex = pageStart + index;
+		// First card in practice = the question you clicked (not a earlier 5-pack).
 		reviewStartIndex = globalIndex;
 
-		// If we clicked near the end of the page, carry remaining questions and SSR-navigate to next page
-		// so the review panel can still show 5 questions (current tail + next head).
-		const remainingOnPage = pool.length - index;
 		const lastPage = displayPaginationMeta?.lastPage ?? data.paginationMeta?.lastPage ?? 1;
-		if (browser && remainingOnPage < REVIEW_PAGE_SIZE && data.safePage < lastPage) {
-			writeCarry({ direction: 'prepend', questions: pool.slice(index) });
-			await goto(chapterHref(data.chapterParam, { page: data.safePage + 1, preview: true, reviewStart: globalIndex, carry: true }));
+		const targetApiPage = pageForGlobalIndex(globalIndex, limit);
+		if (browser && targetApiPage !== data.safePage && targetApiPage >= 1 && targetApiPage <= lastPage) {
+			await goto(
+				chapterHref(data.chapterParam, {
+					page: targetApiPage,
+					preview: true,
+					reviewStart: globalIndex,
+					carry: false
+				})
+			);
 			return;
+		}
+
+		// Fewer than 5 questions left on this API page (e.g. clicked Q25 on a 25-row page) — load next page with carry so practice still shows 5 cards (Q25–Q29).
+		const remainingOnPage = pool.length - index;
+		if (browser && remainingOnPage < REVIEW_PAGE_SIZE && remainingOnPage > 0 && data.safePage < lastPage) {
+			writeCarry({ direction: 'prepend', questions: pool.slice(index) });
+			await goto(
+				chapterHref(data.chapterParam, {
+					page: data.safePage + 1,
+					preview: true,
+					reviewStart: globalIndex,
+					carry: true
+				})
+			);
 		}
 	}
 
@@ -288,16 +322,26 @@
 		if (!canReviewNext) return;
 		const next = reviewStartIndex + REVIEW_PAGE_SIZE;
 		const limit = reviewPageLimit();
+		const pageStart = (data.safePage - 1) * limit;
+		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
+		const lastPage = displayPaginationMeta?.lastPage ?? data.paginationMeta?.lastPage ?? 1;
 		const targetPage = pageForGlobalIndex(next, limit);
+
 		if (targetPage !== data.safePage) {
-			// Carry remaining questions from current page so next page can show 5 immediately.
-			const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
-			const pageStart = (data.safePage - 1) * limit;
 			const localStart = Math.max(0, next - pageStart);
 			writeCarry({ direction: 'prepend', questions: pool.slice(localStart) });
 			await goto(chapterHref(data.chapterParam, { page: targetPage, preview: true, reviewStart: next, carry: true }));
 			return;
 		}
+
+		// Same API page: next 5 would extend past this page's pool — fetch following API page with carry (fixes Q25-only then skip to Q30).
+		const localNext = next - pageStart;
+		if (localNext + REVIEW_PAGE_SIZE > pool.length && data.safePage < lastPage) {
+			writeCarry({ direction: 'prepend', questions: pool.slice(localNext) });
+			await goto(chapterHref(data.chapterParam, { page: data.safePage + 1, preview: true, reviewStart: next, carry: true }));
+			return;
+		}
+
 		reviewStartIndex = next;
 	}
 
@@ -462,6 +506,30 @@
 							</div>
 						</div>
 					{:else if selectedQuestionIndex === null}
+						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
+							<div class="shrink-0 border-b border-[var(--page-card-border)] pb-4">
+								<div class="flex flex-wrap items-center justify-center gap-1.5">
+									{#if data.safePage > 1}
+										<a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
+										<a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
+									{/if}
+
+									{#each visiblePageNumbers as pageNumber}
+										<a
+											class="pagination-btn px-3.5 {pageNumber === data.safePage ? 'page-link-active' : ''}"
+											href={questionsPageUrl(pageNumber)}
+										>
+											{pageNumber}
+										</a>
+									{/each}
+
+									{#if data.safePage < displayPaginationMeta.lastPage}
+										<a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
+										<a class="pagination-btn" href={questionsPageUrl(displayPaginationMeta.lastPage)}>Last →</a>
+									{/if}
+								</div>
+							</div>
+						{/if}
 						<div class="flex-1 overflow-y-auto pb-6">
 							{#if isLoading}
 								<div class="flex flex-col gap-3">

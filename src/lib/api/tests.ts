@@ -106,12 +106,13 @@ export type CreateRandomCustomTestBody = {
 	examId: string;
 	name: { en: string };
 	kind: string;
+	/** Backend rejects `null` for optional strings — omit keys when not scheduling. */
 	settings: {
-		durationMinutes: null;
-		startDate: null;
-		startTime: null;
-		endDate: null;
-		endTime: null;
+		durationMinutes: number;
+		startDate?: string;
+		startTime?: string;
+		endDate?: string;
+		endTime?: string;
 	};
 	subjects: OwnTestDistributionContinueData['subjects'];
 };
@@ -135,11 +136,11 @@ export type CreateManualCustomTestBody = {
 	name: { en: string };
 	kind: string;
 	settings: {
-		durationMinutes: null;
-		startDate: null;
-		startTime: null;
-		endDate: null;
-		endTime: null;
+		durationMinutes: number;
+		startDate?: string;
+		startTime?: string;
+		endDate?: string;
+		endTime?: string;
 	};
 	questions: Array<{ questionId: string; order?: number }>;
 };
