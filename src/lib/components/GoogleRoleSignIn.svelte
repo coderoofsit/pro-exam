@@ -105,7 +105,7 @@
 
     window.google.accounts.id.initialize({
       client_id:
-        "669946693353-dihobt6ckouhr1s8gb0l7dm6nkpqbg2j.apps.googleusercontent.com",
+        "934473501376-6erf0h4f2r6l8t5eoeeuc3mqdv1htsks.apps.googleusercontent.com",
       callback: handleGoogleCredential,
     });
 
