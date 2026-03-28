@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { apiRequest } from '../../http/api';
 
 /** Session payload after creating an attempt from a batch test (client-only). */
@@ -169,6 +170,70 @@ export async function createTestAttempt(
 		fetch: fetchFn,
 		...(options?.token ? { token: options.token } : {})
 	});
+}
+
+export type PersistAttemptSessionResult = { ok: true } | { ok: false; message: string };
+
+/** Writes `BATCH_TEST_ATTEMPT_STORAGE_KEY` from POST /test-attempts JSON (same shape as tests list flow). */
+export function persistBatchAttemptSessionFromCreateResponse(
+	apiResponseData: unknown,
+	opts: { testId: string; batchId: string; testName: string }
+): PersistAttemptSessionResult {
+	if (!browser) {
+		return { ok: false, message: 'Could not save test data in this browser.' };
+	}
+	const peeled = peelTestAttemptEnvelope(apiResponseData);
+	const payload =
+		peeled && typeof peeled === 'object' ? (peeled as Record<string, unknown>) : {};
+	const attemptIdResolved =
+		(typeof payload.attemptId === 'string' && payload.attemptId.trim()) ||
+		(typeof payload.attempt_id === 'string' && payload.attempt_id.trim()) ||
+		findAttemptIdInApiResponse(apiResponseData);
+	const questions = Array.isArray(payload.questions) ? payload.questions : [];
+	if (!questions.length) {
+		return { ok: false, message: 'No questions returned for this test.' };
+	}
+	try {
+		sessionStorage.setItem(
+			BATCH_TEST_ATTEMPT_STORAGE_KEY,
+			JSON.stringify({
+				testId: opts.testId,
+				batchId: opts.batchId,
+				questions,
+				fetchedAt: Date.now(),
+				testName: opts.testName,
+				attemptId: attemptIdResolved,
+				questionIds: collectQuestionIdsFromAttemptQuestions(questions),
+				durationMinutes:
+					typeof payload.durationMinutes === 'number'
+						? payload.durationMinutes
+						: typeof payload.duration_minutes === 'number'
+							? payload.duration_minutes
+							: undefined,
+				questionCount:
+					typeof payload.questionCount === 'number'
+						? payload.questionCount
+						: typeof payload.question_count === 'number'
+							? payload.question_count
+							: undefined,
+				startedAt:
+					typeof payload.startedAt === 'string'
+						? payload.startedAt
+						: typeof payload.started_at === 'string'
+							? payload.started_at
+							: undefined,
+				expiresAt:
+					typeof payload.expiresAt === 'string'
+						? payload.expiresAt
+						: typeof payload.expires_at === 'string'
+							? payload.expires_at
+							: undefined
+			})
+		);
+	} catch {
+		return { ok: false, message: 'Could not save test data in this browser.' };
+	}
+	return { ok: true };
 }
 
 export async function updateTestAttemptQuestion(

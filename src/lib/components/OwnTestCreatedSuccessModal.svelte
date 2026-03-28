@@ -2,11 +2,20 @@
   type Props = {
     open: boolean;
     examName?: string;
+    starting?: boolean;
+    startError?: string | null;
     onDoLater: () => void;
     onStartTest: () => void;
   };
 
-  let { open, examName = '', onDoLater, onStartTest }: Props = $props();
+  let {
+    open,
+    examName = '',
+    starting = false,
+    startError = null,
+    onDoLater,
+    onStartTest
+  }: Props = $props();
 </script>
 
 {#if open}
@@ -34,12 +43,37 @@
           Your custom test is ready when you are.
         {/if}
       </p>
+      {#if startError}
+        <p class="mt-3 rounded-lg border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-3 py-2 text-xs text-[var(--pc-error-text)]" role="alert">
+          {startError}
+        </p>
+      {/if}
       <div class="own-success-modal-actions">
-        <button type="button" class="own-q-modal-btn own-q-modal-btn--ghost" onclick={onDoLater}>
+        <button
+          type="button"
+          class="own-q-modal-btn own-q-modal-btn--ghost"
+          onclick={onDoLater}
+          disabled={starting}
+        >
           Do it later
         </button>
-        <button type="button" class="own-q-modal-btn own-q-modal-btn--primary" onclick={onStartTest}>
-          Start Test
+        <button
+          type="button"
+          class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
+          onclick={onStartTest}
+          disabled={starting}
+        >
+          {#if starting}
+            <span
+              class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+            ></span>
+            Starting…
+          {:else}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
+              <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
+            </svg>
+            Start Test
+          {/if}
         </button>
       </div>
     </div>

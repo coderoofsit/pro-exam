@@ -6,7 +6,9 @@
   import {
     getMembershipUsers,
     selectMembershipProfile,
-    type MembershipUser
+    type MembershipUser,
+    type MembershipResponse,
+    type SelectMembershipApiBody
   } from '$lib/api/auth';
   import { themeStore } from '$lib/stores/theme';
 
@@ -103,11 +105,29 @@
     return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
   }
 
+  /** GET /membership body — API uses `success` (not only legacy `ok`). */
+  function extractMembershipUsersFromResponse(
+    body: MembershipResponse | null | undefined
+  ): MembershipUser[] | null {
+    if (!body) return null;
+    const ok = body.ok === true || body.success === true;
+    if (!ok) return null;
+    const users = body.data?.users;
+    return Array.isArray(users) ? users : null;
+  }
+
   function getInitials(user?: AuthUser) {
     if (!user) return 'U';
     const first = user.firstName?.[0] ?? '';
     const last = user.lastName?.[0] ?? '';
     return `${first}${last}`.trim() || 'U';
+  }
+
+  /** Full reload so every page picks up the new default profile + token from storage. */
+  function hardReloadCurrentPage() {
+    if (browser) {
+      window.location.reload();
+    }
   }
 
   async function selectUser(index: number) {
@@ -120,9 +140,15 @@
       return;
     }
 
-    /** Membership row id + profile id from GET /membership (not login `profileId`). */
+    /** Membership row `_id` + `userProfileId` from GET /membership (required by API). */
     const membershipId = user._id;
-    const userProfiledId = user.userProfileId ?? user._id;
+    const userProfiledId = user.userProfileId?.trim();
+    if (!userProfiledId) {
+      console.error(
+        '[Sidebar] Missing userProfileId on user — run GET /membership first or refresh the page.'
+      );
+      return;
+    }
 
     selectingMembershipDefault = true;
     try {
@@ -137,9 +163,28 @@
         return;
       }
 
+      const root = res.data as SelectMembershipApiBody;
+      if (
+        root?.success === true &&
+        root.data?.token &&
+        Array.isArray(root.data.users) &&
+        root.data.users.length > 0
+      ) {
+        const mapped = mapMembershipUsers(root.data.users);
+        authStore.setAuthAfterMembership({
+          token: root.data.token,
+          users: mapped,
+          role: $authStore.role
+        });
+        hardReloadCurrentPage();
+        return;
+      }
+
+      console.warn('[Sidebar] select-membership returned no token/users; falling back to GET /membership');
       await reloadMembershipFromServer();
       selectedUserIndex = 0;
       profileDropdownOpen = false;
+      hardReloadCurrentPage();
     } finally {
       selectingMembershipDefault = false;
     }
@@ -220,11 +265,10 @@
 
       if (!response.success) return;
 
-      const membershipResponse = response.data;
+      const membershipResponse = response.data as MembershipResponse;
+      const apiUsers = extractMembershipUsersFromResponse(membershipResponse);
+      if (apiUsers == null) return;
 
-      if (!membershipResponse?.ok) return;
-
-      const apiUsers = membershipResponse.data?.users ?? [];
       applyMembershipApiUsers(apiUsers);
     } catch (error) {
       console.error('Failed to load membership users', error);
@@ -243,10 +287,10 @@
       const response = await getMembershipUsers(token);
       if (!response.success) return;
 
-      const membershipResponse = response.data;
-      if (!membershipResponse?.ok) return;
+      const membershipResponse = response.data as MembershipResponse;
+      const apiUsers = extractMembershipUsersFromResponse(membershipResponse);
+      if (apiUsers == null) return;
 
-      const apiUsers = membershipResponse.data?.users ?? [];
       applyMembershipApiUsers(apiUsers);
     } catch (error) {
       console.error('Failed to reload membership users', error);
@@ -575,7 +619,9 @@
                       <button
                         type="button"
                         onclick={() => void selectUser(index)}
-                        disabled={selectingMembershipDefault}
+                        disabled={selectingMembershipDefault ||
+                          isLoadingUsers ||
+                          (!!user.defaultProfile ? false : !user.userProfileId)}
                         class="
                           flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left
                           transition-colors duration-150

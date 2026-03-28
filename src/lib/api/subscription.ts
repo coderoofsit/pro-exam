@@ -185,3 +185,34 @@ export async function patchSubscriptionAutoRenew(params: {
 		token: params.token
 	});
 }
+
+/** GET …/get-all-transaction — payment history for the current user. */
+export type SubscriptionTransactionItem = {
+	_id: string;
+	status: string;
+	amount: number;
+	currency: string;
+	provider: string;
+	failureReason: string | null;
+	createdAt: string;
+	providerPaymentId?: string;
+};
+
+export type SubscriptionTransactionsListBody = {
+	success: boolean;
+	statusCode?: number;
+	message?: string;
+	data: SubscriptionTransactionItem[];
+};
+
+export async function fetchSubscriptionTransactions(options?: {
+	token?: string | null;
+	fetch?: typeof fetch;
+}) {
+	return apiRequest<SubscriptionTransactionsListBody>({
+		endpoint: '/api/v1/subscription-transactions/get-all-transaction',
+		method: 'GET',
+		fetch: options?.fetch,
+		...(options?.token !== undefined ? { token: options.token } : {})
+	});
+}

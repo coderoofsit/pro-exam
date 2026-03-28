@@ -4,7 +4,12 @@
   import OwnTestChaptersPanelManual from '$lib/components/OwnTestChaptersPanelManual.svelte';
   import OwnTestCreatedSuccessModal from '$lib/components/OwnTestCreatedSuccessModal.svelte';
   import OwnTestQuestionDistributionModal from '$lib/components/OwnTestQuestionDistributionModal.svelte';
-  import { createManualCustomTest, createRandomCustomTest } from '$lib/api/tests';
+  import {
+    createManualCustomTest,
+    createRandomCustomTest,
+    extractCreatedTestIdFromCreateTestResponse
+  } from '$lib/api/tests';
+  import { createTestAttempt, persistBatchAttemptSessionFromCreateResponse } from '$lib/api/testAttempts';
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import type {
@@ -59,6 +64,10 @@
   let creatingTest = $state(false);
   let createTestError = $state<string | null>(null);
   let successModalOpen = $state(false);
+  /** Set when create-test API succeeds — used for POST /test-attempts on “Start Test”. */
+  let createdTestId = $state<string | null>(null);
+  let startingOwnSuccessTest = $state(false);
+  let successStartError = $state<string | null>(null);
   let manualSelectedIds = $state<Set<string>>(new Set());
   let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
 
@@ -260,6 +269,16 @@
         return;
       }
 
+      const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
+      if (!newTestId) {
+        createTestError =
+          'Test was created but we could not read its id. Start it from Tests instead.';
+        createdTestId = null;
+        return;
+      }
+      createdTestId = newTestId;
+      successStartError = null;
+
       if (distMode === 'manual' && browser) {
         try {
           sessionStorage.removeItem(manualSelectionKey);
@@ -277,12 +296,44 @@
 
   function handleSuccessDoLater() {
     successModalOpen = false;
+    createdTestId = null;
+    successStartError = null;
     void goto('/student/tests');
   }
 
-  function handleSuccessStartTest() {
-    successModalOpen = false;
-    void goto('/student/test-attempt');
+  async function handleSuccessStartTest() {
+    if (startingOwnSuccessTest) return;
+    const testId = createdTestId?.trim();
+    if (!testId) {
+      successStartError = 'Missing test id. Start this test from your tests list.';
+      return;
+    }
+    successStartError = null;
+    startingOwnSuccessTest = true;
+    try {
+      const batchIdStr = '';
+      const attemptRes = await createTestAttempt({ testId, batchId: null });
+      if (!attemptRes.success) {
+        successStartError = attemptRes.message || 'Could not start test';
+        return;
+      }
+      const persisted = persistBatchAttemptSessionFromCreateResponse(attemptRes.data, {
+        testId,
+        batchId: batchIdStr,
+        testName: examName.trim() ? `Custom Test ${examName}` : 'Custom Test'
+      });
+      if (!persisted.ok) {
+        successStartError = persisted.message;
+        return;
+      }
+      successModalOpen = false;
+      createdTestId = null;
+      await goto(
+        `/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}`
+      );
+    } finally {
+      startingOwnSuccessTest = false;
+    }
   }
 
 </script>
@@ -380,6 +431,8 @@
 <OwnTestCreatedSuccessModal
   open={successModalOpen}
   examName={examName}
+  starting={startingOwnSuccessTest}
+  startError={successStartError}
   onDoLater={handleSuccessDoLater}
-  onStartTest={handleSuccessStartTest}
+  onStartTest={() => void handleSuccessStartTest()}
 />

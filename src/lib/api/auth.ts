@@ -56,11 +56,24 @@ export type MembershipUser = {
 	subscription?: MembershipSubscription | null;
 };
 
+/** GET /api/v1/users/membership — backend may use `success` or legacy `ok`. */
 export type MembershipResponse = {
-  ok: boolean;
+  ok?: boolean;
+  success?: boolean;
   statusCode: number;
   message: string;
   data?: {
+    users: MembershipUser[];
+  };
+};
+
+/** POST /api/v1/users/select-membership — new JWT + full users list. */
+export type SelectMembershipApiBody = {
+  success: boolean;
+  statusCode?: number;
+  message?: string;
+  data: {
+    token: string;
     users: MembershipUser[];
   };
 };
@@ -101,7 +114,7 @@ export async function selectMembershipProfile(params: {
   userProfiledId: string;
   token?: string | null;
 }) {
-  return apiRequest<{ ok?: boolean; message?: string; data?: unknown }>({
+  return apiRequest<SelectMembershipApiBody>({
     endpoint: '/api/v1/users/select-membership',
     method: 'POST',
     data: {

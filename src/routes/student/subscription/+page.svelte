@@ -5,9 +5,11 @@
   import { resolveApiToken } from '$lib/api/authToken';
   import {
     fetchUserSubscription,
+    fetchSubscriptionTransactions,
     patchSubscriptionAutoRenew,
     type UserSubscriptionRecord,
-    type SubscriptionPeriod
+    type SubscriptionPeriod,
+    type SubscriptionTransactionItem
   } from '$lib/api/subscription';
   import { authStore } from '$lib/stores/auth';
 
@@ -29,6 +31,17 @@
     if (isTrial && price === 0) return 'Free trial';
     if (currency === 'INR') return `₹${price.toLocaleString('en-IN')}`;
     return `${currency} ${price}`;
+  }
+
+  function formatTxAmount(tx: SubscriptionTransactionItem): string {
+    if (tx.currency === 'INR') return `₹${tx.amount.toLocaleString('en-IN')}`;
+    return `${tx.amount} ${tx.currency}`;
+  }
+
+  function providerLabel(p: string): string {
+    const s = p?.trim() || '';
+    if (!s) return '—';
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   }
 
   function statusLabel(status: string): string {
@@ -54,6 +67,55 @@
   let actionError = $state<string | null>(null);
   /** True when no JWT is available (user not signed in). */
   let needsAuth = $state(false);
+
+  let transactions = $state<SubscriptionTransactionItem[]>([]);
+  /** Not loading until first hover / open prefetch. */
+  let transactionsLoading = $state(false);
+  let transactionsError = $state<string | null>(null);
+  /** True after first automatic prefetch starts (hover / first open) — avoids duplicate GETs. */
+  let transactionsPrefetchStarted = $state(false);
+  /** Collapsed by default; list hidden until user expands. */
+  let paymentHistoryOpen = $state(false);
+
+  async function loadTransactions() {
+    if (!browser) return;
+    const token = resolveApiToken();
+    if (!token) {
+      transactionsLoading = false;
+      transactions = [];
+      transactionsError = null;
+      return;
+    }
+    transactionsLoading = true;
+    transactionsError = null;
+    const res = await fetchSubscriptionTransactions({ token });
+    transactionsLoading = false;
+    if (!res.success) {
+      transactionsError = res.message || 'Could not load payment history';
+      transactions = [];
+      return;
+    }
+    const body = res.data;
+    const list = Array.isArray(body?.data) ? body.data : [];
+    transactions = [...list].sort(
+      (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+    );
+  }
+
+  /** One-shot prefetch on hover/focus so opening the panel usually shows data immediately. */
+  function prefetchTransactions() {
+    if (!browser) return;
+    if (transactionsPrefetchStarted) return;
+    const token = resolveApiToken();
+    if (!token) return;
+    transactionsPrefetchStarted = true;
+    void loadTransactions();
+  }
+
+  function togglePaymentHistory() {
+    paymentHistoryOpen = !paymentHistoryOpen;
+    if (paymentHistoryOpen) prefetchTransactions();
+  }
 
   async function loadSubscription() {
     if (!browser) return;
@@ -232,19 +294,19 @@
           </p>
           <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt class="text-xs text-[var(--sh-ai-sub)]">Starts (IST)</dt>
+              <dt class="text-xs text-[var(--sh-ai-sub)]">Starts</dt>
               <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
                 {formatUtcIsoToIstDate(subscription.current.startsAt)}
               </dd>
             </div>
             <div>
-              <dt class="text-xs text-[var(--sh-ai-sub)]">Ends (IST)</dt>
+              <dt class="text-xs text-[var(--sh-ai-sub)]">Ends</dt>
               <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
                 {formatUtcIsoToIstDate(subscription.current.endsAt)}
               </dd>
             </div>
             <div class="sm:col-span-2">
-              <dt class="text-xs text-[var(--sh-ai-sub)]">Overall window (IST)</dt>
+              <dt class="text-xs text-[var(--sh-ai-sub)]">Overall window</dt>
               <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
                 {formatUtcIsoToIstDate(subscription.startsDate)}
                 <span class="text-[var(--sh-ai-sub)]"> → </span>
@@ -289,13 +351,13 @@
                   </p>
                   <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                     <div>
-                      <dt class="text-[11px] text-[var(--sh-ai-sub)]">Starts (IST)</dt>
+                      <dt class="text-[11px] text-[var(--sh-ai-sub)]">Starts</dt>
                       <dd class="font-medium text-[var(--sh-section-title)]">
                         {formatUtcIsoToIstDate(item.startsAt)}
                       </dd>
                     </div>
                     <div>
-                      <dt class="text-[11px] text-[var(--sh-ai-sub)]">Ends (IST)</dt>
+                      <dt class="text-[11px] text-[var(--sh-ai-sub)]">Ends</dt>
                       <dd class="font-medium text-[var(--sh-section-title)]">
                         {formatUtcIsoToIstDate(item.endsAt)}
                       </dd>
@@ -347,6 +409,127 @@
       </div>
     {/if}
   </section>
+
+  {#if !needsAuth}
+    <section
+      class="mb-10 overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]"
+      aria-labelledby="payment-history-heading"
+      onmouseenter={prefetchTransactions}
+      onfocusin={prefetchTransactions}
+    >
+      <button
+        type="button"
+        id="payment-history-heading"
+        class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,var(--sh-exam-card-bg))] sm:px-6 sm:py-[1.125rem]"
+        onclick={togglePaymentHistory}
+        aria-expanded={paymentHistoryOpen}
+        aria-controls="payment-history-panel"
+      >
+        <div class="min-w-0">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
+            Payment history
+          </h2>
+          <p class="mt-0.5 text-xs text-[var(--sh-ai-sub)]">
+            Hover to preload · click to expand. Dates in IST.
+          </p>
+        </div>
+        <span
+          class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--sh-exam-card-border)] text-[var(--sh-ai-sub)] transition-transform duration-200 {paymentHistoryOpen
+            ? 'rotate-180'
+            : ''}"
+          aria-hidden="true"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+      </button>
+
+      {#if paymentHistoryOpen}
+        <div
+          id="payment-history-panel"
+          class="border-t border-[var(--sh-exam-card-border)] px-5 pb-5 pt-0 sm:px-6"
+        >
+          <div class="flex flex-wrap items-center justify-end gap-2 pb-3 pt-4">
+            <button
+              type="button"
+              class="text-xs font-semibold text-[var(--accent-cta-pink)] underline-offset-2 hover:underline disabled:opacity-50"
+              onclick={() => void loadTransactions()}
+              disabled={transactionsLoading}
+            >
+              Refresh
+            </button>
+          </div>
+
+          {#if transactionsLoading}
+            <div class="space-y-3 animate-pulse">
+              <div class="h-12 rounded-lg bg-[color-mix(in_srgb,var(--sh-exam-card-border)_50%,transparent)]"></div>
+              <div class="h-12 rounded-lg bg-[color-mix(in_srgb,var(--sh-exam-card-border)_40%,transparent)]"></div>
+            </div>
+          {:else if transactionsError}
+            <p class="text-sm text-[var(--pc-error-text)]" role="alert">{transactionsError}</p>
+          {:else if transactions.length === 0}
+            <p class="text-sm text-[var(--sh-ai-sub)]">No payments yet.</p>
+          {:else}
+            <div class="overflow-x-auto rounded-xl border border-[var(--sh-exam-card-border)]">
+              <table class="w-full min-w-[520px] border-collapse text-left text-sm">
+                <thead>
+                  <tr
+                    class="border-b border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))]"
+                  >
+                    <th class="px-4 py-3 font-semibold text-[var(--sh-section-title)]">Purchase date</th>
+                    <th class="px-4 py-3 font-semibold text-[var(--sh-section-title)]">Amount</th>
+                    <th class="px-4 py-3 font-semibold text-[var(--sh-section-title)]">Status</th>
+                    <th class="px-4 py-3 font-semibold text-[var(--sh-section-title)]">Provider</th>
+                    <th class="hidden px-4 py-3 font-semibold text-[var(--sh-section-title)] sm:table-cell"
+                      >Payment ref.</th
+                    >
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each transactions as tx (tx._id)}
+                    <tr
+                      class="border-b border-[color-mix(in_srgb,var(--sh-exam-card-border)_70%,transparent)] last:border-0"
+                    >
+                      <td class="whitespace-nowrap px-4 py-3 text-[var(--sh-section-title)]">
+                        {formatUtcIsoToIstDate(tx.createdAt)}
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--sh-section-title)]">
+                        {formatTxAmount(tx)}
+                      </td>
+                      <td class="px-4 py-3">
+                        <span
+                          class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize {tx.status?.toLowerCase() ===
+                          'success'
+                            ? 'bg-[color-mix(in_srgb,var(--pc-success-bg)_80%,transparent)] text-[var(--pc-success-text)]'
+                            : 'bg-[color-mix(in_srgb,var(--sh-exam-card-border)_55%,transparent)] text-[var(--sh-ai-sub)]'}"
+                        >
+                          {tx.status || '—'}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 capitalize text-[var(--sh-ai-sub)]">{providerLabel(tx.provider)}</td>
+                      <td
+                        class="hidden max-w-[12rem] truncate px-4 py-3 font-mono text-xs text-[var(--sh-ai-sub)] sm:table-cell"
+                        title={tx.providerPaymentId ?? ''}
+                      >
+                        {tx.providerPaymentId ?? '—'}
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </section>
+  {/if}
 
   <div class="mb-10 grid gap-4 sm:grid-cols-3">
     <div

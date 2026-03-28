@@ -154,3 +154,33 @@ export async function createManualCustomTest(body: CreateManualCustomTestBody, t
 		token: t
 	});
 }
+
+/** Pulls Mongo test id from POST /tests or create-random-test (`data` may be the id string or `{ _id }`). */
+export function extractCreatedTestIdFromCreateTestResponse(root: unknown): string | undefined {
+	if (root == null || typeof root !== 'object') return undefined;
+	const top = root as Record<string, unknown>;
+	const data = top.data;
+	/** Some APIs return the test id as a plain string in `data`. */
+	if (typeof data === 'string' && data.trim()) {
+		return data.trim();
+	}
+	if (data != null && typeof data === 'object') {
+		const id = (data as Record<string, unknown>)._id;
+		if (typeof id === 'string' && id.trim()) return id.trim();
+	}
+	if (typeof top._id === 'string' && top._id.trim()) return top._id.trim();
+	const queue: unknown[] = [root];
+	const seen = new Set<unknown>();
+	for (let i = 0; i < 48 && queue.length; i++) {
+		const cur = queue.shift();
+		if (cur == null || typeof cur !== 'object') continue;
+		if (seen.has(cur)) continue;
+		seen.add(cur);
+		const o = cur as Record<string, unknown>;
+		if (typeof o._id === 'string' && /^[a-f0-9]{24}$/i.test(o._id.trim())) return o._id.trim();
+		for (const v of Object.values(o)) {
+			if (v != null && typeof v === 'object') queue.push(v);
+		}
+	}
+	return undefined;
+}

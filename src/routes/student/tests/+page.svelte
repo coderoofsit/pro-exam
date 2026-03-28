@@ -3,11 +3,8 @@
   import { page } from '$app/state';
   import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
   import {
-    BATCH_TEST_ATTEMPT_STORAGE_KEY,
-    collectQuestionIdsFromAttemptQuestions,
     createTestAttempt,
-    findAttemptIdInApiResponse,
-    peelTestAttemptEnvelope
+    persistBatchAttemptSessionFromCreateResponse
   } from '$lib/api/testAttempts';
   import TestAttemptAnalysisModal from '$lib/components/TestAttemptAnalysisModal.svelte';
   import { onMount } from 'svelte';
@@ -181,58 +178,13 @@
         startTestError = res.message || 'Could not start test';
         return;
       }
-      const body = res.data as Record<string, unknown> | undefined;
-      const peeled = peelTestAttemptEnvelope(body ?? res.data);
-      const payload =
-        peeled && typeof peeled === 'object' ? (peeled as Record<string, unknown>) : {};
-      const attemptIdResolved =
-        (typeof payload.attemptId === 'string' && payload.attemptId.trim()) ||
-        (typeof payload.attempt_id === 'string' && payload.attempt_id.trim()) ||
-        findAttemptIdInApiResponse(res.data);
-      const questions = Array.isArray(payload.questions) ? payload.questions : [];
-      if (!questions.length) {
-        startTestError = 'No questions returned for this test.';
-        return;
-      }
-      try {
-        sessionStorage.setItem(
-          BATCH_TEST_ATTEMPT_STORAGE_KEY,
-          JSON.stringify({
-            testId,
-            batchId: batchIdStr,
-            questions,
-            fetchedAt: Date.now(),
-            testName: testName(item),
-            attemptId: attemptIdResolved,
-            questionIds: collectQuestionIdsFromAttemptQuestions(questions),
-            durationMinutes:
-              typeof payload.durationMinutes === 'number'
-                ? payload.durationMinutes
-                : typeof payload.duration_minutes === 'number'
-                  ? payload.duration_minutes
-                  : undefined,
-            questionCount:
-              typeof payload.questionCount === 'number'
-                ? payload.questionCount
-                : typeof payload.question_count === 'number'
-                  ? payload.question_count
-                  : undefined,
-            startedAt:
-              typeof payload.startedAt === 'string'
-                ? payload.startedAt
-                : typeof payload.started_at === 'string'
-                  ? payload.started_at
-                  : undefined,
-            expiresAt:
-              typeof payload.expiresAt === 'string'
-                ? payload.expiresAt
-                : typeof payload.expires_at === 'string'
-                  ? payload.expires_at
-                  : undefined
-          })
-        );
-      } catch {
-        startTestError = 'Could not save test data in this browser.';
+      const persisted = persistBatchAttemptSessionFromCreateResponse(res.data, {
+        testId,
+        batchId: batchIdStr,
+        testName: testName(item)
+      });
+      if (!persisted.ok) {
+        startTestError = persisted.message;
         return;
       }
       await goto(
