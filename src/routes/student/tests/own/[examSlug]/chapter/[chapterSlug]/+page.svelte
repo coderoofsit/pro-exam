@@ -7,6 +7,7 @@
   let { data }: { data: PageData } = $props();
 
   type Question = (typeof data.questions)[number];
+  type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: string };
 
   const title = $derived(data.chapter?.name?.en ?? data.chapterSlug);
   const examSlug = $derived(data.examSlug);
@@ -27,7 +28,6 @@
       const parsed = JSON.parse(raw) as unknown;
       if (!Array.isArray(parsed)) return;
 
-      // Back-compat: old format was string[]
       if (parsed.every((x) => typeof x === "string")) {
         const ids = (parsed as string[]).filter(Boolean);
         selectedRows = ids.map((id) => ({ id, chapterId: "" }));
@@ -35,7 +35,6 @@
         return;
       }
 
-      // New format: { id, chapterId }[]
       const rows = (parsed as any[])
         .map((r) => ({ id: String(r?.id ?? ""), chapterId: String(r?.chapterId ?? "") }))
         .filter((r) => r.id);
@@ -77,6 +76,21 @@
       data.chapterSlug
     )}?${params.toString()}`;
   };
+
+  function imageSrc(image: ImageLike): string {
+    if (typeof image === "string") return image;
+    return image?.url ?? "";
+  }
+
+  function imageAlt(image: ImageLike): string {
+    if (typeof image === "string") return "";
+    return image?.alt ?? "";
+  }
+
+  function promptImages(q: Question): ImageLike[] {
+    const images = (q as any)?.prompt?.en?.images ?? [];
+    return Array.isArray(images) ? images : [];
+  }
 
 </script>
 
@@ -140,6 +154,21 @@
                 <div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
                   <MathText content={q.prompt.en.content} />
                 </div>
+                {#if promptImages(q).length > 0}
+                  <div class="mt-3 grid grid-cols-2 gap-2">
+                    {#each promptImages(q) as img, imgIdx}
+                      {@const src = imageSrc(img)}
+                      {#if src}
+                        <img
+                          {src}
+                          alt={imageAlt(img)}
+                          class="max-h-48 w-full rounded-lg border border-[var(--page-card-border)] object-contain"
+                          loading="lazy"
+                        />
+                      {/if}
+                    {/each}
+                  </div>
+                {/if}
               </div>
             </div>
           </button>

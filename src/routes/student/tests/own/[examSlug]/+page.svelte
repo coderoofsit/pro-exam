@@ -70,6 +70,7 @@
   let successStartError = $state<string | null>(null);
   let manualSelectedIds = $state<Set<string>>(new Set());
   let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
+  let manualConfirmModalOpen = $state(false);
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
   const manualSelectedCount = $derived(manualSelectedIds.size);
@@ -197,9 +198,72 @@
     createTestError = null;
     const snapshot = buildManualSnapshot();
     if (!snapshot) return;
-    distMode = 'manual';
-    distSnapshot = snapshot;
-    distModalOpen = true;
+    manualConfirmModalOpen = true;
+  }
+
+  function closeManualConfirmModal() {
+    if (creatingTest) return;
+    manualConfirmModalOpen = false;
+    createTestError = null;
+  }
+
+  async function confirmManualTestCreation() {
+    const snapshot = buildManualSnapshot();
+    if (!snapshot) return;
+    
+    const istDate = formatIstDateDdMmYyyy();
+    const boardId = snapshot.boardId?.trim() || boardIdFromPage;
+    const examId = snapshot.examId?.trim() || examIdFromPage;
+    
+    if (!boardId || !examId) {
+      createTestError = 'Missing exam or board for this test. Please refresh the page or pick another exam.';
+      return;
+    }
+
+    creatingTest = true;
+    createTestError = null;
+
+    const manualQuestionCount = manualSelectedRows.length ? manualSelectedRows.length : manualSelectedIds.size;
+    const durationMinutes = durationMinutesForQuestionCount(manualQuestionCount);
+
+    try {
+      const res = await createManualCustomTest({
+        boardId,
+        examId,
+        name: { en: `Custom Test ${examName} ${istDate}` },
+        kind: 'CUSTOM',
+        settings: { durationMinutes },
+        questions: manualSelectedRows.length
+          ? manualSelectedRows.map((r, idx) => ({ questionId: r.id, order: idx }))
+          : Array.from(manualSelectedIds).map((id, idx) => ({ questionId: id, order: idx }))
+      });
+
+      if (!res.success) {
+        createTestError = res.message;
+        return;
+      }
+
+      const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
+      if (!newTestId) {
+        createTestError = 'Test was created but we could not read its id. Start it from Tests instead.';
+        createdTestId = null;
+        return;
+      }
+      createdTestId = newTestId;
+      successStartError = null;
+
+      if (browser) {
+        try {
+          sessionStorage.removeItem(manualSelectionKey);
+        } catch {}
+        manualSelectedIds = new Set();
+        manualSelectedRows = [];
+      }
+      manualConfirmModalOpen = false;
+      successModalOpen = true;
+    } finally {
+      creatingTest = false;
+    }
   }
 
   function closeDistModal() {
@@ -384,6 +448,11 @@
         boardId={boardIdFromPage}
       />
       <footer class="own-bottom-bar mt-5" aria-label="Selection summary">
+        {#if createTestError}
+          <div class="mb-3 rounded-lg border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-2 text-sm text-[var(--pc-error-text)]">
+            {createTestError}
+          </div>
+        {/if}
         <div class="own-bottom-bar__subject">
           <span class="own-bottom-bar__label">Selected questions</span>
           {#if manualSelectedCount > 0}
@@ -436,3 +505,42 @@
   onDoLater={handleSuccessDoLater}
   onStartTest={() => void handleSuccessStartTest()}
 />
+
+{#if manualConfirmModalOpen}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
+      <h2 class="text-xl font-bold text-[var(--page-text)]">Create Test</h2>
+      <p class="mt-3 text-sm text-[var(--page-text-muted)]">
+        You have selected {manualSelectedCount} question{manualSelectedCount === 1 ? '' : 's'}.
+      </p>
+      <p class="mt-2 text-sm text-[var(--page-text-muted)]">
+        Duration: {durationMinutesForQuestionCount(manualSelectedCount)} minutes
+      </p>
+      
+      {#if createTestError}
+        <div class="mt-4 rounded-lg border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-2 text-sm text-[var(--pc-error-text)]">
+          {createTestError}
+        </div>
+      {/if}
+
+      <div class="mt-6 flex gap-3">
+        <button
+          type="button"
+          class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-2 text-sm font-medium text-[var(--page-text)] transition hover:bg-[var(--page-card-bg)]"
+          onclick={closeManualConfirmModal}
+          disabled={creatingTest}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn-cta-subscription flex-1"
+          onclick={confirmManualTestCreation}
+          disabled={creatingTest}
+        >
+          {creatingTest ? 'Creating...' : 'Create Test'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

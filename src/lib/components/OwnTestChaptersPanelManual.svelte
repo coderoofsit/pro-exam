@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
+  import { browser } from '$app/environment';
 
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
@@ -13,6 +14,48 @@
   let openSubjectSlug = $state<string>('');
   let openUnitIds = $state<Set<string>>(new Set());
   let subjectRailOpen = $state(false);
+  let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
+
+  const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
+
+  $effect(() => {
+    if (!browser) return;
+    try {
+      const raw = sessionStorage.getItem(manualSelectionKey);
+      if (!raw) {
+        manualSelectedRows = [];
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) {
+        manualSelectedRows = [];
+        return;
+      }
+
+      if (parsed.every((x) => typeof x === 'string')) {
+        const ids = (parsed as string[]).filter(Boolean);
+        manualSelectedRows = ids.map((id) => ({ id, chapterId: '' }));
+        return;
+      }
+
+      const rows = (parsed as any[])
+        .map((r) => ({ id: String(r?.id ?? ''), chapterId: String(r?.chapterId ?? '') }))
+        .filter((r) => r.id);
+      manualSelectedRows = rows;
+    } catch {
+      manualSelectedRows = [];
+    }
+  });
+
+  const questionCountByChapterId = $derived.by(() => {
+    const counts = new Map<string, number>();
+    for (const row of manualSelectedRows) {
+      if (row.chapterId) {
+        counts.set(row.chapterId, (counts.get(row.chapterId) || 0) + 1);
+      }
+    }
+    return counts;
+  });
 
   $effect(() => {
     const first = groupedSubjects[0]?.subject?.slug;
@@ -56,7 +99,6 @@
     openUnitIds = next;
   }
 
-  /** Next step: manual chapter builder (mode preserved in query). */
   function chapterHref(chSlug: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId });
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
@@ -196,9 +238,13 @@
               <div class="own-unit__body">
                 <ul class="mt-3 flex flex-col gap-2">
                   {#each unit.data as ch (ch._id)}
+                    {@const qCount = questionCountByChapterId.get(ch._id) || 0}
                     <li>
                       <div class="own-chapter-row own-chapter-row--manual w-full">
                         <span class="own-chapter__label">{ch.name?.en ?? ch.slug}</span>
+                        {#if qCount > 0}
+                          <span class="text-xs text-[var(--own-muted)] mr-2">{qCount} q.</span>
+                        {/if}
                         <a
                           class="own-chapter__next"
                           href={chapterHref(ch.slug)}

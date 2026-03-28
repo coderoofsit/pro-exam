@@ -377,20 +377,29 @@
 		const promptImages = (q as any)?.prompt?.en?.images ?? [];
 		if (!Array.isArray(promptImages) || promptImages.length === 0) return [];
 
-		// De-dupe using imageKey instead of only `url`, so it also works when `url` is missing.
-		const optionKeys = new Set(
-			((q as any)?.prompt?.en?.options ?? [])
-				.flatMap((opt: any) => (Array.isArray(opt?.images) ? opt.images : []))
-				.map((img: any) => imageKey(img as ImageLike))
-				.filter(Boolean),
-		);
+		const options = (q as any)?.prompt?.en?.options ?? [];
+		if (!Array.isArray(options) || options.length === 0) {
+			return promptImages as ImageLike[];
+		}
 
-		if (optionKeys.size === 0) return promptImages as ImageLike[];
+		const optionImageUrls = new Set<string>();
+		for (const opt of options) {
+			const optImages = opt?.images ?? [];
+			if (Array.isArray(optImages)) {
+				for (const img of optImages) {
+					const url = imageSrc(img as ImageLike);
+					if (url) optionImageUrls.add(url);
+				}
+			}
+		}
 
-		return (promptImages as any[]).filter((img) => {
-			const k = imageKey(img as ImageLike);
-			if (!k) return true; // if we can't identify it, keep it
-			return !optionKeys.has(k);
+		if (optionImageUrls.size === 0) {
+			return promptImages as ImageLike[];
+		}
+
+		return (promptImages as ImageLike[]).filter((img) => {
+			const url = imageSrc(img);
+			return url && !optionImageUrls.has(url);
 		});
 	}
 </script>
@@ -560,14 +569,14 @@
 												<div class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
 													<MathText content={q.prompt.en.content} />
 													{#if promptImagesOnly(q).length}
-														<div class="mt-3 flex flex-wrap gap-2.5">
+														<div class="mt-3 grid grid-cols-2 gap-2.5">
 															{#each promptImagesOnly(q) as img, imgIdx (`main-${q._id}-${imgIdx}`)}
 																{@const src = imageSrc(img as ImageLike)}
 																{#if src}
 																	<img
 																		src={src}
 																		alt={imageAlt(img as ImageLike)}
-																		class="max-h-40 max-w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																		class="max-h-40 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
 																		loading="lazy"
 																	/>
 																{/if}
