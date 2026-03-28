@@ -24,6 +24,27 @@ export type SubscriptionPlansResponseBody = {
 	data: SubscriptionPlan[];
 };
 
+export type SubscriptionCheckoutResponseBody = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: {
+		transactionId: string;
+		razorpayKeyId: string;
+		orderId: string;
+		amount: number;
+		currency: string;
+		receipt: string;
+	};
+};
+
+export type VerifySubscriptionPaymentResponseBody = {
+	success?: boolean;
+	statusCode?: number;
+	message?: string;
+	data?: unknown;
+};
+
 export function sortSubscriptionPlans(list: SubscriptionPlan[]): SubscriptionPlan[] {
 	return [...list].sort((a, b) => {
 		const o = (a.order ?? 0) - (b.order ?? 0);
@@ -44,7 +65,6 @@ export async function fetchSubscriptionPlans(
 	});
 }
 
-/** POST /api/v1/subscription-transactions/free-trail — start free trial for a trial plan. */
 export async function startFreeTrial(params: {
 	planId: string;
 	token?: string | null;
@@ -53,6 +73,36 @@ export async function startFreeTrial(params: {
 		endpoint: '/api/v1/subscription-transactions/free-trail',
 		method: 'POST',
 		data: { planId: params.planId },
+		token: params.token
+	});
+}
+
+export async function createSubscriptionCheckout(params: {
+	planId: string;
+	token?: string | null;
+}) {
+	return apiRequest<SubscriptionCheckoutResponseBody>({
+		endpoint: '/api/v1/subscription-transactions/checkout',
+		method: 'POST',
+		data: { planId: params.planId },
+		token: params.token
+	});
+}
+
+export async function verifySubscriptionPayment(params: {
+	razorpay_order_id: string;
+	razorpay_payment_id: string;
+	razorpay_signature: string;
+	token?: string | null;
+}) {
+	return apiRequest<VerifySubscriptionPaymentResponseBody>({
+		endpoint: '/api/v1/subscription-transactions/verify',
+		method: 'POST',
+		data: {
+			razorpay_order_id: params.razorpay_order_id,
+			razorpay_payment_id: params.razorpay_payment_id,
+			razorpay_signature: params.razorpay_signature
+		},
 		token: params.token
 	});
 }
