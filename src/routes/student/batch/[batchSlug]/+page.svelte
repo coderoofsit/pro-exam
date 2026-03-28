@@ -2,15 +2,18 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/state';
   import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
-  import type { StudentBatchAssignedTest } from '$lib/api/batch';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
+    collectQuestionIdsFromAttemptQuestions,
     createTestAttempt,
     findAttemptIdInApiResponse,
     peelTestAttemptEnvelope
   } from '$lib/api/testAttempts';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
+
+  /** Mirrors `StudentBatchAssignedTest` from the batch load (`+page.server.ts`). */
+  type StudentBatchAssignedTest = NonNullable<PageData['tests']>[number];
 
   let { data }: { data: PageData } = $props();
 
@@ -99,6 +102,7 @@
             fetchedAt: Date.now(),
             testName: testTitle(t),
             attemptId: attemptIdResolved,
+            questionIds: collectQuestionIdsFromAttemptQuestions(questions),
             durationMinutes:
               typeof payload.durationMinutes === 'number'
                 ? payload.durationMinutes

@@ -99,9 +99,21 @@ export function extractQuestionId(q: unknown, depth = 0): string | undefined {
 	);
 }
 
+/** One id per question (same order as `questions`) for session storage when PATCH needs stable ids. */
+export function collectQuestionIdsFromAttemptQuestions(questions: unknown[]): string[] {
+	return questions.map((q) => extractQuestionId(q) ?? '');
+}
+
 export type UpdateTestAttemptQuestionBody = {
 	timeSpentMs: number;
 	answer: string[] | null;
+};
+
+/** Optional last question update applied when submitting the whole attempt (backend `submit`). */
+export type SubmitTestAttemptBody = {
+	questionId?: string;
+	timeSpentMs?: number;
+	answer?: string[] | null;
 };
 
 export type CreateTestAttemptResponseBody = {
@@ -122,6 +134,8 @@ export type BatchTestAttemptSession = {
 	testId: string;
 	batchId: string;
 	questions: TestAttemptQuestion[];
+	/** Parallel to `questions` — Mongo ids for PATCH /questions/:questionId when items omit _id. */
+	questionIds?: string[];
 	fetchedAt: number;
 	/** Optional — set when starting from batch so the attempt UI can show title & timer. */
 	testName?: string;
@@ -182,4 +196,113 @@ export async function updateTestAttemptQuestion(
 		});
 	}
 	return res;
+}
+
+export async function submitTestAttempt(
+	attemptId: string,
+	body?: SubmitTestAttemptBody,
+	fetchFn?: typeof fetch,
+	options?: { token?: string }
+) {
+	return apiRequest<unknown>({
+		endpoint: `/api/v1/test-attempts/${encodeURIComponent(attemptId)}/submit`,
+		method: 'POST',
+		data: body ?? {},
+		fetch: fetchFn,
+		...(options?.token ? { token: options.token } : {})
+	});
+}
+
+/** GET /api/v1/test-attempts/:testAttemptId — summary + statsBreakdown (no per-question array). */
+export type TestAttemptBreakdownRow = {
+	totalQuestions: number;
+	attemptedCount: number;
+	correctCount: number;
+	incorrectCount: number;
+	unattemptedCount: number;
+	totalMarks: number;
+	obtainedMarks: number;
+	accuracy: number;
+	timeSpentMs: number;
+};
+
+export type LocalizedName = { en?: string; hi?: string };
+
+export type TestAttemptSummary = {
+	_id: string;
+	status: string;
+	startedAt?: string;
+	expiresAt?: string;
+	endedAt?: string | null;
+	submittedAt?: string | null;
+	totalMarks: number;
+	obtainedMarks: number;
+	correctCount: number;
+	incorrectCount: number;
+	unattemptedCount: number;
+	accuracy: number;
+	percentile: number | null;
+	rank: number | null;
+	totalTimeSpentMs: number;
+	statsBreakdown: {
+		bySubject: Array<
+			TestAttemptBreakdownRow & {
+				subjectId?: { _id?: string; name?: LocalizedName };
+			}
+		>;
+		byKind: Array<TestAttemptBreakdownRow & { kind: string }>;
+		byChapterGroup: Array<
+			TestAttemptBreakdownRow & {
+				chapterGroupId?: { _id?: string; name?: LocalizedName };
+			}
+		>;
+		byChapter: Array<
+			TestAttemptBreakdownRow & {
+				chapterId?: { _id?: string; name?: LocalizedName };
+			}
+		>;
+	};
+};
+
+type TestAttemptByIdApiBody = {
+	success?: boolean;
+	statusCode?: number;
+	message?: string;
+	data?: TestAttemptSummary;
+};
+
+export async function fetchTestAttemptById(
+	attemptId: string,
+	fetchFn?: typeof fetch,
+	options?: { token?: string }
+): Promise<
+	| { success: true; data: TestAttemptSummary }
+	| { success: false; message: string; status?: number }
+> {
+	const trimmed = attemptId.trim();
+	if (!trimmed) {
+		return { success: false, message: 'Attempt id is required.' };
+	}
+	const res = await apiRequest<TestAttemptByIdApiBody>({
+		endpoint: `/api/v1/test-attempts/${encodeURIComponent(trimmed)}`,
+		method: 'GET',
+		fetch: fetchFn,
+		...(options?.token ? { token: options.token } : {})
+	});
+	if (!res.success) {
+		return { success: false, message: res.message, status: res.status };
+	}
+	const body = res.data;
+	const inner = body && typeof body === 'object' ? (body as TestAttemptByIdApiBody).data : undefined;
+	if (!inner || typeof inner !== 'object') {
+		return {
+			success: false,
+			message:
+				(body && typeof body === 'object' && 'message' in body && typeof (body as { message?: string }).message === 'string'
+					? (body as { message: string }).message
+					: undefined) ?? 'Could not load test attempt.',
+			status: res.status
+		};
+	}
+	return { success: true, data: inner };
 }
