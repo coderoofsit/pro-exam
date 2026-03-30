@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 		return {
 			chapterId,
-			message: result.message,
+			message: result.message ?? '',
 			total: result.total,
 			currentPage: result.currentPage,
 			lastPage: result.lastPage,

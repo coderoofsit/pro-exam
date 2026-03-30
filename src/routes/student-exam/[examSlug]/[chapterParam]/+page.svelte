@@ -1,5 +1,6 @@
 <script lang="ts">
 	import MathText from "$lib/components/MathText.svelte";
+	import { questionPromptEnContent } from "$lib/api/questions";
 	import type { PageData } from "./+page.server";
 	import { goto } from "$app/navigation";
 	import { browser } from "$app/environment";
@@ -17,15 +18,9 @@
 	let previewBaseNumber = $state(0);
 	let lastReviewDatasetKey = $state<string | null>(null);
 	let sidebarCollapsed = $state(false);
-	let filterDrawerOpen = $state(false);
-	let draftDifficulties = $state<string[]>(['easy']);
-	let draftKinds = $state<string[]>([]);
 
 	const REVIEW_PAGE_SIZE = 5;
 	const PAGINATION_WINDOW = 2;
-
-	const difficultyOptions = ['easy', 'medium', 'hard'] as const;
-	const kindOptions = ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as const;
 
 	const filteredChapters = $derived(data.allChapters);
 	const isLoading = $derived($navigating !== null);
@@ -37,15 +32,8 @@
 	});
 
 	$effect(() => {
-		draftDifficulties = data.activeDifficulties;
-		draftKinds = data.activeKinds;
-	});
-
-	$effect(() => {
-		// If filters/page/chapter changes while review is open, re-seed review data so it reflects new filters.
-		const d = [...data.activeDifficulties].sort().join(',');
-		const k = data.activeKinds.length ? [...data.activeKinds].sort().join(',') : 'all';
-		const key = `${data.resolvedChapterId ?? 'none'}::d=${d}::k=${k}::p=${data.safePage}`;
+		// If page/chapter changes while review is open, re-seed review data.
+		const key = `${data.resolvedChapterId ?? 'none'}::p=${data.safePage}`;
 
 		if (selectedQuestionIndex === null) {
 			lastReviewDatasetKey = key;
@@ -83,12 +71,7 @@
 		selectedQuestionIndex = 0;
 	});
 
-	const storeChapterKey = $derived.by(() => {
-		if (!data.resolvedChapterId) return null;
-		const d = [...data.activeDifficulties].sort().join(',');
-		const k = data.activeKinds.length ? [...data.activeKinds].sort().join(',') : 'all';
-		return `${data.resolvedChapterId}::d=${d}::k=${k}`;
-	});
+	const storeChapterKey = $derived(data.resolvedChapterId);
 
 	const hasCurrentPage = $derived.by(() => {
 		if (!storeChapterKey) return false;
@@ -126,8 +109,6 @@
 
 	const activeFiltersQuery = (opts?: { page?: number }) => {
 		const params = new URLSearchParams();
-		params.set('difficulty', data.activeDifficulties.join(','));
-		if (data.activeKinds.length) params.set('kind', data.activeKinds.join(','));
 		params.set('page', String(opts?.page ?? 1));
 		return params.toString();
 	};
@@ -144,21 +125,6 @@
 	};
 
 	const questionsPageUrl = (p: number) => `${chapterBaseUrl()}?${activeFiltersQuery({ page: p })}`;
-
-	async function applyFilters() {
-		const params = new URLSearchParams();
-		params.set('difficulty', draftDifficulties.length ? draftDifficulties.join(',') : 'easy');
-		if (draftKinds.length) params.set('kind', draftKinds.join(','));
-		params.set('page', '1');
-		const qs = params.toString();
-		await goto(`${chapterBaseUrl()}?${qs}`);
-		filterDrawerOpen = false;
-	}
-
-	async function clearKindFilter() {
-		draftKinds = [];
-		await applyFilters();
-	}
 
 	const paginationStartPage = $derived(
 		displayPaginationMeta
@@ -233,11 +199,7 @@
 	const reviewPageNumber = $derived(Math.floor(reviewStartIndex / REVIEW_PAGE_SIZE) + 1);
 
 	type CarryPayload = { direction: 'prepend' | 'append'; questions: Question[] };
-	const carryStorageKey = () => {
-		const d = [...data.activeDifficulties].sort().join(',');
-		const k = data.activeKinds.length ? [...data.activeKinds].sort().join(',') : 'all';
-		return `review-carry::${data.resolvedChapterId ?? 'none'}::d=${d}::k=${k}`;
-	};
+	const carryStorageKey = () => `review-carry::${data.resolvedChapterId ?? 'none'}`;
 
 	function writeCarry(payload: CarryPayload) {
 		if (!browser) return;
@@ -480,32 +442,17 @@
 					</div>
 				{:else}
 					<div class="py-6 shrink-0">
-						<div class="flex items-start justify-between gap-3">
-							<div>
-								<h1 class="text-2xl font-bold md:text-3xl">
-									{data.chapter?.name?.en ?? data.chapterParam}
-								</h1>
-								{#if displayPaginationMeta}
-									<p class="mt-2 text-sm text-[var(--page-text-muted)]">
-										{displayPaginationMeta.total} questions • Page {data.safePage}
-										of {displayPaginationMeta.lastPage}
-									</p>
-								{/if}
-							</div>
-							<button
-								type="button"
-								class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
-								onclick={() => (filterDrawerOpen = true)}
-							>
-								Filters
-							</button>
+						<div>
+							<h1 class="text-2xl font-bold md:text-3xl">
+								{data.chapter?.name?.en ?? data.chapterParam}
+							</h1>
+							{#if displayPaginationMeta}
+								<p class="mt-2 text-sm text-[var(--page-text-muted)]">
+									{displayPaginationMeta.total} questions • Page {data.safePage}
+									of {displayPaginationMeta.lastPage}
+								</p>
+							{/if}
 						</div>
-						{#if displayPaginationMeta}
-							<div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--page-text-muted)]">
-								<span class="rounded bg-[var(--page-card-bg)] px-2 py-1">Difficulty: {data.activeDifficulties.join(', ')}</span>
-								<span class="rounded bg-[var(--page-card-bg)] px-2 py-1">Type: {data.activeKinds.length ? data.activeKinds.join(', ') : 'ALL'}</span>
-							</div>
-						{/if}
 					</div>
 
 					{#if displayQuestions.length === 0}
@@ -567,7 +514,7 @@
 													Q{(data.safePage - 1) * (displayPaginationMeta?.limit ?? 10) + index + 1}
 												</div>
 												<div class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
-													<MathText content={q.prompt.en.content} />
+													<MathText content={questionPromptEnContent(q)} />
 													{#if promptImagesOnly(q).length}
 														<div class="mt-3 grid grid-cols-2 gap-2.5">
 															{#each promptImagesOnly(q) as img, imgIdx (`main-${q._id}-${imgIdx}`)}
@@ -652,7 +599,7 @@
 												Q{previewBaseNumber + reviewStartIndex + i}
 											</div>
 											<div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
-												<MathText content={q.prompt.en.content} />
+												<MathText content={questionPromptEnContent(q)} />
 												{#if promptImagesOnly(q).length}
 													<div class="mt-3 flex flex-wrap gap-2.5">
 														{#each promptImagesOnly(q) as img, imgIdx (`preview-${q._id}-${imgIdx}`)}
@@ -670,9 +617,9 @@
 												{/if}
 											</div>
 
-											{#if q.prompt.en.options?.length}
+											{#if q.prompt?.en?.options?.length}
 												<div class="mt-5 grid gap-2.5">
-													{#each q.prompt.en.options as option (option.identifier)}
+													{#each (q.prompt?.en?.options ?? []) as option (option.identifier)}
 														<div class="flex items-start gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)]/40 px-4 py-4 transition hover:bg-[var(--page-bg)]/60">
 															<span class="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">
 																{option.identifier}
@@ -710,87 +657,3 @@
 		</main>
 	</div>
 </div>
-
-{#if filterDrawerOpen}
-	<div
-		class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-opacity"
-		role="button"
-		tabindex="0"
-		onclick={() => (filterDrawerOpen = false)}
-		onkeydown={(e) => (e.key === 'Escape' ? (filterDrawerOpen = false) : null)}
-	></div>
-	<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl">
-		<div class="mb-4 flex items-center justify-between">
-			<h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
-			<button
-				type="button"
-				class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
-				onclick={() => (filterDrawerOpen = false)}
-			>
-				Close
-			</button>
-		</div>
-
-		<div class="space-y-5">
-			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
-				<div class="flex flex-wrap gap-2.5">
-					{#each difficultyOptions as option}
-						<button
-							type="button"
-							onclick={() => {
-								const next = draftDifficulties.includes(option)
-									? draftDifficulties.filter((d) => d !== option)
-									: [...draftDifficulties, option];
-								draftDifficulties = next.length ? next : ['easy'];
-							}}
-							class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {draftDifficulties.includes(option)
-								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)] shadow-[0_0_10px_rgba(79,126,255,0.15)]'
-								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-						>
-							{option}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
-				<div class="grid gap-2.5">
-					{#each kindOptions as option}
-						<button
-							type="button"
-							onclick={() => {
-								draftKinds = draftKinds.includes(option)
-									? draftKinds.filter((k) => k !== option)
-									: [...draftKinds, option];
-							}}
-							class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {draftKinds.includes(option)
-								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)] shadow-[0_0_10px_rgba(79,126,255,0.15)]'
-								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-						>
-							{option}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]">
-				<button
-					type="button"
-					class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)] transition"
-					onclick={clearKindFilter}
-				>
-					Clear type
-				</button>
-				<button
-					type="button"
-					class="flex-1 rounded-xl border border-[var(--page-link)] bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white shadow-[var(--shadow-item)] hover:shadow-[var(--shadow-item-hover)] hover:-translate-y-0.5 transition"
-					onclick={applyFilters}
-				>
-					Apply
-				</button>
-			</div>
-		</div>
-	</aside>
-{/if}

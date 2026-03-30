@@ -1,6 +1,6 @@
 <script lang="ts">
   import MathText from "$lib/components/MathText.svelte";
-  import type { Question } from "$lib/api/questions";
+  import { questionPromptEnContent, type Question } from "$lib/api/questions";
 
   let { data } = $props<{
     data: {
@@ -130,25 +130,31 @@
               >
                 Q{qNumber}
               </span>
-              <div class="flex items-center gap-2">
-                <span class={classForKind(question.kind)}>{question.kind}</span>
-                <span class={tagClassForDifficulty(question.difficulty)}>
-                  <span class="q-tag-dot"></span>
-                  {question.difficulty}
-                </span>
-              </div>
+              {#if question.kind || question.difficulty}
+                <div class="flex items-center gap-2">
+                  {#if question.kind}
+                    <span class={classForKind(question.kind)}>{question.kind}</span>
+                  {/if}
+                  {#if question.difficulty}
+                    <span class={tagClassForDifficulty(question.difficulty)}>
+                      <span class="q-tag-dot"></span>
+                      {question.difficulty}
+                    </span>
+                  {/if}
+                </div>
+              {/if}
             </div>
 
             <div class="px-6 py-5">
               <div
                 class="math-content overflow-x-auto text-[1.0625rem] leading-[1.85] text-[var(--page-text)]"
               >
-                <MathText content={question.prompt.en.content} />
+                <MathText content={questionPromptEnContent(question)} />
               </div>
 
-              {#if question.prompt.en.options && question.prompt.en.options.length > 0}
+              {#if question.prompt?.en?.options?.length}
                 <div class="mt-5 grid gap-2.5">
-                  {#each question.prompt.en.options as option}
+                  {#each (question.prompt?.en?.options ?? []) as option}
                     <div
                       class="group flex items-start gap-3.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3.5 transition hover:border-[var(--page-link)]/35 hover:bg-[var(--page-bg)]"
                     >
@@ -167,7 +173,7 @@
                 </div>
               {/if}
 
-              {#if question.prompt.en.explanation}
+              {#if question.prompt?.en?.explanation}
                 <details class="group mt-5">
                   <summary
                     class="flex w-fit cursor-pointer list-none items-center gap-2 select-none text-sm font-medium text-[var(--page-text-muted)] hover:text-[var(--page-text)]"
@@ -183,7 +189,7 @@
                     <div
                       class="math-content overflow-x-auto text-sm leading-[1.85] text-[var(--page-text-muted)]"
                     >
-                      <MathText content={question.prompt.en.explanation} />
+                      <MathText content={question.prompt?.en?.explanation ?? ''} />
                     </div>
                   </div>
                 </details>

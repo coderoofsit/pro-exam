@@ -5,35 +5,10 @@ import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
 const QUESTIONS_PAGE_LIMIT = 25;
-const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
-const ALLOWED_KINDS = ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as const;
-
-function parseDifficulties(values: string[]): string[] {
-	const allowed = new Set(ALLOWED_DIFFICULTIES);
-	const tokens = values
-		.flatMap((v) => v.split(','))
-		.map((s) => s.trim().toLowerCase())
-		.filter(Boolean);
-	const unique = Array.from(new Set(tokens));
-	const filtered = unique.filter((d) => allowed.has(d as (typeof ALLOWED_DIFFICULTIES)[number]));
-	return filtered.length ? filtered : ['easy'];
-}
-
-function parseKinds(values: string[]): string[] {
-	const allowed = new Set(ALLOWED_KINDS);
-	const tokens = values
-		.flatMap((v) => v.split(','))
-		.map((s) => s.trim().toUpperCase())
-		.filter(Boolean);
-	const unique = Array.from(new Set(tokens));
-	return unique.filter((k) => allowed.has(k as (typeof ALLOWED_KINDS)[number]));
-}
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const examSlug = params.examSlug;
 	const chapterParam = params.chapterParam;
-	const activeDifficulties = parseDifficulties(url.searchParams.getAll('difficulty'));
-	const activeKinds = parseKinds(url.searchParams.getAll('kind'));
 
 	const currentPageParam = Number(url.searchParams.get('page') || '1');
 	const safePage = Number.isNaN(currentPageParam) || currentPageParam < 1 ? 1 : currentPageParam;
@@ -84,10 +59,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		}
 
 		const questionsRes = resolvedChapterId
-			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT, {
-					difficulty: activeDifficulties,
-					kind: activeKinds.length ? activeKinds : null
-				})
+			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT)
 			: null;
 
 		// Only use the current page for the initial review pool.
@@ -102,8 +74,6 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			chapter,
 			allChapters: currentSubjectChapters,
 			subjectSlug,
-			activeDifficulties,
-			activeKinds,
 			previewMode,
 			requestedReviewStart,
 			questions: questionsRes?.data ?? [],
@@ -122,8 +92,6 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			chapter: null,
 			allChapters: [],
 			subjectSlug: null,
-			activeDifficulties,
-			activeKinds,
 			previewMode,
 			requestedReviewStart,
 			questions: [],
@@ -142,8 +110,6 @@ export type PageData = {
 	chapter: any | null;
 	allChapters: any[];
 	subjectSlug: string | null;
-	activeDifficulties: string[];
-	activeKinds: string[];
 	previewMode: boolean;
 	requestedReviewStart: number | null;
 	questions: Question[];

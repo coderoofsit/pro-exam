@@ -1,5 +1,6 @@
 <script lang="ts">
   import MathText from "$lib/components/MathText.svelte";
+  import { questionPromptEnContent } from "$lib/api/questions";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -152,7 +153,7 @@
                   Q{(data.safePage - 1) * (data.paginationMeta?.limit ?? 25) + index + 1}
                 </div>
                 <div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
-                  <MathText content={q.prompt.en.content} />
+                  <MathText content={questionPromptEnContent(q)} />
                 </div>
                 {#if promptImages(q).length > 0}
                   <div class="mt-3 grid grid-cols-2 gap-2">

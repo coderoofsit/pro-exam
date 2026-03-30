@@ -24,14 +24,21 @@ export type QuestionPrompt = {
 	explanationImages?: QuestionImage[];
 };
 
+/** Full-detail shape from some endpoints; chapter list API may return only `_id` + `content`. */
 export type Question = {
 	_id: string;
-	kind: string;
-	difficulty: string;
-	prompt: {
+	content?: string;
+	kind?: string;
+	difficulty?: string;
+	prompt?: {
 		en: QuestionPrompt;
 	};
 };
+
+/** Text for the question stem (supports both nested `prompt.en` and flat `content`). */
+export function questionPromptEnContent(q: Question): string {
+	return q.prompt?.en?.content ?? q.content ?? '';
+}
 
 export type QuestionsPageResponse = {
 	total: number;
@@ -46,7 +53,6 @@ export async function fetchQuestionsByChapter(
 	chapterId: string,
 	page: number = 1,
 	limit: number = 10,
-	filters?: { difficulty?: string[] | null; kind?: string[] | null },
 	token?: string | null
 ): Promise<QuestionsPageResponse> {
 	const t = resolveApiToken(token);
@@ -57,8 +63,6 @@ export async function fetchQuestionsByChapter(
 		page: String(safePage),
 		limit: String(safeLimit)
 	});
-	if (filters?.difficulty?.length) params.set('difficulty', filters.difficulty.join(','));
-	if (filters?.kind?.length) params.set('kind', filters.kind.join(','));
 	const response = await apiRequest<{
 		success: boolean;
 		message: string;
