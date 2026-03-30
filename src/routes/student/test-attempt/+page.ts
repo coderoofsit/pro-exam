@@ -10,7 +10,24 @@ import type { PageLoad } from './$types';
 /** Questions only exist in sessionStorage after POST from batch; avoid SSR so load runs in the browser. */
 export const ssr = false;
 
-/** Maps API payload to the shape expected by `TestAttempt` (e.g. `images` as string[]). */
+/** API may send `images` as URL strings or `{ url, publicId, … }` objects. */
+function normalizeImageUrls(raw: unknown): string[] {
+	if (!Array.isArray(raw)) return [];
+	const out: string[] = [];
+	for (const x of raw) {
+		if (typeof x === 'string' && x.trim()) {
+			out.push(x.trim());
+			continue;
+		}
+		if (x != null && typeof x === 'object' && 'url' in x) {
+			const u = (x as { url?: unknown }).url;
+			if (typeof u === 'string' && u.trim()) out.push(u.trim());
+		}
+	}
+	return out;
+}
+
+/** Maps API payload to the shape expected by `TestAttempt` (`images` as string[] of URLs). */
 function normalizeForTestUi(raw: TestAttemptQuestion[]) {
 	return raw.map((item) => {
 		const id = extractQuestionId(item);
@@ -25,9 +42,9 @@ function normalizeForTestUi(raw: TestAttemptQuestion[]) {
 					options: en.options.map((o) => ({
 						identifier: o.identifier,
 						content: o.content,
-						images: Array.isArray(o.images) ? o.images.map(String) : []
+						images: normalizeImageUrls(o.images)
 					})),
-					images: Array.isArray(en.images) ? en.images.map(String) : []
+					images: normalizeImageUrls(en.images)
 				}
 			}
 		};

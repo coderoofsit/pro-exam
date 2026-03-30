@@ -35,7 +35,7 @@ export const PUBLIC_API_BASE_URL = (
 	((globalThis as unknown as { process?: { env?: { VITE_PUBLIC_API_URL?: string } } })
 		.process?.env?.VITE_PUBLIC_API_URL as string | undefined) ||
 	// 'http://localhost:8000'|| 
-  "https://test-exam-backend-5yh6.onrender.com"
+  "https://test-exam-backend-yc8u.onrender.com"
 ).replace(/\/+$/, '');
 
 export async function apiRequest<T>({

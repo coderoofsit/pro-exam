@@ -69,6 +69,8 @@
   let submitInFlight = $state(false);
   let showFinishScreen = $state(false);
   let submitFinishError = $state<string | null>(null);
+  /** Full-screen preview when user taps a question/option image. */
+  let imageLightboxSrc = $state<string | null>(null);
 
   const total = $derived(questions.length);
   const displayTotal = $derived(
@@ -213,6 +215,23 @@
     questionEnteredAt = Date.now();
     if (currentIndex < total - 1) currentIndex++;
   }
+
+  function openImageLightbox(src: string) {
+    imageLightboxSrc = src;
+  }
+
+  function closeImageLightbox() {
+    imageLightboxSrc = null;
+  }
+
+  $effect(() => {
+    if (!browser || !imageLightboxSrc) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeImageLightbox();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
 
   onMount(() => {
     if (!browser || !testId.trim()) {
@@ -433,6 +452,68 @@
     margin: 0;
     line-height: 1.85;
   }
+
+  /**
+   * Question / option figures: fixed max box; image scales with object-fit contain
+   * so tiny icons and large diagrams both sit neatly without stretching.
+   */
+  .ta-img-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid var(--ta-qpanel-border);
+    background: color-mix(in srgb, var(--ta-opt-bg) 88%, transparent);
+    padding: 0.35rem;
+  }
+
+  .ta-img-frame--stem {
+    width: 100%;
+    min-height: 3.5rem;
+    max-height: min(14rem, 30vh);
+  }
+
+  .ta-img-frame--option {
+    flex: 1 1 auto;
+    min-width: min(100%, 6rem);
+    max-width: min(100%, 12rem);
+    min-height: 3rem;
+    max-height: min(10rem, 22vh);
+  }
+
+  .ta-img-frame__img {
+    display: block;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .ta-img-frame__img--stem {
+    max-width: 100%;
+    max-height: min(12rem, 28vh);
+  }
+
+  .ta-img-frame__img--opt {
+    max-width: 100%;
+    max-height: min(8rem, 18vh);
+  }
+
+  button.ta-img-frame {
+    appearance: none;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: zoom-in;
+    text-align: center;
+  }
+
+  div.ta-img-frame[role='button'] {
+    cursor: zoom-in;
+    text-align: center;
+  }
 </style>
 
 <div
@@ -468,10 +549,32 @@
           </div>
 
           <div
-            class="ta-math-content mb-6 overflow-x-auto text-base font-medium leading-relaxed text-[var(--ta-qtext)]"
+            class="ta-math-content mb-4 overflow-x-auto text-base font-medium leading-relaxed text-[var(--ta-qtext)]"
           >
             <MathText content={prompt?.content ?? ''} />
           </div>
+
+          {#if prompt?.images?.length}
+            <div class="mb-6 flex flex-col gap-3">
+              {#each prompt.images as src, imgIdx (`qstem-${currentIndex}-${imgIdx}`)}
+                <button
+                  type="button"
+                  class="ta-img-frame ta-img-frame--stem"
+                  onclick={() => openImageLightbox(src)}
+                  title="View larger"
+                  aria-label="View question image larger"
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    class="ta-img-frame__img ta-img-frame__img--stem pointer-events-none"
+                  />
+                </button>
+              {/each}
+            </div>
+          {/if}
 
           <div class="flex flex-col gap-3">
             {#each prompt?.options ?? [] as opt}
@@ -481,7 +584,7 @@
                 onclick={() => void selectOption(opt.identifier)}
                 disabled={submitted || navBusy || submitInFlight}
                 class="
-                  group flex w-full items-center gap-4 text-left
+                  group flex w-full items-start gap-4 text-left
                   px-4 py-3.5 rounded-xl
                   border transition-all duration-150
                   disabled:cursor-not-allowed
@@ -492,7 +595,7 @@
               >
                 <span
                   class="
-                  flex h-7 w-7 flex-shrink-0 items-center justify-center
+                  mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center
                   rounded-lg text-xs font-bold transition-colors duration-150
                   {selected
                     ? 'bg-[var(--ta-opt-label-selected-bg)] text-[var(--ta-opt-label-selected-text)]'
@@ -501,15 +604,49 @@
                 >
                   {opt.identifier}
                 </span>
-                <div
-                  class="ta-math-content min-w-0 flex-1 overflow-x-auto text-sm font-medium {selected
-                    ? 'text-[var(--ta-opt-selected-text)]'
-                    : 'text-[var(--ta-opt-text)]'}"
-                >
-                  <MathText content={opt.content} />
+                <div class="min-w-0 flex-1">
+                  <div
+                    class="ta-math-content overflow-x-auto text-sm font-medium {selected
+                      ? 'text-[var(--ta-opt-selected-text)]'
+                      : 'text-[var(--ta-opt-text)]'}"
+                  >
+                    <MathText content={opt.content} />
+                  </div>
+                  {#if opt.images?.length}
+                    <div class="mt-2 flex flex-wrap content-start gap-2">
+                      {#each opt.images as src, oi (`opt-${currentIndex}-${opt.identifier}-${oi}`)}
+                        <div
+                          role="button"
+                          tabindex="0"
+                          class="ta-img-frame ta-img-frame--option"
+                          onclick={(e) => {
+                            e.stopPropagation();
+                            openImageLightbox(src);
+                          }}
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openImageLightbox(src);
+                            }
+                          }}
+                          title="View larger"
+                          aria-label="View option image larger"
+                        >
+                          <img
+                            src={src}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            class="ta-img-frame__img ta-img-frame__img--opt pointer-events-none"
+                          />
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
                 {#if selected}
-                  <span class="flex-shrink-0 text-[var(--ta-opt-label-selected-bg)]">
+                  <span class="mt-1 flex-shrink-0 self-start text-[var(--ta-opt-label-selected-bg)]">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path
                         d="M5 13l4 4L19 7"
@@ -891,5 +1028,41 @@
         Back to my tests
       </button>
     </div>
+  </div>
+{/if}
+
+{#if imageLightboxSrc}
+  <div
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Enlarged image"
+    tabindex="-1"
+    onclick={(e) => e.target === e.currentTarget && closeImageLightbox()}
+  >
+    <button
+      type="button"
+      class="
+        absolute right-4 top-4 z-[101] flex h-10 w-10 items-center justify-center
+        rounded-full border border-white/20 bg-white/10 text-white
+        transition hover:bg-white/20
+      "
+      onclick={closeImageLightbox}
+      aria-label="Close"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M18 6L6 18M6 6l12 12"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    <img
+      src={imageLightboxSrc}
+      alt=""
+      class="max-h-[min(90vh,900px)] max-w-full object-contain"
+    />
   </div>
 {/if}
