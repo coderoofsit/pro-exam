@@ -13,13 +13,21 @@
 	let { data } = $props<{ data: PageData }>();
 
 	let selectedQuestionIndex = $state<number | null>(null);
-	let reviewStartIndex = $state(0);
-	let previewAllQuestions = $state<Question[]>([]);
-	let previewBaseNumber = $state(0);
-	let lastReviewDatasetKey = $state<string | null>(null);
 	let sidebarCollapsed = $state(false);
+	let filterDrawerOpen = $state(false);
 
-	const REVIEW_PAGE_SIZE = 5;
+	let selectedOption = $state<string | null>(null);
+	let isAnswerChecked = $state(false);
+	let activeQuestionId = $state<string | null>(null);
+
+	$effect(() => {
+		if (data.detailedQuestion?._id !== activeQuestionId) {
+			activeQuestionId = data.detailedQuestion?._id ?? null;
+			selectedOption = null;
+			isAnswerChecked = false;
+		}
+	});
+
 	const PAGINATION_WINDOW = 2;
 
 	const filteredChapters = $derived(data.allChapters);
@@ -31,45 +39,7 @@
 		}
 	});
 
-	$effect(() => {
-		// If page/chapter changes while review is open, re-seed review data.
-		const key = `${data.resolvedChapterId ?? 'none'}::p=${data.safePage}`;
 
-		if (selectedQuestionIndex === null) {
-			lastReviewDatasetKey = key;
-			return;
-		}
-
-		if (lastReviewDatasetKey === key) return;
-		lastReviewDatasetKey = key;
-
-		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
-		previewAllQuestions = pool;
-		const limit = reviewPageLimit();
-		const pageStart = (data.safePage - 1) * limit;
-
-		previewBaseNumber = 1;
-		reviewStartIndex = data.requestedReviewStart ?? pageStart;
-		selectedQuestionIndex = 0;
-	});
-
-	$effect(() => {
-		// Open preview mode from SSR query (preview=1&reviewStart=...)
-		if (!data.previewMode) return;
-		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
-		const carry = readCarry();
-		previewAllQuestions =
-			carry?.direction === 'prepend'
-				? [...carry.questions, ...pool]
-				: carry?.direction === 'append'
-					? [...pool, ...carry.questions]
-					: pool;
-		previewBaseNumber = 1;
-		const limit = reviewPageLimit();
-		const pageStart = (data.safePage - 1) * limit;
-		reviewStartIndex = data.requestedReviewStart ?? pageStart;
-		selectedQuestionIndex = 0;
-	});
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
 
@@ -115,12 +85,13 @@
 
 	const chapterHref = (
 		chapterParamValue: string,
-		opts?: { page?: number; preview?: boolean; reviewStart?: number; carry?: boolean }
+		opts?: { page?: number; preview?: boolean; reviewStart?: number; carry?: boolean; questionId?: string }
 	) => {
 		const params = new URLSearchParams(activeFiltersQuery(opts));
 		if (opts?.preview) params.set('preview', '1');
 		if (typeof opts?.reviewStart === 'number') params.set('reviewStart', String(opts.reviewStart));
 		if (opts?.carry) params.set('carry', '1');
+		if (opts?.questionId) params.set('questionId', opts.questionId);
 		return `${chapterBaseUrl(chapterParamValue)}?${params.toString()}`;
 	};
 
@@ -153,165 +124,47 @@
 		),
 	);
 
-	function reviewPageLimit(): number {
-		return displayPaginationMeta?.limit ?? 25;
-	}
-
-	function reviewTotal(): number {
-		return displayPaginationMeta?.total ?? 0;
-	}
-
-	function pageForGlobalIndex(globalIndex: number, limit: number): number {
-		return Math.floor(globalIndex / limit) + 1;
-	}
-
-	function offsetForGlobalIndex(globalIndex: number, limit: number): number {
-		return globalIndex % limit;
-	}
-
-	/** Global index of previewAllQuestions[0] (handles carry prepend/append vs plain API page). */
-	const reviewPoolBaseGlobal = $derived.by((): number => {
-		const limit = reviewPageLimit();
-		const pageStart = (data.safePage - 1) * limit;
-		const pool = previewAllQuestions;
-		const api = displayQuestions as Question[];
-		if (!pool.length || !api.length) return pageStart;
-		if (pool.length === api.length) return pageStart;
-		const mergedStartsWithApi =
-			pool.length >= api.length &&
-			pool.slice(0, api.length).every((q, i) => q._id === api[i]?._id);
-		if (mergedStartsWithApi) return pageStart;
-		return pageStart - (pool.length - api.length);
-	});
-
-	const reviewQuestions = $derived.by((): Question[] => {
-		const base = reviewPoolBaseGlobal;
-		const localStart = Math.max(0, reviewStartIndex - base);
-		return previewAllQuestions.slice(localStart, localStart + REVIEW_PAGE_SIZE);
-	});
-
-	const canReviewPrev = $derived(reviewStartIndex > 0);
-	const canReviewNext = $derived.by(() => {
-		const total = reviewTotal();
-		if (!total) return false;
-		return reviewStartIndex + REVIEW_PAGE_SIZE < total;
-	});
-	const reviewPageNumber = $derived(Math.floor(reviewStartIndex / REVIEW_PAGE_SIZE) + 1);
-
-	type CarryPayload = { direction: 'prepend' | 'append'; questions: Question[] };
-	const carryStorageKey = () => `review-carry::${data.resolvedChapterId ?? 'none'}`;
-
-	function writeCarry(payload: CarryPayload) {
-		if (!browser) return;
-		try {
-			sessionStorage.setItem(carryStorageKey(), JSON.stringify(payload));
-		} catch {}
-	}
-
-	function readCarry(): CarryPayload | null {
-		if (!browser) return null;
-		try {
-			const raw = sessionStorage.getItem(carryStorageKey());
-			if (!raw) return null;
-			sessionStorage.removeItem(carryStorageKey());
-			const parsed = JSON.parse(raw) as CarryPayload;
-			if (!parsed || !Array.isArray(parsed.questions)) return null;
-			return parsed;
-		} catch {
-			return null;
-		}
-	}
-
 	async function openQuestionPreview(index: number) {
-		selectedQuestionIndex = index;
+		const q = displayQuestions[index];
+		if (!q) return;
+		await goto(chapterHref(data.chapterParam, { page: data.safePage, questionId: q._id }));
+	}
 
-		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
-		previewAllQuestions = pool;
-
-		const limit = reviewPageLimit();
-		previewBaseNumber = 1;
-		const pageStart = (data.safePage - 1) * limit;
-		const globalIndex = pageStart + index;
-		// First card in practice = the question you clicked (not a earlier 5-pack).
-		reviewStartIndex = globalIndex;
-
-		const lastPage = displayPaginationMeta?.lastPage ?? data.paginationMeta?.lastPage ?? 1;
-		const targetApiPage = pageForGlobalIndex(globalIndex, limit);
-		if (browser && targetApiPage !== data.safePage && targetApiPage >= 1 && targetApiPage <= lastPage) {
-			await goto(
-				chapterHref(data.chapterParam, {
-					page: targetApiPage,
-					preview: true,
-					reviewStart: globalIndex,
-					carry: false
-				})
-			);
-			return;
-		}
-
-		// Fewer than 5 questions left on this API page (e.g. clicked Q25 on a 25-row page) — load next page with carry so practice still shows 5 cards (Q25–Q29).
-		const remainingOnPage = pool.length - index;
-		if (browser && remainingOnPage < REVIEW_PAGE_SIZE && remainingOnPage > 0 && data.safePage < lastPage) {
-			writeCarry({ direction: 'prepend', questions: pool.slice(index) });
-			await goto(
-				chapterHref(data.chapterParam, {
-					page: data.safePage + 1,
-					preview: true,
-					reviewStart: globalIndex,
-					carry: true
-				})
-			);
+	async function goDetailedPrev() {
+		if (!data.detailedQuestion) return;
+		const currentIdx = displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id);
+		if (currentIdx > 0) {
+			const prevQ = displayQuestions[currentIdx - 1];
+			await goto(chapterHref(data.chapterParam, { page: data.safePage, questionId: prevQ._id }));
+		} else if (data.safePage > 1) {
+			await goto(chapterHref(data.chapterParam, { page: data.safePage - 1 }));
 		}
 	}
 
-	async function goReviewPrev() {
-		if (!canReviewPrev) return;
-		const next = Math.max(0, reviewStartIndex - REVIEW_PAGE_SIZE);
-		const limit = reviewPageLimit();
-		const targetPage = pageForGlobalIndex(next, limit);
-		if (targetPage !== data.safePage) {
-			// When moving backward across pages, append the first few questions from current page
-			// so previous page can render a full set of 5 if needed.
-			const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
-			writeCarry({ direction: 'append', questions: pool.slice(0, REVIEW_PAGE_SIZE) });
-			await goto(chapterHref(data.chapterParam, { page: targetPage, preview: true, reviewStart: next, carry: true }));
-			return;
+	async function goDetailedNext() {
+		if (!data.detailedQuestion) return;
+		const currentIdx = displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id);
+		if (currentIdx >= 0 && currentIdx < displayQuestions.length - 1) {
+			const nextQ = displayQuestions[currentIdx + 1];
+			await goto(chapterHref(data.chapterParam, { page: data.safePage, questionId: nextQ._id }));
+		} else if (displayPaginationMeta && data.safePage < displayPaginationMeta.lastPage) {
+			await goto(chapterHref(data.chapterParam, { page: data.safePage + 1 }));
 		}
-		reviewStartIndex = next;
 	}
 
-	async function goReviewNext() {
-		if (!canReviewNext) return;
-		const next = reviewStartIndex + REVIEW_PAGE_SIZE;
-		const limit = reviewPageLimit();
-		const pageStart = (data.safePage - 1) * limit;
-		const pool = (data.reviewPoolQuestions?.length ? data.reviewPoolQuestions : displayQuestions) as Question[];
-		const lastPage = displayPaginationMeta?.lastPage ?? data.paginationMeta?.lastPage ?? 1;
-		const targetPage = pageForGlobalIndex(next, limit);
+	const canGoDetailedPrev = $derived(
+		data.detailedQuestion ? (displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id) > 0 || data.safePage > 1) : false
+	);
 
-		if (targetPage !== data.safePage) {
-			const localStart = Math.max(0, next - pageStart);
-			writeCarry({ direction: 'prepend', questions: pool.slice(localStart) });
-			await goto(chapterHref(data.chapterParam, { page: targetPage, preview: true, reviewStart: next, carry: true }));
-			return;
-		}
-
-		// Same API page: next 5 would extend past this page's pool — fetch following API page with carry (fixes Q25-only then skip to Q30).
-		const localNext = next - pageStart;
-		if (localNext + REVIEW_PAGE_SIZE > pool.length && data.safePage < lastPage) {
-			writeCarry({ direction: 'prepend', questions: pool.slice(localNext) });
-			await goto(chapterHref(data.chapterParam, { page: data.safePage + 1, preview: true, reviewStart: next, carry: true }));
-			return;
-		}
-
-		reviewStartIndex = next;
-	}
+	const canGoDetailedNext = $derived(
+		data.detailedQuestion ? (
+			displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id) < displayQuestions.length - 1 || 
+			(displayPaginationMeta && data.safePage < displayPaginationMeta.lastPage)
+		) : false
+	);
 
 	function closeQuestionPreview() {
-		selectedQuestionIndex = null;
-		reviewStartIndex = 0;
-		previewAllQuestions = [];
-		previewBaseNumber = 0;
+		goto(chapterHref(data.chapterParam, { page: data.safePage }));
 	}
 
 	function imageSrc(image: ImageLike): string {
@@ -325,7 +178,6 @@
 	}
 
 	function imageKey(image: ImageLike): string {
-		// Prefer computed URL if present; otherwise fall back to stable Cloudinary fields.
 		if (typeof image === "string") return image;
 		const url = image?.url;
 		if (url) return url;
@@ -377,7 +229,7 @@
 
 <div class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]">
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
-		{#if selectedQuestionIndex === null && !sidebarCollapsed}
+		{#if !data.detailedQuestion && !sidebarCollapsed}
 			<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]">
 				<div class="flex-1 overflow-y-auto p-4">
 					<button
@@ -390,9 +242,18 @@
 						</svg>
 						Back to Subjects
 					</button>
+
 					<div class="mb-3 mt-2 flex items-center justify-between">
 						<h2 class="text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70">Chapters</h2>
+						<button
+							type="button"
+							class="rounded-md border border-[var(--sb-border-color)] px-2 py-1 text-xs text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-nav-hover-bg)]"
+							onclick={() => (filterDrawerOpen = true)}
+						>
+							Filter
+						</button>
 					</div>
+
 					<nav class="space-y-1.5">
 						{#each filteredChapters as ch (ch._id)}
 							<a
@@ -409,7 +270,7 @@
 			</aside>
 		{/if}
 
-		{#if selectedQuestionIndex === null && sidebarCollapsed}
+		{#if !data.detailedQuestion && sidebarCollapsed}
 			<button
 				type="button"
 				onclick={() => sidebarCollapsed = false}
@@ -424,14 +285,14 @@
 
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0">
-				{#if selectedQuestionIndex !== null}
+				{#if data.detailedQuestion !== null}
 					<div class="py-6 shrink-0">
 						<button
 							type="button"
 							onclick={closeQuestionPreview}
 							class="inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
 						>
-							← Back
+							← Back to Chapter
 						</button>
 					</div>
 				{/if}
@@ -442,16 +303,26 @@
 					</div>
 				{:else}
 					<div class="py-6 shrink-0">
-						<div>
-							<h1 class="text-2xl font-bold md:text-3xl">
-								{data.chapter?.name?.en ?? data.chapterParam}
-							</h1>
-							{#if displayPaginationMeta}
-								<p class="mt-2 text-sm text-[var(--page-text-muted)]">
-									{displayPaginationMeta.total} questions • Page {data.safePage}
-									of {displayPaginationMeta.lastPage}
-								</p>
-							{/if}
+						<div class="flex items-start justify-between gap-3">
+							<div>
+								<h1 class="text-2xl font-bold md:text-3xl">
+									{data.chapter?.name?.en ?? data.chapterParam}
+								</h1>
+								{#if displayPaginationMeta}
+									<p class="mt-2 text-sm text-[var(--page-text-muted)]">
+										{displayPaginationMeta.total} questions • Page {data.safePage}
+										of {displayPaginationMeta.lastPage}
+									</p>
+								{/if}
+							</div>
+
+							<button
+								type="button"
+								class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+								onclick={() => (filterDrawerOpen = true)}
+							>
+								Filters
+							</button>
 						</div>
 					</div>
 
@@ -461,7 +332,7 @@
 								No questions found.
 							</div>
 						</div>
-					{:else if selectedQuestionIndex === null}
+					{:else if !data.detailedQuestion}
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
 							<div class="shrink-0 border-b border-[var(--page-card-border)] pb-4">
 								<div class="flex flex-wrap items-center justify-center gap-1.5">
@@ -486,6 +357,7 @@
 								</div>
 							</div>
 						{/if}
+
 						<div class="flex-1 overflow-y-auto pb-6">
 							{#if isLoading}
 								<div class="flex flex-col gap-3">
@@ -563,91 +435,140 @@
 							</div>
 						{/if}
 					{:else}
-						<div class="flex-1 overflow-y-auto pb-6">
-							<div class="p-2 md:p-4">
-								<div class="mb-6 flex items-center justify-between gap-3 sticky top-0 z-10 bg-[var(--page-bg)] py-2">
-									<div class="text-sm font-bold text-[var(--page-text)]">
-										Practice (5 per page)
+						<div class="flex-1 overflow-y-auto pb-6 mt-4">
+							<div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-6 shadow-sm flex flex-col min-h-full">
+								<!-- Question Header -->
+								<div class="mb-5 flex flex-wrap items-center gap-3">
+									<div class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]">
+										{data.detailedQuestion.examSlug?.replace('-', ' ').toUpperCase()} {data.detailedQuestion.year ?? ''}
 									</div>
-									<div class="flex items-center gap-2">
-										<button
-											type="button"
-											class="rounded-full border border-[var(--sh-exam-card-border)] px-4 py-1.5 text-xs text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 disabled:opacity-50"
-											disabled={!canReviewPrev}
-											onclick={goReviewPrev}
-										>
-											Prev
-										</button>
-										<div class="text-xs font-medium text-[var(--page-text-muted)] px-1">
-											Page {reviewPageNumber}
-										</div>
-										<button
-											type="button"
-											class="rounded-full border border-[var(--sh-exam-card-border)] px-4 py-1.5 text-xs text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 disabled:opacity-50"
-											disabled={!canReviewNext}
-											onclick={goReviewNext}
-										>
-											Next
-										</button>
+									<div class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80">
+										{data.detailedQuestion.kind}
+									</div>
+									<div class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80">
+										{data.detailedQuestion.marks} Marks
 									</div>
 								</div>
 
-								<div class="flex flex-col gap-4">
-									{#each reviewQuestions as q, i (q._id)}
-										<div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-sm">
-											<div class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--page-text-muted)] opacity-70">
-												Q{previewBaseNumber + reviewStartIndex + i}
-											</div>
-											<div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
-												<MathText content={questionPromptEnContent(q)} />
-												{#if promptImagesOnly(q).length}
-													<div class="mt-3 flex flex-wrap gap-2.5">
-														{#each promptImagesOnly(q) as img, imgIdx (`preview-${q._id}-${imgIdx}`)}
-															{@const src = imageSrc(img as ImageLike)}
-															{#if src}
-																<img
-																	src={src}
-																	alt={imageAlt(img as ImageLike)}
-																	class="max-h-56 max-w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
-																	loading="lazy"
-																/>
-															{/if}
-														{/each}
-													</div>
+								<!-- Question Content -->
+								<div class="mb-8 text-[1.1rem] leading-relaxed text-[var(--page-text)]">
+									<MathText content={questionPromptEnContent(data.detailedQuestion)} />
+									{#if promptImagesOnly(data.detailedQuestion).length}
+										<div class="mt-4 flex flex-wrap gap-3">
+											{#each promptImagesOnly(data.detailedQuestion) as img, imgIdx (`main-${data.detailedQuestion._id}-${imgIdx}`)}
+												{@const src = imageSrc(img as ImageLike)}
+												{#if src}
+													<img
+														src={src}
+														alt={imageAlt(img as ImageLike)}
+														class="max-h-60 max-w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm"
+														loading="lazy"
+													/>
 												{/if}
-											</div>
+											{/each}
+										</div>
+									{/if}
+								</div>
 
-											{#if q.prompt?.en?.options?.length}
-												<div class="mt-5 grid gap-2.5">
-													{#each (q.prompt?.en?.options ?? []) as option (option.identifier)}
-														<div class="flex items-start gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)]/40 px-4 py-4 transition hover:bg-[var(--page-bg)]/60">
-															<span class="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">
-																{option.identifier}
-															</span>
-															<div class="min-w-0 flex-1 break-words">
-																<MathText content={option.content} />
-																{#if option.images?.length}
-																	<div class="mt-2 flex flex-wrap gap-2">
-																		{#each option.images as img, imgIdx (`opt-${q._id}-${option.identifier}-${imgIdx}`)}
-																			{@const src = imageSrc(img as ImageLike)}
-																			{#if src}
-																				<img
-																					src={src}
-																					alt={imageAlt(img as ImageLike)}
-																					class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain"
-																					loading="lazy"
-																				/>
-																			{/if}
-																		{/each}
-																	</div>
+								<!-- Options Grid -->
+								{#if data.detailedQuestion.prompt?.en?.options?.length}
+									<div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+										{#each data.detailedQuestion.prompt.en.options as option (option.identifier)}
+											{@const isSelected = selectedOption === option.identifier}
+											{@const isCorrectData = (data.detailedQuestion as any).correct?.identifiers?.includes(option.identifier)}
+											{@const showAsCorrect = isAnswerChecked && isCorrectData}
+											{@const showAsWrong = isAnswerChecked && isSelected && !isCorrectData}
+											
+											<button
+												type="button"
+												class="group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200 {showAsCorrect ? 'border-semantic-success bg-semantic-success/5 shadow-[0_0_15px_rgba(22,163,74,0.1)]' : showAsWrong ? 'border-semantic-error bg-semantic-error/5 shadow-[0_0_15px_rgba(220,38,38,0.1)]' : isSelected ? 'border-[var(--page-link)] bg-[var(--page-link)]/5 ring-1 ring-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--page-bg)]/40 hover:border-[var(--page-link)]/50 hover:bg-[var(--page-bg)]'}"
+												disabled={isAnswerChecked}
+												onclick={() => !isAnswerChecked && (selectedOption = option.identifier)}
+											>
+												<span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold {showAsCorrect ? 'border-semantic-success bg-semantic-success text-white' : showAsWrong ? 'border-semantic-error bg-semantic-error text-white' : isSelected ? 'border-[var(--page-link)] bg-[var(--page-link)] text-white' : 'border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-[var(--page-link)] group-hover:bg-[var(--page-link)]/20'}">
+													{showAsCorrect ? '✓' : showAsWrong ? '✕' : option.identifier}
+												</span>
+												<div class="min-w-0 flex-1 break-words">
+													<MathText content={option.content} />
+													{#if option.images?.length}
+														<div class="mt-3 flex flex-wrap gap-2">
+															{#each option.images as img, imgIdx (`opt-${data.detailedQuestion._id}-${option.identifier}-${imgIdx}`)}
+																{@const src = imageSrc(img as ImageLike)}
+																{#if src}
+																	<img
+																		src={src}
+																		alt={imageAlt(img as ImageLike)}
+																		class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm"
+																		loading="lazy"
+																	/>
 																{/if}
-															</div>
+															{/each}
 														</div>
+													{/if}
+												</div>
+											</button>
+										{/each}
+									</div>
+								{/if}
+
+								<!-- Explanation -->
+								{#if isAnswerChecked && data.detailedQuestion.prompt?.en?.explanation}
+									<div class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2">
+										<div class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]">
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+											</svg>
+											ExamFlow Solution
+										</div>
+										<div class="text-[0.95rem] leading-relaxed text-[var(--page-text)]">
+											<MathText content={data.detailedQuestion.prompt.en.explanation} />
+											{#if data.detailedQuestion.prompt.en.explanationImages?.length}
+												<div class="mt-4 flex flex-wrap gap-3">
+													{#each data.detailedQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${data.detailedQuestion._id}-${imgIdx}`)}
+														{@const src = imageSrc(img as ImageLike)}
+														{#if src}
+															<img
+																src={src}
+																alt={imageAlt(img as ImageLike)}
+																class="max-h-48 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																loading="lazy"
+															/>
+														{/if}
 													{/each}
 												</div>
 											{/if}
 										</div>
-									{/each}
+									</div>
+								{/if}
+
+								<!-- Footer Buttons -->
+								<div class="mt-auto flex flex-wrap items-center justify-between gap-4 border-t border-[var(--sh-exam-card-border)] pt-5">
+									<button
+										type="button"
+										class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
+										disabled={!canGoDetailedPrev}
+										onclick={goDetailedPrev}
+									>
+										Previous
+									</button>
+
+									<button
+										type="button"
+										class="min-w-[180px] rounded-lg bg-[var(--page-link)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--page-link)]/20 transition hover:bg-[var(--page-link-hover)] hover:shadow-lg disabled:opacity-50"
+										onclick={() => { if (!isAnswerChecked && selectedOption) isAnswerChecked = true; }}
+										disabled={isAnswerChecked || !selectedOption}
+									>
+										Check Answer
+									</button>
+
+									<button
+										type="button"
+										class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
+										disabled={!canGoDetailedNext}
+										onclick={goDetailedNext}
+									>
+										Next
+									</button>
 								</div>
 							</div>
 						</div>
@@ -657,3 +578,67 @@
 		</main>
 	</div>
 </div>
+
+{#if filterDrawerOpen}
+	<div
+		class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+		role="button"
+		tabindex="0"
+		onclick={() => (filterDrawerOpen = false)}
+		onkeydown={(e) => (e.key === 'Escape' ? (filterDrawerOpen = false) : null)}
+	></div>
+
+	<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl">
+		<div class="mb-4 flex items-center justify-between">
+			<h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
+			<button
+				type="button"
+				class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
+				onclick={() => (filterDrawerOpen = false)}
+			>
+				Close
+			</button>
+		</div>
+
+		<div class="space-y-5">
+			<div>
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
+				<div class="flex flex-wrap gap-2.5">
+					<button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]">
+						easy
+					</button>
+					<button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)]">
+						medium
+					</button>
+					<button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)]">
+						hard
+					</button>
+				</div>
+			</div>
+
+			<div>
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
+				<div class="grid gap-2.5">
+					{#each ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as option}
+						<button
+							type="button"
+							class="rounded-xl border px-3 py-2 text-left text-xs font-medium border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)]"
+						>
+							{option}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]">
+				<button
+					type="button"
+					class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)] transition"
+					onclick={() => (filterDrawerOpen = false)}
+				>
+					Close
+				</button>
+			</div>
+		</div>
+	</aside>
+{/if}

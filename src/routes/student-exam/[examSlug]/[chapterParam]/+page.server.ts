@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { fetchGroupedChaptersByExamSlug } from '$lib/api/chapters';
-import { fetchQuestionsByChapter } from '$lib/api/questions';
+import { fetchQuestionsByChapter, fetchQuestionById } from '$lib/api/questions';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
@@ -15,6 +15,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const previewMode = String(url.searchParams.get('preview') ?? '') === '1';
 	const reviewStartParam = Number(url.searchParams.get('reviewStart') || '');
 	const requestedReviewStart = Number.isNaN(reviewStartParam) || reviewStartParam < 0 ? null : reviewStartParam;
+	const questionId = url.searchParams.get('questionId');
 
 	try {
 		const chaptersRes = await fetchGroupedChaptersByExamSlug(examSlug);
@@ -66,6 +67,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		// This keeps API calls to a single page per request.
 		const reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
 
+		let detailedQuestion: Question | null = null;
+		if (questionId) {
+			try {
+				detailedQuestion = await fetchQuestionById(questionId);
+			} catch (err) {
+				console.error('Failed to fetch detailed question', err);
+			}
+		}
+
 		return {
 			examSlug,
 			chapterParam,
@@ -81,7 +91,9 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			paginationMeta: questionsRes
 				? { total: questionsRes.total, lastPage: questionsRes.lastPage, limit: questionsRes.limit }
 				: null,
-			message: null as string | null
+			message: null as string | null,
+			questionId,
+			detailedQuestion
 		};
 	} catch (e) {
 		return {
@@ -97,7 +109,9 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			questions: [],
 			reviewPoolQuestions: [],
 			paginationMeta: null,
-			message: e instanceof Error ? e.message : 'Failed to load'
+			message: e instanceof Error ? e.message : 'Failed to load',
+			questionId: null,
+			detailedQuestion: null
 		};
 	}
 };
@@ -116,5 +130,7 @@ export type PageData = {
 	reviewPoolQuestions: Question[];
 	paginationMeta: { total: number; lastPage: number; limit: number } | null;
 	message: string | null;
+	questionId: string | null;
+	detailedQuestion: Question | null;
 };
 
