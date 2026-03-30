@@ -125,3 +125,24 @@ export async function fetchQuestionById(
 	if (!response.success) throw new Error(response.message || 'Unable to fetch question');
 	return response.data.data;
 }
+
+export async function updateQuestion(
+	id: string,
+	payload: Partial<Question>,
+	token?: string | null
+): Promise<Question> {
+	const t = resolveApiToken(token);
+	const response = await apiRequest<{
+		success: boolean;
+		message: string;
+		data: Question;
+	}>({
+		endpoint: `/api/v1/questions/${id}`,
+		method: 'PATCH',
+		data: payload,
+		token: t,
+		headers: { 'Content-Type': 'application/json' }
+	});
+	if (!response.success) throw new Error(response.message || 'Unable to update question');
+	return response.data.data;
+}

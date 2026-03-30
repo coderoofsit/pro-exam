@@ -1,7 +1,8 @@
 <script lang="ts">
 	import MathText from "$lib/components/MathText.svelte";
 	import { questionPromptEnContent } from "$lib/api/questions";
-	import type { PageData } from "./+page.server";
+	import type { PageData, ActionData } from "./$types";
+	import { enhance } from "$app/forms";
 	import { goto } from "$app/navigation";
 	import { browser } from "$app/environment";
 	import { questionStore } from "$lib/stores/question";
@@ -10,7 +11,7 @@
 	type Question = PageData["questions"][number];
 	type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: number };
 
-	let { data } = $props<{ data: PageData }>();
+	let { data, form } = $props<{ data: PageData, form: ActionData }>();
 
 	let selectedQuestionIndex = $state<number | null>(null);
 	let sidebarCollapsed = $state(false);
@@ -19,12 +20,17 @@
 	let selectedOption = $state<string | null>(null);
 	let isAnswerChecked = $state(false);
 	let activeQuestionId = $state<string | null>(null);
+	let isEditing = $state(false);
 
 	$effect(() => {
 		if (data.detailedQuestion?._id !== activeQuestionId) {
 			activeQuestionId = data.detailedQuestion?._id ?? null;
 			selectedOption = null;
 			isAnswerChecked = false;
+			isEditing = false;
+		}
+		if (form?.success) {
+			isEditing = false;
 		}
 	});
 
@@ -437,6 +443,58 @@
 					{:else}
 						<div class="flex-1 overflow-y-auto pb-6 mt-4">
 							<div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-6 shadow-sm flex flex-col min-h-full">
+								{#if isEditing}
+									<form method="POST" action="?/updateQuestion" use:enhance={() => {
+										return ({ update }) => {
+											update({ reset: false });
+										};
+									}} class="flex flex-col flex-1 h-full min-h-0 relative">
+										{#if form?.message}
+											<div class="mb-4 rounded-md bg-semantic-error/10 p-3 text-sm text-semantic-error border border-semantic-error/20">
+												{form.message}
+											</div>
+										{/if}
+
+										<input type="hidden" name="questionId" value={data.detailedQuestion._id} />
+
+										<!-- Form body -->
+										<div class="mb-5">
+											<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="promptContent">Question Content</label>
+											<textarea name="promptContent" id="promptContent" class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition" rows="5">{data.detailedQuestion.prompt?.en?.content ?? ''}</textarea>
+										</div>
+
+										<!-- Options Grid for Editing -->
+										{#if data.detailedQuestion.prompt?.en?.options?.length}
+											<div class="mb-5">
+												<label class="block text-sm font-semibold text-[var(--page-text)] mb-3">Options</label>
+												<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+												{#each data.detailedQuestion.prompt.en.options as option, i (option.identifier)}
+													<div class="flex flex-col gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 shadow-sm">
+														<div class="flex items-center gap-2">
+															<span class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">{option.identifier}</span>
+															<span class="text-xs font-semibold text-[var(--page-text-muted)]">Content</span>
+														</div>
+														<input type="hidden" name="option_{i}_id" value={option.identifier} />
+														<textarea name="option_{i}_content" class="w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] p-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition" rows="2">{option.content ?? ''}</textarea>
+													</div>
+												{/each}
+												</div>
+											</div>
+										{/if}
+
+										<!-- Explanation -->
+										<div class="mb-6">
+											<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="explanationContent">Solution / Explanation</label>
+											<textarea name="explanationContent" id="explanationContent" class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition" rows="4">{data.detailedQuestion.prompt?.en?.explanation ?? ''}</textarea>
+										</div>
+
+										<!-- Footer Buttons for Edit -->
+										<div class="mt-auto flex flex-wrap items-center justify-end gap-3 border-t border-[var(--sh-exam-card-border)] pt-5">
+											<button type="button" class="rounded-lg border border-[var(--page-card-border)] px-5 py-2.5 text-sm font-semibold text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 transition" onclick={() => isEditing = false}>Cancel</button>
+											<button type="submit" class="rounded-lg bg-[var(--page-link)] text-white px-6 py-2.5 text-sm font-bold shadow-md shadow-[var(--page-link)]/20 hover:bg-[var(--page-link-hover)] hover:shadow-lg transition">Save Changes</button>
+										</div>
+									</form>
+								{:else}
 								<!-- Question Header -->
 								<div class="mb-5 flex flex-wrap items-center gap-3">
 									<div class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]">
@@ -448,6 +506,13 @@
 									<div class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80">
 										{data.detailedQuestion.marks} Marks
 									</div>
+									<button type="button" onclick={() => isEditing = true} class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M12 20h9"></path>
+											<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+										</svg>
+										Edit
+									</button>
 								</div>
 
 								<!-- Question Content -->
@@ -570,6 +635,7 @@
 										Next
 									</button>
 								</div>
+								{/if}
 							</div>
 						</div>
 					{/if}

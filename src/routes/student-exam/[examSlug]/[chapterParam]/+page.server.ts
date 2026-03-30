@@ -1,4 +1,5 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad, Actions } from './$types';
+import { fail } from '@sveltejs/kit';
 import { fetchGroupedChaptersByExamSlug } from '$lib/api/chapters';
 import { fetchQuestionsByChapter, fetchQuestionById } from '$lib/api/questions';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
@@ -132,5 +133,50 @@ export type PageData = {
 	message: string | null;
 	questionId: string | null;
 	detailedQuestion: Question | null;
+};
+
+export const actions: Actions = {
+	updateQuestion: async ({ request }) => {
+		const data = await request.formData();
+		const questionId = data.get('questionId')?.toString();
+		if (!questionId) return fail(400, { message: 'Missing question ID' });
+
+		try {
+			const existing = await fetchQuestionById(questionId);
+			if (!existing) return fail(404, { message: 'Question not found' });
+
+			const promptContent = data.get('promptContent')?.toString() ?? existing.prompt?.en?.content ?? '';
+			const explanationContent = data.get('explanationContent')?.toString() ?? existing.prompt?.en?.explanation ?? '';
+			
+			const newOptions = [...(existing.prompt?.en?.options || [])];
+			let i = 0;
+			while (data.has(`option_${i}_id`)) {
+				const id = data.get(`option_${i}_id`)?.toString();
+				const content = data.get(`option_${i}_content`)?.toString() ?? '';
+				const optIdx = newOptions.findIndex(o => o.identifier === id);
+				if (optIdx !== -1) {
+					newOptions[optIdx].content = content;
+				}
+				i++;
+			}
+
+			const updatedPrompt = {
+				...(existing.prompt || {}),
+				en: {
+					...(existing.prompt?.en || {}),
+					content: promptContent,
+					explanation: explanationContent,
+					options: newOptions
+				}
+			};
+
+			const { updateQuestion } = await import('$lib/api/questions');
+			await updateQuestion(questionId, { prompt: updatedPrompt });
+			return { success: true };
+		} catch (err: any) {
+			console.error('Update failed:', err);
+			return fail(500, { message: err.message || 'Update failed' });
+		}
+	}
 };
 
