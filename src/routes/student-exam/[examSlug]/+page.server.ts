@@ -1,7 +1,6 @@
 import type { PageServerLoad } from './$types';
 import {
 	fetchChaptersHierarchy,
-	fetchGroupedChaptersByExamSlug,
 	type GroupedSubjectRow
 } from '$lib/api/chapters';
 import { fetchExamBySlug } from '$lib/api/exams';
@@ -24,76 +23,41 @@ export type ChapterGroupMeta = {
 	slug?: string;
 };
 
-export const load: PageServerLoad = async ({ params, fetch }) => {
+export const load: PageServerLoad = async ({ params, fetch, parent }) => {
 	const examSlug = params.examSlug;
 
 	try {
-		const [apiRes, examFromApi] = await Promise.all([
-			fetchGroupedChaptersByExamSlug(examSlug, fetch),
-			fetchExamBySlug(examSlug, null, fetch).catch(() => null)
-		]);
+		const layoutData = await parent();
+		const groupedList = ((layoutData as any)._rawGrouped ?? []) as GroupedSubjectRow[];
+		const chaptersBySubjectSlug = ((layoutData as any)._chaptersBySubjectSlug ?? {}) as Record<string, ChapterCardRow[]>;
 
-		const groupedPayload = apiRes.success ? (apiRes.data as { data?: GroupedSubjectRow[] } | null) : null;
-		const groupedList: GroupedSubjectRow[] = Array.isArray(groupedPayload?.data)
-			? groupedPayload.data
-			: [];
-
-		if (groupedList.length) {
+		if (groupedList.length > 0) {
 			const groupedSubjects = groupedList.filter((row) => Boolean(row?.subject?._id && row?.subject?.slug));
 
-			if (groupedSubjects.length) {
-				const chaptersBySubjectSlug: Record<string, ChapterCardRow[]> = {};
+			const subjects = groupedSubjects
+				.map((row): SubjectNavRow => ({
+					_id: row.subject._id,
+					slug: row.subject.slug,
+					name: row.subject.name,
+					unitCount: chaptersBySubjectSlug[row.subject.slug]?.length ?? 0
+				}))
+				.filter((s) => Boolean(s._id && s.slug && s.unitCount > 0));
 
-				for (const row of groupedSubjects) {
-					const out: ChapterCardRow[] = [];
-					for (const unit of row.data ?? []) {
-						const cg = unit.chapterGroup;
-						for (const ch of unit.data ?? []) {
-							out.push({
-								chapter: ch as unknown as ChapterLite,
-								groupName: cg.name?.en ?? cg.slug ?? '',
-								groupOrder: (cg as { order?: number }).order ?? 0
-							});
-						}
-					}
-					chaptersBySubjectSlug[row.subject.slug] = out.sort((a, b) => {
-						if (a.groupOrder !== b.groupOrder) return a.groupOrder - b.groupOrder;
-						return (a.chapter.order ?? 0) - (b.chapter.order ?? 0);
-					});
-				}
-
-				const subjects = groupedSubjects
-					.map((row): SubjectNavRow => ({
-						_id: row.subject._id,
-						slug: row.subject.slug,
-						name: row.subject.name,
-						unitCount: chaptersBySubjectSlug[row.subject.slug]?.length ?? 0
-					}))
-					.filter((s) => Boolean(s._id && s.slug && s.unitCount > 0));
-
-				const exam = examFromApi
-					? {
-							...(examFromApi as object),
-							boardSlug: (examFromApi as { boardSlug?: string }).boardSlug ?? '',
-							slug: (examFromApi as { slug?: string }).slug ?? examSlug
-						}
-					: null;
-
-				return {
-					examSlug,
-					exam,
-					hierarchy: null,
-					subjects,
-					chaptersBySubjectSlug,
-					chapterGroupsBySubjectSlug: {} as Record<string, ChapterGroupMeta[]>,
-					fullChaptersFromGrouped: true,
-					initialSubjectSlug: '',
-					message: null as string | null
-				};
-			}
+			return {
+				examSlug,
+				exam: null,
+				hierarchy: null,
+				subjects,
+				chaptersBySubjectSlug,
+				chapterGroupsBySubjectSlug: {} as Record<string, ChapterGroupMeta[]>,
+				fullChaptersFromGrouped: true,
+				initialSubjectSlug: '',
+				message: null as string | null,
+				_rawGrouped: groupedList
+			};
 		}
 
-		// Fallback: hierarchy only — chapters load per subject on the client.
+		const examFromApi = await fetchExamBySlug(examSlug, null, fetch);
 		if (!examFromApi) throw new Error('Exam not found');
 
 		const examRecord = examFromApi as Record<string, unknown> & {

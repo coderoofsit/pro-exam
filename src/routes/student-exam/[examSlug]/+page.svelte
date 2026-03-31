@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { fetchChaptersByChapterGroupId } from '$lib/api/chapters';
+	import { chaptersStore } from '$lib/stores/chapters';
 
 	type ChapterGroupMeta = {
 		_id: string;
@@ -23,8 +23,6 @@
 		groupOrder: number;
 	};
 
-	const chapterLoadLocks = new Set<string>();
-
 	let { data } = $props<{
 		data: {
 			examSlug: string;
@@ -36,6 +34,7 @@
 			fullChaptersFromGrouped: boolean;
 			initialSubjectSlug: string;
 			message: string | null;
+			_rawGrouped?: any[];
 		};
 	}>();
 
@@ -52,12 +51,11 @@
 	let showChapters = $state(false);
 	let hasRestoredState = $state(false);
 
-	let chaptersBySubjectCache = $state<Record<string, ChapterCardRow[]>>({});
-	let loadedSubjectSlugs = $state<Set<string>>(new Set());
-	let loadingSubjectSlug = $state<string | null>(null);
-	let chaptersError = $state<string | null>(null);
-
-	const useGroupedSsr = $derived(data.fullChaptersFromGrouped === true);
+	$effect(() => {
+		if (browser && data._rawGrouped && data._rawGrouped.length > 0) {
+			chaptersStore.setGroupedChapters(data.examSlug, data._rawGrouped);
+		}
+	});
 
 	$effect(() => {
 		if (browser && !hasRestoredState) {
@@ -81,71 +79,14 @@
 		}
 	});
 
-	$effect(() => {
-		if (!browser || !hasRestoredState) return;
-		if (!showChapters || !selectedSubjectSlug) return;
-		if (useGroupedSsr) return;
-		void ensureChaptersForSubject(selectedSubjectSlug);
-	});
-
 	const selectedSubject = $derived.by(() => {
 		return data.subjects?.find((s: SubjectNavRow) => s.slug === selectedSubjectSlug) ?? null;
 	});
 
 	const displayChapters = $derived.by((): ChapterCardRow[] => {
 		if (!selectedSubjectSlug) return [];
-		if (useGroupedSsr) {
-			return data.chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
-		}
-		return chaptersBySubjectCache[selectedSubjectSlug] ?? [];
+		return data.chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
 	});
-
-	const isLoadingChapters = $derived(
-		!useGroupedSsr && loadingSubjectSlug !== null && loadingSubjectSlug === selectedSubjectSlug
-	);
-
-	async function ensureChaptersForSubject(slug: string) {
-		if (useGroupedSsr) return;
-		if (loadedSubjectSlugs.has(slug)) return;
-		if (chapterLoadLocks.has(slug)) return;
-
-		const groups = data.chapterGroupsBySubjectSlug?.[slug] ?? [];
-		if (groups.length === 0) {
-			chaptersBySubjectCache = { ...chaptersBySubjectCache, [slug]: [] };
-			loadedSubjectSlugs = new Set([...loadedSubjectSlugs, slug]);
-			return;
-		}
-
-		chapterLoadLocks.add(slug);
-		loadingSubjectSlug = slug;
-		chaptersError = null;
-		try {
-			const parts = await Promise.all(
-				groups.map(async (cg: ChapterGroupMeta) => {
-					const res = await fetchChaptersByChapterGroupId(cg._id);
-					const chapters = Array.isArray(res) ? res : (res as { data?: ChapterLite[] }).data ?? [];
-					const groupName = cg.name?.en ?? cg.slug ?? '';
-					const groupOrder = cg.order ?? 0;
-					return (chapters as ChapterLite[]).map((ch) => ({
-						chapter: ch,
-						groupName,
-						groupOrder
-					}));
-				})
-			);
-			const merged = parts.flat().sort((a, b) => {
-				if (a.groupOrder !== b.groupOrder) return a.groupOrder - b.groupOrder;
-				return (a.chapter.order ?? 0) - (b.chapter.order ?? 0);
-			});
-			chaptersBySubjectCache = { ...chaptersBySubjectCache, [slug]: merged };
-			loadedSubjectSlugs = new Set([...loadedSubjectSlugs, slug]);
-		} catch (e) {
-			chaptersError = e instanceof Error ? e.message : 'Failed to load chapters';
-		} finally {
-			chapterLoadLocks.delete(slug);
-			loadingSubjectSlug = null;
-		}
-	}
 
 	function selectSubject(slug: string) {
 		selectedSubjectSlug = slug;
@@ -209,8 +150,7 @@
 											{s.name?.en ?? s.slug}
 										</h2>
 										<p class="mt-2 text-sm text-[var(--page-text-muted)]">
-											{s.unitCount}
-											{useGroupedSsr ? ' chapters' : ' units'}
+											{s.unitCount} chapters
 										</p>
 									</button>
 								{/each}
@@ -263,22 +203,12 @@
 							<div class="mb-6 shrink-0">
 								<h2 class="text-2xl font-bold">{selectedSubject.name?.en ?? selectedSubject.slug}</h2>
 								<p class="mt-1 text-sm text-[var(--page-text-muted)]">
-									{#if isLoadingChapters}
-										Loading chapters…
-									{:else}
-										{displayChapters.length} chapters
-									{/if}
+									{displayChapters.length} chapters
 								</p>
 							</div>
 						{/if}
 
-						{#if chaptersError}
-							<p class="text-semantic-error">{chaptersError}</p>
-						{:else if isLoadingChapters}
-							<div class="flex flex-1 items-center justify-center text-[var(--page-text-muted)]">
-								<p>Loading chapters…</p>
-							</div>
-						{:else if displayChapters.length === 0}
+						{#if displayChapters.length === 0}
 							<p class="text-[var(--page-text-muted)]">No chapters found for this subject.</p>
 						{:else}
 							<div class="flex-1 overflow-y-auto pb-6">

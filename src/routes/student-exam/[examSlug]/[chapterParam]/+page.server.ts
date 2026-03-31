@@ -1,13 +1,12 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
-import { fetchGroupedChaptersByExamSlug } from '$lib/api/chapters';
 import { fetchQuestionsByChapter, fetchQuestionById } from '$lib/api/questions';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
 const QUESTIONS_PAGE_LIMIT = 25;
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = async ({ params, url, parent }) => {
 	const examSlug = params.examSlug;
 	const chapterParam = params.chapterParam;
 
@@ -19,16 +18,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const questionId = url.searchParams.get('questionId');
 
 	try {
-		const chaptersRes = await fetchGroupedChaptersByExamSlug(examSlug);
+		const parentData = await parent();
+		const groupedSubjectsRaw = ((parentData as any)._rawGrouped ?? []) as unknown[];
 
 		let chapter: any | null = null;
 		let resolvedChapterId: string | null = null;
 		let currentSubjectChapters: any[] = [];
 		let subjectSlug: string | null = null;
 		
-		if (chaptersRes?.success && Array.isArray((chaptersRes.data as any)?.data)) {
-			const groupedSubjectsRaw = ((chaptersRes.data as any)?.data ?? []) as unknown[];
-			
+		if (groupedSubjectsRaw.length > 0) {
 			const isId = chapterParam && isMongoObjectIdString(chapterParam);
 			const chapterSlug = isId ? null : decodeURIComponent(chapterParam ?? '');
 			
