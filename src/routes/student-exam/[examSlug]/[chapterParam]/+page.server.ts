@@ -58,7 +58,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			}
 		}
 
-		const questionsRes = resolvedChapterId
+		const questionsRes = !questionId && resolvedChapterId
 			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT)
 			: null;
 
