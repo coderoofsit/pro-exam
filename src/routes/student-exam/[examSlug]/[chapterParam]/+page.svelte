@@ -17,10 +17,24 @@
 	let sidebarCollapsed = $state(false);
 	let filterDrawerOpen = $state(false);
 
+	let selectedDifficulties = $state<string[]>([]);
+	let selectedKinds = $state<string[]>([]);
+
 	let selectedOption = $state<string | null>(null);
 	let isAnswerChecked = $state(false);
 	let activeQuestionId = $state<string | null>(null);
 	let isEditing = $state(false);
+
+	$effect(() => {
+		if (browser) {
+			const params = new URLSearchParams(window.location.search);
+			const diffParam = params.get('difficulty');
+			const kindParam = params.get('kind');
+			
+			selectedDifficulties = diffParam ? diffParam.split(',') : [];
+			selectedKinds = kindParam ? kindParam.split(',') : [];
+		}
+	});
 
 	$effect(() => {
 		if (data.detailedQuestion?._id !== activeQuestionId) {
@@ -86,8 +100,44 @@
 	const activeFiltersQuery = (opts?: { page?: number }) => {
 		const params = new URLSearchParams();
 		params.set('page', String(opts?.page ?? 1));
+		if (selectedDifficulties.length > 0) {
+			params.set('difficulty', selectedDifficulties.join(','));
+		}
+		if (selectedKinds.length > 0) {
+			params.set('kind', selectedKinds.join(','));
+		}
 		return params.toString();
 	};
+
+	function toggleDifficulty(diff: string) {
+		if (selectedDifficulties.includes(diff)) {
+			selectedDifficulties = selectedDifficulties.filter(d => d !== diff);
+		} else {
+			selectedDifficulties = [...selectedDifficulties, diff];
+		}
+	}
+
+	function toggleKind(kind: string) {
+		if (selectedKinds.includes(kind)) {
+			selectedKinds = selectedKinds.filter(k => k !== kind);
+		} else {
+			selectedKinds = [...selectedKinds, kind];
+		}
+	}
+
+	function applyFilters() {
+		const url = `${chapterBaseUrl()}?${activeFiltersQuery({ page: 1 })}`;
+		goto(url);
+		filterDrawerOpen = false;
+	}
+
+	function clearFilters() {
+		selectedDifficulties = [];
+		selectedKinds = [];
+		const url = `${chapterBaseUrl()}?page=1`;
+		goto(url);
+		filterDrawerOpen = false;
+	}
 
 	const chapterHref = (
 		chapterParamValue: string,
@@ -646,27 +696,28 @@
 			<div>
 				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
 				<div class="flex flex-wrap gap-2.5">
-					<button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]">
-						easy
-					</button>
-					<button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)]">
-						medium
-					</button>
-					<button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)]">
-						hard
-					</button>
+					{#each ['easy', 'medium', 'hard'] as diff}
+						<button 
+							type="button" 
+							onclick={() => toggleDifficulty(diff)}
+							class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {selectedDifficulties.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+						>
+							{diff}
+						</button>
+					{/each}
 				</div>
 			</div>
 
 			<div>
 				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
 				<div class="grid gap-2.5">
-					{#each ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as option}
+					{#each ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as kindOption}
 						<button
 							type="button"
-							class="rounded-xl border px-3 py-2 text-left text-xs font-medium border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)]"
+							onclick={() => toggleKind(kindOption)}
+							class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedKinds.includes(kindOption) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 						>
-							{option}
+							{kindOption}
 						</button>
 					{/each}
 				</div>
@@ -676,9 +727,16 @@
 				<button
 					type="button"
 					class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)] transition"
-					onclick={() => (filterDrawerOpen = false)}
+					onclick={clearFilters}
 				>
-					Close
+					Clear
+				</button>
+				<button
+					type="button"
+					class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--page-link-hover)] transition"
+					onclick={applyFilters}
+				>
+					Apply
 				</button>
 			</div>
 		</div>

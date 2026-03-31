@@ -53,6 +53,8 @@ export async function fetchQuestionsByChapter(
 	chapterId: string,
 	page: number = 1,
 	limit: number = 10,
+	difficulty?: string | null,
+	kind?: string | null,
 	token?: string | null
 ): Promise<QuestionsPageResponse> {
 	const t = resolveApiToken(token);
@@ -63,6 +65,8 @@ export async function fetchQuestionsByChapter(
 		page: String(safePage),
 		limit: String(safeLimit)
 	});
+	if (difficulty) params.set('difficulty', difficulty);
+	if (kind) params.set('kind', kind);
 	const response = await apiRequest<{
 		success: boolean;
 		message: string;

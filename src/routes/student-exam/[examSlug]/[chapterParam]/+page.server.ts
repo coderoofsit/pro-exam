@@ -16,6 +16,8 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 	const reviewStartParam = Number(url.searchParams.get('reviewStart') || '');
 	const requestedReviewStart = Number.isNaN(reviewStartParam) || reviewStartParam < 0 ? null : reviewStartParam;
 	const questionId = url.searchParams.get('questionId');
+	const difficulty = url.searchParams.get('difficulty');
+	const kind = url.searchParams.get('kind');
 
 	try {
 		const parentData = await parent();
@@ -59,7 +61,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 		}
 
 		const questionsRes = !questionId && resolvedChapterId
-			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT)
+			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT, difficulty, kind)
 			: null;
 
 		// Only use the current page for the initial review pool.
