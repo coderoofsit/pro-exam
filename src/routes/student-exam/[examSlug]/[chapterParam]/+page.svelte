@@ -194,33 +194,9 @@
 	}
 
 	function promptImagesOnly(q: Question): ImageLike[] {
-		const promptImages = (q as any)?.prompt?.en?.images ?? [];
+		const promptImages = (q as any)?.images ?? (q as any)?.prompt?.en?.images ?? [];
 		if (!Array.isArray(promptImages) || promptImages.length === 0) return [];
-
-		const options = (q as any)?.prompt?.en?.options ?? [];
-		if (!Array.isArray(options) || options.length === 0) {
-			return promptImages as ImageLike[];
-		}
-
-		const optionImageUrls = new Set<string>();
-		for (const opt of options) {
-			const optImages = opt?.images ?? [];
-			if (Array.isArray(optImages)) {
-				for (const img of optImages) {
-					const url = imageSrc(img as ImageLike);
-					if (url) optionImageUrls.add(url);
-				}
-			}
-		}
-
-		if (optionImageUrls.size === 0) {
-			return promptImages as ImageLike[];
-		}
-
-		return (promptImages as ImageLike[]).filter((img) => {
-			const url = imageSrc(img);
-			return url && !optionImageUrls.has(url);
-		});
+		return promptImages as ImageLike[];
 	}
 </script>
 
@@ -519,14 +495,14 @@
 								<div class="mb-8 text-[1.1rem] leading-relaxed text-[var(--page-text)]">
 									<MathText content={questionPromptEnContent(data.detailedQuestion)} />
 									{#if promptImagesOnly(data.detailedQuestion).length}
-										<div class="mt-4 flex flex-wrap gap-3">
+										<div class="mt-4 grid grid-cols-2 gap-3">
 											{#each promptImagesOnly(data.detailedQuestion) as img, imgIdx (`main-${data.detailedQuestion._id}-${imgIdx}`)}
 												{@const src = imageSrc(img as ImageLike)}
 												{#if src}
 													<img
 														src={src}
 														alt={imageAlt(img as ImageLike)}
-														class="max-h-60 max-w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm"
+														class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm"
 														loading="lazy"
 													/>
 												{/if}
