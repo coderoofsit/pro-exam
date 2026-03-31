@@ -65,11 +65,9 @@
   let submitted = $state(false);
   let showConfirm = $state(false);
   let questionEnteredAt = $state(Date.now());
-  let navBusy = $state(false);
   let submitInFlight = $state(false);
   let showFinishScreen = $state(false);
   let submitFinishError = $state<string | null>(null);
-  /** Full-screen preview when user taps a question/option image. */
   let imageLightboxSrc = $state<string | null>(null);
 
   const total = $derived(questions.length);
@@ -154,67 +152,89 @@
     return undefined;
   }
 
-  type FlushOpts = {
-    /** Use this answer payload (avoids stale reads right after `answers = …`). */
-    answerOverride?: string[] | null;
-  };
 
-  async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
-    if (submitted) return;
-    const aid = resolveAttemptId();
-    if (!aid) {
-      if (import.meta.env.DEV) {
-        console.warn('[TestAttempt] update skipped: missing attemptId (prop + session).');
-      }
-      return;
+type FlushOpts = {
+  answerOverride?: string[] | null;
+  timeSpentMsOverride?: number;
+};
+
+async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
+  if (submitted) return;
+
+  const aid = resolveAttemptId();
+  if (!aid) {
+    if (import.meta.env.DEV) {
+      console.warn('[TestAttempt] update skipped: missing attemptId (prop + session).');
     }
-    const questionId = getQuestionBackendId(questionIndex);
-    if (!questionId) {
-      if (import.meta.env.DEV) {
-        console.warn('[TestAttempt] update skipped: missing question id for index', questionIndex, questions[questionIndex]);
-      }
-      return;
-    }
-    const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
-    const answer =
-      opts?.answerOverride !== undefined
-        ? opts.answerOverride
-        : answers[questionIndex] !== undefined
-          ? [answers[questionIndex]]
-          : null;
-    navBusy = true;
-    try {
-      const res = await updateTestAttemptQuestion(aid, questionId, {
-        timeSpentMs,
-        answer
-      });
-      if (!res.success) {
-        console.warn('updateTestAttemptQuestion failed', res.message, res.status);
-      }
-    } catch (e) {
-      console.error('updateTestAttemptQuestion', e);
-    } finally {
-      navBusy = false;
-    }
+    return;
   }
+
+  const questionId = getQuestionBackendId(questionIndex);
+  if (!questionId) {
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[TestAttempt] update skipped: missing question id for index',
+        questionIndex,
+        questions[questionIndex]
+      );
+    }
+    return;
+  }
+
+  const timeSpentMs =
+    opts?.timeSpentMsOverride ?? Math.max(0, Date.now() - questionEnteredAt);
+
+  const answer =
+    opts?.answerOverride !== undefined
+      ? opts.answerOverride
+      : answers[questionIndex] !== undefined
+        ? [answers[questionIndex]]
+        : null;
+
+  try {
+    const res = await updateTestAttemptQuestion(aid, questionId, {
+      timeSpentMs,
+      answer
+    });
+
+    if (!res.success) {
+      console.warn('updateTestAttemptQuestion failed', res.message, res.status);
+    }
+  } catch (e) {
+    console.error('updateTestAttemptQuestion', e);
+  }
+}
+
 
   async function goTo(index: number) {
-    if (submitted || navBusy || index < 0 || index >= total) return;
-    if (index === currentIndex) return;
-    await tick();
-    await flushQuestionForIndex(currentIndex);
-    currentIndex = index;
-    questionEnteredAt = Date.now();
-  }
+  if (submitted || index < 0 || index >= total) return;
+  if (index === currentIndex) return;
+
+  const prevIndex = currentIndex;
+  const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
+
+  currentIndex = index;
+  questionEnteredAt = Date.now();
+
+  void flushQuestionForIndex(prevIndex, { timeSpentMsOverride: timeSpentMs });
+}
 
   async function markAndNext() {
-    if (submitted || navBusy) return;
-    marked = new Set([...marked, currentIndex]);
-    await tick();
-    await flushQuestionForIndex(currentIndex);
-    questionEnteredAt = Date.now();
-    if (currentIndex < total - 1) currentIndex++;
+  if (submitted) return;
+
+  const prevIndex = currentIndex;
+  const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
+
+  marked = new Set([...marked, currentIndex]);
+
+  if (currentIndex < total - 1) {
+    currentIndex = currentIndex + 1;
   }
+
+  questionEnteredAt = Date.now();
+
+  void flushQuestionForIndex(prevIndex, { timeSpentMsOverride: timeSpentMs });
+}
 
   function openImageLightbox(src: string) {
     imageLightboxSrc = src;
@@ -327,18 +347,17 @@
     writeSessionPatch(patch);
   });
 
-  function selectOption(identifier: string) {
-    if (submitted || navBusy) return;
-    answers = { ...answers, [currentIndex]: identifier };
-  }
+function selectOption(identifier: string) {
+  if (submitted) return;
+  answers = { ...answers, [currentIndex]: identifier };
+}
 
-  function clearCurrentAnswer() {
-    if (submitted || navBusy) return;
-    const a = { ...answers };
-    delete a[currentIndex];
-    answers = a;
-  }
-
+function clearCurrentAnswer() {
+  if (submitted) return;
+  const a = { ...answers };
+  delete a[currentIndex];
+  answers = a;
+}
   let finishRedirectTimer: ReturnType<typeof setTimeout> | null = null;
   let finishNavigated = false;
 
@@ -371,55 +390,60 @@
     clearFinishRedirectTimer();
   });
 
-  async function handleSubmit() {
-    if (submitted || submitInFlight) return;
-    submitInFlight = true;
-    submitFinishError = null;
-    try {
-      await tick();
-      await flushQuestionForIndex(currentIndex);
+ async function handleSubmit() {
+  if (submitted || submitInFlight) return;
 
-      const aid = resolveAttemptId();
-      if (aid) {
-        const submitRes = await submitTestAttempt(aid, {});
-        if (!submitRes.success) {
-          submitFinishError = submitRes.message ?? 'Could not submit the attempt.';
-          if (import.meta.env.DEV) {
-            console.warn('submitTestAttempt', submitRes.status, submitRes.message);
-          }
+  submitInFlight = true;
+  submitFinishError = null;
+
+  try {
+    const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
+
+    await flushQuestionForIndex(currentIndex, {
+      timeSpentMsOverride: timeSpentMs
+    });
+
+    const aid = resolveAttemptId();
+    if (aid) {
+      const submitRes = await submitTestAttempt(aid, {});
+      if (!submitRes.success) {
+        submitFinishError = submitRes.message ?? 'Could not submit the attempt.';
+        if (import.meta.env.DEV) {
+          console.warn('submitTestAttempt', submitRes.status, submitRes.message);
         }
-      } else if (import.meta.env.DEV) {
-        console.warn('[TestAttempt] submit skipped: missing attemptId');
       }
-
-      stopTick?.();
-      stopTick = null;
-      submitted = true;
-      showConfirm = false;
-
-      try {
-        sessionStorage.removeItem(BATCH_TEST_ATTEMPT_STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-
-      showFinishScreen = true;
-      onSubmit?.(answers);
-      scheduleTestsRedirect();
-    } catch (e) {
-      console.error('handleSubmit', e);
-      submitFinishError =
-        e instanceof Error ? e.message : 'Something went wrong while submitting.';
-      stopTick?.();
-      stopTick = null;
-      submitted = true;
-      showConfirm = false;
-      showFinishScreen = true;
-      scheduleTestsRedirect();
-    } finally {
-      submitInFlight = false;
+    } else if (import.meta.env.DEV) {
+      console.warn('[TestAttempt] submit skipped: missing attemptId');
     }
+
+    stopTick?.();
+    stopTick = null;
+    submitted = true;
+    showConfirm = false;
+
+    try {
+      sessionStorage.removeItem(BATCH_TEST_ATTEMPT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+
+    showFinishScreen = true;
+    onSubmit?.(answers);
+    scheduleTestsRedirect();
+  } catch (e) {
+    console.error('handleSubmit', e);
+    submitFinishError =
+      e instanceof Error ? e.message : 'Something went wrong while submitting.';
+    stopTick?.();
+    stopTick = null;
+    submitted = true;
+    showConfirm = false;
+    showFinishScreen = true;
+    scheduleTestsRedirect();
+  } finally {
+    submitInFlight = false;
   }
+}
 
   function pillState(index: number): 'current' | 'attempted' | 'marked' | 'unattempted' {
     if (index === currentIndex) return 'current';
@@ -434,7 +458,6 @@
 </script>
 
 <style>
-  /* Wide math still scrolls (trackpad / shift+wheel); hide native bars (incl. Win arrow buttons). */
   .ta-math-content {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -453,10 +476,6 @@
     line-height: 1.85;
   }
 
-  /**
-   * Question / option figures: fixed max box; image scales with object-fit contain
-   * so tiny icons and large diagrams both sit neatly without stretching.
-   */
   .ta-img-frame {
     display: flex;
     align-items: center;
@@ -582,7 +601,7 @@
               <button
                 type="button"
                 onclick={() => void selectOption(opt.identifier)}
-                disabled={submitted || navBusy || submitInFlight}
+                disabled={submitted || submitInFlight}
                 class="
                   group flex w-full items-start gap-4 text-left
                   px-4 py-3.5 rounded-xl
@@ -667,7 +686,7 @@
           <button
             type="button"
             onclick={() => void goTo(currentIndex - 1)}
-            disabled={currentIndex === 0 || submitted || navBusy || submitInFlight}
+            disabled={currentIndex === 0 || submitted || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium
               bg-[var(--ta-nav-btn-bg)] border-[var(--ta-nav-btn-border)]
@@ -697,7 +716,7 @@
             <button
               type="button"
               onclick={() => void clearCurrentAnswer()}
-              disabled={submitted || navBusy || submitInFlight}
+              disabled={submitted || submitInFlight}
               class="
                 rounded-lg border border-[var(--ta-divider)] px-3 py-1.5 text-xs font-medium
                 text-[var(--ta-header-sub)]
@@ -713,7 +732,7 @@
           <button
             type="button"
             onclick={() => void markAndNext()}
-            disabled={submitted || navBusy || submitInFlight}
+            disabled={submitted || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold
               border-amber-500/40 bg-amber-500/10 text-amber-100
@@ -728,7 +747,7 @@
             type="button"
             onclick={() =>
               void (isLast ? openSubmitConfirm() : goTo(currentIndex + 1))}
-            disabled={submitted || navBusy || submitInFlight}
+            disabled={submitted || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold
               text-[var(--ta-nav-btn-primary-text)]
@@ -842,7 +861,7 @@
             <button
               type="button"
               onclick={() => void goTo(i)}
-              disabled={submitted || navBusy || submitInFlight}
+              disabled={submitted || submitInFlight}
               title="Question {i + 1}"
               class="
                 flex h-9 w-full items-center justify-center rounded-lg text-xs font-bold

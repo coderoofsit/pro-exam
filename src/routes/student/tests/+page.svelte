@@ -9,6 +9,11 @@
   import TestAttemptAnalysisModal from '$lib/components/TestAttemptAnalysisModal.svelte';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
+   import { preloadData } from '$app/navigation';
+
+  function warmOwnTests() {
+    void preloadData('/student/tests/own');
+  }
 
   /** Mirrors `GetTestUserItem` from the tests load (`+page.server.ts`). */
   type GetTestUserItem = NonNullable<PageData['items']>[number];
@@ -229,7 +234,9 @@
         </a>
 
         <a
-          href="/student/tests/own"
+           href="/student/tests/own"
+  onmouseenter={warmOwnTests}
+  onfocus={warmOwnTests}
           class="group flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"
         >
           <span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-cyan)]" aria-hidden="true">

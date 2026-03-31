@@ -21,7 +21,6 @@
 {#if data.loadError}
   <p class="p-6 text-sm text-[var(--pc-error-text)]" role="alert">{data.loadError}</p>
 {:else}
-  <!-- No layout padding — test page takes full viewport -->
   <TestAttempt
     {questions}
     {testName}

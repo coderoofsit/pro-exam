@@ -7,10 +7,8 @@ import {
 } from '$lib/api/testAttempts';
 import type { PageLoad } from './$types';
 
-/** Questions only exist in sessionStorage after POST from batch; avoid SSR so load runs in the browser. */
 export const ssr = false;
 
-/** API may send `images` as URL strings or `{ url, publicId, … }` objects. */
 function normalizeImageUrls(raw: unknown): string[] {
 	if (!Array.isArray(raw)) return [];
 	const out: string[] = [];
@@ -27,7 +25,6 @@ function normalizeImageUrls(raw: unknown): string[] {
 	return out;
 }
 
-/** Maps API payload to the shape expected by `TestAttempt` (`images` as string[] of URLs). */
 function normalizeForTestUi(raw: TestAttemptQuestion[]) {
 	return raw.map((item) => {
 		const id = extractQuestionId(item);
