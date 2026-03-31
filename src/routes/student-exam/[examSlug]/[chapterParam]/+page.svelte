@@ -6,6 +6,9 @@
 	import { goto, replaceState } from "$app/navigation";
 	import { browser } from "$app/environment";
 	import { questionStore } from "$lib/stores/question";
+	import { chaptersStore } from "$lib/stores/chapters";
+	import { fetchGroupedChaptersByExamSlug } from "$lib/api/chapters";
+	import { findSubjectChaptersForChapter } from "$lib/student-exam/groupedExamData";
 	import { navigating } from "$app/stores";
 
 	type Question = PageData["questions"][number];
@@ -113,7 +116,31 @@
 
 	const PAGINATION_WINDOW = 2;
 
-	const filteredChapters = $derived(data.allChapters);
+	/** When layout has no grouped data, hydrate sidebar from the same client API as the exam index. */
+	let clientSidebarChapters = $state<PageData["allChapters"]>([]);
+	let sidebarHydrateSeq = 0;
+
+	$effect(() => {
+		if (!browser) return;
+		const rid = data.resolvedChapterId;
+		if (!rid || data.allChapters.length > 0) {
+			clientSidebarChapters = [];
+			return;
+		}
+		const seq = ++sidebarHydrateSeq;
+		void fetchGroupedChaptersByExamSlug(data.examSlug, fetch).then((res) => {
+			if (seq !== sidebarHydrateSeq) return;
+			if (!res.success) return;
+			const list = res.data?.data ?? [];
+			const { chapters } = findSubjectChaptersForChapter(list, rid);
+			clientSidebarChapters = chapters;
+			chaptersStore.setGroupedChapters(data.examSlug, list);
+		});
+	});
+
+	const filteredChapters = $derived(
+		clientSidebarChapters.length > 0 ? clientSidebarChapters : data.allChapters,
+	);
 	const isLoading = $derived($navigating !== null);
 
 	$effect(() => {

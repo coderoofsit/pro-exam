@@ -1,6 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { fetchQuestionsByChapter, fetchQuestionById } from '$lib/api/questions';
+import { fetchChapterById, fetchChapterBySlug } from '$lib/api/chapters';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
@@ -57,6 +58,21 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 				}
 				
 				if (chapter && currentSubjectChapters.length > 0) break;
+			}
+		}
+
+		if (!resolvedChapterId && chapterParam) {
+			const isId = isMongoObjectIdString(chapterParam);
+			try {
+				const chDoc = isId
+					? await fetchChapterById(chapterParam)
+					: await fetchChapterBySlug(decodeURIComponent(chapterParam));
+				if (chDoc) {
+					chapter = chDoc;
+					resolvedChapterId = chDoc._id;
+				}
+			} catch (err) {
+				console.error('Chapter resolve by slug/id failed', err);
 			}
 		}
 

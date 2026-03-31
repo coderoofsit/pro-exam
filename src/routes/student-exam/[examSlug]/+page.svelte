@@ -1,6 +1,16 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import {
+		fetchGroupedChaptersByExamSlug,
+		fetchChaptersHierarchy,
+		type GroupedSubjectRow,
+	} from '$lib/api/chapters';
+	import { fetchExamBySlug } from '$lib/api/exams';
 	import { chaptersStore } from '$lib/stores/chapters';
+	import {
+		buildChaptersBySubjectFromGrouped,
+		buildSubjectsFromGrouped,
+	} from '$lib/student-exam/groupedExamData';
 
 	type ChapterGroupMeta = {
 		_id: string;
@@ -34,7 +44,7 @@
 			fullChaptersFromGrouped: boolean;
 			initialSubjectSlug: string;
 			message: string | null;
-			_rawGrouped?: any[];
+			_rawGrouped?: GroupedSubjectRow[];
 		};
 	}>();
 
@@ -47,46 +57,129 @@
 		return fallback;
 	}
 
+	let examRecord = $state<Record<string, unknown> | null>(null);
+	let subjects = $state<SubjectNavRow[]>([]);
+	let chaptersBySubjectSlug = $state<Record<string, ChapterCardRow[]>>({});
+	let rawGrouped = $state<GroupedSubjectRow[]>([]);
+	let chaptersLoading = $state(false);
+	let chaptersError = $state<string | null>(null);
+	let clientLoadSeq = 0;
+
 	let selectedSubjectSlug = $state('');
 	let showChapters = $state(false);
-	let hasRestoredState = $state(false);
+	let referrerHandled = $state(false);
+	let hasRestoredSession = $state(false);
 
 	$effect(() => {
-		if (browser && data._rawGrouped && data._rawGrouped.length > 0) {
-			chaptersStore.setGroupedChapters(data.examSlug, data._rawGrouped);
+		if (!browser || referrerHandled) return;
+		referrerHandled = true;
+		const referrer = document.referrer;
+		const isFromExamsOrDashboard =
+			referrer.includes('/student/exams') || referrer.includes('/student/dashboard');
+		if (isFromExamsOrDashboard) {
+			sessionStorage.removeItem(`exam-${data.examSlug}-subject`);
 		}
 	});
 
 	$effect(() => {
-		if (browser && !hasRestoredState) {
-			const referrer = document.referrer;
-			const isFromChapterPage =
-				referrer.includes(`/student-exam/${data.examSlug}/`) &&
-				!referrer.endsWith(`/student-exam/${data.examSlug}`);
-			const isFromExamsOrDashboard =
-				referrer.includes('/student/exams') || referrer.includes('/student/dashboard');
+		if (!browser) return;
+		const slug = data.examSlug;
+		const seq = ++clientLoadSeq;
+		chaptersLoading = true;
+		chaptersError = null;
 
-			if (isFromExamsOrDashboard) {
-				sessionStorage.removeItem(`exam-${data.examSlug}-subject`);
-			} else if (isFromChapterPage) {
-				const stored = sessionStorage.getItem(`exam-${data.examSlug}-subject`);
-				if (stored && data.subjects.find((s: SubjectNavRow) => s.slug === stored)) {
-					selectedSubjectSlug = stored;
-					showChapters = true;
+		void (async () => {
+			try {
+				const [res, examForTitle] = await Promise.all([
+					fetchGroupedChaptersByExamSlug(slug, fetch),
+					fetchExamBySlug(slug, null, fetch).catch(() => null),
+				]);
+				if (seq !== clientLoadSeq) return;
+				if (examForTitle) {
+					examRecord = examForTitle as Record<string, unknown>;
 				}
+				if (!res.success) {
+					throw new Error(res.message || 'Failed to load chapters');
+				}
+				const groupedList = (res.data?.data ?? []) as GroupedSubjectRow[];
+				rawGrouped = groupedList;
+
+				if (groupedList.length > 0) {
+					const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
+					const subs = buildSubjectsFromGrouped(groupedList, bySubject);
+					chaptersBySubjectSlug = bySubject;
+					subjects = subs;
+					chaptersStore.setGroupedChapters(slug, groupedList);
+					chaptersLoading = false;
+					return;
+				}
+
+				const examFromApi = await fetchExamBySlug(slug, null, fetch);
+				if (seq !== clientLoadSeq) return;
+				if (!examFromApi) throw new Error('Exam not found');
+
+				examRecord = examFromApi as Record<string, unknown>;
+				const boardSlug = (examRecord.boardSlug ?? examRecord.board_slug ?? '') as string;
+				const examSlugForHierarchy = (examRecord.slug ?? examRecord._id ?? slug) as string;
+				if (!boardSlug || !examSlugForHierarchy) {
+					throw new Error('Exam configuration incomplete');
+				}
+
+				const hierarchy = await fetchChaptersHierarchy(boardSlug, examSlugForHierarchy, null, fetch);
+				if (seq !== clientLoadSeq) return;
+
+				const subs = (hierarchy.subjects ?? [])
+					.map((s): SubjectNavRow => {
+						const groups = [...(s.chapterGroups ?? [])].sort(
+							(a, b) => (a.order ?? 0) - (b.order ?? 0),
+						);
+						return {
+							_id: s._id,
+							slug: s.slug,
+							name: s.name,
+							unitCount: groups.length,
+						};
+					})
+					.filter((s) => Boolean(s._id && s.slug && s.unitCount > 0));
+
+				subjects = subs;
+				chaptersBySubjectSlug = {};
+				chaptersLoading = false;
+			} catch (e) {
+				if (seq !== clientLoadSeq) return;
+				chaptersError = e instanceof Error ? e.message : 'Failed to load';
+				chaptersLoading = false;
 			}
-			hasRestoredState = true;
+		})();
+	});
+
+	$effect(() => {
+		if (!browser || hasRestoredSession) return;
+		if (subjects.length === 0) return;
+		const referrer = document.referrer;
+		const isFromChapterPage =
+			referrer.includes(`/student-exam/${data.examSlug}/`) &&
+			!referrer.endsWith(`/student-exam/${data.examSlug}`);
+		if (isFromChapterPage) {
+			const stored = sessionStorage.getItem(`exam-${data.examSlug}-subject`);
+			if (stored && subjects.find((s: SubjectNavRow) => s.slug === stored)) {
+				selectedSubjectSlug = stored;
+				showChapters = true;
+			}
 		}
+		hasRestoredSession = true;
 	});
 
 	const selectedSubject = $derived.by(() => {
-		return data.subjects?.find((s: SubjectNavRow) => s.slug === selectedSubjectSlug) ?? null;
+		return subjects?.find((s: SubjectNavRow) => s.slug === selectedSubjectSlug) ?? null;
 	});
 
 	const displayChapters = $derived.by((): ChapterCardRow[] => {
 		if (!selectedSubjectSlug) return [];
-		return data.chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
+		return chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
 	});
+
+	const examTitle = $derived(getExamTitleEn(examRecord ?? data.exam, data.examSlug));
 
 	function selectSubject(slug: string) {
 		selectedSubjectSlug = slug;
@@ -130,17 +223,32 @@
 
 					<div class="mb-8">
 						<h1 class="text-3xl font-bold md:text-4xl">
-							{data.exam ? getExamTitleEn(data.exam, data.examSlug) : data.examSlug}
+							{examTitle}
 						</h1>
 						<p class="mt-2 text-base text-[var(--page-text-muted)]">Select a subject, then open units/chapters</p>
 					</div>
 
-					{#if data.subjects.length === 0}
+					{#if chaptersError}
+						<p class="text-semantic-error" role="alert">{chaptersError}</p>
+					{:else if chaptersLoading && subjects.length === 0}
+						<div class="flex-1 overflow-y-auto pb-6" aria-busy="true" aria-label="Loading subjects">
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+								{#each [1, 2, 3, 4, 5, 6] as sk (sk)}
+									<div
+										class="h-28 animate-pulse rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5"
+									>
+										<div class="h-5 w-3/4 rounded bg-[var(--page-text-muted)]/20"></div>
+										<div class="mt-3 h-4 w-1/2 rounded bg-[var(--page-text-muted)]/15"></div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{:else if !chaptersLoading && subjects.length === 0}
 						<p class="text-[var(--page-text-muted)]">No subjects found for this exam.</p>
 					{:else}
 						<div class="flex-1 overflow-y-auto pb-6">
 							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-								{#each data.subjects as s (s._id)}
+								{#each subjects as s (s._id)}
 									<button
 										type="button"
 										onclick={() => selectSubject(s.slug)}
@@ -181,7 +289,7 @@
 							Subjects
 						</h2>
 						<nav class="space-y-1.5">
-							{#each data.subjects as s (s._id)}
+							{#each subjects as s (s._id)}
 								<button
 									type="button"
 									onclick={() => selectSubject(s.slug)}
