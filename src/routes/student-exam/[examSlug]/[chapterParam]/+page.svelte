@@ -9,9 +9,11 @@
 	import { navigating } from "$app/stores";
 
 	type Question = PageData["questions"][number];
-	type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: number };
+	type ImageLike =
+		| string
+		| { url?: string; alt?: string; publicId?: string; version?: number };
 
-	let { data, form } = $props<{ data: PageData, form: ActionData }>();
+	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
 	let selectedQuestionIndex = $state<number | null>(null);
 	let sidebarCollapsed = $state(false);
@@ -28,11 +30,11 @@
 	$effect(() => {
 		if (browser) {
 			const params = new URLSearchParams(window.location.search);
-			const diffParam = params.get('difficulty');
-			const kindParam = params.get('kind');
-			
-			selectedDifficulties = diffParam ? diffParam.split(',') : [];
-			selectedKinds = kindParam ? kindParam.split(',') : [];
+			const diffParam = params.get("difficulty");
+			const kindParam = params.get("kind");
+
+			selectedDifficulties = diffParam ? diffParam.split(",") : [];
+			selectedKinds = kindParam ? kindParam.split(",") : [];
 		}
 	});
 
@@ -55,11 +57,12 @@
 
 	$effect(() => {
 		if (browser && data.subjectSlug) {
-			sessionStorage.setItem(`exam-${data.examSlug}-subject`, data.subjectSlug);
+			sessionStorage.setItem(
+				`exam-${data.examSlug}-subject`,
+				data.subjectSlug,
+			);
 		}
 	});
-
-
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
 
@@ -73,7 +76,10 @@
 		if (!storeChapterKey) return data.questions;
 		$questionStore;
 		return hasCurrentPage
-			? questionStore.getQuestionsForPage(storeChapterKey, data.safePage) ?? []
+			? (questionStore.getQuestionsForPage(
+					storeChapterKey,
+					data.safePage,
+				) ?? [])
 			: data.questions;
 	});
 
@@ -81,7 +87,8 @@
 		if (!storeChapterKey) return data.paginationMeta;
 		$questionStore;
 		return hasCurrentPage
-			? questionStore.getPagination(storeChapterKey) ?? data.paginationMeta
+			? (questionStore.getPagination(storeChapterKey) ??
+					data.paginationMeta)
 			: data.paginationMeta;
 	});
 
@@ -91,7 +98,12 @@
 		if (!data.questions.length) return;
 		if (hasCurrentPage) return;
 
-		questionStore.setQuestionsPage(storeChapterKey, data.safePage, data.questions, data.paginationMeta ?? undefined);
+		questionStore.setQuestionsPage(
+			storeChapterKey,
+			data.safePage,
+			data.questions,
+			data.paginationMeta ?? undefined,
+		);
 	});
 
 	const chapterBaseUrl = (chapterParamOverride?: string) =>
@@ -99,19 +111,21 @@
 
 	const activeFiltersQuery = (opts?: { page?: number }) => {
 		const params = new URLSearchParams();
-		params.set('page', String(opts?.page ?? 1));
+		params.set("page", String(opts?.page ?? 1));
 		if (selectedDifficulties.length > 0) {
-			params.set('difficulty', selectedDifficulties.join(','));
+			params.set("difficulty", selectedDifficulties.join(","));
 		}
 		if (selectedKinds.length > 0) {
-			params.set('kind', selectedKinds.join(','));
+			params.set("kind", selectedKinds.join(","));
 		}
 		return params.toString();
 	};
 
 	function toggleDifficulty(diff: string) {
 		if (selectedDifficulties.includes(diff)) {
-			selectedDifficulties = selectedDifficulties.filter(d => d !== diff);
+			selectedDifficulties = selectedDifficulties.filter(
+				(d) => d !== diff,
+			);
 		} else {
 			selectedDifficulties = [...selectedDifficulties, diff];
 		}
@@ -119,7 +133,7 @@
 
 	function toggleKind(kind: string) {
 		if (selectedKinds.includes(kind)) {
-			selectedKinds = selectedKinds.filter(k => k !== kind);
+			selectedKinds = selectedKinds.filter((k) => k !== kind);
 		} else {
 			selectedKinds = [...selectedKinds, kind];
 		}
@@ -141,17 +155,25 @@
 
 	const chapterHref = (
 		chapterParamValue: string,
-		opts?: { page?: number; preview?: boolean; reviewStart?: number; carry?: boolean; questionId?: string }
+		opts?: {
+			page?: number;
+			preview?: boolean;
+			reviewStart?: number;
+			carry?: boolean;
+			questionId?: string;
+		},
 	) => {
 		const params = new URLSearchParams(activeFiltersQuery(opts));
-		if (opts?.preview) params.set('preview', '1');
-		if (typeof opts?.reviewStart === 'number') params.set('reviewStart', String(opts.reviewStart));
-		if (opts?.carry) params.set('carry', '1');
-		if (opts?.questionId) params.set('questionId', opts.questionId);
+		if (opts?.preview) params.set("preview", "1");
+		if (typeof opts?.reviewStart === "number")
+			params.set("reviewStart", String(opts.reviewStart));
+		if (opts?.carry) params.set("carry", "1");
+		if (opts?.questionId) params.set("questionId", opts.questionId);
 		return `${chapterBaseUrl(chapterParamValue)}?${params.toString()}`;
 	};
 
-	const questionsPageUrl = (p: number) => `${chapterBaseUrl()}?${activeFiltersQuery({ page: p })}`;
+	const questionsPageUrl = (p: number) =>
+		`${chapterBaseUrl()}?${activeFiltersQuery({ page: p })}`;
 
 	const paginationStartPage = $derived(
 		displayPaginationMeta
@@ -183,40 +205,74 @@
 	async function openQuestionPreview(index: number) {
 		const q = displayQuestions[index];
 		if (!q) return;
-		await goto(chapterHref(data.chapterParam, { page: data.safePage, questionId: q._id }));
+		await goto(
+			chapterHref(data.chapterParam, {
+				page: data.safePage,
+				questionId: q._id,
+			}),
+		);
 	}
 
 	async function goDetailedPrev() {
 		if (!data.detailedQuestion) return;
-		const currentIdx = displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id);
+		const currentIdx = displayQuestions.findIndex(
+			(q) => q._id === data.detailedQuestion!._id,
+		);
 		if (currentIdx > 0) {
 			const prevQ = displayQuestions[currentIdx - 1];
-			await goto(chapterHref(data.chapterParam, { page: data.safePage, questionId: prevQ._id }));
+			await goto(
+				chapterHref(data.chapterParam, {
+					page: data.safePage,
+					questionId: prevQ._id,
+				}),
+			);
 		} else if (data.safePage > 1) {
-			await goto(chapterHref(data.chapterParam, { page: data.safePage - 1 }));
+			await goto(
+				chapterHref(data.chapterParam, { page: data.safePage - 1 }),
+			);
 		}
 	}
 
 	async function goDetailedNext() {
 		if (!data.detailedQuestion) return;
-		const currentIdx = displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id);
+		const currentIdx = displayQuestions.findIndex(
+			(q) => q._id === data.detailedQuestion!._id,
+		);
 		if (currentIdx >= 0 && currentIdx < displayQuestions.length - 1) {
 			const nextQ = displayQuestions[currentIdx + 1];
-			await goto(chapterHref(data.chapterParam, { page: data.safePage, questionId: nextQ._id }));
-		} else if (displayPaginationMeta && data.safePage < displayPaginationMeta.lastPage) {
-			await goto(chapterHref(data.chapterParam, { page: data.safePage + 1 }));
+			await goto(
+				chapterHref(data.chapterParam, {
+					page: data.safePage,
+					questionId: nextQ._id,
+				}),
+			);
+		} else if (
+			displayPaginationMeta &&
+			data.safePage < displayPaginationMeta.lastPage
+		) {
+			await goto(
+				chapterHref(data.chapterParam, { page: data.safePage + 1 }),
+			);
 		}
 	}
 
 	const canGoDetailedPrev = $derived(
-		data.detailedQuestion ? (displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id) > 0 || data.safePage > 1) : false
+		data.detailedQuestion
+			? displayQuestions.findIndex(
+					(q) => q._id === data.detailedQuestion!._id,
+				) > 0 || data.safePage > 1
+			: false,
 	);
 
 	const canGoDetailedNext = $derived(
-		data.detailedQuestion ? (
-			displayQuestions.findIndex(q => q._id === data.detailedQuestion!._id) < displayQuestions.length - 1 || 
-			(displayPaginationMeta && data.safePage < displayPaginationMeta.lastPage)
-		) : false
+		data.detailedQuestion
+			? displayQuestions.findIndex(
+					(q) => q._id === data.detailedQuestion!._id,
+				) <
+					displayQuestions.length - 1 ||
+					(displayPaginationMeta &&
+						data.safePage < displayPaginationMeta.lastPage)
+			: false,
 	);
 
 	function closeQuestionPreview() {
@@ -244,8 +300,10 @@
 	}
 
 	function promptImagesOnly(q: Question): ImageLike[] {
-		const promptImages = (q as any)?.images ?? (q as any)?.prompt?.en?.images ?? [];
-		if (!Array.isArray(promptImages) || promptImages.length === 0) return [];
+		const promptImages =
+			(q as any)?.images ?? (q as any)?.prompt?.en?.images ?? [];
+		if (!Array.isArray(promptImages) || promptImages.length === 0)
+			return [];
 		return promptImages as ImageLike[];
 	}
 </script>
@@ -259,38 +317,60 @@
 	</style>
 </svelte:head>
 
-<div class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]">
+<div
+	class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
+>
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
 		{#if !data.detailedQuestion && !sidebarCollapsed}
-			<aside class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]">
+			<aside
+				class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
+			>
 				<div class="flex-1 overflow-y-auto p-4">
 					<button
 						type="button"
 						onclick={() => goto(`/student-exam/${data.examSlug}`)}
 						class="mb-4 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-							<path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+						>
+							<path
+								d="M15 18l-6-6 6-6"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
 						</svg>
 						Back to Subjects
 					</button>
 
 					<div class="mb-3 mt-2 flex items-center justify-between">
-						<h2 class="text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70">Chapters</h2>
-						<button
+						<h2
+							class="text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70"
+						>
+							Chapters
+						</h2>
+						<!-- <button
 							type="button"
 							class="rounded-md border border-[var(--sb-border-color)] px-2 py-1 text-xs text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-nav-hover-bg)]"
 							onclick={() => (filterDrawerOpen = true)}
 						>
 							Filter
-						</button>
+						</button> -->
 					</div>
 
 					<nav class="space-y-1.5">
 						{#each filteredChapters as ch (ch._id)}
 							<a
-								href={chapterHref(String(ch.slug ?? ch._id), { page: 1 })}
-								class="block truncate rounded-lg px-3 py-2 text-sm transition font-[var(--sb-font-nav)] {ch._id === data.resolvedChapterId
+								href={chapterHref(String(ch.slug ?? ch._id), {
+									page: 1,
+								})}
+								class="block truncate rounded-lg px-3 py-2 text-sm transition font-[var(--sb-font-nav)] {ch._id ===
+								data.resolvedChapterId
 									? 'bg-[var(--sb-nav-active-bg)] text-[var(--sb-nav-active-text)] shadow-[var(--sb-nav-active-glow)]'
 									: 'text-[var(--sb-nav-text)] hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]'}"
 							>
@@ -305,18 +385,26 @@
 		{#if !data.detailedQuestion && sidebarCollapsed}
 			<button
 				type="button"
-				onclick={() => sidebarCollapsed = false}
+				onclick={() => (sidebarCollapsed = false)}
 				class="fixed left-4 top-4 z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-icon)] shadow-sm transition hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-icon)]"
 				title="Expand sidebar"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-					<path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+					<path
+						d="M9 18l6-6-6-6"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
 				</svg>
 			</button>
 		{/if}
 
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
-			<div class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0">
+			<div
+				class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0"
+			>
 				{#if data.detailedQuestion !== null}
 					<div class="py-6 shrink-0">
 						<button
@@ -330,7 +418,9 @@
 				{/if}
 
 				{#if data.message}
-					<div class="flex flex-1 items-center justify-center text-semantic-error">
+					<div
+						class="flex flex-1 items-center justify-center text-semantic-error"
+					>
 						{data.message}
 					</div>
 				{:else}
@@ -338,44 +428,68 @@
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<h1 class="text-2xl font-bold md:text-3xl">
-									{data.chapter?.name?.en ?? data.chapterParam}
+									{data.chapter?.name?.en ??
+										data.chapterParam}
 								</h1>
 								{#if displayPaginationMeta}
-									<p class="mt-2 text-sm text-[var(--page-text-muted)]">
-										{displayPaginationMeta.total} questions • Page {data.safePage}
+									<p
+										class="mt-2 text-sm text-[var(--page-text-muted)]"
+									>
+										{displayPaginationMeta.total} questions •
+										Page {data.safePage}
 										of {displayPaginationMeta.lastPage}
 									</p>
 								{/if}
 							</div>
 
-							<button
-								type="button"
-								class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
-								onclick={() => (filterDrawerOpen = true)}
-							>
-								Filters
-							</button>
+							{#if !data.detailedQuestion}
+								<button
+									type="button"
+									class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+									onclick={() => (filterDrawerOpen = true)}
+								>
+									Filters
+								</button>
+							{/if}
 						</div>
 					</div>
 
 					{#if displayQuestions.length === 0}
 						<div class="flex flex-1 items-center justify-center">
-							<div class="rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
+							<div
+								class="rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]"
+							>
 								No questions found.
 							</div>
 						</div>
 					{:else if !data.detailedQuestion}
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
-							<div class="shrink-0 border-b border-[var(--page-card-border)] pb-4">
-								<div class="flex flex-wrap items-center justify-center gap-1.5">
+							<div
+								class="shrink-0 border-b border-[var(--page-card-border)] pb-4"
+							>
+								<div
+									class="flex flex-wrap items-center justify-center gap-1.5"
+								>
 									{#if data.safePage > 1}
-										<a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
-										<a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(1)}
+											>← First</a
+										>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(
+												data.safePage - 1,
+											)}>Prev</a
+										>
 									{/if}
 
 									{#each visiblePageNumbers as pageNumber}
 										<a
-											class="pagination-btn px-3.5 {pageNumber === data.safePage ? 'page-link-active' : ''}"
+											class="pagination-btn px-3.5 {pageNumber ===
+											data.safePage
+												? 'page-link-active'
+												: ''}"
 											href={questionsPageUrl(pageNumber)}
 										>
 											{pageNumber}
@@ -383,8 +497,18 @@
 									{/each}
 
 									{#if data.safePage < displayPaginationMeta.lastPage}
-										<a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
-										<a class="pagination-btn" href={questionsPageUrl(displayPaginationMeta.lastPage)}>Last →</a>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(
+												data.safePage + 1,
+											)}>Next</a
+										>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(
+												displayPaginationMeta.lastPage,
+											)}>Last →</a
+										>
 									{/if}
 								</div>
 							</div>
@@ -394,12 +518,22 @@
 							{#if isLoading}
 								<div class="flex flex-col gap-3">
 									{#each Array(10) as _, i}
-										<div class="animate-pulse rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3.5">
-											<div class="flex items-baseline gap-3">
-												<div class="h-4 w-8 shrink-0 rounded bg-[var(--page-bg)]"></div>
+										<div
+											class="animate-pulse rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3.5"
+										>
+											<div
+												class="flex items-baseline gap-3"
+											>
+												<div
+													class="h-4 w-8 shrink-0 rounded bg-[var(--page-bg)]"
+												></div>
 												<div class="flex-1 space-y-2">
-													<div class="h-4 w-full rounded bg-[var(--page-bg)]"></div>
-													<div class="h-4 w-3/4 rounded bg-[var(--page-bg)]"></div>
+													<div
+														class="h-4 w-full rounded bg-[var(--page-bg)]"
+													></div>
+													<div
+														class="h-4 w-3/4 rounded bg-[var(--page-bg)]"
+													></div>
 												</div>
 											</div>
 										</div>
@@ -411,22 +545,44 @@
 										<button
 											type="button"
 											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-5 py-4 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
-											onclick={() => openQuestionPreview(index)}
+											onclick={() =>
+												openQuestionPreview(index)}
 										>
-											<div class="flex items-baseline gap-3">
-												<div class="shrink-0 text-xs font-medium text-[var(--page-text-muted)] opacity-70 mt-1">
-													Q{(data.safePage - 1) * (displayPaginationMeta?.limit ?? 10) + index + 1}
+											<div
+												class="flex items-baseline gap-3"
+											>
+												<div
+													class="shrink-0 text-xs font-medium text-[var(--page-text-muted)] opacity-70 mt-1"
+												>
+													Q{(data.safePage - 1) *
+														(displayPaginationMeta?.limit ??
+															10) +
+														index +
+														1}
 												</div>
-												<div class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
-													<MathText content={questionPromptEnContent(q)} />
+												<div
+													class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]"
+												>
+													<MathText
+														content={questionPromptEnContent(
+															q,
+														)}
+													/>
 													{#if promptImagesOnly(q).length}
-														<div class="mt-3 grid grid-cols-2 gap-2.5">
+														<div
+															class="mt-3 grid grid-cols-2 gap-2.5"
+														>
 															{#each promptImagesOnly(q) as img, imgIdx (`main-${q._id}-${imgIdx}`)}
-																{@const src = imageSrc(img as ImageLike)}
+																{@const src =
+																	imageSrc(
+																		img as ImageLike,
+																	)}
 																{#if src}
 																	<img
-																		src={src}
-																		alt={imageAlt(img as ImageLike)}
+																		{src}
+																		alt={imageAlt(
+																			img as ImageLike,
+																		)}
 																		class="max-h-40 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
 																		loading="lazy"
 																	/>
@@ -443,16 +599,32 @@
 						</div>
 
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
-							<div class="border-t border-[var(--page-card-border)] py-6 shrink-0">
-								<div class="flex flex-wrap items-center justify-center gap-1.5">
+							<div
+								class="border-t border-[var(--page-card-border)] py-6 shrink-0"
+							>
+								<div
+									class="flex flex-wrap items-center justify-center gap-1.5"
+								>
 									{#if data.safePage > 1}
-										<a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
-										<a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(1)}
+											>← First</a
+										>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(
+												data.safePage - 1,
+											)}>Prev</a
+										>
 									{/if}
 
 									{#each visiblePageNumbers as pageNumber}
 										<a
-											class="pagination-btn px-3.5 {pageNumber === data.safePage ? 'page-link-active' : ''}"
+											class="pagination-btn px-3.5 {pageNumber ===
+											data.safePage
+												? 'page-link-active'
+												: ''}"
 											href={questionsPageUrl(pageNumber)}
 										>
 											{pageNumber}
@@ -460,207 +632,411 @@
 									{/each}
 
 									{#if data.safePage < displayPaginationMeta.lastPage}
-										<a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
-										<a class="pagination-btn" href={questionsPageUrl(displayPaginationMeta.lastPage)}>Last →</a>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(
+												data.safePage + 1,
+											)}>Next</a
+										>
+										<a
+											class="pagination-btn"
+											href={questionsPageUrl(
+												displayPaginationMeta.lastPage,
+											)}>Last →</a
+										>
 									{/if}
 								</div>
 							</div>
 						{/if}
 					{:else}
 						<div class="flex-1 overflow-y-auto pb-6 mt-4">
-							<div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-6 shadow-sm flex flex-col min-h-full">
+							<div
+								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-6 shadow-sm flex flex-col min-h-full"
+							>
 								{#if isEditing}
-									<form method="POST" action="?/updateQuestion" use:enhance={() => {
-										return ({ update }) => {
-											update({ reset: false });
-										};
-									}} class="flex flex-col flex-1 h-full min-h-0 relative">
+									<form
+										method="POST"
+										action="?/updateQuestion"
+										use:enhance={() => {
+											return ({ update }) => {
+												update({ reset: false });
+											};
+										}}
+										class="flex flex-col flex-1 h-full min-h-0 relative"
+									>
 										{#if form?.message}
-											<div class="mb-4 rounded-md bg-semantic-error/10 p-3 text-sm text-semantic-error border border-semantic-error/20">
+											<div
+												class="mb-4 rounded-md bg-semantic-error/10 p-3 text-sm text-semantic-error border border-semantic-error/20"
+											>
 												{form.message}
 											</div>
 										{/if}
 
-										<input type="hidden" name="questionId" value={data.detailedQuestion._id} />
+										<input
+											type="hidden"
+											name="questionId"
+											value={data.detailedQuestion._id}
+										/>
 
 										<!-- Form body -->
 										<div class="mb-5">
-											<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="promptContent">Question Content</label>
-											<textarea name="promptContent" id="promptContent" class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition" rows="5">{data.detailedQuestion.prompt?.en?.content ?? ''}</textarea>
+											<label
+												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+												for="promptContent"
+												>Question Content</label
+											>
+											<textarea
+												name="promptContent"
+												id="promptContent"
+												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+												rows="5"
+												>{data.detailedQuestion.prompt
+													?.en?.content ??
+													""}</textarea
+											>
 										</div>
 
 										<!-- Options Grid for Editing -->
 										{#if data.detailedQuestion.prompt?.en?.options?.length}
 											<div class="mb-5">
-												<label class="block text-sm font-semibold text-[var(--page-text)] mb-3">Options</label>
-												<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-												{#each data.detailedQuestion.prompt.en.options as option, i (option.identifier)}
-													<div class="flex flex-col gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 shadow-sm">
-														<div class="flex items-center gap-2">
-															<span class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">{option.identifier}</span>
-															<span class="text-xs font-semibold text-[var(--page-text-muted)]">Content</span>
+												<label
+													class="block text-sm font-semibold text-[var(--page-text)] mb-3"
+													>Options</label
+												>
+												<div
+													class="grid grid-cols-1 md:grid-cols-2 gap-4"
+												>
+													{#each data.detailedQuestion.prompt.en.options as option, i (option.identifier)}
+														<div
+															class="flex flex-col gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 shadow-sm"
+														>
+															<div
+																class="flex items-center gap-2"
+															>
+																<span
+																	class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]"
+																	>{option.identifier}</span
+																>
+																<span
+																	class="text-xs font-semibold text-[var(--page-text-muted)]"
+																	>Content</span
+																>
+															</div>
+															<input
+																type="hidden"
+																name="option_{i}_id"
+																value={option.identifier}
+															/>
+															<textarea
+																name="option_{i}_content"
+																class="w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] p-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+																rows="2"
+																>{option.content ??
+																	""}</textarea
+															>
 														</div>
-														<input type="hidden" name="option_{i}_id" value={option.identifier} />
-														<textarea name="option_{i}_content" class="w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] p-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition" rows="2">{option.content ?? ''}</textarea>
-													</div>
-												{/each}
+													{/each}
 												</div>
 											</div>
 										{/if}
 
 										<!-- Explanation -->
 										<div class="mb-6">
-											<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="explanationContent">Solution / Explanation</label>
-											<textarea name="explanationContent" id="explanationContent" class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition" rows="4">{data.detailedQuestion.prompt?.en?.explanation ?? ''}</textarea>
+											<label
+												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+												for="explanationContent"
+												>Solution / Explanation</label
+											>
+											<textarea
+												name="explanationContent"
+												id="explanationContent"
+												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+												rows="4"
+												>{data.detailedQuestion.prompt
+													?.en?.explanation ??
+													""}</textarea
+											>
 										</div>
 
 										<!-- Footer Buttons for Edit -->
-										<div class="mt-auto flex flex-wrap items-center justify-end gap-3 border-t border-[var(--sh-exam-card-border)] pt-5">
-											<button type="button" class="rounded-lg border border-[var(--page-card-border)] px-5 py-2.5 text-sm font-semibold text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 transition" onclick={() => isEditing = false}>Cancel</button>
-											<button type="submit" class="rounded-lg bg-[var(--page-link)] text-white px-6 py-2.5 text-sm font-bold shadow-md shadow-[var(--page-link)]/20 hover:bg-[var(--page-link-hover)] hover:shadow-lg transition">Save Changes</button>
+										<div
+											class="mt-auto flex flex-wrap items-center justify-end gap-3 border-t border-[var(--sh-exam-card-border)] pt-5"
+										>
+											<button
+												type="button"
+												class="rounded-lg border border-[var(--page-card-border)] px-5 py-2.5 text-sm font-semibold text-[var(--page-text-muted)] hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
+												onclick={() =>
+													(isEditing = false)}
+												>Cancel</button
+											>
+											<button
+												type="submit"
+												class="rounded-lg bg-[var(--page-link)] text-white px-6 py-2.5 text-sm font-bold shadow-md shadow-[var(--page-link)]/20 hover:bg-[var(--page-link-hover)] hover:shadow-lg transition"
+												>Save Changes</button
+											>
 										</div>
 									</form>
 								{:else}
-								<!-- Question Header -->
-								<div class="mb-5 flex flex-wrap items-center gap-3">
-									<div class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]">
-										{data.detailedQuestion.examSlug?.replace('-', ' ').toUpperCase()} {data.detailedQuestion.year ?? ''}
+									<!-- Question Header -->
+									<div
+										class="mb-5 flex flex-wrap items-center gap-3"
+									>
+										<div
+											class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]"
+										>
+											{data.detailedQuestion.examSlug
+												?.replace("-", " ")
+												.toUpperCase()}
+											{data.detailedQuestion.year ?? ""}
+										</div>
+										<div
+											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
+										>
+											{data.detailedQuestion.kind}
+										</div>
+										<div
+											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
+										>
+											{data.detailedQuestion.marks} Marks
+										</div>
+										<button
+											type="button"
+											onclick={() => (isEditing = true)}
+											class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
+										>
+											<svg
+												width="12"
+												height="12"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											>
+												<path d="M12 20h9"></path>
+												<path
+													d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+												></path>
+											</svg>
+											Edit
+										</button>
 									</div>
-									<div class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80">
-										{data.detailedQuestion.kind}
-									</div>
-									<div class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80">
-										{data.detailedQuestion.marks} Marks
-									</div>
-									<button type="button" onclick={() => isEditing = true} class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition">
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M12 20h9"></path>
-											<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-										</svg>
-										Edit
-									</button>
-								</div>
 
-								<!-- Question Content -->
-								<div class="mb-8 text-[1.1rem] leading-relaxed text-[var(--page-text)]">
-									<MathText content={questionPromptEnContent(data.detailedQuestion)} />
-									{#if promptImagesOnly(data.detailedQuestion).length}
-										<div class="mt-4 grid grid-cols-2 gap-3">
-											{#each promptImagesOnly(data.detailedQuestion) as img, imgIdx (`main-${data.detailedQuestion._id}-${imgIdx}`)}
-												{@const src = imageSrc(img as ImageLike)}
-												{#if src}
-													<img
-														src={src}
-														alt={imageAlt(img as ImageLike)}
-														class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm"
-														loading="lazy"
-													/>
-												{/if}
+									<!-- Question Content -->
+									<div
+										class="mb-8 text-[1.1rem] leading-relaxed text-[var(--page-text)]"
+									>
+										<MathText
+											content={questionPromptEnContent(
+												data.detailedQuestion,
+											)}
+										/>
+										{#if promptImagesOnly(data.detailedQuestion).length}
+											<div
+												class="mt-4 grid grid-cols-2 gap-3"
+											>
+												{#each promptImagesOnly(data.detailedQuestion) as img, imgIdx (`main-${data.detailedQuestion._id}-${imgIdx}`)}
+													{@const src = imageSrc(
+														img as ImageLike,
+													)}
+													{#if src}
+														<img
+															{src}
+															alt={imageAlt(
+																img as ImageLike,
+															)}
+															class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm"
+															loading="lazy"
+														/>
+													{/if}
+												{/each}
+											</div>
+										{/if}
+									</div>
+
+									<!-- Options Grid -->
+									{#if data.detailedQuestion.prompt?.en?.options?.length}
+										<div
+											class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
+										>
+											{#each data.detailedQuestion.prompt.en.options as option (option.identifier)}
+												{@const isSelected =
+													selectedOption ===
+													option.identifier}
+												{@const isCorrectData = (
+													data.detailedQuestion as any
+												).correct?.identifiers?.includes(
+													option.identifier,
+												)}
+												{@const showAsCorrect =
+													isAnswerChecked &&
+													isCorrectData}
+												{@const showAsWrong =
+													isAnswerChecked &&
+													isSelected &&
+													!isCorrectData}
+
+												<button
+													type="button"
+													class="group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200 {showAsCorrect
+														? 'border-semantic-success bg-semantic-success/5 shadow-[0_0_15px_rgba(22,163,74,0.1)]'
+														: showAsWrong
+															? 'border-semantic-error bg-semantic-error/5 shadow-[0_0_15px_rgba(220,38,38,0.1)]'
+															: isSelected
+																? 'border-[var(--page-link)] bg-[var(--page-link)]/5 ring-1 ring-[var(--page-link)]'
+																: 'border-[var(--sh-exam-card-border)] bg-[var(--page-bg)]/40 hover:border-[var(--page-link)]/50 hover:bg-[var(--page-bg)]'}"
+													disabled={isAnswerChecked}
+													onclick={() =>
+														!isAnswerChecked &&
+														(selectedOption =
+															option.identifier)}
+												>
+													<span
+														class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold {showAsCorrect
+															? 'border-semantic-success bg-semantic-success text-white'
+															: showAsWrong
+																? 'border-semantic-error bg-semantic-error text-white'
+																: isSelected
+																	? 'border-[var(--page-link)] bg-[var(--page-link)] text-white'
+																	: 'border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-[var(--page-link)] group-hover:bg-[var(--page-link)]/20'}"
+													>
+														{showAsCorrect
+															? "✓"
+															: showAsWrong
+																? "✕"
+																: option.identifier}
+													</span>
+													<div
+														class="min-w-0 flex-1 break-words"
+													>
+														<MathText
+															content={option.content}
+														/>
+														{#if option.images?.length}
+															<div
+																class="mt-3 flex flex-wrap gap-2"
+															>
+																{#each option.images as img, imgIdx (`opt-${data.detailedQuestion._id}-${option.identifier}-${imgIdx}`)}
+																	{@const src =
+																		imageSrc(
+																			img as ImageLike,
+																		)}
+																	{#if src}
+																		<img
+																			{src}
+																			alt={imageAlt(
+																				img as ImageLike,
+																			)}
+																			class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm"
+																			loading="lazy"
+																		/>
+																	{/if}
+																{/each}
+															</div>
+														{/if}
+													</div>
+												</button>
 											{/each}
 										</div>
 									{/if}
-								</div>
 
-								<!-- Options Grid -->
-								{#if data.detailedQuestion.prompt?.en?.options?.length}
-									<div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-										{#each data.detailedQuestion.prompt.en.options as option (option.identifier)}
-											{@const isSelected = selectedOption === option.identifier}
-											{@const isCorrectData = (data.detailedQuestion as any).correct?.identifiers?.includes(option.identifier)}
-											{@const showAsCorrect = isAnswerChecked && isCorrectData}
-											{@const showAsWrong = isAnswerChecked && isSelected && !isCorrectData}
-											
-											<button
-												type="button"
-												class="group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200 {showAsCorrect ? 'border-semantic-success bg-semantic-success/5 shadow-[0_0_15px_rgba(22,163,74,0.1)]' : showAsWrong ? 'border-semantic-error bg-semantic-error/5 shadow-[0_0_15px_rgba(220,38,38,0.1)]' : isSelected ? 'border-[var(--page-link)] bg-[var(--page-link)]/5 ring-1 ring-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--page-bg)]/40 hover:border-[var(--page-link)]/50 hover:bg-[var(--page-bg)]'}"
-												disabled={isAnswerChecked}
-												onclick={() => !isAnswerChecked && (selectedOption = option.identifier)}
+									<!-- Explanation -->
+									{#if isAnswerChecked && data.detailedQuestion.prompt?.en?.explanation}
+										<div
+											class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2"
+										>
+											<div
+												class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
 											>
-												<span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold {showAsCorrect ? 'border-semantic-success bg-semantic-success text-white' : showAsWrong ? 'border-semantic-error bg-semantic-error text-white' : isSelected ? 'border-[var(--page-link)] bg-[var(--page-link)] text-white' : 'border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-[var(--page-link)] group-hover:bg-[var(--page-link)]/20'}">
-													{showAsCorrect ? '✓' : showAsWrong ? '✕' : option.identifier}
-												</span>
-												<div class="min-w-0 flex-1 break-words">
-													<MathText content={option.content} />
-													{#if option.images?.length}
-														<div class="mt-3 flex flex-wrap gap-2">
-															{#each option.images as img, imgIdx (`opt-${data.detailedQuestion._id}-${option.identifier}-${imgIdx}`)}
-																{@const src = imageSrc(img as ImageLike)}
-																{#if src}
-																	<img
-																		src={src}
-																		alt={imageAlt(img as ImageLike)}
-																		class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm"
-																		loading="lazy"
-																	/>
-																{/if}
-															{/each}
-														</div>
-													{/if}
-												</div>
-											</button>
-										{/each}
-									</div>
-								{/if}
-
-								<!-- Explanation -->
-								{#if isAnswerChecked && data.detailedQuestion.prompt?.en?.explanation}
-									<div class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2">
-										<div class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]">
-											<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-											</svg>
-											ExamFlow Solution
+												<svg
+													width="20"
+													height="20"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												>
+													<path
+														d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+													/>
+												</svg>
+												ExamFlow Solution
+											</div>
+											<div
+												class="text-[0.95rem] leading-relaxed text-[var(--page-text)]"
+											>
+												<MathText
+													content={data
+														.detailedQuestion.prompt
+														.en.explanation}
+												/>
+												{#if data.detailedQuestion.prompt.en.explanationImages?.length}
+													<div
+														class="mt-4 flex flex-wrap gap-3"
+													>
+														{#each data.detailedQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${data.detailedQuestion._id}-${imgIdx}`)}
+															{@const src =
+																imageSrc(
+																	img as ImageLike,
+																)}
+															{#if src}
+																<img
+																	{src}
+																	alt={imageAlt(
+																		img as ImageLike,
+																	)}
+																	class="max-h-48 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																	loading="lazy"
+																/>
+															{/if}
+														{/each}
+													</div>
+												{/if}
+											</div>
 										</div>
-										<div class="text-[0.95rem] leading-relaxed text-[var(--page-text)]">
-											<MathText content={data.detailedQuestion.prompt.en.explanation} />
-											{#if data.detailedQuestion.prompt.en.explanationImages?.length}
-												<div class="mt-4 flex flex-wrap gap-3">
-													{#each data.detailedQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${data.detailedQuestion._id}-${imgIdx}`)}
-														{@const src = imageSrc(img as ImageLike)}
-														{#if src}
-															<img
-																src={src}
-																alt={imageAlt(img as ImageLike)}
-																class="max-h-48 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
-																loading="lazy"
-															/>
-														{/if}
-													{/each}
-												</div>
-											{/if}
-										</div>
+									{/if}
+
+									<!-- Footer Buttons -->
+									<div
+										class="mt-auto flex flex-wrap items-center justify-between gap-4 border-t border-[var(--sh-exam-card-border)] pt-5"
+									>
+										<button
+											type="button"
+											class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
+											disabled={!canGoDetailedPrev}
+											onclick={goDetailedPrev}
+										>
+											Previous
+										</button>
+
+										<button
+											type="button"
+											class="min-w-[180px] rounded-lg bg-[var(--page-link)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--page-link)]/20 transition hover:bg-[var(--page-link-hover)] hover:shadow-lg disabled:opacity-50"
+											onclick={() => {
+												if (
+													!isAnswerChecked &&
+													selectedOption
+												)
+													isAnswerChecked = true;
+											}}
+											disabled={isAnswerChecked ||
+												!selectedOption}
+										>
+											Check Answer
+										</button>
+
+										<button
+											type="button"
+											class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
+											disabled={!canGoDetailedNext}
+											onclick={goDetailedNext}
+										>
+											Next
+										</button>
 									</div>
-								{/if}
-
-								<!-- Footer Buttons -->
-								<div class="mt-auto flex flex-wrap items-center justify-between gap-4 border-t border-[var(--sh-exam-card-border)] pt-5">
-									<button
-										type="button"
-										class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
-										disabled={!canGoDetailedPrev}
-										onclick={goDetailedPrev}
-									>
-										Previous
-									</button>
-
-									<button
-										type="button"
-										class="min-w-[180px] rounded-lg bg-[var(--page-link)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--page-link)]/20 transition hover:bg-[var(--page-link-hover)] hover:shadow-lg disabled:opacity-50"
-										onclick={() => { if (!isAnswerChecked && selectedOption) isAnswerChecked = true; }}
-										disabled={isAnswerChecked || !selectedOption}
-									>
-										Check Answer
-									</button>
-
-									<button
-										type="button"
-										class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
-										disabled={!canGoDetailedNext}
-										onclick={goDetailedNext}
-									>
-										Next
-									</button>
-								</div>
 								{/if}
 							</div>
 						</div>
@@ -677,12 +1053,17 @@
 		role="button"
 		tabindex="0"
 		onclick={() => (filterDrawerOpen = false)}
-		onkeydown={(e) => (e.key === 'Escape' ? (filterDrawerOpen = false) : null)}
+		onkeydown={(e) =>
+			e.key === "Escape" ? (filterDrawerOpen = false) : null}
 	></div>
 
-	<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl">
+	<aside
+		class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl"
+	>
 		<div class="mb-4 flex items-center justify-between">
-			<h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
+			<h3 class="text-base font-semibold text-[var(--page-text)]">
+				Filters
+			</h3>
 			<button
 				type="button"
 				class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
@@ -694,13 +1075,19 @@
 
 		<div class="space-y-5">
 			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
+					Difficulty
+				</div>
 				<div class="flex flex-wrap gap-2.5">
-					{#each ['easy', 'medium', 'hard'] as diff}
-						<button 
-							type="button" 
+					{#each ["easy", "medium", "hard"] as diff}
+						<button
+							type="button"
 							onclick={() => toggleDifficulty(diff)}
-							class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {selectedDifficulties.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+							class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {selectedDifficulties.includes(
+								diff,
+							)
+								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 						>
 							{diff}
 						</button>
@@ -709,13 +1096,19 @@
 			</div>
 
 			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
+					Type
+				</div>
 				<div class="grid gap-2.5">
-					{#each ['MCQ', 'MSQ', 'TRUE_FALSE', 'INTEGER', 'FILL_BLANK', 'COMPREHENSION_PASSAGE'] as kindOption}
+					{#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as kindOption}
 						<button
 							type="button"
 							onclick={() => toggleKind(kindOption)}
-							class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedKinds.includes(kindOption) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+							class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedKinds.includes(
+								kindOption,
+							)
+								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 						>
 							{kindOption}
 						</button>
@@ -723,7 +1116,9 @@
 				</div>
 			</div>
 
-			<div class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]">
+			<div
+				class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]"
+			>
 				<button
 					type="button"
 					class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)] transition"
