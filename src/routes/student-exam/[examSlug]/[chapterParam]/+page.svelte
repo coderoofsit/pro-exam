@@ -1,9 +1,9 @@
 <script lang="ts">
 	import MathText from "$lib/components/MathText.svelte";
-	import { questionPromptEnContent } from "$lib/api/questions";
+	import { questionPromptEnContent, fetchQuestionById } from "$lib/api/questions";
 	import type { PageData, ActionData } from "./$types";
 	import { enhance } from "$app/forms";
-	import { goto } from "$app/navigation";
+	import { goto, replaceState } from "$app/navigation";
 	import { browser } from "$app/environment";
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/stores";
@@ -27,6 +27,13 @@
 	let activeQuestionId = $state<string | null>(null);
 	let isEditing = $state(false);
 
+	/** Client-driven question view (shallow routing); stays in sync with server data on full navigations. */
+	let effectiveQuestionId = $state<string | null>(null);
+	let detailQuestion = $state<Question | null>(null);
+	let detailLoading = $state(false);
+	let detailLoadSeq = 0;
+	let detailAbort: AbortController | null = null;
+
 	$effect(() => {
 		if (browser) {
 			const params = new URLSearchParams(window.location.search);
@@ -38,9 +45,63 @@
 		}
 	});
 
+	/** Full navigations only: shallow `replaceState` does not change `data`, so this won't overwrite client-driven id. */
 	$effect(() => {
-		if (data.detailedQuestion?._id !== activeQuestionId) {
-			activeQuestionId = data.detailedQuestion?._id ?? null;
+		const qid = data.questionId;
+		const det = data.detailedQuestion;
+		if (!qid) {
+			detailLoadSeq++;
+			detailAbort?.abort();
+			effectiveQuestionId = null;
+			detailQuestion = null;
+			detailLoading = false;
+			return;
+		}
+		effectiveQuestionId = qid;
+		if (det) {
+			detailLoadSeq++;
+			detailAbort?.abort();
+			detailQuestion = det;
+			questionStore.setCachedById(det._id, det);
+			detailLoading = false;
+		} else {
+			detailQuestion = null;
+		}
+	});
+
+	$effect(() => {
+		if (!browser) return;
+		const id = effectiveQuestionId;
+		if (!id) return;
+		if (detailQuestion?._id === id) return;
+		const cached = questionStore.getCachedById(id);
+		if (cached) {
+			detailQuestion = cached;
+			return;
+		}
+		const seq = ++detailLoadSeq;
+		detailAbort?.abort();
+		detailAbort = new AbortController();
+		const signal = detailAbort.signal;
+		detailLoading = true;
+		void fetchQuestionById(id, undefined, { signal })
+			.then((q) => {
+				if (seq !== detailLoadSeq || signal.aborted) return;
+				detailQuestion = q;
+				questionStore.setCachedById(id, q);
+			})
+			.catch(() => {
+				if (seq !== detailLoadSeq || signal.aborted) return;
+				detailQuestion = null;
+			})
+			.finally(() => {
+				if (seq === detailLoadSeq) detailLoading = false;
+			});
+	});
+
+	$effect(() => {
+		if (detailQuestion?._id !== activeQuestionId) {
+			activeQuestionId = detailQuestion?._id ?? null;
 			selectedOption = null;
 			isAnswerChecked = false;
 			isEditing = false;
@@ -93,6 +154,28 @@
 	});
 
 	$effect(() => {
+		if (!browser || !detailQuestion || !effectiveQuestionId) return;
+		const idx = displayQuestions.findIndex((q: Question) => q._id === detailQuestion!._id);
+		const prefetch = (qid: string | undefined) => {
+			if (!qid || questionStore.getCachedById(qid)) return;
+			void fetchQuestionById(qid)
+				.then((q) => questionStore.setCachedById(qid, q))
+				.catch(() => {});
+		};
+		const run = () => {
+			if (idx > 0) prefetch(displayQuestions[idx - 1]?._id);
+			if (idx >= 0 && idx < displayQuestions.length - 1) prefetch(displayQuestions[idx + 1]?._id);
+		};
+		let idleId: ReturnType<typeof requestIdleCallback> | ReturnType<typeof setTimeout> | undefined;
+		if (typeof requestIdleCallback !== 'undefined') {
+			idleId = requestIdleCallback(run);
+			return () => cancelIdleCallback(idleId as number);
+		}
+		idleId = setTimeout(run, 120);
+		return () => clearTimeout(idleId as ReturnType<typeof setTimeout>);
+	});
+
+	$effect(() => {
 		if (!browser) return;
 		if (!storeChapterKey) return;
 		if (!data.questions.length) return;
@@ -141,7 +224,7 @@
 
 	function applyFilters() {
 		const url = `${chapterBaseUrl()}?${activeFiltersQuery({ page: 1 })}`;
-		goto(url);
+		void goto(url);
 		filterDrawerOpen = false;
 	}
 
@@ -149,7 +232,7 @@
 		selectedDifficulties = [];
 		selectedKinds = [];
 		const url = `${chapterBaseUrl()}?page=1`;
-		goto(url);
+		void goto(url);
 		filterDrawerOpen = false;
 	}
 
@@ -202,81 +285,93 @@
 		),
 	);
 
-	async function openQuestionPreview(index: number) {
+	function openQuestionPreview(index: number) {
 		const q = displayQuestions[index];
 		if (!q) return;
-		await goto(
+		replaceState(
 			chapterHref(data.chapterParam, {
 				page: data.safePage,
 				questionId: q._id,
 			}),
+			{},
 		);
+		effectiveQuestionId = q._id;
 	}
 
-	async function goDetailedPrev() {
-		if (!data.detailedQuestion) return;
+	function goDetailedPrev() {
+		const dq = detailQuestion;
+		if (!dq) return;
 		const currentIdx = displayQuestions.findIndex(
-			(q) => q._id === data.detailedQuestion!._id,
+			(q: Question) => q._id === dq._id,
 		);
 		if (currentIdx > 0) {
 			const prevQ = displayQuestions[currentIdx - 1];
-			await goto(
+			replaceState(
 				chapterHref(data.chapterParam, {
 					page: data.safePage,
 					questionId: prevQ._id,
 				}),
+				{},
 			);
+			effectiveQuestionId = prevQ._id;
 		} else if (data.safePage > 1) {
-			await goto(
+			void goto(
 				chapterHref(data.chapterParam, { page: data.safePage - 1 }),
 			);
 		}
 	}
 
-	async function goDetailedNext() {
-		if (!data.detailedQuestion) return;
+	function goDetailedNext() {
+		const dq = detailQuestion;
+		if (!dq) return;
 		const currentIdx = displayQuestions.findIndex(
-			(q) => q._id === data.detailedQuestion!._id,
+			(q: Question) => q._id === dq._id,
 		);
 		if (currentIdx >= 0 && currentIdx < displayQuestions.length - 1) {
 			const nextQ = displayQuestions[currentIdx + 1];
-			await goto(
+			replaceState(
 				chapterHref(data.chapterParam, {
 					page: data.safePage,
 					questionId: nextQ._id,
 				}),
+				{},
 			);
+			effectiveQuestionId = nextQ._id;
 		} else if (
 			displayPaginationMeta &&
 			data.safePage < displayPaginationMeta.lastPage
 		) {
-			await goto(
+			void goto(
 				chapterHref(data.chapterParam, { page: data.safePage + 1 }),
 			);
 		}
 	}
 
 	const canGoDetailedPrev = $derived(
-		data.detailedQuestion
+		detailQuestion != null
 			? displayQuestions.findIndex(
-					(q) => q._id === data.detailedQuestion!._id,
+					(q: Question) => q._id === detailQuestion!._id,
 				) > 0 || data.safePage > 1
 			: false,
 	);
 
 	const canGoDetailedNext = $derived(
-		data.detailedQuestion
+		detailQuestion != null
 			? displayQuestions.findIndex(
-					(q) => q._id === data.detailedQuestion!._id,
-				) <
-					displayQuestions.length - 1 ||
-					(displayPaginationMeta &&
-						data.safePage < displayPaginationMeta.lastPage)
+					(q: Question) => q._id === detailQuestion!._id,
+				) < displayQuestions.length - 1 ||
+					!!(
+						displayPaginationMeta &&
+						data.safePage < displayPaginationMeta.lastPage
+					)
 			: false,
 	);
 
 	function closeQuestionPreview() {
-		goto(chapterHref(data.chapterParam, { page: data.safePage }));
+		replaceState(`${chapterBaseUrl()}?${activeFiltersQuery({ page: data.safePage })}`, {});
+		effectiveQuestionId = null;
+		detailQuestion = null;
+		detailLoading = false;
 	}
 
 	function imageSrc(image: ImageLike): string {
@@ -321,14 +416,14 @@
 	class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
-		{#if !data.detailedQuestion && !sidebarCollapsed}
+		{#if !effectiveQuestionId && !sidebarCollapsed}
 			<aside
 				class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
 			>
 				<div class="flex-1 overflow-y-auto p-4">
 					<button
 						type="button"
-						onclick={() => goto(`/student-exam/${data.examSlug}`)}
+						onclick={() => void goto(`/student-exam/${data.examSlug}`)}
 						class="mb-4 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 					>
 						<svg
@@ -382,7 +477,7 @@
 			</aside>
 		{/if}
 
-		{#if !data.detailedQuestion && sidebarCollapsed}
+		{#if !effectiveQuestionId && sidebarCollapsed}
 			<button
 				type="button"
 				onclick={() => (sidebarCollapsed = false)}
@@ -405,7 +500,7 @@
 			<div
 				class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0"
 			>
-				{#if data.detailedQuestion !== null}
+				{#if effectiveQuestionId !== null}
 					<div class="py-6 shrink-0">
 						<button
 							type="button"
@@ -442,7 +537,7 @@
 								{/if}
 							</div>
 
-							{#if !data.detailedQuestion}
+							{#if !effectiveQuestionId}
 								<button
 									type="button"
 									class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
@@ -462,7 +557,7 @@
 								No questions found.
 							</div>
 						</div>
-					{:else if !data.detailedQuestion}
+					{:else if !effectiveQuestionId}
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
 							<div
 								class="shrink-0 border-b border-[var(--page-card-border)] pb-4"
@@ -653,7 +748,22 @@
 							<div
 								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-6 shadow-sm flex flex-col min-h-full"
 							>
-								{#if isEditing}
+								{#if detailLoading && !detailQuestion}
+									<div class="flex flex-col gap-4 animate-pulse" aria-busy="true">
+										<div class="h-6 w-40 rounded bg-[var(--page-card-border)]"></div>
+										<div class="h-4 w-full max-w-2xl rounded bg-[var(--page-card-border)]"></div>
+										<div class="h-4 w-full max-w-xl rounded bg-[var(--page-card-border)]"></div>
+										<div class="h-4 w-2/3 rounded bg-[var(--page-card-border)]"></div>
+										<div class="mt-6 grid grid-cols-2 gap-3">
+											<div class="h-24 rounded-xl bg-[var(--page-card-border)]"></div>
+											<div class="h-24 rounded-xl bg-[var(--page-card-border)]"></div>
+										</div>
+									</div>
+								{:else if !detailQuestion}
+									<div class="text-center text-[var(--page-text-muted)] py-12">
+										Unable to load this question.
+									</div>
+								{:else if isEditing}
 									<form
 										method="POST"
 										action="?/updateQuestion"
@@ -675,7 +785,7 @@
 										<input
 											type="hidden"
 											name="questionId"
-											value={data.detailedQuestion._id}
+											value={detailQuestion._id}
 										/>
 
 										<!-- Form body -->
@@ -690,14 +800,12 @@
 												id="promptContent"
 												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
 												rows="5"
-												>{data.detailedQuestion.prompt
-													?.en?.content ??
-													""}</textarea
+												>{detailQuestion.prompt?.en?.content ?? ""}</textarea
 											>
 										</div>
 
 										<!-- Options Grid for Editing -->
-										{#if data.detailedQuestion.prompt?.en?.options?.length}
+										{#if detailQuestion.prompt?.en?.options?.length}
 											<div class="mb-5">
 												<label
 													class="block text-sm font-semibold text-[var(--page-text)] mb-3"
@@ -706,7 +814,7 @@
 												<div
 													class="grid grid-cols-1 md:grid-cols-2 gap-4"
 												>
-													{#each data.detailedQuestion.prompt.en.options as option, i (option.identifier)}
+													{#each detailQuestion.prompt.en.options as option, i (option.identifier)}
 														<div
 															class="flex flex-col gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 shadow-sm"
 														>
@@ -752,9 +860,7 @@
 												id="explanationContent"
 												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
 												rows="4"
-												>{data.detailedQuestion.prompt
-													?.en?.explanation ??
-													""}</textarea
+												>{detailQuestion.prompt?.en?.explanation ?? ""}</textarea
 											>
 										</div>
 
@@ -784,20 +890,20 @@
 										<div
 											class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]"
 										>
-											{data.detailedQuestion.examSlug
+											{(detailQuestion as any).examSlug
 												?.replace("-", " ")
 												.toUpperCase()}
-											{data.detailedQuestion.year ?? ""}
+											{(detailQuestion as any).year ?? ""}
 										</div>
 										<div
 											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
 										>
-											{data.detailedQuestion.kind}
+											{detailQuestion.kind}
 										</div>
 										<div
 											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
 										>
-											{data.detailedQuestion.marks} Marks
+											{(detailQuestion as any).marks} Marks
 										</div>
 										<button
 											type="button"
@@ -829,14 +935,14 @@
 									>
 										<MathText
 											content={questionPromptEnContent(
-												data.detailedQuestion,
+												detailQuestion,
 											)}
 										/>
-										{#if promptImagesOnly(data.detailedQuestion).length}
+										{#if promptImagesOnly(detailQuestion).length}
 											<div
 												class="mt-4 grid grid-cols-2 gap-3"
 											>
-												{#each promptImagesOnly(data.detailedQuestion) as img, imgIdx (`main-${data.detailedQuestion._id}-${imgIdx}`)}
+												{#each promptImagesOnly(detailQuestion) as img, imgIdx (`main-${detailQuestion._id}-${imgIdx}`)}
 													{@const src = imageSrc(
 														img as ImageLike,
 													)}
@@ -856,16 +962,16 @@
 									</div>
 
 									<!-- Options Grid -->
-									{#if data.detailedQuestion.prompt?.en?.options?.length}
+									{#if detailQuestion.prompt?.en?.options?.length}
 										<div
 											class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
 										>
-											{#each data.detailedQuestion.prompt.en.options as option (option.identifier)}
+											{#each detailQuestion.prompt.en.options as option (option.identifier)}
 												{@const isSelected =
 													selectedOption ===
 													option.identifier}
 												{@const isCorrectData = (
-													data.detailedQuestion as any
+													detailQuestion as any
 												).correct?.identifiers?.includes(
 													option.identifier,
 												)}
@@ -917,7 +1023,7 @@
 															<div
 																class="mt-3 flex flex-wrap gap-2"
 															>
-																{#each option.images as img, imgIdx (`opt-${data.detailedQuestion._id}-${option.identifier}-${imgIdx}`)}
+																{#each option.images as img, imgIdx (`opt-${detailQuestion._id}-${option.identifier}-${imgIdx}`)}
 																	{@const src =
 																		imageSrc(
 																			img as ImageLike,
@@ -942,7 +1048,7 @@
 									{/if}
 
 									<!-- Explanation -->
-									{#if isAnswerChecked && data.detailedQuestion.prompt?.en?.explanation}
+									{#if isAnswerChecked && detailQuestion.prompt?.en?.explanation}
 										<div
 											class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2"
 										>
@@ -969,15 +1075,13 @@
 												class="text-[0.95rem] leading-relaxed text-[var(--page-text)]"
 											>
 												<MathText
-													content={data
-														.detailedQuestion.prompt
-														.en.explanation}
+													content={detailQuestion.prompt.en.explanation}
 												/>
-												{#if data.detailedQuestion.prompt.en.explanationImages?.length}
+												{#if detailQuestion.prompt.en.explanationImages?.length}
 													<div
 														class="mt-4 flex flex-wrap gap-3"
 													>
-														{#each data.detailedQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${data.detailedQuestion._id}-${imgIdx}`)}
+														{#each detailQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${detailQuestion._id}-${imgIdx}`)}
 															{@const src =
 																imageSrc(
 																	img as ImageLike,

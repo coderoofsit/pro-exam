@@ -113,7 +113,8 @@ export async function fetchQuestionsByChapterGroup(
 
 export async function fetchQuestionById(
 	id: string,
-	token?: string | null
+	token?: string | null,
+	opts?: { signal?: AbortSignal }
 ): Promise<Question> {
 	const t = resolveApiToken(token);
 	const response = await apiRequest<{
@@ -124,7 +125,8 @@ export async function fetchQuestionById(
 		endpoint: `/api/v1/questions/${id}`,
 		method: 'GET',
 		token: t,
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		signal: opts?.signal
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch question');
 	return response.data.data;

@@ -60,22 +60,40 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			}
 		}
 
-		const questionsRes = !questionId && resolvedChapterId
-			? await fetchQuestionsByChapter(resolvedChapterId, safePage, QUESTIONS_PAGE_LIMIT, difficulty, kind)
-			: null;
-
-		// Only use the current page for the initial review pool.
-		// This keeps API calls to a single page per request.
-		const reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
-
+		let questionsRes: Awaited<ReturnType<typeof fetchQuestionsByChapter>> | null = null;
 		let detailedQuestion: Question | null = null;
-		if (questionId) {
+
+		if (resolvedChapterId) {
+			const listPromise = fetchQuestionsByChapter(
+				resolvedChapterId,
+				safePage,
+				QUESTIONS_PAGE_LIMIT,
+				difficulty,
+				kind
+			);
+			if (questionId) {
+				const [list, detail] = await Promise.all([
+					listPromise,
+					fetchQuestionById(questionId).catch((err) => {
+						console.error('Failed to fetch detailed question', err);
+						return null;
+					})
+				]);
+				questionsRes = list;
+				detailedQuestion = detail;
+			} else {
+				questionsRes = await listPromise;
+			}
+		} else if (questionId) {
 			try {
 				detailedQuestion = await fetchQuestionById(questionId);
 			} catch (err) {
 				console.error('Failed to fetch detailed question', err);
 			}
 		}
+
+		// Only use the current page for the initial review pool.
+		const reviewPoolQuestions: Question[] = questionsRes?.data ?? [];
 
 		return {
 			examSlug,

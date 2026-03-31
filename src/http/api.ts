@@ -10,6 +10,7 @@ export type ApiRequestOptions = {
   skipAuth?: boolean;
   headers?: Record<string, string>;
   fetch?: typeof globalThis.fetch;
+  signal?: AbortSignal;
 };
 
 export type ApiSuccessResponse<T> = {
@@ -45,7 +46,8 @@ export async function apiRequest<T>({
   token,
   skipAuth = false,
   headers = {},
-  fetch: customFetch = fetch
+  fetch: customFetch = fetch,
+  signal
 }: ApiRequestOptions): Promise<ApiResponse<T>> {
   try {
     const finalHeaders: Record<string, string> = {
@@ -64,7 +66,8 @@ export async function apiRequest<T>({
     const response = await customFetch(`${PUBLIC_API_BASE_URL}${endpoint}`, {
       method,
       headers: finalHeaders,
-      body: data !== undefined ? JSON.stringify(data) : undefined
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+      signal
     });
 
     let result: any = null;

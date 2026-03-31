@@ -14,13 +14,23 @@ type QuestionChapterState = {
 
 type QuestionState = {
 	byChapter: Record<string, QuestionChapterState>;
+	byId: Record<string, Question>;
 };
 
 function createQuestionStore() {
-	const store = writable<QuestionState>({ byChapter: {} });
+	const store = writable<QuestionState>({ byChapter: {}, byId: {} });
 
 	return {
 		subscribe: store.subscribe,
+		getCachedById(id: string): Question | undefined {
+			return get(store).byId[id];
+		},
+		setCachedById(id: string, question: Question) {
+			store.update((s) => ({
+				...s,
+				byId: { ...s.byId, [id]: question }
+			}));
+		},
 		setQuestionsPage(
 			chapterId: string,
 			page: number,
@@ -45,7 +55,8 @@ function createQuestionStore() {
 					next.limit = pagination.limit;
 				}
 				return {
-					byChapter: { ...s.byChapter, [key]: next }
+					byChapter: { ...s.byChapter, [key]: next },
+					byId: s.byId
 				};
 			});
 		},
@@ -64,11 +75,11 @@ function createQuestionStore() {
 			store.update((s) => {
 				const next = { ...s.byChapter };
 				delete next[cacheKey(chapterId)];
-				return { byChapter: next };
+				return { byChapter: next, byId: s.byId };
 			});
 		},
 		clear() {
-			store.set({ byChapter: {} });
+			store.set({ byChapter: {}, byId: {} });
 		}
 	};
 }
