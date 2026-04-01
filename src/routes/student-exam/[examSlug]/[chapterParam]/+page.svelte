@@ -450,7 +450,7 @@
 				<div class="flex-1 overflow-y-auto p-4">
 					<button
 						type="button"
-						onclick={() => void goto(`/student-exam/${data.examSlug}`)}
+						onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters`)}
 						class="mb-4 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 					>
 						<svg
