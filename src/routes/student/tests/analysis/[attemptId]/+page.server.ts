@@ -1,3 +1,4 @@
+// Force type-sync
 import type { PageServerLoad } from './$types';
 import { fetchTestAttemptById } from '$lib/api/testAttempts';
 import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
