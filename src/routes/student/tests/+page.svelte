@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll, preloadData } from '$app/navigation';
   import { page } from '$app/state';
   import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
   import {
@@ -9,13 +9,25 @@
   import TestAttemptAnalysisModal from '$lib/components/TestAttemptAnalysisModal.svelte';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
-   import { preloadData } from '$app/navigation';
+
+  let ownTestsPreloaded = false;
+  let ownTestsPreloadPromise: Promise<void> | null = null;
 
   function warmOwnTests() {
-    void preloadData('/student/tests/own');
+    if (ownTestsPreloaded || ownTestsPreloadPromise) return;
+
+    ownTestsPreloadPromise = preloadData('/student/tests/own')
+      .then(() => {
+        ownTestsPreloaded = true;
+      })
+      .catch(() => {
+        // allow retry if preload fails
+      })
+      .finally(() => {
+        if (!ownTestsPreloaded) ownTestsPreloadPromise = null;
+      });
   }
 
-  /** Mirrors `GetTestUserItem` from the tests load (`+page.server.ts`). */
   type GetTestUserItem = NonNullable<PageData['items']>[number];
 
   let { data }: { data: PageData } = $props();
@@ -39,10 +51,7 @@
   let startTestError = $state<string | null>(null);
   let pendingStartModalOpen = $state(false);
 
-  /** Filters panel (dropdown) open — toggled by icon; selects stay in DOM when hidden so values still submit. */
   let filtersOpen = $state(false);
-
-  /** Local search text; synced from the URL when the query string changes (not on every keystroke). */
   let searchDraft = $state('');
 
   const querySignature = $derived(page.url.search);
@@ -54,22 +63,25 @@
 
   const SEARCH_DEBOUNCE_MS = 350;
 
-  /** Merges filter/search updates, resets to page 1, preserves draft search when filters change. */
   async function navigateWithFilters(updates: Record<string, string | undefined>) {
     const u = new URL(page.url);
     u.searchParams.set('page', '1');
+
     for (const [k, v] of Object.entries(updates)) {
       if (v === undefined || v === '') u.searchParams.delete(k);
       else u.searchParams.set(k, String(v));
     }
+
     if (!('search' in updates)) {
       const s = searchDraft.trim();
       if (s) u.searchParams.set('search', s);
       else u.searchParams.delete('search');
     }
+
     const next = `${u.pathname}${u.search}`;
     const cur = `${page.url.pathname}${page.url.search}`;
     if (next === cur) return;
+
     await goto(next, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
@@ -77,13 +89,16 @@
     const q = searchDraft;
     const cur = (data.search ?? '').trim();
     if (q.trim() === cur) return;
+
     if (q === '') {
       void navigateWithFilters({ search: '' });
       return;
     }
+
     const t = setTimeout(() => {
       void navigateWithFilters({ search: q.trim() });
     }, SEARCH_DEBOUNCE_MS);
+
     return () => clearTimeout(t);
   });
 
@@ -107,11 +122,12 @@
 
   function testName(item: GetTestUserItem) {
     const n = item.name;
-    if (n && typeof n === 'object' && 'en' in n && typeof n.en === 'string' && n.en.trim()) return n.en.trim();
+    if (n && typeof n === 'object' && 'en' in n && typeof n.en === 'string' && n.en.trim()) {
+      return n.en.trim();
+    }
     return 'Untitled test';
   }
 
-  /** API sets `attempted` from lookups; also trust `attemptId` if present (avoids stale `attempted` alone). */
   function hasExistingAttempt(item: GetTestUserItem) {
     if (item.attempted) return true;
     const id = item.attemptId;
@@ -131,10 +147,10 @@
     return hrefWithParams({ page: p });
   }
 
-  /** Same page + query — data loaded in `+page.server.ts` for SSR. */
   function analysisHref(item: GetTestUserItem) {
     const aid = item.attemptId?.trim();
     if (!aid) return '#';
+
     const u = new URL(page.url);
     u.searchParams.set('analysisAttemptId', aid);
     u.searchParams.set('analysisTestName', testName(item));
@@ -170,28 +186,35 @@
 
   async function onStartTest(item: GetTestUserItem) {
     if (startingTestId) return;
+
     const testId = item._id;
     const batchIdStr = item.batchId?.trim() ?? '';
+
     startTestError = null;
     startingTestId = item._id;
+
     try {
       const res = await createTestAttempt({
         testId,
         batchId: batchIdStr || null
       });
+
       if (!res.success) {
         startTestError = res.message || 'Could not start test';
         return;
       }
+
       const persisted = persistBatchAttemptSessionFromCreateResponse(res.data, {
         testId,
         batchId: batchIdStr,
         testName: testName(item)
       });
+
       if (!persisted.ok) {
         startTestError = persisted.message;
         return;
       }
+
       await goto(
         `/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}`
       );
@@ -234,11 +257,11 @@
         </a>
 
         <a
-           href="/student/tests/own"
+  href="/student/tests/own"
   onmouseenter={warmOwnTests}
   onfocus={warmOwnTests}
-          class="group flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"
-        >
+  class="group flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"
+>
           <span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-cyan)]" aria-hidden="true">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
               <path
