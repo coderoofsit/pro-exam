@@ -1,18 +1,12 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
 	import { fetchGroupedChaptersByExamSlug, type GroupedSubjectRow } from '$lib/api/chapters';
 	import { chaptersStore } from '$lib/stores/chapters';
 	import {
 		buildChaptersBySubjectFromGrouped,
 		buildSubjectsFromGrouped,
 	} from '$lib/student-exam/groupedExamData';
-
-	type ChapterGroupMeta = {
-		_id: string;
-		name: { en: string; hi?: string };
-		order: number;
-		slug?: string;
-	};
 
 	type SubjectNavRow = {
 		_id: string;
@@ -28,20 +22,8 @@
 		groupOrder: number;
 	};
 
-	let { data } = $props<{
-		data: {
-			examSlug: string;
-			exam: Record<string, unknown> | null;
-			hierarchy: null;
-			subjects: SubjectNavRow[];
-			chaptersBySubjectSlug: Record<string, ChapterCardRow[]>;
-			chapterGroupsBySubjectSlug: Record<string, ChapterGroupMeta[]>;
-			fullChaptersFromGrouped: boolean;
-			initialSubjectSlug: string;
-			message: string | null;
-			_rawGrouped?: GroupedSubjectRow[];
-		};
-	}>();
+	/** No `+page.server.ts` here so client navigations do not fetch `__data.json` — only the grouped chapters API runs. */
+	const examSlug = $derived(page.params.examSlug ?? '');
 
 	/** Grouped API has no exam name; format slug for the header without another request. */
 	function titleFromExamSlug(slug: string) {
@@ -69,13 +51,14 @@
 		const isFromExamsOrDashboard =
 			referrer.includes('/student/exams') || referrer.includes('/student/dashboard');
 		if (isFromExamsOrDashboard) {
-			sessionStorage.removeItem(`exam-${data.examSlug}-subject`);
+			sessionStorage.removeItem(`exam-${examSlug}-subject`);
 		}
 	});
 
 	$effect(() => {
 		if (!browser) return;
-		const slug = data.examSlug;
+		const slug = examSlug;
+		if (!slug) return;
 		const seq = ++clientLoadSeq;
 		chaptersLoading = true;
 		chaptersError = null;
@@ -116,10 +99,10 @@
 		if (subjects.length === 0) return;
 		const referrer = document.referrer;
 		const isFromChapterPage =
-			referrer.includes(`/student-exam/${data.examSlug}/`) &&
-			!referrer.endsWith(`/student-exam/${data.examSlug}`);
+			referrer.includes(`/student-exam/${examSlug}/`) &&
+			!referrer.endsWith(`/student-exam/${examSlug}`);
 		if (isFromChapterPage) {
-			const stored = sessionStorage.getItem(`exam-${data.examSlug}-subject`);
+			const stored = sessionStorage.getItem(`exam-${examSlug}-subject`);
 			if (stored && subjects.find((s: SubjectNavRow) => s.slug === stored)) {
 				selectedSubjectSlug = stored;
 				showChapters = true;
@@ -137,13 +120,13 @@
 		return chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
 	});
 
-	const examTitle = $derived(titleFromExamSlug(data.examSlug));
+	const examTitle = $derived(titleFromExamSlug(examSlug));
 
 	function selectSubject(slug: string) {
 		selectedSubjectSlug = slug;
 		showChapters = true;
 		if (browser) {
-			sessionStorage.setItem(`exam-${data.examSlug}-subject`, slug);
+			sessionStorage.setItem(`exam-${examSlug}-subject`, slug);
 		}
 	}
 
@@ -151,13 +134,13 @@
 		showChapters = false;
 		selectedSubjectSlug = '';
 		if (browser) {
-			sessionStorage.removeItem(`exam-${data.examSlug}-subject`);
+			sessionStorage.removeItem(`exam-${examSlug}-subject`);
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Student Exam {data.examSlug}</title>
+	<title>Student Exam {examSlug}</title>
 	<style>
 		body {
 			overflow: hidden;
@@ -165,10 +148,7 @@
 	</style>
 </svelte:head>
 
-{#if data.message}
-	<div class="flex h-screen items-center justify-center text-semantic-error">{data.message}</div>
-{:else}
-	<div class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]">
+<div class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]">
 		<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden px-4">
 			{#if !showChapters}
 				<div class="flex flex-1 flex-col py-10">
@@ -281,7 +261,7 @@
 								<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
 									{#each displayChapters as { chapter, groupName } (chapter._id)}
 										<a
-											href={`/student-exam/${data.examSlug}/${encodeURIComponent(chapter.slug ?? chapter._id)}`}
+											href={`/student-exam/${examSlug}/${encodeURIComponent(chapter.slug ?? chapter._id)}`}
 											class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-5 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
 										>
 											<div
@@ -307,4 +287,3 @@
 			{/if}
 		</div>
 	</div>
-{/if}
