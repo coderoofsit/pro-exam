@@ -416,7 +416,7 @@
 							onclick={closeQuestionPreview}
 							class="inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
 						>
-							← Back to Chapter
+							← Back to Questions
 						</button>
 					{:else}
 						<button
