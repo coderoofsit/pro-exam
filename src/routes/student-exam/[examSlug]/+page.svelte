@@ -1,11 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import {
-		fetchGroupedChaptersByExamSlug,
-		fetchChaptersHierarchy,
-		type GroupedSubjectRow,
-	} from '$lib/api/chapters';
-	import { fetchExamBySlug } from '$lib/api/exams';
+	import { fetchGroupedChaptersByExamSlug, type GroupedSubjectRow } from '$lib/api/chapters';
 	import { chaptersStore } from '$lib/stores/chapters';
 	import {
 		buildChaptersBySubjectFromGrouped,
@@ -48,16 +43,13 @@
 		};
 	}>();
 
-	function getExamTitleEn(exam: Record<string, unknown> | null, fallback: string) {
-		if (!exam) return fallback;
-		const n = exam.name;
-		if (typeof n === 'string') return n;
-		if (n && typeof n === 'object' && typeof (n as { en?: string }).en === 'string')
-			return (n as { en: string }).en;
-		return fallback;
+	/** Grouped API has no exam name; format slug for the header without another request. */
+	function titleFromExamSlug(slug: string) {
+		return slug
+			.replace(/-/g, ' ')
+			.replace(/\b\w/g, (c) => c.toUpperCase());
 	}
 
-	let examRecord = $state<Record<string, unknown> | null>(null);
 	let subjects = $state<SubjectNavRow[]>([]);
 	let chaptersBySubjectSlug = $state<Record<string, ChapterCardRow[]>>({});
 	let rawGrouped = $state<GroupedSubjectRow[]>([]);
@@ -90,60 +82,26 @@
 
 		void (async () => {
 			try {
-				const [res, examForTitle] = await Promise.all([
-					fetchGroupedChaptersByExamSlug(slug, fetch),
-					fetchExamBySlug(slug, null, fetch).catch(() => null),
-				]);
+				const res = await fetchGroupedChaptersByExamSlug(slug, fetch);
 				if (seq !== clientLoadSeq) return;
-				if (examForTitle) {
-					examRecord = examForTitle as Record<string, unknown>;
-				}
 				if (!res.success) {
 					throw new Error(res.message || 'Failed to load chapters');
 				}
 				const groupedList = (res.data?.data ?? []) as GroupedSubjectRow[];
 				rawGrouped = groupedList;
 
-				if (groupedList.length > 0) {
-					const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
-					const subs = buildSubjectsFromGrouped(groupedList, bySubject);
-					chaptersBySubjectSlug = bySubject;
-					subjects = subs;
-					chaptersStore.setGroupedChapters(slug, groupedList);
+				if (groupedList.length === 0) {
+					subjects = [];
+					chaptersBySubjectSlug = {};
 					chaptersLoading = false;
 					return;
 				}
 
-				const examFromApi = await fetchExamBySlug(slug, null, fetch);
-				if (seq !== clientLoadSeq) return;
-				if (!examFromApi) throw new Error('Exam not found');
-
-				examRecord = examFromApi as Record<string, unknown>;
-				const boardSlug = (examRecord.boardSlug ?? examRecord.board_slug ?? '') as string;
-				const examSlugForHierarchy = (examRecord.slug ?? examRecord._id ?? slug) as string;
-				if (!boardSlug || !examSlugForHierarchy) {
-					throw new Error('Exam configuration incomplete');
-				}
-
-				const hierarchy = await fetchChaptersHierarchy(boardSlug, examSlugForHierarchy, null, fetch);
-				if (seq !== clientLoadSeq) return;
-
-				const subs = (hierarchy.subjects ?? [])
-					.map((s): SubjectNavRow => {
-						const groups = [...(s.chapterGroups ?? [])].sort(
-							(a, b) => (a.order ?? 0) - (b.order ?? 0),
-						);
-						return {
-							_id: s._id,
-							slug: s.slug,
-							name: s.name,
-							unitCount: groups.length,
-						};
-					})
-					.filter((s) => Boolean(s._id && s.slug && s.unitCount > 0));
-
+				const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
+				const subs = buildSubjectsFromGrouped(groupedList, bySubject);
+				chaptersBySubjectSlug = bySubject;
 				subjects = subs;
-				chaptersBySubjectSlug = {};
+				chaptersStore.setGroupedChapters(slug, groupedList);
 				chaptersLoading = false;
 			} catch (e) {
 				if (seq !== clientLoadSeq) return;
@@ -179,7 +137,7 @@
 		return chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
 	});
 
-	const examTitle = $derived(getExamTitleEn(examRecord ?? data.exam, data.examSlug));
+	const examTitle = $derived(titleFromExamSlug(data.examSlug));
 
 	function selectSubject(slug: string) {
 		selectedSubjectSlug = slug;
