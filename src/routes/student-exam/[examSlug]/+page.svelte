@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from "$app/environment";
 	import { page } from "$app/state";
+	import { goto } from "$app/navigation";
 	import {
 		fetchGroupedChaptersByExamSlug,
 		type GroupedSubjectRow,
@@ -48,7 +49,6 @@
 	let selectedSubjectSlug = $state("");
 	let showChapters = $state(false);
 	let referrerHandled = $state(false);
-	let hasRestoredSession = $state(false);
 
 	$effect(() => {
 		if (!browser || referrerHandled) return;
@@ -77,8 +77,7 @@
 				if (!res.success) {
 					throw new Error(res.message || "Failed to load chapters");
 				}
-				const groupedList = (res.data?.data ??
-					[]) as GroupedSubjectRow[];
+				const groupedList = (res.data?.data ?? []) as GroupedSubjectRow[];
 				rawGrouped = groupedList;
 
 				if (groupedList.length === 0) {
@@ -88,8 +87,7 @@
 					return;
 				}
 
-				const bySubject =
-					buildChaptersBySubjectFromGrouped(groupedList);
+				const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
 				const subs = buildSubjectsFromGrouped(groupedList, bySubject);
 				chaptersBySubjectSlug = bySubject;
 				subjects = subs;
@@ -97,38 +95,19 @@
 				chaptersLoading = false;
 			} catch (e) {
 				if (seq !== clientLoadSeq) return;
-				chaptersError =
-					e instanceof Error ? e.message : "Failed to load";
+				chaptersError = e instanceof Error ? e.message : "Failed to load";
 				chaptersLoading = false;
 			}
 		})();
 	});
 
-	$effect(() => {
-		if (!browser || hasRestoredSession) return;
-		if (subjects.length === 0) return;
-		const referrer = document.referrer;
-		const isFromChapterPage =
-			referrer.includes(`/student-exam/${examSlug}/`) &&
-			!referrer.endsWith(`/student-exam/${examSlug}`);
-		if (isFromChapterPage) {
-			const stored = sessionStorage.getItem(`exam-${examSlug}-subject`);
-			if (
-				stored &&
-				subjects.find((s: SubjectNavRow) => s.slug === stored)
-			) {
-				selectedSubjectSlug = stored;
-				showChapters = true;
-			}
-		}
-		hasRestoredSession = true;
-	});
+	const examTitle = $derived(titleFromExamSlug(examSlug));
+	const viewParam = $derived(page.url.searchParams.get("view"));
 
 	const selectedSubject = $derived.by(() => {
 		return (
-			subjects?.find(
-				(s: SubjectNavRow) => s.slug === selectedSubjectSlug,
-			) ?? null
+			subjects?.find((s: SubjectNavRow) => s.slug === selectedSubjectSlug) ??
+			null
 		);
 	});
 
@@ -137,21 +116,48 @@
 		return chaptersBySubjectSlug?.[selectedSubjectSlug] ?? [];
 	});
 
-	const examTitle = $derived(titleFromExamSlug(examSlug));
+	$effect(() => {
+		if (!browser || subjects.length === 0) return;
+
+		if (viewParam === "chapters") {
+			showChapters = true;
+			if (!selectedSubjectSlug) {
+				const stored = sessionStorage.getItem(`exam-${examSlug}-subject`);
+				if (stored && subjects.find((s) => s.slug === stored)) {
+					selectedSubjectSlug = stored;
+				} else if (subjects.length > 0) {
+					selectedSubjectSlug = subjects[0].slug;
+					sessionStorage.setItem(`exam-${examSlug}-subject`, selectedSubjectSlug);
+				}
+			}
+		} else {
+			showChapters = false;
+			selectedSubjectSlug = "";
+		}
+	});
 
 	function selectSubject(slug: string) {
 		selectedSubjectSlug = slug;
-		showChapters = true;
 		if (browser) {
 			sessionStorage.setItem(`exam-${examSlug}-subject`, slug);
+			const url = new URL(window.location.href);
+			url.searchParams.set("view", "chapters");
+			void goto(url.toString(), {
+				noScroll: true,
+				replaceState: true,
+			});
 		}
 	}
 
 	function backToSubjects() {
-		showChapters = false;
-		selectedSubjectSlug = "";
 		if (browser) {
 			sessionStorage.removeItem(`exam-${examSlug}-subject`);
+			const url = new URL(window.location.href);
+			url.searchParams.delete("view");
+			void goto(url.toString(), {
+				noScroll: true,
+				replaceState: true,
+			});
 		}
 	}
 </script>
@@ -322,7 +328,7 @@
 							>
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
-										href={`/student-exam/${examSlug}/${encodeURIComponent(chapter.slug ?? chapter._id)}`}
+										href={`/student-exam/${examSlug}/${chapter._id}`}
 										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-5 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
 									>
 										<div
