@@ -13,11 +13,11 @@
 
   let openSubjectSlug = $state<string>('');
   let openUnitIds = $state<Set<string>>(new Set());
-  let subjectRailOpen = $state(false);
+  let subjectRailOpen = $state(true);
   let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
-
+  const manualUiStateKey = $derived(`own-manual-ui::${examSlug}`);
   $effect(() => {
     if (!browser) return;
     try {
@@ -57,14 +57,64 @@
     return counts;
   });
 
+  
+
   $effect(() => {
-    const first = groupedSubjects[0]?.subject?.slug;
-    if (!first) return;
-    if (!openSubjectSlug) {
-      openSubjectSlug = first;
-      openUnitIds = new Set();
+  if (!browser) return;
+  if (!groupedSubjects.length) return;
+
+  try {
+    const raw = sessionStorage.getItem(manualUiStateKey);
+
+    if (raw) {
+      const parsed = JSON.parse(raw) as {
+        openSubjectSlug?: string;
+        openUnitIds?: string[];
+      };
+
+      const validSubjectSlugs = new Set(groupedSubjects.map((g) => g.subject.slug));
+      const validUnitIds = new Set(
+        groupedSubjects.flatMap((g) => (g.data ?? []).map((u) => String(u.chapterGroup._id)))
+      );
+
+      const savedSubject =
+        typeof parsed?.openSubjectSlug === 'string' &&
+        validSubjectSlugs.has(parsed.openSubjectSlug)
+          ? parsed.openSubjectSlug
+          : '';
+
+      const savedUnits = Array.isArray(parsed?.openUnitIds)
+        ? parsed.openUnitIds
+            .map((id) => String(id))
+            .filter((id) => validUnitIds.has(id))
+        : [];
+
+      openSubjectSlug = savedSubject || groupedSubjects[0]?.subject?.slug || '';
+      openUnitIds = new Set(savedUnits);
+      return;
     }
-  });
+  } catch {}
+
+  openSubjectSlug = groupedSubjects[0]?.subject?.slug || '';
+  openUnitIds = new Set();
+});
+
+$effect(() => {
+  if (!browser) return;
+  if (!groupedSubjects.length) return;
+
+  try {
+    sessionStorage.setItem(
+      manualUiStateKey,
+      JSON.stringify({
+        openSubjectSlug,
+        openUnitIds: Array.from(openUnitIds)
+      })
+    );
+  } catch {}
+});
+
+
 
   const openSubject = $derived(
     groupedSubjects.find((g) => g.subject.slug === openSubjectSlug) ?? null
@@ -93,19 +143,17 @@
   }
 
   function toggleUnitOpen(unitId: string) {
-    const next = new Set(openUnitIds);
-    if (next.has(unitId)) next.delete(unitId);
-    else next.add(unitId);
-    openUnitIds = next;
-  }
+  const next = new Set(openUnitIds);
+  if (next.has(unitId)) next.delete(unitId);
+  else next.add(unitId);
+  openUnitIds = next;
+}
 
   function chapterHref(chSlug: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId });
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
   }
-  function toggleSubjectRail() {
-    subjectRailOpen = !subjectRailOpen;
-  }
+
 </script>
 
 <div
@@ -113,32 +161,6 @@
   data-exam-slug={examSlug}
   data-own-panel="manual"
 >
-  {#if !subjectRailOpen}
-    <div class="own-subject-rail-head">
-      <button
-        type="button"
-        class="own-subject-rail-toggle"
-        onclick={toggleSubjectRail}
-        aria-expanded={subjectRailOpen}
-        aria-controls="own-subject-rail-manual"
-      >
-        <svg class="own-subject-rail-toggle__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M4 6h16M4 12h10M4 18h16"
-            stroke="currentColor"
-            stroke-width="1.75"
-            stroke-linecap="round"
-          />
-        </svg>
-        Subjects
-      </button>
-      {#if openSubject}
-        <p class="own-subject-rail-sub truncate" title={openSubject.subject.name?.en ?? openSubject.subject.slug}>
-          {openSubject.subject.name?.en ?? openSubject.subject.slug}
-        </p>
-      {/if}
-    </div>
-  {/if}
 
   <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
   <aside
@@ -149,23 +171,7 @@
       [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
       {subjectRailOpen ? '' : 'hidden'}"
     aria-label="Subjects"
-    aria-hidden={!subjectRailOpen}
   >
-    <div class="flex items-center justify-between gap-2 lg:pt-0.5">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--sh-ai-sub)]"
-        >Subjects</span
-      >
-      <button
-        type="button"
-        class="rounded-lg px-2 py-1 text-xs font-semibold text-[var(--accent-cta-pink)] transition hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)]"
-        onclick={() => {
-          subjectRailOpen = false;
-        }}
-        aria-controls="own-subject-rail-manual"
-      >
-        Hide
-      </button>
-    </div>
     {#each groupedSubjects as row, i (row.subject._id)}
       {@const accentIdx = i % 4}
       {@const isOpen = openSubjectSlug === row.subject.slug}

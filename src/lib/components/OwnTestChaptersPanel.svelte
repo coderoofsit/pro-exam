@@ -22,7 +22,7 @@
   let openUnitIds = $state<Set<string>>(new Set());
 
   /** Subject rail (left column): closed by default; user can open to pick subjects. */
-  let subjectRailOpen = $state(false);
+  let subjectRailOpen = $state(true);
 
   let checkedUnits = $state<Set<string>>(new Set());
   let checkedChapters = $state<Set<string>>(new Set());
@@ -309,42 +309,12 @@
     onNext?.(snap);
   }
 
-  function toggleSubjectRail() {
-    subjectRailOpen = !subjectRailOpen;
-  }
 </script>
 
 <div
   class="own-test-chapters-root flex flex-col"
   data-exam-slug={examSlug}
 >
-  {#if !subjectRailOpen}
-    <div class="own-subject-rail-head">
-      <button
-        type="button"
-        class="own-subject-rail-toggle"
-        onclick={toggleSubjectRail}
-        aria-expanded={subjectRailOpen}
-        aria-controls="own-subject-rail"
-      >
-        <svg class="own-subject-rail-toggle__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M4 6h16M4 12h10M4 18h16"
-            stroke="currentColor"
-            stroke-width="1.75"
-            stroke-linecap="round"
-          />
-        </svg>
-        Subjects
-      </button>
-      {#if openSubject}
-        <p class="own-subject-rail-sub truncate" title={openSubject.subject.name?.en ?? openSubject.subject.slug}>
-          {openSubject.subject.name?.en ?? openSubject.subject.slug}
-        </p>
-      {/if}
-    </div>
-  {/if}
-
   <div
     class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10"
   >
@@ -356,23 +326,7 @@
       [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
       {subjectRailOpen ? '' : 'hidden'}"
     aria-label="Subjects"
-    aria-hidden={!subjectRailOpen}
   >
-    <div class="flex items-center justify-between gap-2 lg:pt-0.5">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--sh-ai-sub)]"
-        >Subjects</span
-      >
-      <button
-        type="button"
-        class="rounded-lg px-2 py-1 text-xs font-semibold text-[var(--accent-cta-pink)] transition hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)]"
-        onclick={() => {
-          subjectRailOpen = false;
-        }}
-        aria-controls="own-subject-rail"
-      >
-        Hide
-      </button>
-    </div>
     {#each groupedSubjects as row, i (row.subject._id)}
       {@const accentIdx = i % 4}
       {@const isOpen = openSubjectSlug === row.subject.slug}

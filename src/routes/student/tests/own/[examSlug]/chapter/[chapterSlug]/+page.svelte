@@ -1,11 +1,49 @@
 <script lang="ts">
   import MathText from "$lib/components/MathText.svelte";
   import { questionPromptEnContent } from "$lib/api/questions";
+  import { fetchTopicsByChapterSlug, type TopicRow } from "$lib/api/topics";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
 
   let { data }: { data: PageData } = $props();
+
+  let topicOptions = $state<TopicRow[]>([]);
+  let topicsLoading = $state(false);
+  /** Empty string = "All" */
+  let selectedTopicSlug = $state("");
+  let topicsLoadedForSlug = $state<string | null>(null);
+  let topicsAbort: AbortController | null = null;
+
+  $effect(() => {
+    if (!browser) return;
+    const slug = data.chapterSlug;
+    if (!slug) return;
+    if (topicsLoadedForSlug === slug) return;
+
+    topicsLoadedForSlug = slug;
+    selectedTopicSlug = "";
+    topicOptions = [];
+    topicsAbort?.abort();
+    topicsAbort = new AbortController();
+    const signal = topicsAbort.signal;
+    topicsLoading = true;
+
+    void fetchTopicsByChapterSlug(slug, fetch, { signal })
+      .then((r) => {
+        if (signal.aborted) return;
+        if (topicsLoadedForSlug !== slug) return;
+        if (r.success && r.data) topicOptions = r.data;
+      })
+      .catch((e) => {
+        if (signal.aborted) return;
+        console.error("[own-test chapter topics]", e);
+      })
+      .finally(() => {
+        if (signal.aborted) return;
+        if (topicsLoadedForSlug === slug) topicsLoading = false;
+      });
+  });
 
   type Question = (typeof data.questions)[number];
   type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: string };
@@ -101,8 +139,8 @@
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-    <div class="mb-6 flex items-start justify-between gap-4">
-      <div>
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0 flex-1">
         <p class="text-sm text-[var(--own-muted)]">Exam · {data.examSlug}</p>
         <h1 class="own-heading-xl mt-2">{title}</h1>
         {#if data.paginationMeta}
@@ -112,13 +150,29 @@
         {/if}
       </div>
 
-      <button
-        type="button"
-        class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
-        onclick={() => goto(`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`)}
-      >
-        Back
-      </button>
+      <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+        <label class="flex items-center gap-2 text-sm text-[var(--page-text-muted)]">
+          <span class="sr-only">Topic</span>
+          <select
+            bind:value={selectedTopicSlug}
+            aria-busy={topicsLoading}
+            class="min-h-[2.5rem] min-w-[10rem] max-w-[min(100%,18rem)] rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text)] outline-none transition hover:border-[var(--sh-exam-card-hover-border)] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_25%,transparent)]"
+            aria-label="Filter by topic"
+          >
+            <option value="">All</option>
+            {#each topicOptions as t (t._id)}
+              <option value={t.slug}>{t.name?.en ?? t.slug}</option>
+            {/each}
+          </select>
+        </label>
+        <button
+          type="button"
+          class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+          onclick={() => goto(`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`)}
+        >
+          Back
+        </button>
+      </div>
     </div>
 
     {#if data.message}
