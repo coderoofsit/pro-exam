@@ -6,9 +6,6 @@
 	import { goto, replaceState } from "$app/navigation";
 	import { browser } from "$app/environment";
 	import { questionStore } from "$lib/stores/question";
-	import { chaptersStore } from "$lib/stores/chapters";
-	import { fetchGroupedChaptersByExamSlug } from "$lib/api/chapters";
-	import { findSubjectChaptersForChapter } from "$lib/student-exam/groupedExamData";
 	import { navigating } from "$app/stores";
 
 	type Question = PageData["questions"][number];
@@ -19,7 +16,6 @@
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
 	let selectedQuestionIndex = $state<number | null>(null);
-	let sidebarCollapsed = $state(false);
 	let filterDrawerOpen = $state(false);
 
 	let selectedDifficulties = $state<string[]>([]);
@@ -116,41 +112,7 @@
 
 	const PAGINATION_WINDOW = 2;
 
-	/** When layout has no grouped data, hydrate sidebar from the same client API as the exam index. */
-	let clientSidebarChapters = $state<PageData["allChapters"]>([]);
-	let sidebarHydrateSeq = 0;
-
-	$effect(() => {
-		if (!browser) return;
-		const rid = data.resolvedChapterId;
-		if (!rid || data.allChapters.length > 0) {
-			clientSidebarChapters = [];
-			return;
-		}
-		const seq = ++sidebarHydrateSeq;
-		void fetchGroupedChaptersByExamSlug(data.examSlug, fetch).then((res) => {
-			if (seq !== sidebarHydrateSeq) return;
-			if (!res.success) return;
-			const list = res.data?.data ?? [];
-			const { chapters } = findSubjectChaptersForChapter(list, rid);
-			clientSidebarChapters = chapters;
-			chaptersStore.setGroupedChapters(data.examSlug, list);
-		});
-	});
-
-	const filteredChapters = $derived(
-		clientSidebarChapters.length > 0 ? clientSidebarChapters : data.allChapters,
-	);
 	const isLoading = $derived($navigating !== null);
-
-	$effect(() => {
-		if (browser && data.subjectSlug) {
-			sessionStorage.setItem(
-				`exam-${data.examSlug}-subject`,
-				data.subjectSlug,
-			);
-		}
-	});
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
 
@@ -443,92 +405,12 @@
 	class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
-		{#if !effectiveQuestionId && !sidebarCollapsed}
-			<aside
-				class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
-			>
-				<div class="flex-1 overflow-y-auto p-4">
-					<button
-						type="button"
-						onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters`)}
-						class="mb-4 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
-					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-						>
-							<path
-								d="M15 18l-6-6 6-6"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
-						Back to Subjects
-					</button>
-
-					<div class="mb-3 mt-2 flex items-center justify-between">
-						<h2
-							class="text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70"
-						>
-							Chapters
-						</h2>
-						<!-- <button
-							type="button"
-							class="rounded-md border border-[var(--sb-border-color)] px-2 py-1 text-xs text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-nav-hover-bg)]"
-							onclick={() => (filterDrawerOpen = true)}
-						>
-							Filter
-						</button> -->
-					</div>
-
-					<nav class="space-y-1.5">
-						{#each filteredChapters as ch (ch._id)}
-							<a
-								href={chapterHref(String(ch.slug ?? ch._id), {
-									page: 1,
-								})}
-								class="block truncate rounded-lg px-3 py-2 text-sm transition font-[var(--sb-font-nav)] {ch._id ===
-								data.resolvedChapterId
-									? 'bg-[var(--sb-nav-active-bg)] text-[var(--sb-nav-active-text)] shadow-[var(--sb-nav-active-glow)]'
-									: 'text-[var(--sb-nav-text)] hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]'}"
-							>
-								{ch.order}. {ch.name?.en ?? ch.slug}
-							</a>
-						{/each}
-					</nav>
-				</div>
-			</aside>
-		{/if}
-
-		{#if !effectiveQuestionId && sidebarCollapsed}
-			<button
-				type="button"
-				onclick={() => (sidebarCollapsed = false)}
-				class="fixed left-4 top-4 z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-icon)] shadow-sm transition hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-icon)]"
-				title="Expand sidebar"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-					<path
-						d="M9 18l6-6-6-6"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-			</button>
-		{/if}
-
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
 				class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0"
 			>
-				{#if effectiveQuestionId !== null}
-					<div class="py-6 shrink-0">
+				<div class="py-6 shrink-0">
+					{#if effectiveQuestionId !== null}
 						<button
 							type="button"
 							onclick={closeQuestionPreview}
@@ -536,8 +418,16 @@
 						>
 							← Back to Chapter
 						</button>
-					</div>
-				{/if}
+					{:else}
+						<button
+							type="button"
+							onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters`)}
+							class="inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
+						>
+							← Back to Chapters
+						</button>
+					{/if}
+				</div>
 
 				{#if data.message}
 					<div
@@ -550,8 +440,7 @@
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<h1 class="text-2xl font-bold md:text-3xl">
-									{data.chapter?.name?.en ??
-										data.chapterParam}
+									Questions
 								</h1>
 								{#if displayPaginationMeta}
 									<p

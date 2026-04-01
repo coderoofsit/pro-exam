@@ -1,7 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { fetchQuestionsByChapter, fetchQuestionById } from '$lib/api/questions';
-import { fetchChapterById, fetchChapterBySlug } from '$lib/api/chapters';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
@@ -21,59 +20,10 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 	const kind = url.searchParams.get('kind');
 
 	try {
-		const parentData = await parent();
-		const groupedSubjectsRaw = ((parentData as any)._rawGrouped ?? []) as unknown[];
-
-		let chapter: any | null = null;
 		let resolvedChapterId: string | null = null;
-		let currentSubjectChapters: any[] = [];
-		let subjectSlug: string | null = null;
-		
-		if (groupedSubjectsRaw.length > 0) {
-			const isId = chapterParam && isMongoObjectIdString(chapterParam);
-			const chapterSlug = isId ? null : decodeURIComponent(chapterParam ?? '');
-			
-			for (const row of groupedSubjectsRaw) {
-				const subject = (row as any).subject;
-				const chapters: any[] = [];
-				
-				for (const unit of (row as any).data ?? []) {
-					for (const ch of unit.data ?? []) {
-						chapters.push(ch);
-						
-						if (!chapter) {
-							if (isId && ch._id === chapterParam) {
-								chapter = ch;
-								resolvedChapterId = ch._id;
-								currentSubjectChapters = chapters;
-								subjectSlug = subject?.slug ?? null;
-							} else if (chapterSlug && ch.slug === chapterSlug) {
-								chapter = ch;
-								resolvedChapterId = ch._id;
-								currentSubjectChapters = chapters;
-								subjectSlug = subject?.slug ?? null;
-							}
-						}
-					}
-				}
-				
-				if (chapter && currentSubjectChapters.length > 0) break;
-			}
-		}
 
-		if (!resolvedChapterId && chapterParam) {
-			const isId = isMongoObjectIdString(chapterParam);
-			try {
-				const chDoc = isId
-					? await fetchChapterById(chapterParam)
-					: await fetchChapterBySlug(decodeURIComponent(chapterParam));
-				if (chDoc) {
-					chapter = chDoc;
-					resolvedChapterId = chDoc._id;
-				}
-			} catch (err) {
-				console.error('Chapter resolve by slug/id failed', err);
-			}
+		if (chapterParam && isMongoObjectIdString(chapterParam)) {
+			resolvedChapterId = chapterParam;
 		}
 
 		let questionsRes: Awaited<ReturnType<typeof fetchQuestionsByChapter>> | null = null;
@@ -116,9 +66,6 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			chapterParam,
 			safePage,
 			resolvedChapterId,
-			chapter,
-			allChapters: currentSubjectChapters,
-			subjectSlug,
 			previewMode,
 			requestedReviewStart,
 			questions: questionsRes?.data ?? [],
@@ -136,9 +83,6 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			chapterParam,
 			safePage,
 			resolvedChapterId: null,
-			chapter: null,
-			allChapters: [],
-			subjectSlug: null,
 			previewMode,
 			requestedReviewStart,
 			questions: [],
@@ -156,9 +100,6 @@ export type PageData = {
 	chapterParam: string;
 	safePage: number;
 	resolvedChapterId: string | null;
-	chapter: any | null;
-	allChapters: any[];
-	subjectSlug: string | null;
 	previewMode: boolean;
 	requestedReviewStart: number | null;
 	questions: Question[];

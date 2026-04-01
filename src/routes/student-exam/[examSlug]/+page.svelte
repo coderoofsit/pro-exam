@@ -328,7 +328,7 @@
 							>
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
-										href={`/student-exam/${examSlug}/${encodeURIComponent(chapter.slug ?? chapter._id)}`}
+										href={`/student-exam/${examSlug}/${chapter._id}`}
 										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-5 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
 									>
 										<div
