@@ -176,19 +176,19 @@
 >
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden px-4">
 		{#if !showChapters}
-			<div class="flex flex-1 flex-col py-10">
+			<div class="flex flex-1 flex-col py-3">
 				<a
 					href="/student/exams"
-					class="mb-6 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
+					class="mb-3 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
 				>
 					← Back to Exams
 				</a>
 
-				<div class="mb-8">
-					<h1 class="text-3xl font-bold md:text-4xl">
+				<div class="mb-4">
+					<h1 class="text-2xl font-bold md:text-3xl">
 						{examTitle}
 					</h1>
-					<p class="mt-2 text-base text-[var(--page-text-muted)]">
+					<p class="mt-0.5 text-sm text-[var(--page-text-muted)]">
 						Select a subject, then open units/chapters
 					</p>
 				</div>
@@ -199,22 +199,22 @@
 					</p>
 				{:else if chaptersLoading && subjects.length === 0}
 					<div
-						class="flex-1 overflow-y-auto pb-6"
+						class="flex-1 overflow-y-auto pb-3"
 						aria-busy="true"
 						aria-label="Loading subjects"
 					>
 						<div
-							class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+							class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3"
 						>
 							{#each [1, 2, 3, 4, 5, 6] as sk (sk)}
 								<div
-									class="h-28 animate-pulse rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5"
+									class="h-20 animate-pulse rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3"
 								>
 									<div
-										class="h-5 w-3/4 rounded bg-[var(--page-text-muted)]/20"
+										class="h-4 w-3/4 rounded bg-[var(--page-text-muted)]/20"
 									></div>
 									<div
-										class="mt-3 h-4 w-1/2 rounded bg-[var(--page-text-muted)]/15"
+										class="mt-2 h-3 w-1/2 rounded bg-[var(--page-text-muted)]/15"
 									></div>
 								</div>
 							{/each}
@@ -225,23 +225,23 @@
 						No subjects found for this exam.
 					</p>
 				{:else}
-					<div class="flex-1 overflow-y-auto pb-6">
+					<div class="flex-1 overflow-y-auto pb-3">
 						<div
-							class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+							class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3"
 						>
 							{#each subjects as s (s._id)}
 								<button
 									type="button"
 									onclick={() => selectSubject(s.slug)}
-									class="group flex flex-col rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 text-left shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
+									class="group flex flex-col rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3 text-left shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
 								>
 									<h2
-										class="text-lg font-semibold leading-snug text-[var(--sh-exam-card-title)]"
+										class="text-base font-semibold leading-snug text-[var(--sh-exam-card-title)]"
 									>
 										{s.name?.en ?? s.slug}
 									</h2>
 									<p
-										class="mt-2 text-sm text-[var(--page-text-muted)]"
+										class="mt-1 text-sm text-[var(--page-text-muted)]"
 									>
 										{s.unitCount} chapters
 									</p>
@@ -301,16 +301,16 @@
 
 			<main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-6 py-10"
+					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-6 py-3"
 				>
 					{#if selectedSubject}
-						<div class="mb-6 shrink-0">
-							<h2 class="text-2xl font-bold">
+						<div class="mb-3 shrink-0">
+							<h2 class="text-xl font-bold">
 								{selectedSubject.name?.en ??
 									selectedSubject.slug}
 							</h2>
 							<p
-								class="mt-1 text-sm text-[var(--page-text-muted)]"
+								class="mt-0.5 text-sm text-[var(--page-text-muted)]"
 							>
 								{displayChapters.length} chapters
 							</p>
@@ -322,29 +322,29 @@
 							No chapters found for this subject.
 						</p>
 					{:else}
-						<div class="flex-1 overflow-y-auto pb-6">
+						<div class="flex-1 overflow-y-auto pb-3">
 							<div
-								class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2"
+								class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-2"
 							>
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
-										href={`/student-exam/${examSlug}/${chapter._id}`}
-										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-5 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
+										href={`/student-exam/${examSlug}/${chapter._id}?page=1`}
+										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
 									>
 										<div
 											class="absolute left-0 top-0 h-1 w-full bg-[var(--sh-tool-card-hover-border)] opacity-0 transition-opacity group-hover:opacity-100"
 										></div>
 										<h2
-											class="text-base font-semibold leading-snug"
+											class="text-sm font-semibold leading-snug"
 										>
 											{chapter.order}. {chapter.name
 												?.en ?? chapter.slug}
 										</h2>
-										<p class="mt-1.5 text-xs opacity-70">
+										<p class="mt-0.5 text-xs opacity-70">
 											{groupName}
 										</p>
 										<p
-											class="mt-4 flex items-center gap-1 text-sm font-medium text-[var(--sh-section-link)] transition group-hover:text-[var(--sh-section-link-hover)]"
+											class="mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition group-hover:text-[var(--sh-section-link-hover)]"
 										>
 											View questions
 											<span

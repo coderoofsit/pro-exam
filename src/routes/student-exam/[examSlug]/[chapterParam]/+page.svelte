@@ -541,12 +541,12 @@
 							</div>
 						{/if}
 
-						<div class="flex-1 overflow-y-auto pb-6">
+						<div class="flex-1 overflow-y-auto pb-3">
 							{#if isLoading}
-								<div class="flex flex-col gap-3">
+								<div class="flex flex-col gap-2.5">
 									{#each Array(10) as _, i}
 										<div
-											class="animate-pulse rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3.5"
+											class="animate-pulse rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3"
 										>
 											<div
 												class="flex items-baseline gap-3"
@@ -567,19 +567,17 @@
 									{/each}
 								</div>
 							{:else}
-								<div class="flex flex-col gap-3">
+								<div class="flex flex-col gap-2.5">
 									{#each displayQuestions as q, index (q._id)}
 										<button
 											type="button"
-											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-5 py-4 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
+											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-4 py-3 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
 											onclick={() =>
 												openQuestionPreview(index)}
 										>
-											<div
-												class="flex items-baseline gap-3"
-											>
+											<div class="flex items-baseline gap-3">
 												<div
-													class="shrink-0 text-xs font-medium text-[var(--page-text-muted)] opacity-70 mt-1"
+													class="shrink-0 text-xs font-medium text-[var(--page-text-muted)] opacity-70 mt-0.5"
 												>
 													Q{(data.safePage - 1) *
 														(displayPaginationMeta?.limit ??
@@ -588,7 +586,7 @@
 														1}
 												</div>
 												<div
-													class="flex-1 text-[1.02rem] leading-[1.8] text-[var(--page-text)]"
+													class="flex-1 text-[1.02rem] leading-[1.7] text-[var(--page-text)]"
 												>
 													<MathText
 														content={questionPromptEnContent(
@@ -597,7 +595,7 @@
 													/>
 													{#if promptImagesOnly(q).length}
 														<div
-															class="mt-3 grid grid-cols-2 gap-2.5"
+															class="mt-2.5 grid grid-cols-2 gap-2"
 														>
 															{#each promptImagesOnly(q) as img, imgIdx (`main-${q._id}-${imgIdx}`)}
 																{@const src =
@@ -610,7 +608,7 @@
 																		alt={imageAlt(
 																			img as ImageLike,
 																		)}
-																		class="max-h-40 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																		class="max-h-36 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
 																		loading="lazy"
 																	/>
 																{/if}
@@ -619,6 +617,15 @@
 													{/if}
 												</div>
 											</div>
+											{#if (q as any).paperId}
+												<div class="mt-2 pl-0.5">
+													<div
+														class="inline-flex rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--page-link)] leading-tight"
+													>
+														{(q as any).paperId}
+													</div>
+												</div>
+											{/if}
 										</button>
 									{/each}
 								</div>
@@ -676,9 +683,9 @@
 							</div>
 						{/if}
 					{:else}
-						<div class="flex-1 overflow-y-auto pb-4 mt-2">
+						<div class="flex-1 overflow-y-auto pb-3">
 							<div
-								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-5 shadow-sm flex flex-col min-h-full"
+								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-4 shadow-sm flex flex-col h-full"
 							>
 								{#if detailLoading && !detailQuestion}
 									<div class="flex flex-col gap-4 animate-pulse" aria-busy="true">
@@ -815,62 +822,51 @@
 										</div>
 									</form>
 								{:else}
-									<!-- Question Header -->
 									<div
-										class="mb-4 flex flex-wrap items-center gap-2"
+										class="mb-3"
 									>
-										{#if currentQuestionNumber !== null}
-											<div
-												class="inline-flex rounded-md border border-[var(--page-text-muted)]/20 bg-[var(--page-text-muted)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-text-muted)]"
+										<div class="flex flex-wrap items-center gap-2 mb-1.5">
+											{#if currentQuestionNumber !== null}
+												<div
+													class="inline-flex rounded-md border border-[var(--page-text-muted)]/20 bg-[var(--page-text-muted)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--page-text-muted)]"
+												>
+													Q{currentQuestionNumber}
+												</div>
+											{/if}
+											<button
+												type="button"
+												onclick={() => (isEditing = true)}
+												class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-2.5 py-1 text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
 											>
-												Q{currentQuestionNumber}
+												<svg
+													width="12"
+													height="12"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												>
+													<path d="M12 20h9"></path>
+													<path
+														d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+													></path>
+												</svg>
+												Edit
+											</button>
+										</div>
+										{#if (detailQuestion as any).paperId}
+											<div
+												class="inline-flex rounded-md border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--page-link)]"
+											>
+												{(detailQuestion as any).paperId}
 											</div>
 										{/if}
-										<!-- <div
-											class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]"
-										>
-											{(detailQuestion as any).examSlug
-												?.replace("-", " ")
-												.toUpperCase()}
-											{(detailQuestion as any).year ?? ""}
-										</div> -->
-										<div
-											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
-										>
-											{detailQuestion.kind}
-										</div>
-										<div
-											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
-										>
-											{(detailQuestion as any).marks} Marks
-										</div>
-										<button
-											type="button"
-											onclick={() => (isEditing = true)}
-											class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
-										>
-											<svg
-												width="12"
-												height="12"
-												viewBox="0 0 24 24"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-											>
-												<path d="M12 20h9"></path>
-												<path
-													d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
-												></path>
-											</svg>
-											Edit
-										</button>
 									</div>
 
-									<!-- Question Content -->
 									<div
-										class="mb-6 text-[1.1rem] leading-relaxed text-[var(--page-text)]"
+										class="mb-5 text-[1.05rem] leading-relaxed text-[var(--page-text)]"
 									>
 										<MathText
 											content={questionPromptEnContent(
@@ -879,7 +875,7 @@
 										/>
 										{#if promptImagesOnly(detailQuestion).length}
 											<div
-												class="mt-4 grid grid-cols-2 gap-3"
+												class="mt-3 grid grid-cols-2 gap-2.5"
 											>
 												{#each promptImagesOnly(detailQuestion) as img, imgIdx (`main-${detailQuestion._id}-${imgIdx}`)}
 													{@const src = imageSrc(
@@ -900,10 +896,9 @@
 										{/if}
 									</div>
 
-									<!-- Options Grid -->
 									{#if detailQuestion.prompt?.en?.options?.length}
 										<div
-											class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-3"
+											class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-2.5"
 										>
 											{#each detailQuestion.prompt.en.options as option (option.identifier)}
 												{@const isSelected =
@@ -988,52 +983,55 @@
 									{:else if (detailQuestion as any).kind === 'INTEGER'}
 										<div class="mb-6">
 											<label
-												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
 												for="integerAnswer"
 											>
 												Enter your answer (Integer)
 											</label>
-											<textarea
+											<input
+												type="text"
 												id="integerAnswer"
-												bind:value={integerAnswer}
+												value={integerAnswer !== null ? String(integerAnswer) : ''}
 												disabled={isAnswerChecked}
 												oninput={(e) => {
-													const target = e.target as HTMLTextAreaElement;
+													const target = e.target as HTMLInputElement;
 													const value = target.value.replace(/[^0-9-]/g, '');
 													target.value = value;
 													integerAnswer = value ? parseInt(value) : null;
 												}}
-												class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60 resize-none"
+												class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60"
 												placeholder="Enter integer value"
-												rows="2"
-											></textarea>
+											/>
 										</div>
 									{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
 										<div class="mb-6">
 											<label
-												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
 											>
 												Fill in the blank(s)
 											</label>
-											<div class="space-y-2">
+											<div class="space-y-3">
 												{#each Array(Math.max(1, (detailQuestion as any).correct?.fills?.length || 1)) as _, idx}
-													<textarea
-														bind:value={fillBlankAnswers[idx]}
+													<input
+														type="text"
+														value={fillBlankAnswers[idx] || ''}
+														oninput={(e) => {
+															const target = e.target as HTMLInputElement;
+															fillBlankAnswers[idx] = target.value;
+														}}
 														disabled={isAnswerChecked}
-														class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60 resize-none"
+														class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60"
 														placeholder="Answer {idx + 1}"
-														rows="2"
-													></textarea>
+													/>
 												{/each}
 											</div>
 										</div>
 									{/if}
 
-									<!-- Explanation -->
 									{#if isAnswerChecked}
 										{#if (detailQuestion as any).kind === 'INTEGER'}
 											<div
-												class="mb-6 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-4"
+												class="mb-5 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-3.5"
 											>
 												<div
 													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
@@ -1070,7 +1068,7 @@
 											</div>
 										{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
 											<div
-												class="mb-6 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-4"
+												class="mb-5 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-3.5"
 											>
 												<div
 													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
@@ -1106,7 +1104,7 @@
 
 										{#if detailQuestion.prompt?.en?.explanation}
 											<div
-												class="mb-6 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-4 animate-in fade-in slide-in-from-bottom-2"
+												class="mb-5 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-3.5 animate-in fade-in slide-in-from-bottom-2"
 											>
 												<div
 													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
@@ -1160,9 +1158,8 @@
 										{/if}
 									{/if}
 
-									<!-- Footer Buttons -->
 									<div
-										class="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-4"
+										class="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-3"
 									>
 										<button
 											type="button"
