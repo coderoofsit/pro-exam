@@ -6,6 +6,7 @@
     createTestAttempt,
     persistBatchAttemptSessionFromCreateResponse,
   } from "$lib/api/testAttempts";
+  import { ATTEMPT_START_ERROR_KEY } from "$lib/student/testAttempt/loadAttemptFromSession";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -205,35 +206,68 @@
 
     const testId = item._id;
     const batchIdStr = item.batchId?.trim() ?? "";
+    const name = testName(item);
 
     startTestError = null;
     startingTestId = item._id;
 
+    const target = `/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}&prelaunch=1&testName=${encodeURIComponent(name)}`;
+
+    void (async () => {
+      try {
+        const res = await createTestAttempt({
+          testId,
+          batchId: batchIdStr || null,
+        });
+
+        if (!res.success) {
+          try {
+            sessionStorage.setItem(
+              ATTEMPT_START_ERROR_KEY,
+              res.message || "Could not start test",
+            );
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        const persisted = persistBatchAttemptSessionFromCreateResponse(res.data, {
+          testId,
+          batchId: batchIdStr,
+          testName: name,
+        });
+
+        if (!persisted.ok) {
+          try {
+            sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, persisted.message);
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        try {
+          sessionStorage.removeItem(ATTEMPT_START_ERROR_KEY);
+        } catch {
+          // ignore
+        }
+      } catch (e) {
+        try {
+          sessionStorage.setItem(
+            ATTEMPT_START_ERROR_KEY,
+            e instanceof Error ? e.message : "Could not start test",
+          );
+        } catch {
+          // ignore
+        }
+      }
+    })();
+
     try {
-      const res = await createTestAttempt({
-        testId,
-        batchId: batchIdStr || null,
-      });
-
-      if (!res.success) {
-        startTestError = res.message || "Could not start test";
-        return;
-      }
-
-      const persisted = persistBatchAttemptSessionFromCreateResponse(res.data, {
-        testId,
-        batchId: batchIdStr,
-        testName: testName(item),
-      });
-
-      if (!persisted.ok) {
-        startTestError = persisted.message;
-        return;
-      }
-
-      await goto(
-        `/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}`,
-      );
+      await goto(target);
+    } catch {
+      // ignore navigation aborts
     } finally {
       startingTestId = null;
     }

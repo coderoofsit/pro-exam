@@ -93,6 +93,14 @@
 
   const hasMultipleSections = $derived(normalizedSections.length > 1);
 
+  /** Show section titles when we have real sections (not a single generic “Questions” bucket). */
+  const showSectionChrome = $derived.by(() => {
+    if (normalizedSections.length === 0) return false;
+    if (normalizedSections.length > 1) return true;
+    const s = normalizedSections[0];
+    return s.slug !== '_all' && s.title !== 'Questions';
+  });
+
   const currentSection = $derived.by((): NormalizedSection | null => {
     for (const sec of normalizedSections) {
       if (
@@ -583,7 +591,7 @@ function clearCurrentAnswer() {
           shadow-[var(--ta-qpanel-shadow)]
         "
         >
-          {#if hasMultipleSections && currentSection}
+          {#if showSectionChrome && currentSection}
             <p
               class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ta-header-sub)]"
             >
@@ -901,7 +909,7 @@ function clearCurrentAnswer() {
         <div class="flex flex-col gap-4">
           {#each normalizedSections as sec, secIdx (`${sec.slug}-${secIdx}`)}
             <div class="min-w-0">
-              {#if normalizedSections.length > 1}
+              {#if showSectionChrome}
                 <p
                   class="mb-2 truncate text-[10px] font-bold uppercase tracking-wider text-[var(--ta-palette-sub)]"
                   title={sec.title}

@@ -178,6 +178,18 @@ export async function createTestAttempt(
 
 export type PersistAttemptSessionResult = { ok: true } | { ok: false; message: string };
 
+/** Sections may be top-level or under `data` depending on API envelope. */
+function extractSectionsFromAttemptPayload(payload: Record<string, unknown>): unknown[] | undefined {
+	const top = payload.sections;
+	if (Array.isArray(top) && top.length) return top;
+	const data = payload.data;
+	if (data != null && typeof data === 'object') {
+		const inner = (data as Record<string, unknown>).sections;
+		if (Array.isArray(inner) && inner.length) return inner;
+	}
+	return undefined;
+}
+
 /** Writes `BATCH_TEST_ATTEMPT_STORAGE_KEY` from POST /test-attempts JSON (same shape as tests list flow). */
 export function persistBatchAttemptSessionFromCreateResponse(
 	apiResponseData: unknown,
@@ -198,7 +210,7 @@ export function persistBatchAttemptSessionFromCreateResponse(
 		return { ok: false, message: 'No questions returned for this test.' };
 	}
 	try {
-		const sectionsFromApi = Array.isArray(payload.sections) ? payload.sections : undefined;
+		const sectionsFromApi = extractSectionsFromAttemptPayload(payload);
 		sessionStorage.setItem(
 			BATCH_TEST_ATTEMPT_STORAGE_KEY,
 			JSON.stringify({

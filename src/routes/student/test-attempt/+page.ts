@@ -1,26 +1,45 @@
 import { browser } from '$app/environment';
-import {
-	BATCH_TEST_ATTEMPT_STORAGE_KEY,
-	type BatchTestAttemptSession
-} from '$lib/api/testAttempts';
-import {
-	buildNormalizedSections,
-	mergeQuestionIdsIntoNormalized,
-	normalizeQuestionsForTestUi,
-	type NormalizedQuestion,
-	type NormalizedSection,
-	type TestAttemptSectionMeta
-} from '$lib/student/testAttempt/normalize';
+import { BATCH_TEST_ATTEMPT_STORAGE_KEY, type BatchTestAttemptSession } from '$lib/api/testAttempts';
+import { loadAttemptDataFromSession } from '$lib/student/testAttempt/loadAttemptFromSession';
+import type { NormalizedQuestion, NormalizedSection } from '$lib/student/testAttempt/normalize';
 import type { PageLoad } from './$types';
 
 export const ssr = false;
 
 export type { NormalizedQuestion, NormalizedSection };
 
-function parseSectionMeta(parsed: BatchTestAttemptSession): TestAttemptSectionMeta[] | undefined {
-	const raw = parsed.sections;
-	if (!Array.isArray(raw) || raw.length === 0) return undefined;
-	return raw.filter((s) => s != null && typeof s === 'object') as TestAttemptSectionMeta[];
+function prelaunchShell(
+	testId: string,
+	batchId: string,
+	url: URL
+): {
+	questions: NormalizedQuestion[];
+	sections: NormalizedSection[];
+	testName: string;
+	durationMinutes: number;
+	questionCount: number;
+	attemptId: null;
+	expiresAt: null;
+	startedAt: null;
+	testId: string;
+	batchId: string;
+	prelaunch: true;
+} {
+	const raw = url.searchParams.get('testName');
+	const testName = raw ? decodeURIComponent(raw) : 'Test';
+	return {
+		questions: [],
+		sections: [],
+		testName,
+		durationMinutes: 60,
+		questionCount: 0,
+		attemptId: null,
+		expiresAt: null,
+		startedAt: null,
+		testId,
+		batchId,
+		prelaunch: true
+	};
 }
 
 export const load: PageLoad = ({ url }) => {
@@ -35,12 +54,14 @@ export const load: PageLoad = ({ url }) => {
 			expiresAt: null,
 			startedAt: null,
 			testId: '',
-			batchId: ''
+			batchId: '',
+			prelaunch: false
 		};
 	}
 
 	const testId = url.searchParams.get('testId') ?? '';
 	const batchId = url.searchParams.get('batchId') ?? '';
+	const prelaunchParam = url.searchParams.get('prelaunch') === '1';
 
 	if (!testId) {
 		return {
@@ -54,6 +75,7 @@ export const load: PageLoad = ({ url }) => {
 			startedAt: null,
 			testId: '',
 			batchId: '',
+			prelaunch: false,
 			loadError: 'Missing test. Start the test from your tests or batch page.'
 		};
 	}
@@ -61,6 +83,9 @@ export const load: PageLoad = ({ url }) => {
 	try {
 		const stored = sessionStorage.getItem(BATCH_TEST_ATTEMPT_STORAGE_KEY);
 		if (!stored) {
+			if (prelaunchParam) {
+				return prelaunchShell(testId, batchId, url);
+			}
 			return {
 				questions: [],
 				sections: [],
@@ -72,6 +97,7 @@ export const load: PageLoad = ({ url }) => {
 				startedAt: null,
 				testId: '',
 				batchId: '',
+				prelaunch: false,
 				loadError: 'No test data found. Start the test from your batch page.'
 			};
 		}
@@ -87,39 +113,37 @@ export const load: PageLoad = ({ url }) => {
 				durationMinutes: 60,
 				testId: '',
 				batchId: '',
+				prelaunch: false,
 				loadError: 'Test data does not match this link. Start the test again from your tests or batch.'
 			};
 		}
 
-		const questionList = Array.isArray(parsed.questions) ? parsed.questions : [];
-		const sectionMeta = parseSectionMeta(parsed);
-
-		const qc =
-			typeof parsed.questionCount === 'number'
-				? parsed.questionCount
-				: questionList.length;
-		const dm =
-			typeof parsed.durationMinutes === 'number' && parsed.durationMinutes > 0
-				? parsed.durationMinutes
-				: 60;
-
-		const flat = mergeQuestionIdsIntoNormalized(
-			normalizeQuestionsForTestUi(questionList),
-			parsed.questionIds
-		);
-		const sections = buildNormalizedSections(flat, sectionMeta);
+		const payload = loadAttemptDataFromSession(testId, batchId);
+		if (!payload) {
+			if (prelaunchParam) {
+				return prelaunchShell(testId, batchId, url);
+			}
+			return {
+				questions: [],
+				sections: [],
+				testName: 'Test',
+				durationMinutes: 60,
+				questionCount: 0,
+				attemptId: null,
+				expiresAt: null,
+				startedAt: null,
+				testId: '',
+				batchId: '',
+				prelaunch: false,
+				loadError: 'Could not read test data.'
+			};
+		}
 
 		return {
-			questions: flat,
-			sections,
-			testName: parsed.testName ?? 'Test',
-			durationMinutes: dm,
-			questionCount: qc,
-			attemptId: parsed.attemptId ?? null,
-			expiresAt: parsed.expiresAt ?? null,
-			startedAt: parsed.startedAt ?? null,
+			...payload,
 			testId,
-			batchId
+			batchId,
+			prelaunch: false
 		};
 	} catch {
 		return {
@@ -133,6 +157,7 @@ export const load: PageLoad = ({ url }) => {
 			startedAt: null,
 			testId: '',
 			batchId: '',
+			prelaunch: false,
 			loadError: 'Could not read test data.'
 		};
 	}
