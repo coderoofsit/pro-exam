@@ -425,7 +425,7 @@
 			<div
 				class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0"
 			>
-				<div class="py-6 shrink-0">
+				<div class="py-3 shrink-0">
 					{#if effectiveQuestionId !== null}
 						<button
 							type="button"
@@ -452,7 +452,7 @@
 						{data.message}
 					</div>
 				{:else}
-					<div class="py-6 shrink-0">
+					<div class="py-3 shrink-0">
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<h1 class="text-2xl font-bold md:text-3xl">
@@ -460,7 +460,7 @@
 								</h1>
 								{#if displayPaginationMeta}
 									<p
-										class="mt-2 text-sm text-[var(--page-text-muted)]"
+										class="mt-1 text-sm text-[var(--page-text-muted)]"
 									>
 										{displayPaginationMeta.total} questions •
 										Page {data.safePage}
@@ -492,7 +492,7 @@
 					{:else if !effectiveQuestionId}
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
 							<div
-								class="shrink-0 border-b border-[var(--page-card-border)] pb-4"
+								class="shrink-0 border-b border-[var(--page-card-border)] pb-3"
 							>
 								<div
 									class="flex flex-wrap items-center justify-center gap-1.5"
@@ -627,7 +627,7 @@
 
 						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
 							<div
-								class="border-t border-[var(--page-card-border)] py-6 shrink-0"
+								class="border-t border-[var(--page-card-border)] py-3 shrink-0"
 							>
 								<div
 									class="flex flex-wrap items-center justify-center gap-1.5"
@@ -676,9 +676,9 @@
 							</div>
 						{/if}
 					{:else}
-						<div class="flex-1 overflow-y-auto pb-6 mt-4">
+						<div class="flex-1 overflow-y-auto pb-4 mt-2">
 							<div
-								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-6 shadow-sm flex flex-col min-h-full"
+								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-5 shadow-sm flex flex-col min-h-full"
 							>
 								{#if detailLoading && !detailQuestion}
 									<div class="flex flex-col gap-4 animate-pulse" aria-busy="true">
@@ -817,7 +817,7 @@
 								{:else}
 									<!-- Question Header -->
 									<div
-										class="mb-5 flex flex-wrap items-center gap-3"
+										class="mb-4 flex flex-wrap items-center gap-2"
 									>
 										{#if currentQuestionNumber !== null}
 											<div
@@ -870,7 +870,7 @@
 
 									<!-- Question Content -->
 									<div
-										class="mb-8 text-[1.1rem] leading-relaxed text-[var(--page-text)]"
+										class="mb-6 text-[1.1rem] leading-relaxed text-[var(--page-text)]"
 									>
 										<MathText
 											content={questionPromptEnContent(
@@ -903,7 +903,7 @@
 									<!-- Options Grid -->
 									{#if detailQuestion.prompt?.en?.options?.length}
 										<div
-											class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
+											class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-3"
 										>
 											{#each detailQuestion.prompt.en.options as option (option.identifier)}
 												{@const isSelected =
@@ -986,9 +986,9 @@
 											{/each}
 										</div>
 									{:else if (detailQuestion as any).kind === 'INTEGER'}
-										<div class="mb-8">
+										<div class="mb-6">
 											<label
-												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
+												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
 												for="integerAnswer"
 											>
 												Enter your answer (Integer)
@@ -1009,13 +1009,13 @@
 											></textarea>
 										</div>
 									{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
-										<div class="mb-8">
+										<div class="mb-6">
 											<label
-												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
+												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
 											>
 												Fill in the blank(s)
 											</label>
-											<div class="space-y-3">
+											<div class="space-y-2">
 												{#each Array(Math.max(1, (detailQuestion as any).correct?.fills?.length || 1)) as _, idx}
 													<textarea
 														bind:value={fillBlankAnswers[idx]}
@@ -1033,7 +1033,7 @@
 									{#if isAnswerChecked}
 										{#if (detailQuestion as any).kind === 'INTEGER'}
 											<div
-												class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5"
+												class="mb-6 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-4"
 											>
 												<div
 													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
@@ -1070,7 +1070,7 @@
 											</div>
 										{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
 											<div
-												class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5"
+												class="mb-6 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-4"
 											>
 												<div
 													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
@@ -1106,7 +1106,7 @@
 
 										{#if detailQuestion.prompt?.en?.explanation}
 											<div
-												class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2"
+												class="mb-6 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-4 animate-in fade-in slide-in-from-bottom-2"
 											>
 												<div
 													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
@@ -1162,7 +1162,7 @@
 
 									<!-- Footer Buttons -->
 									<div
-										class="mt-auto flex flex-wrap items-center justify-between gap-4 border-t border-[var(--sh-exam-card-border)] pt-5"
+										class="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-4"
 									>
 										<button
 											type="button"
