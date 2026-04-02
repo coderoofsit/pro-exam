@@ -5,6 +5,7 @@
   let { data }: { data: PageData } = $props();
 
   const questions = $derived(data.questions ?? []);
+  const sections = $derived(data.sections ?? []);
   const testName = $derived(data.testName ?? 'Test');
   const duration = $derived(data.durationMinutes ?? 60);
   const testId = $derived(data.testId ?? '');
@@ -23,6 +24,7 @@
 {:else}
   <TestAttempt
     {questions}
+    {sections}
     {testName}
     durationMinutes={duration}
     {testId}

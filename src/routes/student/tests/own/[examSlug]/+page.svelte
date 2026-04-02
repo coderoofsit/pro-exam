@@ -7,7 +7,8 @@
   import {
     createManualCustomTest,
     createRandomCustomTest,
-    extractCreatedTestIdFromCreateTestResponse
+    extractCreatedTestIdFromCreateTestResponse,
+    type CreateManualCustomTestBody
   } from '$lib/api/tests';
   import { createTestAttempt, persistBatchAttemptSessionFromCreateResponse } from '$lib/api/testAttempts';
   import { goto } from '$app/navigation';
@@ -38,6 +39,7 @@
   }
   import { getMaxQuestionsForUnits } from '$lib/ownTest/questionDistribution';
   import { formatIstDateDdMmYyyy } from '$lib/utils/istDate';
+  import { generateSlug } from '$lib/utils/generateSlug';
   import { page } from '$app/state';
 
   let { data }: { data: PageData } = $props();
@@ -71,6 +73,11 @@
   let manualSelectedIds = $state<Set<string>>(new Set());
   let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
   let manualConfirmModalOpen = $state(false);
+  /** Background create started from Next; OK stays loading until resolved. */
+  let manualBgCreatePending = $state(false);
+  /** Set when POST /tests succeeds; user must click OK to open success modal. */
+  let manualBgCreatedTestId = $state<string | null>(null);
+  let manualBgCreateRequestGen = $state(0);
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
   const manualSelectedCount = $derived(manualSelectedIds.size);
@@ -194,76 +201,171 @@
     };
   }
 
-  function handleManualNext() {
-    createTestError = null;
-    const snapshot = buildManualSnapshot();
-    if (!snapshot) return;
-    manualConfirmModalOpen = true;
+  /** Section slug is derived from the **subject** name (not unit). */
+  function findSubjectSectionSlugForChapter(chapterId: string): string | null {
+    const cid = String(chapterId).trim();
+    if (!cid) return null;
+    for (const row of groupedSubjects) {
+      const subjectName = row.subject.name?.en ?? row.subject.slug;
+      for (const unit of row.data ?? []) {
+        for (const ch of unit.data ?? []) {
+          if (String(ch._id) === cid) {
+            return generateSlug(subjectName);
+          }
+        }
+      }
+    }
+    return null;
   }
 
-  function closeManualConfirmModal() {
-    if (creatingTest) return;
-    manualConfirmModalOpen = false;
-    createTestError = null;
-  }
-
-  async function confirmManualTestCreation() {
+  function buildManualCreatePayload(): CreateManualCustomTestBody | null {
     const snapshot = buildManualSnapshot();
-    if (!snapshot) return;
-    
+    if (!snapshot) return null;
+
     const istDate = formatIstDateDdMmYyyy();
     const boardId = snapshot.boardId?.trim() || boardIdFromPage;
     const examId = snapshot.examId?.trim() || examIdFromPage;
-    
-    if (!boardId || !examId) {
-      createTestError = 'Missing exam or board for this test. Please refresh the page or pick another exam.';
-      return;
-    }
+    if (!boardId || !examId) return null;
 
-    creatingTest = true;
-    createTestError = null;
+    const rows = manualSelectedRows.length
+      ? manualSelectedRows
+      : Array.from(manualSelectedIds).map((id) => ({ id, chapterId: '' }));
 
-    const manualQuestionCount = manualSelectedRows.length ? manualSelectedRows.length : manualSelectedIds.size;
+    const manualQuestionCount = rows.length;
     const durationMinutes = durationMinutesForQuestionCount(manualQuestionCount);
 
-    try {
-      const res = await createManualCustomTest({
-        boardId,
-        examId,
-        name: { en: `Custom Test ${examName} ${istDate}` },
-        kind: 'CUSTOM',
-        settings: { durationMinutes },
-        questions: manualSelectedRows.length
-          ? manualSelectedRows.map((r, idx) => ({ questionId: r.id, order: idx }))
-          : Array.from(manualSelectedIds).map((id, idx) => ({ questionId: id, order: idx }))
+    const sections: CreateManualCustomTestBody['sections'] = [];
+    let sectionOrder = 0;
+    for (const g of groupedSubjects) {
+      const subjectName = g.subject.name?.en ?? g.subject.slug;
+      const chapterIdsInSubject = new Set<string>();
+      for (const unit of g.data ?? []) {
+        for (const ch of unit.data ?? []) {
+          chapterIdsInSubject.add(String(ch._id));
+        }
+      }
+      let n = 0;
+      for (const r of rows) {
+        if (chapterIdsInSubject.has(String(r.chapterId))) n++;
+      }
+      if (n === 0) continue;
+      sectionOrder++;
+      sections.push({
+        title: subjectName,
+        slug: generateSlug(subjectName),
+        numberOfQuestions: n,
+        order: sectionOrder
       });
-
-      if (!res.success) {
-        createTestError = res.message;
-        return;
-      }
-
-      const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
-      if (!newTestId) {
-        createTestError = 'Test was created but we could not read its id. Start it from Tests instead.';
-        createdTestId = null;
-        return;
-      }
-      createdTestId = newTestId;
-      successStartError = null;
-
-      if (browser) {
-        try {
-          sessionStorage.removeItem(manualSelectionKey);
-        } catch {}
-        manualSelectedIds = new Set();
-        manualSelectedRows = [];
-      }
-      manualConfirmModalOpen = false;
-      successModalOpen = true;
-    } finally {
-      creatingTest = false;
     }
+
+    const questions = rows.map((r, idx) => ({
+      questionId: r.id,
+      order: idx,
+      sectionSlug: findSubjectSectionSlugForChapter(String(r.chapterId).trim()) ?? ''
+    }));
+
+    return {
+      boardId,
+      examId,
+      examSlug:"vector-algebra",
+      name: { en: `Custom Test ${examName} ${istDate}` },
+      kind: 'CUSTOM',
+      settings: { durationMinutes },
+      sections,
+      questions
+    };
+  }
+
+  const manualConfirmHierarchy = $derived.by(() => {
+    const selectedChapterIds = new Set(
+      manualSelectedRows.map((r) => String(r.chapterId || '').trim()).filter(Boolean)
+    );
+    const out: { subjectName: string; units: { unitName: string; chapterNames: string[] }[] }[] = [];
+    for (const row of groupedSubjects) {
+      const subjectName = row.subject.name?.en ?? row.subject.slug;
+      const unitsOut: { unitName: string; chapterNames: string[] }[] = [];
+      for (const unit of row.data ?? []) {
+        const unitName = unit.chapterGroup.name?.en ?? unit.chapterGroup.slug;
+        const chapterNames: string[] = [];
+        for (const ch of unit.data ?? []) {
+          if (selectedChapterIds.has(String(ch._id))) {
+            chapterNames.push(ch.name?.en ?? ch.slug);
+          }
+        }
+        if (chapterNames.length === 0) continue;
+        unitsOut.push({ unitName, chapterNames });
+      }
+      if (unitsOut.length === 0) continue;
+      out.push({ subjectName, units: unitsOut });
+    }
+    return out;
+  });
+
+  function finishManualCreateSuccess(newTestId: string) {
+    createdTestId = newTestId;
+    successStartError = null;
+    if (browser) {
+      try {
+        sessionStorage.removeItem(manualSelectionKey);
+      } catch {}
+      manualSelectedIds = new Set();
+      manualSelectedRows = [];
+    }
+    manualConfirmModalOpen = false;
+    manualBgCreatedTestId = null;
+    successModalOpen = true;
+  }
+
+  function handleManualNext() {
+    if (manualConfirmModalOpen) return;
+    createTestError = null;
+    manualBgCreatedTestId = null;
+    const payload = buildManualCreatePayload();
+    if (!payload) return;
+
+    manualConfirmModalOpen = true;
+    manualBgCreatePending = true;
+    manualBgCreateRequestGen++;
+    const gen = manualBgCreateRequestGen;
+
+    void (async () => {
+      try {
+        const res = await createManualCustomTest(payload);
+        if (gen !== manualBgCreateRequestGen) return;
+        if (!res.success) {
+          createTestError = res.message;
+          return;
+        }
+        const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
+        if (!newTestId) {
+          createTestError =
+            'Test was created but we could not read its id. Start it from Tests instead.';
+          return;
+        }
+        manualBgCreatedTestId = newTestId;
+      } catch (e) {
+        if (gen !== manualBgCreateRequestGen) return;
+        createTestError = e instanceof Error ? e.message : 'Something went wrong';
+      } finally {
+        if (gen === manualBgCreateRequestGen) {
+          manualBgCreatePending = false;
+        }
+      }
+    })();
+  }
+
+  function handleManualConfirmOk() {
+    if (manualBgCreatePending) return;
+    if (createTestError) {
+      manualConfirmModalOpen = false;
+      createTestError = null;
+      manualBgCreatedTestId = null;
+      manualBgCreateRequestGen++;
+      return;
+    }
+    const tid = manualBgCreatedTestId?.trim();
+    if (!tid) return;
+    finishManualCreateSuccess(tid);
   }
 
   function closeDistModal() {
@@ -301,32 +403,30 @@
         distMode === 'manual' ? manualQuestionCount : randomQuestionCount
       );
 
-      const res =
-        distMode === 'manual'
-          ? await createManualCustomTest({
-              boardId,
-              examId,
-              name: { en: `Custom Test ${examName} ${istDate}` },
-              kind: 'CUSTOM',
-              settings: {
-                durationMinutes
-              },
-              questions: manualSelectedRows.length
-                ? manualSelectedRows.map((r, idx) => ({ questionId: r.id, order: idx }))
-                : Array.from(manualSelectedIds).map((id, idx) => ({ questionId: id, order: idx }))
-            })
-          : await createRandomCustomTest({
-              boardId,
-              examId,
-              name: {
-                en: `Custom Test ${examName} ${istDate}`
-              },
-              kind: 'CUSTOM',
-              settings: {
-                durationMinutes
-              },
-              subjects: data.subjects
-            });
+      let res: Awaited<ReturnType<typeof createManualCustomTest>>;
+      if (distMode === 'manual') {
+        const manualPayload = buildManualCreatePayload();
+        if (!manualPayload) {
+          createTestError =
+            'Missing exam or board for this test. Please refresh the page or pick another exam.';
+          return;
+        }
+        res = await createManualCustomTest(manualPayload);
+      } else {
+        res = await createRandomCustomTest({
+          boardId,
+          examId,
+          examSlug:"vector-algebra",
+          name: {
+            en: `Custom Test ${examName} ${istDate}`
+          },
+          kind: 'CUSTOM',
+          settings: {
+            durationMinutes
+          },
+          subjects: data.subjects
+        });
+      }
 
       if (!res.success) {
         createTestError = res.message;
@@ -470,7 +570,7 @@
         <button
           type="button"
           class="btn-cta-subscription btn-cta-subscription--sm ml-auto shrink-0"
-          disabled={manualSelectedCount === 0}
+          disabled={manualSelectedCount === 0 || manualConfirmModalOpen}
           onclick={handleManualNext}
         >
           Next
@@ -508,37 +608,45 @@
 
 {#if manualConfirmModalOpen}
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="w-full max-w-md rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
+    <div class="w-full max-w-lg rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
       <h2 class="text-xl font-bold text-[var(--page-text)]">Create Test</h2>
       <p class="mt-3 text-sm text-[var(--page-text-muted)]">
-        You have selected {manualSelectedCount} question{manualSelectedCount === 1 ? '' : 's'}.
-      </p>
-      <p class="mt-2 text-sm text-[var(--page-text-muted)]">
         Duration: {durationMinutesForQuestionCount(manualSelectedCount)} minutes
       </p>
-      
+
+      <div class="mt-5 max-h-[min(52vh,26rem)] space-y-6 overflow-y-auto pr-1 text-sm text-[var(--page-text)]">
+        {#each manualConfirmHierarchy as subj (subj.subjectName)}
+          <section class="space-y-3">
+            <h3 class="text-base font-bold tracking-tight text-[var(--page-text)]">
+              {subj.subjectName}
+            </h3>
+            <div class="space-y-2.5">
+              {#each subj.units as u (u.unitName + subj.subjectName)}
+                <div
+                  class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 shadow-sm"
+                >
+                  <p class="text-xs font-semibold uppercase tracking-wide text-[var(--page-text-muted)]">
+                    {u.unitName}
+                  </p>
+                  <p class="mt-2 text-sm leading-relaxed text-[var(--page-text)]">
+                    {u.chapterNames.join(', ')}
+                  </p>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/each}
+      </div>
+
       {#if createTestError}
         <div class="mt-4 rounded-lg border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-2 text-sm text-[var(--pc-error-text)]">
           {createTestError}
         </div>
       {/if}
 
-      <div class="mt-6 flex gap-3">
-        <button
-          type="button"
-          class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-2 text-sm font-medium text-[var(--page-text)] transition hover:bg-[var(--page-card-bg)]"
-          onclick={closeManualConfirmModal}
-          disabled={creatingTest}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn-cta-subscription flex-1"
-          onclick={confirmManualTestCreation}
-          disabled={creatingTest}
-        >
-          {creatingTest ? 'Creating...' : 'Create Test'}
+      <div class="mt-6 flex justify-center">
+        <button type="button" class="btn-cta-subscription min-w-[8rem]" onclick={handleManualConfirmOk}>
+          OK
         </button>
       </div>
     </div>

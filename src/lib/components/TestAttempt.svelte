@@ -10,6 +10,7 @@
     updateTestAttemptQuestion,
     type BatchTestAttemptSession
   } from '$lib/api/testAttempts';
+  import type { NormalizedQuestion, NormalizedSection } from '$lib/student/testAttempt/normalize';
 
   type Option = {
     identifier: string;
@@ -23,16 +24,10 @@
     images: string[];
   };
 
-  type Question = {
-    _id?: string;
-    id?: string;
-    prompt: {
-      en: QuestionPrompt;
-    };
-  };
-
   type Props = {
-    questions: Question[];
+    questions: NormalizedQuestion[];
+    /** Built in +page (or a single synthetic section when the API omits `sections`). */
+    sections?: NormalizedSection[];
     testName?: string;
     durationMinutes?: number;
     expiresAt?: string | null;
@@ -46,6 +41,7 @@
 
   let {
     questions,
+    sections: sectionsProp = [],
     testName = 'Test',
     durationMinutes = 60,
     expiresAt = null,
@@ -79,6 +75,41 @@
   const currentQ = $derived(questions[currentIndex]);
   const prompt = $derived(currentQ?.prompt?.en);
   const isLast = $derived(currentIndex === total - 1);
+
+  /** Section list for palette / headings; falls back to one block when `sections` prop is empty. */
+  const normalizedSections = $derived.by((): NormalizedSection[] => {
+    if (sectionsProp.length > 0) return sectionsProp;
+    if (questions.length === 0) return [];
+    return [
+      {
+        slug: '_all',
+        title: 'Questions',
+        questionStartIndex: 0,
+        questionEndIndex: questions.length - 1,
+        questions
+      }
+    ];
+  });
+
+  const hasMultipleSections = $derived(normalizedSections.length > 1);
+
+  const currentSection = $derived.by((): NormalizedSection | null => {
+    for (const sec of normalizedSections) {
+      if (
+        currentIndex >= sec.questionStartIndex &&
+        currentIndex <= sec.questionEndIndex
+      ) {
+        return sec;
+      }
+    }
+    return normalizedSections[0] ?? null;
+  });
+
+  /** 1-based index within the current section (for labels when multiple sections exist). */
+  const localSectionQIndex = $derived(
+    currentSection ? currentIndex - currentSection.questionStartIndex + 1 : currentIndex + 1
+  );
+  const localSectionQTotal = $derived(currentSection?.questions.length ?? total);
 
   const secondsLeft = $derived.by(() => {
     void nowTick;
@@ -552,6 +583,13 @@ function clearCurrentAnswer() {
           shadow-[var(--ta-qpanel-shadow)]
         "
         >
+          {#if hasMultipleSections && currentSection}
+            <p
+              class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ta-header-sub)]"
+            >
+              {currentSection.title}
+            </p>
+          {/if}
           <div class="mb-5 flex items-center gap-3">
             <span
               class="
@@ -564,6 +602,11 @@ function clearCurrentAnswer() {
             </span>
             <span class="text-xs text-[var(--ta-header-sub)]">
               Question {currentIndex + 1} of {displayTotal}
+              {#if hasMultipleSections}
+                <span class="text-[var(--ta-palette-sub)]">
+                  · Q {localSectionQIndex} of {localSectionQTotal} in this section
+                </span>
+              {/if}
             </span>
           </div>
 
@@ -855,28 +898,43 @@ function clearCurrentAnswer() {
       <div
         class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 [scrollbar-width:thin]"
       >
-        <div class="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-5">
-          {#each questions as _, i}
-            {@const state = pillState(i)}
-            <button
-              type="button"
-              onclick={() => void goTo(i)}
-              disabled={submitted || submitInFlight}
-              title="Question {i + 1}"
-              class="
-                flex h-9 w-full items-center justify-center rounded-lg text-xs font-bold
-                transition-all duration-100
-                {state === 'current'
-                  ? 'bg-[var(--ta-pill-current-bg)] text-[var(--ta-pill-current-text)] shadow-[var(--ta-pill-current-shadow)]'
-                  : state === 'attempted'
-                    ? 'border border-[var(--ta-pill-attempted-border)] bg-[var(--ta-pill-attempted-bg)] text-[var(--ta-pill-attempted-text)]'
-                    : state === 'marked'
-                      ? 'border border-amber-500/40 bg-amber-500/15 text-amber-200'
-                      : 'border border-[var(--ta-pill-unattempted-border)] bg-[var(--ta-pill-unattempted-bg)] text-[var(--ta-pill-unattempted-text)]'}
-              "
-            >
-              {i + 1}
-            </button>
+        <div class="flex flex-col gap-4">
+          {#each normalizedSections as sec, secIdx (`${sec.slug}-${secIdx}`)}
+            <div class="min-w-0">
+              {#if normalizedSections.length > 1}
+                <p
+                  class="mb-2 truncate text-[10px] font-bold uppercase tracking-wider text-[var(--ta-palette-sub)]"
+                  title={sec.title}
+                >
+                  {sec.title}
+                </p>
+              {/if}
+              <div class="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-5">
+                {#each sec.questions as _, qi (`${sec.slug}-${sec.questionStartIndex + qi}`)}
+                  {@const i = sec.questionStartIndex + qi}
+                  {@const state = pillState(i)}
+                  <button
+                    type="button"
+                    onclick={() => void goTo(i)}
+                    disabled={submitted || submitInFlight}
+                    title="Question {i + 1}"
+                    class="
+                      flex h-9 w-full items-center justify-center rounded-lg text-xs font-bold
+                      transition-all duration-100
+                      {state === 'current'
+                        ? 'bg-[var(--ta-pill-current-bg)] text-[var(--ta-pill-current-text)] shadow-[var(--ta-pill-current-shadow)]'
+                        : state === 'attempted'
+                          ? 'border border-[var(--ta-pill-attempted-border)] bg-[var(--ta-pill-attempted-bg)] text-[var(--ta-pill-attempted-text)]'
+                          : state === 'marked'
+                            ? 'border border-amber-500/40 bg-amber-500/15 text-amber-200'
+                            : 'border border-[var(--ta-pill-unattempted-border)] bg-[var(--ta-pill-unattempted-bg)] text-[var(--ta-pill-unattempted-text)]'}
+                    "
+                  >
+                    {i + 1}
+                  </button>
+                {/each}
+              </div>
+            </div>
           {/each}
         </div>
 

@@ -104,6 +104,7 @@ export async function fetchGetTestUser(
 export type CreateRandomCustomTestBody = {
 	boardId: string;
 	examId: string;
+	examSlug:string;
 	name: { en: string };
 	kind: string;
 	/** Backend rejects `null` for optional strings — omit keys when not scheduling. */
@@ -133,6 +134,7 @@ export async function createRandomCustomTest(
 export type CreateManualCustomTestBody = {
 	boardId: string;
 	examId: string;
+	examSlug:string;
 	name: { en: string };
 	kind: string;
 	settings: {
@@ -142,7 +144,13 @@ export type CreateManualCustomTestBody = {
 		endDate?: string;
 		endTime?: string;
 	};
-	questions: Array<{ questionId: string; order?: number }>;
+	sections: Array<{
+		title: string;
+		slug: string;
+		numberOfQuestions: number;
+		order: number;
+	}>;
+	questions: Array<{ questionId: string; order?: number; sectionSlug: string }>;
 };
 
 export async function createManualCustomTest(body: CreateManualCustomTestBody, token?: string | null) {

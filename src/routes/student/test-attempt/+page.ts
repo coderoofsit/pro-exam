@@ -1,74 +1,33 @@
 import { browser } from '$app/environment';
 import {
 	BATCH_TEST_ATTEMPT_STORAGE_KEY,
-	extractQuestionId,
-	type BatchTestAttemptSession,
-	type TestAttemptQuestion
+	type BatchTestAttemptSession
 } from '$lib/api/testAttempts';
+import {
+	buildNormalizedSections,
+	mergeQuestionIdsIntoNormalized,
+	normalizeQuestionsForTestUi,
+	type NormalizedQuestion,
+	type NormalizedSection,
+	type TestAttemptSectionMeta
+} from '$lib/student/testAttempt/normalize';
 import type { PageLoad } from './$types';
 
 export const ssr = false;
 
-function normalizeImageUrls(raw: unknown): string[] {
-	if (!Array.isArray(raw)) return [];
-	const out: string[] = [];
-	for (const x of raw) {
-		if (typeof x === 'string' && x.trim()) {
-			out.push(x.trim());
-			continue;
-		}
-		if (x != null && typeof x === 'object' && 'url' in x) {
-			const u = (x as { url?: unknown }).url;
-			if (typeof u === 'string' && u.trim()) out.push(u.trim());
-		}
-	}
-	return out;
-}
+export type { NormalizedQuestion, NormalizedSection };
 
-function normalizeForTestUi(raw: TestAttemptQuestion[]) {
-	return raw.map((item) => {
-		const id = extractQuestionId(item);
-		const en = item.prompt.en;
-		return {
-			...item,
-			_id: id ?? item._id,
-			id: item.id,
-			prompt: {
-				en: {
-					content: en.content,
-					options: en.options.map((o) => ({
-						identifier: o.identifier,
-						content: o.content,
-						images: normalizeImageUrls(o.images)
-					})),
-					images: normalizeImageUrls(en.images)
-				}
-			}
-		};
-	});
-}
-
-function mergeQuestionIdsIntoNormalized(
-	normalized: ReturnType<typeof normalizeForTestUi>,
-	questionIds: string[] | undefined
-) {
-	if (!questionIds?.length) return normalized;
-	return normalized.map((q, i) => {
-		const id = questionIds[i]?.trim();
-		if (!id) return q;
-		return {
-			...q,
-			_id: q._id ?? id,
-			questionId: id,
-			id: q.id ?? id
-		};
-	});
+function parseSectionMeta(parsed: BatchTestAttemptSession): TestAttemptSectionMeta[] | undefined {
+	const raw = parsed.sections;
+	if (!Array.isArray(raw) || raw.length === 0) return undefined;
+	return raw.filter((s) => s != null && typeof s === 'object') as TestAttemptSectionMeta[];
 }
 
 export const load: PageLoad = ({ url }) => {
 	if (!browser) {
 		return {
-			questions: [],
+			questions: [] as NormalizedQuestion[],
+			sections: [] as NormalizedSection[],
 			testName: 'Test',
 			durationMinutes: 60,
 			questionCount: 0,
@@ -86,6 +45,7 @@ export const load: PageLoad = ({ url }) => {
 	if (!testId) {
 		return {
 			questions: [],
+			sections: [],
 			testName: 'Test',
 			durationMinutes: 60,
 			questionCount: 0,
@@ -103,6 +63,7 @@ export const load: PageLoad = ({ url }) => {
 		if (!stored) {
 			return {
 				questions: [],
+				sections: [],
 				testName: 'Test',
 				durationMinutes: 60,
 				questionCount: 0,
@@ -121,6 +82,7 @@ export const load: PageLoad = ({ url }) => {
 		if (parsed.testId !== testId || sessionBatch !== urlBatch) {
 			return {
 				questions: [],
+				sections: [],
 				testName: 'Test',
 				durationMinutes: 60,
 				testId: '',
@@ -130,6 +92,7 @@ export const load: PageLoad = ({ url }) => {
 		}
 
 		const questionList = Array.isArray(parsed.questions) ? parsed.questions : [];
+		const sectionMeta = parseSectionMeta(parsed);
 
 		const qc =
 			typeof parsed.questionCount === 'number'
@@ -140,11 +103,15 @@ export const load: PageLoad = ({ url }) => {
 				? parsed.durationMinutes
 				: 60;
 
+		const flat = mergeQuestionIdsIntoNormalized(
+			normalizeQuestionsForTestUi(questionList),
+			parsed.questionIds
+		);
+		const sections = buildNormalizedSections(flat, sectionMeta);
+
 		return {
-			questions: mergeQuestionIdsIntoNormalized(
-				normalizeForTestUi(questionList),
-				parsed.questionIds
-			),
+			questions: flat,
+			sections,
 			testName: parsed.testName ?? 'Test',
 			durationMinutes: dm,
 			questionCount: qc,
@@ -157,6 +124,7 @@ export const load: PageLoad = ({ url }) => {
 	} catch {
 		return {
 			questions: [],
+			sections: [],
 			testName: 'Test',
 			durationMinutes: 60,
 			questionCount: 0,

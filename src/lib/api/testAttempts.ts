@@ -22,6 +22,8 @@ export type TestAttemptQuestion = {
 	id?: string;
 	questionId?: string;
 	question_id?: string;
+	/** When attempt is sectioned, matches `sections[].slug` from the same response. */
+	sectionSlug?: string;
 	prompt: {
 		en: TestAttemptPromptEn;
 	};
@@ -135,6 +137,8 @@ export type BatchTestAttemptSession = {
 	testId: string;
 	batchId: string;
 	questions: TestAttemptQuestion[];
+	/** Optional section metadata from POST /test-attempts (same order as backend). */
+	sections?: Array<{ title?: string; slug?: string; order?: number; numberOfQuestions?: number }>;
 	/** Parallel to `questions` — Mongo ids for PATCH /questions/:questionId when items omit _id. */
 	questionIds?: string[];
 	fetchedAt: number;
@@ -194,12 +198,14 @@ export function persistBatchAttemptSessionFromCreateResponse(
 		return { ok: false, message: 'No questions returned for this test.' };
 	}
 	try {
+		const sectionsFromApi = Array.isArray(payload.sections) ? payload.sections : undefined;
 		sessionStorage.setItem(
 			BATCH_TEST_ATTEMPT_STORAGE_KEY,
 			JSON.stringify({
 				testId: opts.testId,
 				batchId: opts.batchId,
 				questions,
+				...(sectionsFromApi?.length ? { sections: sectionsFromApi } : {}),
 				fetchedAt: Date.now(),
 				testName: opts.testName,
 				attemptId: attemptIdResolved,
