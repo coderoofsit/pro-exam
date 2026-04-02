@@ -25,6 +25,9 @@
 	let isAnswerChecked = $state(false);
 	let activeQuestionId = $state<string | null>(null);
 	let isEditing = $state(false);
+	let integerAnswer = $state<number | null>(null);
+	let fillBlankAnswers = $state<string[]>([]);
+	let currentQuestionNumber = $state<number | null>(null);
 
 	/** Client-driven question view (shallow routing); stays in sync with server data on full navigations. */
 	let effectiveQuestionId = $state<string | null>(null);
@@ -104,6 +107,19 @@
 			selectedOption = null;
 			isAnswerChecked = false;
 			isEditing = false;
+			integerAnswer = null;
+			fillBlankAnswers = [];
+			
+			if (detailQuestion?._id) {
+				const idx = displayQuestions.findIndex((q: Question) => q._id === detailQuestion!._id);
+				if (idx >= 0) {
+					currentQuestionNumber = (data.safePage - 1) * (displayPaginationMeta?.limit ?? 25) + idx + 1;
+				} else {
+					currentQuestionNumber = null;
+				}
+			} else {
+				currentQuestionNumber = null;
+			}
 		}
 		if (form?.success) {
 			isEditing = false;
@@ -803,14 +819,21 @@
 									<div
 										class="mb-5 flex flex-wrap items-center gap-3"
 									>
-										<div
+										{#if currentQuestionNumber !== null}
+											<div
+												class="inline-flex rounded-md border border-[var(--page-text-muted)]/20 bg-[var(--page-text-muted)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-text-muted)]"
+											>
+												Q{currentQuestionNumber}
+											</div>
+										{/if}
+										<!-- <div
 											class="inline-flex rounded-md border border-[var(--page-link)]/20 bg-[var(--page-link)]/10 px-2 py-1 text-xs font-semibold text-[var(--page-link)]"
 										>
 											{(detailQuestion as any).examSlug
 												?.replace("-", " ")
 												.toUpperCase()}
 											{(detailQuestion as any).year ?? ""}
-										</div>
+										</div> -->
 										<div
 											class="text-xs font-semibold uppercase text-[var(--page-text-muted)] opacity-80"
 										>
@@ -886,11 +909,12 @@
 												{@const isSelected =
 													selectedOption ===
 													option.identifier}
-												{@const isCorrectData = (
-													detailQuestion as any
-												).correct?.identifiers?.includes(
-													option.identifier,
-												)}
+												{@const correctData = (detailQuestion as any).correct}
+												{@const questionKind = (detailQuestion as any).kind}
+												{@const isCorrectData = 
+													questionKind === 'MCQ' || questionKind === 'MSQ' || questionKind === 'TRUE_FALSE'
+														? correctData?.identifiers?.includes(option.identifier)
+														: false}
 												{@const showAsCorrect =
 													isAnswerChecked &&
 													isCorrectData}
@@ -961,62 +985,179 @@
 												</button>
 											{/each}
 										</div>
+									{:else if (detailQuestion as any).kind === 'INTEGER'}
+										<div class="mb-8">
+											<label
+												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
+												for="integerAnswer"
+											>
+												Enter your answer (Integer)
+											</label>
+											<textarea
+												id="integerAnswer"
+												bind:value={integerAnswer}
+												disabled={isAnswerChecked}
+												oninput={(e) => {
+													const target = e.target as HTMLTextAreaElement;
+													const value = target.value.replace(/[^0-9-]/g, '');
+													target.value = value;
+													integerAnswer = value ? parseInt(value) : null;
+												}}
+												class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60 resize-none"
+												placeholder="Enter integer value"
+												rows="2"
+											></textarea>
+										</div>
+									{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
+										<div class="mb-8">
+											<label
+												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
+											>
+												Fill in the blank(s)
+											</label>
+											<div class="space-y-3">
+												{#each Array(Math.max(1, (detailQuestion as any).correct?.fills?.length || 1)) as _, idx}
+													<textarea
+														bind:value={fillBlankAnswers[idx]}
+														disabled={isAnswerChecked}
+														class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60 resize-none"
+														placeholder="Answer {idx + 1}"
+														rows="2"
+													></textarea>
+												{/each}
+											</div>
+										</div>
 									{/if}
 
 									<!-- Explanation -->
-									{#if isAnswerChecked && detailQuestion.prompt?.en?.explanation}
-										<div
-											class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2"
-										>
+									{#if isAnswerChecked}
+										{#if (detailQuestion as any).kind === 'INTEGER'}
 											<div
-												class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
+												class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5"
 											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
+												<div
+													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
 												>
-													<path
-														d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-													/>
-												</svg>
-												ExamFlow Solution
-											</div>
-											<div
-												class="text-[0.95rem] leading-relaxed text-[var(--page-text)]"
-											>
-												<MathText
-													content={detailQuestion.prompt.en.explanation}
-												/>
-												{#if detailQuestion.prompt.en.explanationImages?.length}
-													<div
-														class="mt-4 flex flex-wrap gap-3"
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
 													>
-														{#each detailQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${detailQuestion._id}-${imgIdx}`)}
-															{@const src =
-																imageSrc(
-																	img as ImageLike,
-																)}
-															{#if src}
-																<img
-																	{src}
-																	alt={imageAlt(
-																		img as ImageLike,
-																	)}
-																	class="max-h-48 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
-																	loading="lazy"
-																/>
-															{/if}
-														{/each}
+														<path
+															d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+														/>
+													</svg>
+													Correct Answer
+												</div>
+												<div
+													class="text-[1.1rem] font-semibold text-[var(--page-text)]"
+												>
+													{(detailQuestion as any).correct?.integer ?? 'N/A'}
+												</div>
+												{#if integerAnswer !== null}
+													<div class="mt-3 text-sm">
+														<span class="text-[var(--page-text-muted)]">Your answer:</span>
+														<span class="ml-2 font-semibold {integerAnswer === (detailQuestion as any).correct?.integer ? 'text-semantic-success' : 'text-semantic-error'}">
+															{integerAnswer}
+														</span>
 													</div>
 												{/if}
 											</div>
-										</div>
+										{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
+											<div
+												class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5"
+											>
+												<div
+													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													>
+														<path
+															d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+														/>
+													</svg>
+													Correct Answer(s)
+												</div>
+												<div
+													class="space-y-2 text-[1rem] text-[var(--page-text)]"
+												>
+													{#each (detailQuestion as any).correct?.fills || [] as fill, idx}
+														<div class="flex items-center gap-3">
+															<span class="font-semibold text-[var(--page-text-muted)]">{idx + 1}.</span>
+															<span class="font-semibold">{fill}</span>
+														</div>
+													{/each}
+												</div>
+											</div>
+										{/if}
+
+										{#if detailQuestion.prompt?.en?.explanation}
+											<div
+												class="mb-8 rounded-xl border border-[var(--page-link)]/20 bg-[var(--page-link)]/5 p-5 animate-in fade-in slide-in-from-bottom-2"
+											>
+												<div
+													class="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--page-link)]"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													>
+														<path
+															d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+														/>
+													</svg>
+													Exam Flow Solution
+												</div>
+												<div
+													class="text-[0.95rem] leading-relaxed text-[var(--page-text)]"
+												>
+													<MathText
+														content={detailQuestion.prompt.en.explanation}
+													/>
+													{#if detailQuestion.prompt.en.explanationImages?.length}
+														<div
+															class="mt-4 flex flex-wrap gap-3"
+														>
+															{#each detailQuestion.prompt.en.explanationImages as img, imgIdx (`exp-${detailQuestion._id}-${imgIdx}`)}
+																{@const src =
+																	imageSrc(
+																		img as ImageLike,
+																	)}
+																{#if src}
+																	<img
+																		{src}
+																		alt={imageAlt(
+																			img as ImageLike,
+																		)}
+																		class="max-h-48 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																		loading="lazy"
+																	/>
+																{/if}
+															{/each}
+														</div>
+													{/if}
+												</div>
+											</div>
+										{/if}
 									{/if}
 
 									<!-- Footer Buttons -->
@@ -1036,14 +1177,11 @@
 											type="button"
 											class="min-w-[180px] rounded-lg bg-[var(--page-link)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--page-link)]/20 transition hover:bg-[var(--page-link-hover)] hover:shadow-lg disabled:opacity-50"
 											onclick={() => {
-												if (
-													!isAnswerChecked &&
-													selectedOption
-												)
+												if (!isAnswerChecked) {
 													isAnswerChecked = true;
+												}
 											}}
-											disabled={isAnswerChecked ||
-												!selectedOption}
+											disabled={isAnswerChecked}
 										>
 											Check Answer
 										</button>
