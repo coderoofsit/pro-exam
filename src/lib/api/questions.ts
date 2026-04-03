@@ -55,7 +55,8 @@ export async function fetchQuestionsByChapter(
 	limit: number = 10,
 	difficulty?: string | null,
 	kind?: string | null,
-	token?: string | null
+	token?: string | null,
+	topicSlug?: string | null
 ): Promise<QuestionsPageResponse> {
 	const t = resolveApiToken(token);
 	const safePage = Number.isNaN(page) || page < 1 ? 1 : page;
@@ -67,6 +68,7 @@ export async function fetchQuestionsByChapter(
 	});
 	if (difficulty) params.set('difficulty', difficulty);
 	if (kind) params.set('kind', kind);
+	if (topicSlug) params.set('topicSlug', topicSlug);
 	const response = await apiRequest<{
 		success: boolean;
 		message: string;

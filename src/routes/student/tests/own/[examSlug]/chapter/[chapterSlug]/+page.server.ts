@@ -12,13 +12,16 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	const currentPageParam = Number(url.searchParams.get('page') || '1');
 	const safePage = Number.isNaN(currentPageParam) || currentPageParam < 1 ? 1 : currentPageParam;
+	const kind = url.searchParams.get('kind');
+	const topicSlug = url.searchParams.get('topic');
+	const difficulty = url.searchParams.get('difficulty');
 
 	try {
 		const chapter = await fetchChapterBySlug(decodeURIComponent(chapterSlug));
 		const chapterId = chapter?._id ?? null;
 		if (!chapterId) throw new Error('Chapter not found');
 
-		const questionsRes = await fetchQuestionsByChapter(chapterId, safePage, QUESTIONS_PAGE_LIMIT);
+		const questionsRes = await fetchQuestionsByChapter(chapterId, safePage, QUESTIONS_PAGE_LIMIT, difficulty, kind, null, topicSlug);
 
 		return {
 			examSlug,

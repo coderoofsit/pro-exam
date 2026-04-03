@@ -1,6 +1,7 @@
 <script lang="ts">
 	import MathText from "$lib/components/MathText.svelte";
 	import { questionPromptEnContent, fetchQuestionById } from "$lib/api/questions";
+	import { fetchTopicsByChapterSlug } from "$lib/api/topics";
 	import type { PageData, ActionData } from "./$types";
 	import { enhance } from "$app/forms";
 	import { goto, replaceState } from "$app/navigation";
@@ -20,6 +21,10 @@
 
 	let selectedDifficulties = $state<string[]>([]);
 	let selectedKinds = $state<string[]>([]);
+	let selectedTopic = $state<string>("");
+
+	let topicOptions = $state<{ _id: string; slug: string; name?: { en?: string } }[]>([]);
+	let topicsLoading = $state(false);
 
 	let selectedOption = $state<string | null>(null);
 	let isAnswerChecked = $state(false);
@@ -41,10 +46,26 @@
 			const params = new URLSearchParams(window.location.search);
 			const diffParam = params.get("difficulty");
 			const kindParam = params.get("kind");
+			const topicParam = params.get("topic");
 
 			selectedDifficulties = diffParam ? diffParam.split(",") : [];
 			selectedKinds = kindParam ? kindParam.split(",") : [];
+			selectedTopic = topicParam ?? "";
 		}
+	});
+
+	// Load topics when chapterParam changes
+	let topicsLoadedFor = $state<string | null>(null);
+	$effect(() => {
+		if (!browser) return;
+		const cp = data.chapterParam;
+		if (!cp || topicsLoadedFor === cp) return;
+		topicsLoadedFor = cp;
+		topicsLoading = true;
+		void fetchTopicsByChapterSlug(cp, fetch)
+			.then((r) => { if (r.success && r.data) topicOptions = r.data; })
+			.catch(() => {})
+			.finally(() => { topicsLoading = false; });
 	});
 
 	/** Full navigations only: shallow `replaceState` does not change `data`, so this won't overwrite client-driven id. */
@@ -206,6 +227,9 @@
 		if (selectedKinds.length > 0) {
 			params.set("kind", selectedKinds.join(","));
 		}
+		if (selectedTopic) {
+			params.set("topic", selectedTopic);
+		}
 		return params.toString();
 	};
 
@@ -236,6 +260,7 @@
 	function clearFilters() {
 		selectedDifficulties = [];
 		selectedKinds = [];
+		selectedTopic = "";
 		const url = `${chapterBaseUrl()}?page=1`;
 		void goto(url);
 		filterDrawerOpen = false;

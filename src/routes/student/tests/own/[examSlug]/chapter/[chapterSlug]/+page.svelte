@@ -10,8 +10,14 @@
 
   let topicOptions = $state<TopicRow[]>([]);
   let topicsLoading = $state(false);
-  /** Empty string = "All" */
   let selectedTopicSlug = $state("");
+  let selectedKind = $state<string>("");
+  let selectedDifficulty = $state<string[]>([]);
+  let filterDrawerOpen = $state(false);
+  // pending = what's in the drawer before Apply
+  let pendingTopic = $state("");
+  let pendingKind = $state<string>("");
+  let pendingDifficulty = $state<string[]>([]);
   let topicsLoadedForSlug = $state<string | null>(null);
   let topicsAbort: AbortController | null = null;
 
@@ -20,6 +26,12 @@
     const slug = data.chapterSlug;
     if (!slug) return;
     if (topicsLoadedForSlug === slug) return;
+
+    // sync filters from URL
+    const params = new URLSearchParams(window.location.search);
+    selectedTopicSlug = params.get("topic") ?? "";
+    selectedKind = params.get("kind") ?? "";
+    selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
 
     topicsLoadedForSlug = slug;
     selectedTopicSlug = "";
@@ -33,7 +45,19 @@
       .then((r) => {
         if (signal.aborted) return;
         if (topicsLoadedForSlug !== slug) return;
-        if (r.success && r.data) topicOptions = r.data;
+        if (r.success && r.data) {
+  const unique = new Map<string, TopicRow>();
+
+  for (const t of r.data) {
+    // use slug (better) or fallback to _id
+    const key = t.slug || t._id;
+    if (!unique.has(key)) {
+      unique.set(key, t);
+    }
+  }
+
+  topicOptions = Array.from(unique.values());
+}
       })
       .catch((e) => {
         if (signal.aborted) return;
@@ -104,17 +128,48 @@
 
   const selectedCount = $derived(selectedIds.size);
 
-  const questionsPageUrl = (p: number) => {
-    const params = new URLSearchParams({
-      mode: "manual",
-      page: String(p),
-      examId,
-      boardId
-    });
-    return `/student/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(
-      data.chapterSlug
-    )}?${params.toString()}`;
+  const questionsPageUrl = (p: number, opts?: { topic?: string; kind?: string; difficulty?: string[] }) => {
+    const t = opts?.topic ?? selectedTopicSlug;
+    const k = opts?.kind ?? selectedKind;
+    const d = opts?.difficulty ?? selectedDifficulty;
+    const params = new URLSearchParams({ mode: "manual", page: String(p), examId, boardId });
+    if (t) params.set("topic", t);
+    if (k) params.set("kind", k);
+    if (d.length) params.set("difficulty", d.join(","));
+    return `/student/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(data.chapterSlug)}?${params.toString()}`;
   };
+
+  function openDrawer() {
+    pendingTopic = selectedTopicSlug;
+    pendingKind = selectedKind;
+    pendingDifficulty = [...selectedDifficulty];
+    filterDrawerOpen = true;
+  }
+
+  function applyFilters() {
+    selectedTopicSlug = pendingTopic;
+    selectedKind = pendingKind;
+    selectedDifficulty = [...pendingDifficulty];
+    filterDrawerOpen = false;
+    void goto(questionsPageUrl(1, { topic: pendingTopic, kind: pendingKind, difficulty: pendingDifficulty }));
+  }
+
+  function clearFilters() {
+    pendingTopic = ""; pendingKind = ""; pendingDifficulty = [];
+    selectedTopicSlug = ""; selectedKind = ""; selectedDifficulty = [];
+    filterDrawerOpen = false;
+    void goto(questionsPageUrl(1, { topic: "", kind: "", difficulty: [] }));
+  }
+
+  function togglePendingDifficulty(d: string) {
+    pendingDifficulty = pendingDifficulty.includes(d)
+      ? pendingDifficulty.filter(x => x !== d)
+      : [...pendingDifficulty, d];
+  }
+
+  const activeFilterCount = $derived(
+    (selectedTopicSlug ? 1 : 0) + (selectedKind ? 1 : 0) + selectedDifficulty.length
+  );
 
   function imageSrc(image: ImageLike): string {
     if (typeof image === "string") return image;
@@ -151,20 +206,13 @@
       </div>
 
       <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
-        <label class="flex items-center gap-2 text-sm text-[var(--page-text-muted)]">
-          <span class="sr-only">Topic</span>
-          <select
-            bind:value={selectedTopicSlug}
-            aria-busy={topicsLoading}
-            class="min-h-[2.5rem] min-w-[10rem] max-w-[min(100%,18rem)] rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text)] outline-none transition hover:border-[var(--sh-exam-card-hover-border)] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_25%,transparent)]"
-            aria-label="Filter by topic"
-          >
-            <option value="">All</option>
-            {#each topicOptions as t (t._id)}
-              <option value={t.slug}>{t.name?.en ?? t.slug}</option>
-            {/each}
-          </select>
-        </label>
+        <button
+          type="button"
+          class="relative rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+          onclick={openDrawer}
+        >
+          Filters{#if activeFilterCount > 0}<span class="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--page-link)] text-[10px] font-bold text-white">{activeFilterCount}</span>{/if}
+        </button>
         <button
           type="button"
           class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
@@ -249,3 +297,75 @@
     {/if}
   </div>
 </div>
+
+{#if filterDrawerOpen}
+<div
+  class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+  role="button" tabindex="0"
+  onclick={() => (filterDrawerOpen = false)}
+  onkeydown={(e) => e.key === "Escape" ? (filterDrawerOpen = false) : null}
+></div>
+<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl overflow-y-auto">
+  <div class="mb-4 flex items-center justify-between">
+    <h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
+    <button type="button" class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]" onclick={() => (filterDrawerOpen = false)}>Close</button>
+  </div>
+
+  <div class="space-y-5">
+    <!-- Difficulty -->
+    <div>
+      <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
+      <div class="flex flex-wrap gap-2.5">
+        {#each ["easy", "medium", "hard"] as diff}
+        <button type="button" onclick={() => togglePendingDifficulty(diff)}
+          class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+          {diff}
+        </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Type -->
+    <div>
+      <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
+      <div class="grid gap-2.5">
+        {#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as k}
+        <button type="button" onclick={() => pendingKind = pendingKind === k ? "" : k}
+          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind === k ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+          {k}
+        </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Topic -->
+    {#if topicOptions.length > 0}
+    <div>
+      <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Topic</div>
+      {#if topicsLoading}
+      <div class="text-xs text-[var(--page-text-muted)]">Loading...</div>
+      {:else}
+      <div class="grid gap-2.5">
+        <button type="button" onclick={() => pendingTopic = ""}
+          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic === '' ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+          All Topics
+        </button>
+        {#each topicOptions as t (t._id)}
+        <button type="button" onclick={() => pendingTopic = t.slug}
+          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic === t.slug ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+          {t.name?.en ?? t.slug}
+        </button>
+        {/each}
+      </div>
+      {/if}
+    </div>
+    {/if}
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]">
+      <button type="button" class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] transition" onclick={clearFilters}>Clear</button>
+      <button type="button" class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--page-link-hover)] transition" onclick={applyFilters}>Apply</button>
+    </div>
+  </div>
+</aside>
+{/if}

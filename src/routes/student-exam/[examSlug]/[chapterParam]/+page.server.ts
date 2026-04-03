@@ -18,6 +18,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 	const questionId = url.searchParams.get('questionId');
 	const difficulty = url.searchParams.get('difficulty');
 	const kind = url.searchParams.get('kind');
+	const topicSlug = url.searchParams.get('topic');
 
 	try {
 		let resolvedChapterId: string | null = null;
@@ -35,7 +36,9 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 				safePage,
 				QUESTIONS_PAGE_LIMIT,
 				difficulty,
-				kind
+				kind,
+				null,
+				topicSlug
 			);
 			if (questionId) {
 				const [list, detail] = await Promise.all([
