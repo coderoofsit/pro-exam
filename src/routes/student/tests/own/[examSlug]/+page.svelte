@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import OwnTestChaptersPanel from '$lib/components/OwnTestChaptersPanel.svelte';
+  import OwnTestChaptersPanelRandom from '$lib/components/OwnTestChaptersPanelRandom.svelte';
   import OwnTestChaptersPanelManual from '$lib/components/OwnTestChaptersPanelManual.svelte';
   import OwnTestCreatedSuccessModal from '$lib/components/OwnTestCreatedSuccessModal.svelte';
-  import OwnTestQuestionDistributionModal from '$lib/components/OwnTestQuestionDistributionModal.svelte';
+  import OwnTestQuestionDistributionModalRandom from '$lib/components/OwnTestQuestionDistributionModalRandom.svelte';
   import {
     createManualCustomTest,
     createRandomCustomTest,
@@ -45,7 +45,9 @@
   let { data }: { data: PageData } = $props();
 
   const groupedSubjects = $derived(data.groupedSubjects ?? []);
+  const groupedTopicSubjects = $derived(data.groupedTopicSubjects ?? []);
   const error = $derived(data.error ?? null);
+  const topicsError = $derived(data.topicsError ?? null);
   const examSlug = $derived(data.examSlug ?? '');
   const examIdFromPage = $derived(data.examId ?? '');
   const boardIdFromPage = $derived(data.boardId ?? '');
@@ -188,6 +190,7 @@
         subjectName: row.subject.name?.en ?? row.subject.slug,
         accent: i % 4,
         units,
+        chapters: [],
         maxQuestions: getMaxQuestionsForUnits(units.length)
       });
     }
@@ -416,7 +419,7 @@
         res = await createRandomCustomTest({
           boardId,
           examId,
-          examSlug:"vector-algebra",
+          examSlug,
           name: {
             en: `Custom Test ${examName} ${istDate}`
           },
@@ -523,7 +526,7 @@
         </svg>
         {error}
       </div>
-    {:else if groupedSubjects.length === 0}
+    {:else if (isManual ? groupedSubjects.length === 0 : groupedTopicSubjects.length === 0)}
       <div class="own-empty-panel">
         <span class="own-empty-panel__icon" aria-hidden="true">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -537,8 +540,12 @@
             <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
           </svg>
         </span>
-        <p class="own-empty-panel__title">No chapters found</p>
-        <p class="own-empty-panel__sub">No syllabus data is available for this exam yet.</p>
+        <p class="own-empty-panel__title">{isManual ? 'No chapters found' : 'No topics found'}</p>
+        <p class="own-empty-panel__sub">
+          {isManual
+            ? 'No syllabus data is available for this exam yet.'
+            : (topicsError ?? 'No topics data is available for this exam yet.')}
+        </p>
       </div>
     {:else if isManual}
       <OwnTestChaptersPanelManual
@@ -577,8 +584,8 @@
         </button>
       </footer>
     {:else}
-      <OwnTestChaptersPanel
-        {groupedSubjects}
+      <OwnTestChaptersPanelRandom
+        groupedSubjects={groupedTopicSubjects}
         {examSlug}
         examId={examIdFromPage}
         boardId={boardIdFromPage}
@@ -588,7 +595,7 @@
   </div>
 </div>
 
-<OwnTestQuestionDistributionModal
+<OwnTestQuestionDistributionModalRandom
   open={distModalOpen}
   snapshot={distSnapshot}
   onClose={closeDistModal}

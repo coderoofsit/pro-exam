@@ -1,5 +1,6 @@
 import { fetchGroupedChaptersByExamSlug, type GroupedSubjectRow } from '$lib/api/chapters';
 import { fetchExamBySlug } from '$lib/api/exams';
+import { fetchTopicsByExamSlug, type TopicsByExamSubjectRow } from '$lib/api/topics';
 import type { PageServerLoad } from './$types';
 
 function boardIdFromExam(exam: Record<string, unknown> | null): string {
@@ -16,8 +17,9 @@ function boardIdFromExam(exam: Record<string, unknown> | null): string {
 export const load: PageServerLoad = async ({ params, fetch }) => {
 	const { examSlug } = params;
 
-	const [chaptersResponse, examResult] = await Promise.all([
+	const [chaptersResponse, topicsResponse, examResult] = await Promise.all([
 		fetchGroupedChaptersByExamSlug(examSlug, fetch),
+		fetchTopicsByExamSlug(examSlug, fetch),
 		fetchExamBySlug(examSlug, null, fetch).catch(() => null)
 	]);
 
@@ -25,7 +27,11 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 		return {
 			examSlug,
 			groupedSubjects: [] as GroupedSubjectRow[],
+			groupedTopicSubjects: topicsResponse.success
+				? ((topicsResponse.data?.data ?? []) as TopicsByExamSubjectRow[])
+				: ([] as TopicsByExamSubjectRow[]),
 			error: chaptersResponse.message || 'Failed to fetch chapters',
+			topicsError: topicsResponse.success ? null : topicsResponse.message || 'Failed to fetch topics',
 			examId: '',
 			boardId: ''
 		};
@@ -33,6 +39,9 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 
 	const body = chaptersResponse.data;
 	let groupedSubjects: GroupedSubjectRow[] = body.data ?? [];
+	const groupedTopicSubjects: TopicsByExamSubjectRow[] = topicsResponse.success
+		? topicsResponse.data?.data ?? []
+		: [];
 
 	const examIdFallback = (examResult?._id ?? '').trim();
 	const boardIdFallback = boardIdFromExam(examResult);
@@ -49,7 +58,9 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	return {
 		examSlug,
 		groupedSubjects,
+		groupedTopicSubjects,
 		error: null as string | null,
+		topicsError: topicsResponse.success ? null : topicsResponse.message || 'Failed to fetch topics',
 		examId: examIdFallback,
 		boardId: boardIdFallback
 	};

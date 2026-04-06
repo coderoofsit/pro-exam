@@ -50,7 +50,7 @@
       nextTotals[s.subjectId] = '0';
       nextUnits[s.subjectId] = {};
 
-      for (const unit of s.units) {
+      for (const unit of s.units ?? []) {
         nextUnits[s.subjectId][unit.unitId] = '0';
       }
     }
@@ -83,7 +83,7 @@
     if (!row) return 0;
 
     let sum = 0;
-    for (const u of row.units) {
+    for (const u of row.units ?? []) {
       sum += clampUnitRaw(subjectId, u.unitId, map[u.unitId] ?? '0');
     }
     return sum;
@@ -93,13 +93,14 @@
     totalsInput = { ...totalsInput, [subjectId]: value };
 
     const subject = findSubject(subjectId);
-    if (!subject || subject.units.length === 0) return;
+    const units = subject?.units ?? [];
+    if (!subject || units.length === 0) return;
 
     const total = clampTotal(subjectId, value);
-    const dist = distributeQuestionsAcrossUnits(total, subject.units.length);
+    const dist = distributeQuestionsAcrossUnits(total, units.length);
     const nextUnits: Record<string, string> = {};
 
-    for (const [index, unit] of subject.units.entries()) {
+    for (const [index, unit] of units.entries()) {
       nextUnits[unit.unitId] = String(dist[index] ?? 0);
     }
 
@@ -168,7 +169,7 @@
     for (const subject of snapshot.subjects) {
       const total = clampTotal(subject.subjectId, totalsInput[subject.subjectId] ?? '0');
 
-      const fixedUnits = subject.units.map((unit) => ({
+      const fixedUnits = (subject.units ?? []).map((unit) => ({
         unitId: unit.unitId,
         unitName: unit.unitName,
         questionCount: clampUnitRaw(
@@ -193,7 +194,7 @@
     const data: OwnTestDistributionContinueData = {
       subjects: snapshot.subjects.map((subject) => ({
         id: subject.subjectId,
-        chapterGroup: subject.units.map((unit) => ({
+        chapterGroup: (subject.units ?? []).map((unit) => ({
           id: unit.unitId,
           chapters: [...unit.chapterIds],
           numberOfQuestions: clampUnitRaw(
@@ -278,11 +279,11 @@
               />
             </label>
 
-            {#if sub.units.length > 0}
+            {#if (sub.units ?? []).length > 0}
               <p class="own-q-modal-units-label">Per unit</p>
 
               <ul class="own-q-modal-units" role="list">
-                {#each sub.units as unit (unit.unitId)}
+                {#each sub.units ?? [] as unit (unit.unitId)}
                   <li class="own-q-modal-unit">
                     <span class="own-q-modal-unit__name">{unit.unitName}</span>
 

@@ -1845,6 +1845,10 @@ html[data-theme='dark'] .student-dash-mascot {
   box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.2);
 }
 
+.own-q-modal-sheet--wide {
+  max-width: 56rem;
+}
+
 @media (min-width: 640px) {
   .own-q-modal-sheet {
     max-height: min(88dvh, 720px);
@@ -2013,6 +2017,47 @@ html[data-theme='dark'] .student-dash-mascot {
   font-size: 0.8125rem;
 }
 
+.own-q-modal-unit--chapter {
+  align-items: flex-start;
+}
+
+.own-q-modal-unit__stack {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.own-q-modal-unit__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.own-q-modal-topic-toggle {
+  border: 1px solid var(--page-card-border);
+  background: transparent;
+  color: var(--page-text-muted);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.own-q-modal-topics {
+  margin: 0;
+  padding: 0.25rem 0 0.1rem 0.75rem;
+  list-style: none;
+  border-left: 1px solid color-mix(in srgb, var(--page-text-muted) 20%, transparent);
+}
+
+.own-q-modal-topic {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0;
+}
+
 .own-q-modal-unit:first-of-type {
   border-top: none;
   padding-top: 0;
@@ -2043,6 +2088,20 @@ html[data-theme='dark'] .student-dash-mascot {
   outline: none;
   border-color: var(--color-brand-primary, #4f7eff);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-primary, #4f7eff) 16%, transparent);
+}
+
+.own-q-modal-input,
+.own-q-modal-unit-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.own-q-modal-input::-webkit-outer-spin-button,
+.own-q-modal-input::-webkit-inner-spin-button,
+.own-q-modal-unit-input::-webkit-outer-spin-button,
+.own-q-modal-unit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .own-q-modal-summary {
