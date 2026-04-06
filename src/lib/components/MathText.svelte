@@ -205,6 +205,7 @@
 <style>
 	.math-text {
 		display: inline;
+		white-space: pre-line;
 	}
 
 	/* MathJax SVG output — keep everything inline */
@@ -224,10 +225,10 @@
 		vertical-align: middle;
 	}
 
-	/* Keep any <p> tags that come from the content from breaking flow */
+	/* Respect paragraph/newline structure for explanation/solution text. */
 	.math-text :global(p) {
-		display: inline;
-		margin: 0;
+		display: block;
+		margin: 0.45em 0;
 	}
 
 	.math-text :global(math.math-multiline-inline) {
