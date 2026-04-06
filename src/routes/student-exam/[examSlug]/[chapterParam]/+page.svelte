@@ -34,6 +34,16 @@
 	let fillBlankAnswers = $state<string[]>([]);
 	let currentQuestionNumber = $state<number | null>(null);
 
+	// ── toast ──────────────────────────────────────────────────────────────
+	let toastMsg = $state<string | null>(null);
+	let toastType = $state<"success" | "error">("success");
+	let toastTimer: ReturnType<typeof setTimeout> | null = null;
+	function showToast(msg: string, type: "success" | "error" = "success") {
+		if (toastTimer) clearTimeout(toastTimer);
+		toastMsg = msg; toastType = type;
+		toastTimer = setTimeout(() => { toastMsg = null; }, 3000);
+	}
+
 	/** Client-driven question view (shallow routing); stays in sync with server data on full navigations. */
 	let effectiveQuestionId = $state<string | null>(null);
 	let detailQuestion = $state<Question | null>(null);
@@ -73,6 +83,8 @@
 		const qid = data.questionId;
 		const det = data.detailedQuestion;
 		if (!qid) {
+			// Don't clear if we have a client-driven question open (e.g. after form save)
+			if (effectiveQuestionId) return;
 			detailLoadSeq++;
 			detailAbort?.abort();
 			effectiveQuestionId = null;
@@ -732,8 +744,22 @@
 										method="POST"
 										action="?/updateQuestion"
 										use:enhance={() => {
-											return ({ update }) => {
-												update({ reset: false });
+											return async ({ result }) => {
+												if (result.type === "success" || result.type === "redirect") {
+													isEditing = false;
+													showToast("Question updated successfully!");
+													const qid = effectiveQuestionId;
+													if (qid) {
+														void fetchQuestionById(qid).then((q) => {
+														detailQuestion = q;
+														questionStore.setCachedById(qid, q);
+													}).catch(() => {});
+													}
+												} else {
+													showToast("Failed to update question.", "error");
+													const { applyAction } = await import("$app/forms");
+													await applyAction(result);
+												}
 											};
 										}}
 										class="flex flex-col flex-1 h-full min-h-0 relative"
@@ -1317,3 +1343,46 @@
 		</div>
 	</aside>
 {/if}
+
+<!-- ── Toast notification ── -->
+{#if toastMsg}
+<div class="toast-wrap {toastType}" role="alert" aria-live="polite">
+	{#if toastType === "success"}
+	<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+	{:else}
+	<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+	{/if}
+	<span>{toastMsg}</span>
+	<button onclick={() => toastMsg = null} aria-label="Dismiss">
+		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+	</button>
+</div>
+{/if}
+
+<style>
+	.toast-wrap {
+		position: fixed;
+		bottom: 1.5rem;
+		right: 1.5rem;
+		z-index: 9999;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.875rem 1.25rem;
+		border-radius: 12px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+		animation: toast-in 0.25s ease;
+		max-width: 360px;
+	}
+	.toast-wrap.success { background: #10b981; color: #fff; }
+	.toast-wrap.error   { background: #ef4444; color: #fff; }
+	.toast-wrap button  { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.8; padding: 0; display: flex; }
+	.toast-wrap button:hover { opacity: 1; }
+	.toast-wrap span { flex: 1; }
+	@keyframes toast-in {
+		from { opacity: 0; transform: translateY(12px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+</style>
