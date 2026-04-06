@@ -10,12 +10,12 @@
 
   let topicOptions = $state<TopicRow[]>([]);
   let topicsLoading = $state(false);
-  let selectedTopicSlug = $state("");
+  let selectedTopicSlug = $state<string[]>([]);
   let selectedKind = $state<string>("");
   let selectedDifficulty = $state<string[]>([]);
   let filterDrawerOpen = $state(false);
   // pending = what's in the drawer before Apply
-  let pendingTopic = $state("");
+  let pendingTopic = $state<string[]>([]);
   let pendingKind = $state<string>("");
   let pendingDifficulty = $state<string[]>([]);
   let topicsLoadedForSlug = $state<string | null>(null);
@@ -29,12 +29,12 @@
 
     // sync filters from URL
     const params = new URLSearchParams(window.location.search);
-    selectedTopicSlug = params.get("topic") ?? "";
+    selectedTopicSlug = params.get("topic") ? params.get("topic")!.split(",") : [];
     selectedKind = params.get("kind") ?? "";
     selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
 
     topicsLoadedForSlug = slug;
-    selectedTopicSlug = "";
+    selectedTopicSlug = [];
     topicOptions = [];
     topicsAbort?.abort();
     topicsAbort = new AbortController();
@@ -128,26 +128,26 @@
 
   const selectedCount = $derived(selectedIds.size);
 
-  const questionsPageUrl = (p: number, opts?: { topic?: string; kind?: string; difficulty?: string[] }) => {
+  const questionsPageUrl = (p: number, opts?: { topic?: string[]; kind?: string; difficulty?: string[] }) => {
     const t = opts?.topic ?? selectedTopicSlug;
     const k = opts?.kind ?? selectedKind;
     const d = opts?.difficulty ?? selectedDifficulty;
     const params = new URLSearchParams({ mode: "manual", page: String(p), examId, boardId });
-    if (t) params.set("topic", t);
+    if (t.length) params.set("topic", t.join(","));
     if (k) params.set("kind", k);
     if (d.length) params.set("difficulty", d.join(","));
     return `/student/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(data.chapterSlug)}?${params.toString()}`;
   };
 
   function openDrawer() {
-    pendingTopic = selectedTopicSlug;
+    pendingTopic = [...selectedTopicSlug];
     pendingKind = selectedKind;
     pendingDifficulty = [...selectedDifficulty];
     filterDrawerOpen = true;
   }
 
   function applyFilters() {
-    selectedTopicSlug = pendingTopic;
+    selectedTopicSlug = [...pendingTopic];
     selectedKind = pendingKind;
     selectedDifficulty = [...pendingDifficulty];
     filterDrawerOpen = false;
@@ -155,10 +155,16 @@
   }
 
   function clearFilters() {
-    pendingTopic = ""; pendingKind = ""; pendingDifficulty = [];
-    selectedTopicSlug = ""; selectedKind = ""; selectedDifficulty = [];
+    pendingTopic = []; pendingKind = ""; pendingDifficulty = [];
+    selectedTopicSlug = []; selectedKind = ""; selectedDifficulty = [];
     filterDrawerOpen = false;
-    void goto(questionsPageUrl(1, { topic: "", kind: "", difficulty: [] }));
+    void goto(questionsPageUrl(1, { topic: [], kind: "", difficulty: [] }));
+  }
+
+  function togglePendingTopic(t: string) {
+    pendingTopic = pendingTopic.includes(t)
+      ? pendingTopic.filter(x => x !== t)
+      : [...pendingTopic, t];
   }
 
   function togglePendingDifficulty(d: string) {
@@ -168,7 +174,7 @@
   }
 
   const activeFilterCount = $derived(
-    (selectedTopicSlug ? 1 : 0) + (selectedKind ? 1 : 0) + selectedDifficulty.length
+    selectedTopicSlug.length + (selectedKind ? 1 : 0) + selectedDifficulty.length
   );
 
   function imageSrc(image: ImageLike): string {
@@ -346,13 +352,13 @@
       <div class="text-xs text-[var(--page-text-muted)]">Loading...</div>
       {:else}
       <div class="grid gap-2.5">
-        <button type="button" onclick={() => pendingTopic = ""}
-          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic === '' ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+        <button type="button" onclick={() => pendingTopic = []}
+          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
           All Topics
         </button>
         {#each topicOptions as t (t._id)}
-        <button type="button" onclick={() => pendingTopic = t.slug}
-          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic === t.slug ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+        <button type="button" onclick={() => togglePendingTopic(t.slug)}
+          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
           {t.name?.en ?? t.slug}
         </button>
         {/each}
