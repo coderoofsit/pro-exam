@@ -109,10 +109,30 @@
 	function closeModal() { openModal = null; activeTab = ""; previewOpen = false; }
 
 	const cards = [
-		{id:"chapter",      icon:"📖", label:"Chapter Wise",      desc:"Analyze by chapter to identify strengths and improvement areas."},
-		{id:"subject",      icon:"📚", label:"Subject Wise",       desc:"Analyze by subject to identify strengths and improvement areas."},
-		{id:"questiontype", icon:"❓", label:"Question Type Wise", desc:"Analyze by question type to identify strengths and improvement areas."},
-		{id:"marks",        icon:"⭐", label:"Marks Wise",         desc:"Analyze by marks wise to identify strengths and improvement areas."},
+		{
+			id:"chapter", 
+			icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`, 
+			label:"Chapter Wise", 
+			desc:"Identify strengths and areas to improve in specific chapters."
+		},
+		{
+			id:"subject", 
+			icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg>`, 
+			label:"Subject Wise", 
+			desc:"Master performance trends across different test subjects."
+		},
+		{
+			id:"questiontype", 
+			icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`, 
+			label:"Question Type", 
+			desc:"Deep dive into MCQs, Integers, and various format stats."
+		},
+		{
+			id:"marks", 
+			icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`, 
+			label:"Marks Wise", 
+			desc:"Filter questions by their individual weightage and difficulty."
+		},
 	];
 	const modalTitles: Record<string,string> = {
 		subject:"Subject Wise Analysis", chapter:"Chapter Wise Analysis",
@@ -122,14 +142,13 @@
 
 <!-- ── Cards ── -->
 <div class="aa-wrap">
-	<p class="aa-label">Advanced Analysis</p>
 	<div class="aa-cards">
 		{#each cards as card}
 		<button class="aa-card" onclick={() => openView(card.id)}>
-			<span class="aa-icon">{card.icon}</span>
+			<span class="aa-icon">{@html card.icon}</span>
 			<b>{card.label}</b>
 			<p>{card.desc}</p>
-			<span class="aa-link">View Analysis →</span>
+			<span class="aa-link">Detailed Analysis →</span>
 		</button>
 		{/each}
 	</div>
@@ -139,133 +158,191 @@
 <!-- ANALYSIS MODAL                                                         -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 {#if openModal}
-<div class="m-overlay" onclick={closeModal} role="button" tabindex="-1" aria-label="Close"></div>
+<button type="button" class="m-overlay" onclick={closeModal} aria-label="Close"></button>
 <div class="m-panel">
 	<div class="m-header">
-		<button class="m-back" onclick={closeModal} aria-label="Back">
-			<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-		</button>
-		<h2 class="m-title">{modalTitles[openModal] ?? "Analysis"}</h2>
+		<div class="m-header-bar">
+			<button class="m-back" onclick={closeModal} aria-label="Back">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+			</button>
+			<div class="mh-title-box">
+				<h2 class="m-title">{modalTitles[openModal] ?? "Analysis"}</h2>
+				<span class="m-sub">Detailed performance breakdown</span>
+			</div>
+		</div>
+	</div>
+	<div class="m-nav-bar">
+                <div class="m-nav-inner">
+		<div class="pill-tabs scrollable">
+			{#if openModal === "subject"}
+				{#each subjectTabs as st}
+					<button class="pill-tab {activeTab===st.id?'active':''}" onclick={()=>activeTab=st.id}>{st.name}</button>
+				{/each}
+			{:else if openModal === "chapter"}
+				{#each chapterTabs as ct}
+					<button class="pill-tab {activeTab===ct.id?'active':''}" onclick={()=>activeTab=ct.id}>{ct.label}</button>
+				{/each}
+			{:else if openModal === "marks"}
+				{#each marksBuckets as b}
+					<button class="pill-tab {activeTab===String(b.marks)?'active':''}" onclick={()=>activeTab=String(b.marks)}>Marks {b.marks}</button>
+				{/each}
+			{:else if openModal === "questiontype"}
+				{#each byKind as k}
+					<button class="pill-tab {activeTab===k.kind?'active':''}" onclick={()=>activeTab=k.kind}>{k.kind}</button>
+				{/each}
+			{/if}
+		</div>
+                </div>
 	</div>
 	<div class="m-body">
+		{#snippet HeroCard(title: string, cor: number, wrg: number, skp: number, obt: number|string, totM: number|string, att: number, totQ: number, timeMs: number, acc: number, qsFunc: () => any[])}
+		<div class="mh-card">
+			<div class="mh-chart-col">
+				<div class="mh-donut" style="--acc: {acc};">
+					<svg viewBox="0 0 36 36" class="mh-circ">
+						<path class="mh-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+						<path class="mh-fg" stroke-dasharray="{acc}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					</svg>
+					<div class="mh-d-text">
+						<b>{acc.toFixed(1)}%</b>
+						<span>ACCURACY</span>
+					</div>
+				</div>
+			</div>
+			<div class="mh-stats-col">
+				<div class="mh-stat-dots">
+					<span class="sd-item"><span class="sd green"></span> Correct <b>{cor}</b></span>
+					<span class="sd-item"><span class="sd red"></span> Wrong <b>{wrg}</b></span>
+					<span class="sd-item"><span class="sd gray"></span> Skipped <b>{skp}</b></span>
+				</div>
+				<div class="mh-seg-bar">
+					{#if cor>0}<div class="mh-seg green" style="width:{(cor/(cor+wrg+skp||1))*100}%"></div>{/if}
+					{#if wrg>0}<div class="mh-seg red" style="width:{(wrg/(cor+wrg+skp||1))*100}%"></div>{/if}
+					{#if skp>0}<div class="mh-seg dark" style="width:{(skp/(cor+wrg+skp||1))*100}%"></div>{/if}
+				</div>
+				<div class="mh-kpi-grid">
+					<div class="mh-kpi">
+						<span class="mh-kpi-lbl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> SCORE</span>
+						<b>{obt}/{totM}</b>
+					</div>
+					<div class="mh-kpi">
+						<span class="mh-kpi-lbl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ATTEMPTED</span>
+						<b>{att}/{totQ}</b>
+					</div>
+					<div class="mh-kpi">
+						<span class="mh-kpi-lbl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> TIME</span>
+						<b>{fmt(timeMs)}</b>
+					</div>
+					<div class="mh-kpi">
+						<span class="mh-kpi-lbl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ACCURACY</span>
+						<b>{acc.toFixed(2)}%</b>
+					</div>
+				</div>
+				<button class="mh-vq-btn" onclick={async() => { await openPreview(qsFunc()); }}>
+					View Questions <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+				</button>
+			</div>
+		</div>
+		{/snippet}
+
+		{#snippet ChildGridCard(title: string, cor: number, wrg: number, skp: number, obt: number|string, totM: number|string, att: number, totQ: number, timeMs: number, acc: number, qsFunc: () => any[])}
+		<button class="ch-card" onclick={async()=>{await openPreview(qsFunc());}}>
+			<div class="cc-top">
+				<b class="cc-title">{title}</b>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+			</div>
+			<div class="cc-dots">
+				<span class="cd-tag green"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg> {cor}</span>
+				<span class="cd-tag red"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> {wrg}</span>
+				<span class="cd-tag gray"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><line x1="5" y1="12" x2="19" y2="12"/></svg> {skp}</span>
+			</div>
+			<div class="cc-kpis">
+				<div class="cc-kpi"><span class="cc-kpi-lbl">SCORE</span><b>{obt}/{totM}</b></div>
+				<div class="cc-kpi"><span class="cc-kpi-lbl">ATTEMPTED</span><b>{att}/{totQ}</b></div>
+				<div class="cc-kpi"><span class="cc-kpi-lbl">TIME</span><b>{fmt(timeMs)}</b></div>
+				<div class="cc-kpi"><span class="cc-kpi-lbl">ACCURACY</span><b>{acc.toFixed(1)}%</b></div>
+			</div>
+		</button>
+		{/snippet}
 
 		<!-- SUBJECT WISE -->
 		{#if openModal === "subject" && subjectTabs.length}
-		<div class="pill-tabs">
-			{#each subjectTabs as st}
-			<button class="pill-tab {activeTab===st.id?'active':''}" onclick={()=>activeTab=st.id}>{st.name}</button>
-			{/each}
-		</div>
-		{#each subjectTabs as st}{#if activeTab===st.id}{@const s=st.data}{@const subId=st.id}
-		<div class="stat-dots"><span class="sd green"></span>Correct {s.correctCount}<span class="sd red ml"></span>Wrong {s.incorrectCount}<span class="sd gray ml"></span>None {s.unattemptedCount}</div>
-		<div class="mbar"><div class="mc"><span>Score</span><b>{s.obtainedMarks}/{s.totalMarks}</b></div><div class="mc"><span>Attempted</span><b>{s.attemptedCount}/{s.totalQuestions}</b></div><div class="mc"><span>Time</span><b>{fmt(s.timeSpentMs)}</b></div><div class="mc"><span>Accuracy</span><b>{s.accuracy.toFixed(2)}%</b></div></div>
-		<button class="vq-btn full" onclick={async () => { await openPreview(qsBySubject(subId)); }}>View Questions</button>
-		{@const chs=chaptersForSubject(subId)}
-		{#if chs.length}<h3 class="sub-head">Chapters</h3>
-		<div class="ch-grid">
-			{#each chs as ch}{@const cs=ch.stat}
-			<div class="ch-card"><b class="ch-name">{ch.label}</b>
-				{#if cs}<div class="stat-dots small"><span class="sd green"></span>{cs.correctCount}<span class="sd red ml"></span>{cs.incorrectCount}<span class="sd gray ml"></span>{cs.unattemptedCount}</div>
-				<div class="mbar small"><div class="mc"><span>Score</span><b>{cs.obtainedMarks}/{cs.totalMarks}</b></div><div class="mc"><span>Attempted</span><b>{cs.attemptedCount}/{cs.totalQuestions}</b></div><div class="mc"><span>Time</span><b>{fmt(cs.timeSpentMs)}</b></div><div class="mc"><span>Accuracy</span><b>{cs.accuracy.toFixed(2)}%</b></div></div>{/if}
-				<button class="vq-btn" onclick={async () => { await openPreview(qsByChapter(ch.cid)); }}>View Questions</button>
-			</div>{/each}
-		</div>{/if}
-		{/if}{/each}
+			{#each subjectTabs as st}{#if activeTab===st.id}{@const s=st.data}{@const subId=st.id}
+				{@render HeroCard(st.name, s.correctCount, s.incorrectCount, s.unattemptedCount, s.obtainedMarks, s.totalMarks, s.attemptedCount, s.totalQuestions, s.timeSpentMs, s.accuracy, () => qsBySubject(subId))}
+				
+				{@const chs=chaptersForSubject(subId)}
+				{#if chs.length}
+					<div class="sh-head"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Chapters <span class="sh-badge">{chs.length}</span></div>
+					<div class="ch-grid">
+						{#each chs as ch}{@const cs=ch.stat}
+							{#if cs}
+								{@render ChildGridCard(ch.label, cs.correctCount, cs.incorrectCount, cs.unattemptedCount, cs.obtainedMarks, cs.totalMarks, cs.attemptedCount, cs.totalQuestions, cs.timeSpentMs, cs.accuracy, () => qsByChapter(ch.cid))}
+							{/if}
+						{/each}
+					</div>
+				{/if}
+			{/if}{/each}
 		{/if}
 
 		<!-- CHAPTER WISE -->
 		{#if openModal === "chapter" && chapterTabs.length}
-		<div class="pill-tabs scrollable">
-			{#each chapterTabs as ct}
-			<button class="pill-tab {activeTab===ct.id?'active':''}" onclick={()=>activeTab=ct.id}>{ct.label}</button>
-			{/each}
-		</div>
-		{#each chapterTabs as ct}{#if activeTab===ct.id}{@const ch=ct.data}{@const chId=ct.id}
-		<div class="stat-dots"><span class="sd green"></span>Correct {ch.correctCount}<span class="sd red ml"></span>Wrong {ch.incorrectCount}<span class="sd gray ml"></span>None {ch.unattemptedCount}</div>
-		<div class="mbar"><div class="mc"><span>Score</span><b>{ch.obtainedMarks}/{ch.totalMarks}</b></div><div class="mc"><span>Attempted</span><b>{ch.attemptedCount}/{ch.totalQuestions}</b></div><div class="mc"><span>Time</span><b>{fmt(ch.timeSpentMs)}</b></div><div class="mc"><span>Accuracy</span><b>{ch.accuracy.toFixed(2)}%</b></div></div>
-		<button class="vq-btn full" onclick={async () => { await openPreview(qsByChapter(chId)); }}>View Questions</button>
-		<h3 class="sub-head">Papers</h3>
-		<div class="paper-card"><b>{testName||"This Test"}</b>
-			<div class="stat-dots small" style="margin-top:.4rem"><span class="sd green"></span>{ch.correctCount}<span class="sd red ml"></span>{ch.incorrectCount}<span class="sd gray ml"></span>{ch.unattemptedCount}</div>
-			<div class="mbar small"><div class="mc"><span>Score</span><b>{ch.obtainedMarks}/{ch.totalMarks}</b></div><div class="mc"><span>Attempted</span><b>{ch.attemptedCount}/{ch.totalQuestions}</b></div><div class="mc"><span>Time</span><b>{fmt(ch.timeSpentMs)}</b></div><div class="mc"><span>Accuracy</span><b>{ch.accuracy.toFixed(2)}%</b></div></div>
-			<button class="vq-btn" onclick={async () => { await openPreview(qsByChapter(chId)); }}>View Questions</button>
-		</div>
-		{/if}{/each}
+			{#each chapterTabs as ct}{#if activeTab===ct.id}{@const ch=ct.data}{@const chId=ct.id}
+				{@render HeroCard(ct.label, ch.correctCount, ch.incorrectCount, ch.unattemptedCount, ch.obtainedMarks, ch.totalMarks, ch.attemptedCount, ch.totalQuestions, ch.timeSpentMs, ch.accuracy, () => qsByChapter(chId))}
+				<div class="sh-head"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Papers <span class="sh-badge">1</span></div>
+				<div class="ch-grid">
+					{@render ChildGridCard(testName||"This Test", ch.correctCount, ch.incorrectCount, ch.unattemptedCount, ch.obtainedMarks, ch.totalMarks, ch.attemptedCount, ch.totalQuestions, ch.timeSpentMs, ch.accuracy, () => qsByChapter(chId))}
+				</div>
+			{/if}{/each}
 		{/if}
 
 		<!-- QUESTION TYPE WISE -->
 		{#if openModal === "questiontype" && byKind.length}
-		<div class="ch-grid">
-			{#each byKind as k (k.kind)}
-			{@const kindKey = k.kind}
-			<div class="ch-card"><b class="ch-name">{kindKey}</b>
-				<div class="stat-dots small"><span class="sd green"></span>{k.correctCount}<span class="sd red ml"></span>{k.incorrectCount}<span class="sd gray ml"></span>{k.unattemptedCount}</div>
-				<div class="mbar small"><div class="mc"><span>Score</span><b>{k.obtainedMarks}/{k.totalMarks}</b></div><div class="mc"><span>Attempted</span><b>{k.attemptedCount}/{k.totalQuestions}</b></div><div class="mc"><span>Time</span><b>{fmt(k.timeSpentMs)}</b></div><div class="mc"><span>Accuracy</span><b>{k.accuracy.toFixed(2)}%</b></div></div>
-				<button class="vq-btn" onclick={async () => { await openPreview(qsByKind(kindKey)); }}>View Questions</button>
-			</div>
-			{/each}
-		</div>
+			{#each byKind as k}{#if activeTab===k.kind}
+				{@render HeroCard(k.kind, k.correctCount, k.incorrectCount, k.unattemptedCount, k.obtainedMarks, k.totalMarks, k.attemptedCount, k.totalQuestions, k.timeSpentMs, k.accuracy, () => qsByKind(k.kind))}
+				
+				<div class="ch-grid" style="margin-top: 1rem;">
+					{@render ChildGridCard("All " + (k.kind||"Questions"), k.correctCount, k.incorrectCount, k.unattemptedCount, k.obtainedMarks, k.totalMarks, k.attemptedCount, k.totalQuestions, k.timeSpentMs, k.accuracy, () => qsByKind(k.kind))}
+				</div>
+			{/if}{/each}
 		{/if}
 
 		<!-- MARKS WISE -->
 		{#if openModal === "marks" && marksBuckets.length}
-		<div class="pill-tabs">
-			{#each marksBuckets as b (b.marks)}
-			{@const mk = b.marks}
-			<button class="pill-tab {activeTab===String(mk)?'active':''}" onclick={()=>activeTab=String(mk)}>
-				Marks {mk}
-			</button>
-			{/each}
-		</div>
-		{#each marksBuckets as b (b.marks)}
-		{#if activeTab===String(b.marks)}
-		{@const mk=b.marks}
-		<div class="stat-dots"><span class="sd green"></span>Correct {b.correct}<span class="sd red ml"></span>Wrong {b.incorrect}<span class="sd gray ml"></span>None {b.unattempted}</div>
-		<div class="mbar">
-			<div class="mc"><span>Score</span><b>{((b.correct*mk)-(b.incorrect*0.25*mk)).toFixed(2)}/{b.total*mk}</b></div>
-			<div class="mc"><span>Attempted</span><b>{b.correct+b.incorrect}/{b.total}</b></div>
-			<div class="mc"><span>Time</span><b>{fmt(b.timeMs)}</b></div>
-			<div class="mc"><span>Accuracy</span><b>{b.total>0?((b.correct/(b.correct+b.incorrect||1))*100).toFixed(2):0}%</b></div>
-		</div>
-		<button class="vq-btn full" onclick={async()=>{await openPreview(qsByMarks(mk));}}>View Questions</button>
+			{#each marksBuckets as b}{#if activeTab===String(b.marks)}{@const mk=b.marks}
+				{@const score = ((b.correct*mk)-(b.incorrect*0.25*mk))}
+				{@const totM = b.total*mk}
+				{@const att = b.correct+b.incorrect}
+				{@const acc = b.total>0?((b.correct/(b.correct+b.incorrect||1))*100):0}
+				
+				{@render HeroCard(`Marks ${mk}`, b.correct, b.incorrect, b.unattempted, score.toFixed(2), totM, att, b.total, b.timeMs, acc, () => qsByMarks(mk))}
 
-		<!-- subjects breakdown for this marks bucket -->
-		{@const marksQs = qsByMarks(mk)}
-		{@const subjectsInBucket = [...new Map(marksQs.map((q:any)=>[(q.subjectId?._id??q.subjectId), q])).entries()].map(([sid])=>sid).filter(Boolean)}
-		{#if subjectsInBucket.length}
-		<h3 class="sub-head">Subjects</h3>
-		<div class="ch-grid">
-			{#each subjectsInBucket as sid}
-			{@const subQs = marksQs.filter((q:any)=>(q.subjectId?._id??q.subjectId)===sid)}
-			{@const subStat = bySubject.find((s:any)=>(s.subjectId?._id??s.subjectId)===sid)}
-			{@const subName = subStat?.subjectId?.name?.en ?? subStat?.subjectId?.name ?? sid}
-			{@const sc = subQs.filter((q:any)=>q.isCorrect===true).length}
-			{@const sw = subQs.filter((q:any)=>q.isAttempted&&q.isCorrect===false).length}
-			{@const sn = subQs.filter((q:any)=>!q.isAttempted).length}
-			{@const st = subQs.reduce((a:number,q:any)=>a+(q.timeSpentMs??0),0)}
-			<div class="ch-card">
-				<b class="ch-name">{subName}</b>
-				<div class="stat-dots small"><span class="sd green"></span>Correct {sc}<span class="sd red ml"></span>Wrong {sw}<span class="sd gray ml"></span>None {sn}</div>
-				<div class="mbar small">
-					<div class="mc"><span>Score</span><b>{((sc*mk)-(sw*0.25*mk)).toFixed(2)}/{subQs.length*mk}</b></div>
-					<div class="mc"><span>Attempted</span><b>{sc+sw}/{subQs.length}</b></div>
-					<div class="mc"><span>Time</span><b>{fmt(st)}</b></div>
-					<div class="mc"><span>Accuracy</span><b>{sc+sw>0?((sc/(sc+sw))*100).toFixed(2):0}%</b></div>
-				</div>
-				<button class="vq-btn" onclick={async()=>{await openPreview(subQs);}}>View Questions</button>
-			</div>
-			{/each}
-		</div>
-		{/if}
-		{/if}
-		{/each}
+				{@const marksQs = qsByMarks(mk)}
+				{@const subjectsInBucket = [...new Map(marksQs.map((q:any)=>[(q.subjectId?._id??q.subjectId), q])).entries()].map(([sid])=>sid).filter(Boolean)}
+				{#if subjectsInBucket.length}
+					<div class="sh-head"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg> Subjects <span class="sh-badge">{subjectsInBucket.length}</span></div>
+					<div class="ch-grid">
+						{#each subjectsInBucket as sid}
+							{@const subQs = marksQs.filter((q:any)=>(q.subjectId?._id??q.subjectId)===sid)}
+							{@const subStat = bySubject.find((s:any)=>(s.subjectId?._id??s.subjectId)===sid)}
+							{@const subName = subStat?.subjectId?.name?.en ?? subStat?.subjectId?.name ?? sid}
+							{@const sc = subQs.filter((q:any)=>q.isCorrect===true).length}
+							{@const sw = subQs.filter((q:any)=>q.isAttempted&&q.isCorrect===false).length}
+							{@const sn = subQs.filter((q:any)=>!q.isAttempted).length}
+							{@const st = subQs.reduce((a:number,q:any)=>a+(q.timeSpentMs??0),0)}
+							{@const sScore = ((sc*mk)-(sw*0.25*mk))}
+							{@const sAcc = sc+sw>0?((sc/(sc+sw))*100):0}
+							{@render ChildGridCard(subName, sc, sw, sn, sScore.toFixed(2), subQs.length*mk, sc+sw, subQs.length, st, sAcc, () => subQs)}
+						{/each}
+					</div>
+				{/if}
+			{/if}{/each}
 		{/if}
 
 	</div><!-- /m-body -->
 
 	<!-- QUESTION PREVIEW -->
 	{#if previewOpen}
-	<div class="pv-overlay" onclick={()=>previewOpen=false} role="button" tabindex="-1" aria-label="Close preview"></div>
+	<button type="button" class="pv-overlay" onclick={()=>previewOpen=false} aria-label="Close preview"></button>
 	{#key contextQs}
 	<div class="pv-panel">
 		<div class="pv-nav">
@@ -342,98 +419,151 @@
 <style>
 	/* cards */
 	.aa-wrap{display:flex;flex-direction:column;gap:0}
-	.aa-label{font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin:0 0 1rem}
 	.aa-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
 	@media(max-width:900px){.aa-cards{grid-template-columns:repeat(2,1fr)}}
 	@media(max-width:480px){.aa-cards{grid-template-columns:1fr}}
-	.aa-card{display:flex;flex-direction:column;gap:.4rem;padding:1.1rem;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;text-align:left;cursor:pointer;transition:box-shadow .2s,transform .15s}
-	.aa-card:hover{box-shadow:0 6px 18px rgba(0,0,0,.1);transform:translateY(-2px)}
-	.aa-icon{font-size:1.2rem;width:38px;height:38px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center}
-	.aa-card b{font-size:.875rem;color:#1e293b}
-	.aa-card p{font-size:.72rem;color:#64748b;margin:0;line-height:1.4}
-	.aa-link{font-size:.72rem;color:#3b82f6;font-weight:600;margin-top:auto;padding-top:.25rem}
+	.aa-card{display:flex;flex-direction:column;gap:.75rem;padding:1.5rem;border-radius:24px;border:1px solid var(--analysis-card-border, #f1f5f9);background:var(--analysis-card-bg, #fff);text-align:left;cursor:pointer;transition:all .3s ease;box-shadow:0 10px 30px rgba(0,0,0,0.03)}
+	.aa-card:hover{background:var(--analysis-card-bg, #fff);transform:translateY(-4px);box-shadow:0 15px 40px rgba(0,0,0,0.08);border-color:var(--analysis-card-border, #e2e8f0)}
+	.aa-icon{width:48px;height:48px;border-radius:14px;background:rgba(99, 102, 241, 0.08);color:#6366f1;display:flex;align-items:center;justify-content:center;transition:transform 0.3s ease}
+	.aa-card:hover .aa-icon{transform:scale(1.1) rotate(5deg)}
+	.aa-card b{font-size:.95rem;color:var(--text-color, #1e293b);font-weight:800;letter-spacing:-0.01em}
+	.aa-card p{font-size:.75rem;color:#94a3b8;margin:0;line-height:1.5;font-weight:500}
+	.aa-link{font-size:.7rem;color:#6366f1;font-weight:800;margin-top:auto;padding-top:.5rem;text-transform:uppercase;letter-spacing:0.04em}
 
 	/* modal */
-	.m-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;cursor:pointer}
-	.m-panel{position:fixed;inset:0;z-index:201;background:var(--analysis-page-bg,#f1f5f9);display:flex;flex-direction:column;overflow:hidden}
-	.m-header{background:#1e3a8a;color:#fff;padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-shrink:0}
-	.m-back{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-	.m-back:hover{background:rgba(255,255,255,.25)}
-	.m-title{font-size:1rem;font-weight:700;margin:0}
-	.m-body{flex:1;overflow-y:auto;padding:1.5rem;max-width:1200px;width:100%;margin:0 auto}
+	.m-overlay{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;cursor:pointer}
+	.m-panel{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);z-index:201;background:var(--analysis-page-bg,#0b0f19);display:flex;flex-direction:column;overflow:hidden;color:var(--page-text,#f8fafc);font-family:'Inter', sans-serif}
+	
+	/* dark header with blue bar */
+	.m-header{background:#1e3a8a;flex-shrink:0;z-index:10}
+	.m-header-bar{padding:1rem 2.5rem;display:flex;align-items:center;gap:1.5rem;max-width:1150px;margin:0 auto;width:100%}
+	.m-back{background:rgba(255,255,255,0.1);border:none;color:#fff;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.2s}
+	.m-back:hover{background:rgba(255,255,255,0.2)}
+	.mh-title-box{display:flex;flex-direction:column}
+	.m-title{font-size:1.15rem;font-weight:800;margin:0;color:#fff;letter-spacing:-0.01em}
+	.m-sub{font-size:0.75rem;color:rgba(255,255,255,0.6);font-weight:500;margin-top:1px}
+	
+	/* centered nav bar row */
+	.m-nav-bar{background:rgba(15, 23, 42, 0.95);border-bottom:1px solid rgba(255,255,255,0.05);z-index:9;display:flex;justify-content:center}.m-nav-inner{max-width:1150px;width:100%;padding:1rem 2.5rem;display:flex;justify-content:flex-start}
+	.pill-tabs{display:flex;gap:.75rem;padding:0.25rem 0;justify-content:flex-start;align-items:center}
+	.pill-tabs.scrollable{overflow-x:auto;flex-wrap:wrap;padding-bottom:2px;max-width:100%}
+	.pill-tabs.scrollable::-webkit-scrollbar{display:none}
+	.pill-tab{padding:.5rem 1.75rem;border-radius:30px;border:1.5px solid rgba(255,255,255,0.1);font-size:.8rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.75);white-space:nowrap;transition:all 0.2s}
+	.pill-tab:hover{background:rgba(255,255,255,0.1);color:#fff}
+	.pill-tab.active{background:#2563eb;color:#fff;border-color:#3b82f6;box-shadow:0 4px 15px rgba(37, 99, 235, 0.3)}
 
-	/* pill tabs */
-	.pill-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem}
-	.pill-tabs.scrollable{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
-	.pill-tab{padding:.4rem 1.1rem;border-radius:20px;border:1.5px solid #e2e8f0;font-size:.8rem;font-weight:600;cursor:pointer;background:#fff;color:#475569;white-space:nowrap;transition:all .15s}
-	.pill-tab.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
-	.pill-tab:hover:not(.active){background:#f1f5f9}
+	.m-body{flex:1;overflow-y:auto;padding:0 2.5rem 2.5rem;max-width:1150px;width:100%;margin:0 auto}
 
-	/* stat dots */
-	.stat-dots{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:#475569;margin-bottom:.75rem}
-	.stat-dots.small{font-size:.72rem;margin-bottom:.5rem}
-	.sd{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
-	.sd.green{background:#22c55e}.sd.red{background:#ef4444}.sd.gray{background:#94a3b8}
-	.ml{margin-left:.5rem}
+	/* Hero Card */
+	.mh-card{background:var(--analysis-card-bg,#161b26);border:1px solid rgba(255,255,255,0.04);border-radius:24px;padding:2.5rem;display:flex;gap:4rem;margin-bottom:2.5rem;box-shadow:0 20px 50px rgba(0,0,0,0.3)}
+	@media(max-width:850px){.mh-card{flex-direction:column;gap:2.5rem}}
+	
+	.mh-chart-col{display:flex;align-items:center;justify-content:center}
+	.mh-donut{width:150px;height:150px;position:relative}
+	.mh-circ{transform:rotate(-90deg);width:100%;height:100%}
+	.mh-circ .mh-bg{fill:none;stroke:rgba(255,255,255,0.05);stroke-width:3}
+	.mh-circ .mh-fg{fill:none;stroke:#10b981;stroke-width:3.5;stroke-linecap:round;transition:stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1)}
+	.mh-d-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+	.mh-d-text b{font-size:1.8rem;font-weight:900;color:var(--page-text,#fff);letter-spacing:-0.04em}
+	.mh-d-text span{font-size:0.55rem;font-weight:800;color:#64748b;letter-spacing:0.12em;text-transform:uppercase;margin-top:2px}
 
-	/* metrics bar */
-	.mbar{display:flex;gap:3rem;margin-bottom:1rem;flex-wrap:wrap}
-	.mbar.small{gap:1.5rem;margin-bottom:.75rem}
-	.mc{display:flex;flex-direction:column;gap:.1rem}
-	.mc span{font-size:.7rem;color:#64748b}
-	.mc b{font-size:.95rem;color:#1e293b;font-weight:700}
-	.mbar.small .mc b{font-size:.8rem}
+	.mh-stats-col{flex:1;display:flex;flex-direction:column;justify-content:center}
+	
+	.mh-stat-dots{display:flex;align-items:center;gap:1.5rem;margin-bottom:1.25rem}
+	.sd-item{display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:#94a3b8;font-weight:500}
+	.sd-item b{color:var(--page-text,#fff);font-weight:700}
+	.sd{width:10px;height:10px;border-radius:50%;display:inline-block}
+	.sd.green{background:#10b981;box-shadow:0 0 10px rgba(16,185,129,0.3)}
+	.sd.red{background:#f43f5e;box-shadow:0 0 10px rgba(244,63,94,0.3)}
+	.sd.gray{background:rgba(255,255,255,0.35)}
 
-	/* view questions btn */
-	.vq-btn{background:#eff6ff;color:#3b82f6;border:none;border-radius:6px;padding:.5rem 1rem;font-size:.8rem;font-weight:600;cursor:pointer;width:100%;transition:background .15s;margin-top:auto}
-	.vq-btn:hover{background:#dbeafe}
-	.vq-btn.full{margin-bottom:.25rem}
+	.mh-seg-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:2rem;background:var(--analysis-card-border,#1e293b)}
+	.mh-seg{height:100%;transition:width 1.2s cubic-bezier(0.4, 0, 0.2, 1)}
+	.mh-seg.green{background:#10b981} .mh-seg.red{background:#f43f5e} .mh-seg.dark{background:rgba(255,255,255,0.18)}
 
-	.sub-head{font-size:.9rem;font-weight:700;color:#334155;margin:1.5rem 0 .75rem}
+	.mh-kpi-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:1.25rem}
+	@media(max-width:550px){.mh-kpi-grid{grid-template-columns:repeat(2, 1fr)}}
+	.mh-kpi{background:rgba(255,255,255,0.02);padding:1.25rem;border-radius:16px;display:flex;flex-direction:column;gap:0.4rem;border:1px solid rgba(255,255,255,0.03);transition:all 0.2s}
+	.mh-kpi:hover{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08)}
+	.mh-kpi-lbl{display:flex;align-items:center;gap:0.5rem;font-size:0.65rem;color:#64748b;font-weight:800;letter-spacing:0.08em;text-transform:uppercase}
+	.mh-kpi-lbl svg{stroke:currentColor;opacity:0.5}
+	.mh-kpi b{font-size:1.25rem;font-weight:900;color:var(--page-text,#fff);letter-spacing:-0.02em}
 
-	/* chapter grid */
-	.ch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-	@media(max-width:900px){.ch-grid{grid-template-columns:repeat(2,1fr)}}
-	@media(max-width:480px){.ch-grid{grid-template-columns:1fr}}
-	.ch-card{border:1px solid #e2e8f0;border-radius:10px;padding:1rem;background:#fff;display:flex;flex-direction:column;gap:.25rem}
-	.ch-name{font-size:.875rem;color:#1e293b;display:block;margin-bottom:.4rem;text-transform:capitalize;font-weight:700}
+	/* Hero card view question button */
+	.mh-vq-btn{margin-top:2rem;width:100%;background:#10b981;color:#fff;border:none;border-radius:12px;padding:1rem;font-size:0.9rem;font-weight:800;display:flex;align-items:center;justify-content:center;gap:0.75rem;cursor:pointer;transition:all 0.2s}
+	.mh-vq-btn:hover{background:#0fa472;transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,185,129,0.3)}
+	.mh-vq-btn svg{transition:transform 0.2s}
+	.mh-vq-btn:hover svg{transform:translateX(4px)}
 
-	/* paper card */
-	.paper-card{border:1px solid #e2e8f0;border-radius:10px;padding:1rem;background:#fff;max-width:400px;display:flex;flex-direction:column;gap:.25rem}
-	.paper-card>b{font-size:.875rem;color:#1e293b;font-weight:700}
+	/* White Mode (Light Theme) */
+	:global([data-theme="light"]) .m-panel{color:#1e293b} :global([data-theme="light"]) .m-body{background:transparent}
+	:global([data-theme="light"]) .m-title{color:#0f172a} :global([data-theme="light"]) .m-sub{color:#64748b} :global([data-theme="light"]) .m-back{background:#f1f5f9;color:#475569} :global([data-theme="light"]) .m-back:hover{background:#e2e8f0}
+	:global([data-theme="light"]) .mh-card, :global([data-theme="light"]) .ch-card{background:#f8fafc;border:1px solid #e8edf5;box-shadow:0 4px 20px rgba(0,0,0,0.04)}
+	:global([data-theme="light"]) .mh-d-text b{color:#0f172a}
+	:global([data-theme="light"]) .sd-item{color:#475569} :global([data-theme="light"]) .sd-item b{color:#0f172a}
+	:global([data-theme="light"]) .mh-kpi, :global([data-theme="light"]) .cc-kpi{background:#f8fafc;border-color:#e2e8f0}
+	:global([data-theme="light"]) .mh-kpi b, :global([data-theme="light"]) .cc-kpi b, :global([data-theme="light"]) .cc-title{color:#1e293b}
+	:global([data-theme="light"]) .m-header{background:#ffffff;border-bottom:1px solid #e2e8f0}
+	:global([data-theme="light"]) .m-nav-bar{background:#ffffff;border-color:#e2e8f0;border-bottom:1px solid #e2e8f0}
+	:global([data-theme="light"]) .pill-tab{background:#f1f5f9;border-color:#e2e8f0;color:#475569}
+	:global([data-theme="light"]) .pill-tab:hover{background:#e2e8f0;color:#1e293b}
+	:global([data-theme="light"]) .pill-tab.active{background:#2563eb;color:#fff;border-color:#3b82f6}
+	:global([data-theme="light"]) .mh-circ .mh-bg{stroke:#f1f5f9}
 
-	/* marks table */
-	.tw{overflow-x:auto;background:#fff;border-radius:10px;border:1px solid #e2e8f0}
-	.mt{width:100%;border-collapse:collapse;font-size:.875rem}
-	.mt th{padding:.75rem 1rem;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;white-space:nowrap;background:#f8fafc}
-	.mt td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155}
-	.mt tbody tr:hover{background:#f8fafc}
-	.mt td.green{color:#16a34a;font-weight:600}.mt td.red{color:#dc2626;font-weight:600}.mt td.muted{color:#64748b}
-	.mbadge{background:#eff6ff;color:#1d4ed8;border-radius:4px;padding:.15rem .5rem;font-weight:700;font-size:.8rem}
-	.vq-btn-inline{background:#eff6ff;color:#3b82f6;border:none;border-radius:4px;padding:.3rem .7rem;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap}
-	.vq-btn-inline:hover{background:#dbeafe}
+	/* Sub Items Grid */
+	.sh-head{display:flex;align-items:center;gap:0.75rem;font-size:1.1rem;font-weight:800;color:#10b981;margin:2rem 0 1.5rem;letter-spacing:-0.01em}
+	.sh-badge{background:var(--analysis-card-border,#e2e8f0);color:var(--page-text-muted,#94a3b8);padding:0.15rem 0.6rem;border-radius:12px;font-size:0.75rem;font-weight:700}
+
+	.ch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+	@media(max-width:1024px){.ch-grid{grid-template-columns:repeat(2,1fr)}}
+	@media(max-width:640px){.ch-grid{grid-template-columns:1fr}}
+
+	.ch-card{background:var(--analysis-card-bg,#161b26);border:1px solid rgba(255,255,255,0.04);border-radius:20px;padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem;cursor:pointer;text-align:left;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);width:100%}
+	.ch-card:hover{transform:translateY(-5px);background:rgba(255,255,255,0.02);border-color:rgba(16,185,129,0.3);box-shadow:0 15px 35px rgba(0,0,0,0.4)}
+	
+	.cc-top{display:flex;align-items:center;justify-content:space-between}
+	.cc-title{font-size:1.05rem;font-weight:800;color:var(--page-text,#fff);letter-spacing:-0.01em}
+	
+	.cc-dots{display:flex;align-items:center;gap:1rem}
+	.cd-tag{display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;font-weight:700}
+	.cd-tag svg{flex-shrink:0}
+	.cd-tag.green{color:#10b981} .cd-tag.red{color:#f43f5e} .cd-tag.gray{color:rgba(255,255,255,0.45)}
+
+	.cc-kpis{display:grid;grid-template-columns:repeat(2, 1fr);gap:1rem}
+	.cc-kpi{display:flex;flex-direction:column;gap:0.15rem}
+	.cc-kpi-lbl{font-size:0.55rem;color:rgba(255,255,255,0.4);font-weight:800;letter-spacing:0.06em;text-transform:uppercase}
+	.cc-kpi b{font-size:0.9rem;font-weight:800;color:var(--page-text,#cbd5e1);letter-spacing:-0.01em}
 
 	/* ── question preview inside modal ── */
-	.pv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;cursor:pointer}
-	.pv-panel{position:fixed;top:0;right:0;bottom:0;width:min(700px,100vw);background:#fff;z-index:301;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.2);overflow:hidden}
-	:global([data-theme="dark"]) .pv-panel{background:#1e293b}
+	.pv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:300;cursor:pointer}
+	.pv-panel{position:fixed;top:0;right:0;bottom:0;width:min(700px,100vw);background:#0b0f19;z-index:301;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.5);overflow:hidden}
+	:global([data-theme="light"]) .pv-panel{background:#fff}
+	:global([data-theme="dark"]) .pv-panel{background:#0b0f19}
 
-	.pv-nav{background:#1e3a8a;color:#fff;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem;flex-shrink:0}
+	.pv-nav{background:#111827;border-bottom:1px solid rgba(255,255,255,0.05);color:#fff;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem;flex-shrink:0}
+	:global([data-theme="light"]) .pv-nav{background:#f8fafc;border-color:#e2e8f0;color:#1e293b}
 	.pv-nav-top{display:flex;align-items:center}
 	.pv-close{background:none;border:none;color:#fff;font-size:.875rem;font-weight:700;cursor:pointer;padding:0;display:flex;align-items:center;gap:.5rem}
+	:global([data-theme="light"]) .pv-close{color:#1e293b}
 
 	/* filter tabs */
 	.pv-filter-tabs{display:flex;gap:.4rem;flex-wrap:wrap}
 	.pv-ftab{padding:.3rem .85rem;border-radius:16px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+	:global([data-theme="light"]) .pv-ftab{background:#f1f5f9;border-color:#e2e8f0;color:#64748b}
 	.pv-ftab:hover{background:rgba(255,255,255,.2)}
+	:global([data-theme="light"]) .pv-ftab:hover{background:#e2e8f0}
 	.pv-ftab.active{background:#fff;color:#1e3a8a;border-color:#fff}
+	:global([data-theme="light"]) .pv-ftab.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
 	.pv-ftab.correct.active{background:#22c55e;color:#fff;border-color:#22c55e}
 	.pv-ftab.wrong.active{background:#ef4444;color:#fff;border-color:#ef4444}
 	.pv-ftab.skip.active{background:#94a3b8;color:#fff;border-color:#94a3b8}
 	.pv-nums{display:flex;gap:.35rem;flex-wrap:wrap;max-height:90px;overflow-y:auto;padding-top:.25rem}
 	.pv-num{width:32px;height:32px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
+	:global([data-theme="light"]) .pv-num{background:#f8fafc;border-color:#e2e8f0;color:#64748b}
 	.pv-num.active{background:#fff;color:#1e3a8a}
+	:global([data-theme="light"]) .pv-num.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
 	.pv-num:hover:not(.active){background:rgba(255,255,255,.2)}
+	:global([data-theme="light"]) .pv-num:hover:not(.active){background:#e2e8f0}
 
 	.pv-body{flex:1;overflow-y:auto;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
 	.pv-meta{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
