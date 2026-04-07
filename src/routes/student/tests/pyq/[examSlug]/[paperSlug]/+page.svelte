@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import { updateQuestion } from '$lib/api/questions';
+  import MathText from '$lib/components/MathText.svelte';
+  import { questionPromptEnContent } from '$lib/api/questions';
 
   let { data }: { data: PageData } = $props();
 
@@ -155,7 +157,7 @@
       {/if}
       <div class="space-y-3">
         {#each questions as q, idx (q._id)}
-          {@const prompt = q.prompt?.en?.content ?? ''}
+          {@const prompt = questionPromptEnContent(q as any)}
           {@const options = q.prompt?.en?.options ?? []}
           {@const explanation = q.prompt?.en?.explanation ?? ''}
           {@const fills = q.correct?.fills ?? []}
@@ -169,7 +171,7 @@
           <section class="rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
             <div class="flex items-start justify-between gap-3">
               <h2 class="text-base font-semibold text-white">
-                Q{idx + 1}. {isEditing ? 'Editing question' : prompt}
+                Q{idx + 1}. {#if isEditing}Editing question{:else}<MathText content={prompt} />{/if}
               </h2>
               <div class="flex items-center gap-2">
                 <span class="rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-semibold text-white">
@@ -266,7 +268,9 @@
                       <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pyq-paper-border)] text-[11px] font-semibold">
                         {opt.identifier}
                       </span>
-                      <span>{opt.content}</span>
+                      <div class="min-w-0 flex-1 break-words text-[1.02rem] leading-[1.7] text-white">
+                        <MathText content={opt.content ?? ''} />
+                      </div>
                       {#if isCorrectOption}
                         <span class="ml-auto text-[11px] font-semibold text-emerald-300">Correct</span>
                       {/if}
@@ -284,9 +288,10 @@
               {/if}
 
               {#if explanation}
-                <p class="mt-3 text-lg text-white">
-                  <span class="font-semibold">Explanation:</span> {explanation}
-                </p>
+                <div class="mt-3 text-[1.05rem] leading-relaxed text-white">
+                  <span class="font-semibold">Explanation:</span>
+                  <span class="ml-1 inline"><MathText content={explanation} /></span>
+                </div>
               {/if}
             {/if}
           </section>
