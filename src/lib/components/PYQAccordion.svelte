@@ -48,6 +48,13 @@
   let startingPaperId = $state<string | null>(null);
   let startPaperError = $state<string | null>(null);
 
+function viewPaper(paper: PaperItem) {
+  const resolvedExamSlug = (examSlug ?? '').trim();
+  const resolvedPaperId = (paper?._id ?? '').trim();
+  if (!resolvedExamSlug || !resolvedPaperId) return;
+  void goto(`${basePath}/${encodeURIComponent(resolvedExamSlug)}/${encodeURIComponent(resolvedPaperId)}`);
+}
+
   async function startPaperTest(paper: PaperItem) {
     if (startingPaperId) return;
     const testId = (paper.testId ?? '').trim() || paper._id;
@@ -377,21 +384,31 @@
                     {/if}
                   </div>
                 </div>
-                <div
-                  class="flex w-full shrink-0 items-center justify-center gap-2 border-t border-[var(--pyq-paper-border)] px-4 py-4 sm:w-auto sm:justify-end sm:border-0 sm:px-4 sm:py-4 sm:pl-0"
-                >
-                  <button
-                    type="button"
-                    class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
-                    disabled={startingPaperId !== null}
-                    onclick={() => startPaperTest(paper)}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
-                      <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
-                    </svg>
-                    {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
-                  </button>
-                </div>
+              <div
+  class="flex w-full shrink-0 items-center justify-center gap-2 border-t border-[var(--pyq-paper-border)] px-4 py-4 sm:w-auto sm:justify-end sm:border-0 sm:px-4 sm:py-4 sm:pl-0"
+>
+  <!-- View Paper Button -->
+  <button
+    type="button"
+    class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
+    onclick={() => viewPaper(paper)}
+  >
+    View Paper
+  </button>
+
+  <!-- Start Test Button -->
+  <button
+    type="button"
+    class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
+    disabled={startingPaperId !== null}
+    onclick={() => startPaperTest(paper)}
+  >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
+      <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
+    </svg>
+    {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
+  </button>
+</div>
               </div>
             {/each}
           </div>
