@@ -21,7 +21,7 @@
 
 	let selectedDifficulties = $state<string[]>([]);
 	let selectedKinds = $state<string[]>([]);
-	let selectedTopic = $state<string>("");
+	let selectedTopics = $state<string[]>([]);
 
 	let topicOptions = $state<{ _id: string; slug: string; name?: { en?: string } }[]>([]);
 	let topicsLoading = $state(false);
@@ -60,15 +60,14 @@
 
 			selectedDifficulties = diffParam ? diffParam.split(",") : [];
 			selectedKinds = kindParam ? kindParam.split(",") : [];
-			selectedTopic = topicParam ?? "";
+			selectedTopics = topicParam ? topicParam.split(",") : [];
 		}
 	});
 
-	// Load topics when chapterParam changes
 	let topicsLoadedFor = $state<string | null>(null);
 	$effect(() => {
 		if (!browser) return;
-		const cp = data.chapterParam;
+		const cp = data.chapterSlug || data.chapterParam;
 		if (!cp || topicsLoadedFor === cp) return;
 		topicsLoadedFor = cp;
 		topicsLoading = true;
@@ -239,8 +238,8 @@
 		if (selectedKinds.length > 0) {
 			params.set("kind", selectedKinds.join(","));
 		}
-		if (selectedTopic) {
-			params.set("topic", selectedTopic);
+		if (selectedTopics.length > 0) {
+			params.set("topic", selectedTopics.join(","));
 		}
 		return params.toString();
 	};
@@ -263,6 +262,14 @@
 		}
 	}
 
+	function toggleTopic(slug: string) {
+		if (selectedTopics.includes(slug)) {
+			selectedTopics = selectedTopics.filter((s) => s !== slug);
+		} else {
+			selectedTopics = [...selectedTopics, slug];
+		}
+	}
+
 	function applyFilters() {
 		const url = `${chapterBaseUrl()}?${activeFiltersQuery({ page: 1 })}`;
 		void goto(url);
@@ -272,7 +279,7 @@
 	function clearFilters() {
 		selectedDifficulties = [];
 		selectedKinds = [];
-		selectedTopic = "";
+		selectedTopics = [];
 		const url = `${chapterBaseUrl()}?page=1`;
 		void goto(url);
 		filterDrawerOpen = false;
@@ -778,16 +785,32 @@
 											value={detailQuestion._id}
 										/>
 
+										<!-- Approval Status -->
+										<div class="mb-5 flex items-center justify-between rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
+											<div>
+												<h3 class="text-sm font-semibold text-[var(--page-text)]">Approval Status</h3>
+												<p class="text-xs text-[var(--page-text-muted)] mt-0.5">Toggle to approve or unapprove this question</p>
+											</div>
+											<select 
+												name="approve" 
+												class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+											>
+												<option value="true" selected={(detailQuestion as any).approve}>Approved</option>
+												<option value="false" selected={!(detailQuestion as any).approve}>Unapproved</option>
+											</select>
+										</div>
+
 										<!-- Form body -->
 										<div class="mb-5">
 											<label
 												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
 												for="promptContent"
-												>Question Content</label
 											>
+												Question Text
+											</label>
 											<textarea
-												name="promptContent"
 												id="promptContent"
+												name="promptContent"
 												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
 												rows="5"
 												>{detailQuestion.prompt?.en?.content ?? ""}</textarea
@@ -797,10 +820,11 @@
 										<!-- Options Grid for Editing -->
 										{#if detailQuestion.prompt?.en?.options?.length}
 											<div class="mb-5">
-												<label
+												<div
 													class="block text-sm font-semibold text-[var(--page-text)] mb-3"
-													>Options</label
 												>
+													Options
+												</div>
 												<div
 													class="grid grid-cols-1 md:grid-cols-2 gap-4"
 												>
@@ -882,6 +906,15 @@
 													class="inline-flex rounded-md border border-[var(--page-text-muted)]/20 bg-[var(--page-text-muted)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--page-text-muted)]"
 												>
 													Q{currentQuestionNumber}
+												</div>
+											{/if}
+											{#if (detailQuestion as any).approve}
+												<div class="inline-flex rounded-md border border-brand-secondary/30 bg-brand-secondary/10 px-2 py-0.5 text-xs font-semibold text-brand-secondary">
+													Approved
+												</div>
+											{:else}
+												<div class="inline-flex rounded-md border border-semantic-error/30 bg-semantic-error/10 px-2 py-0.5 text-xs font-semibold text-semantic-error">
+													Unapproved
 												</div>
 											{/if}
 											<button
@@ -1056,11 +1089,11 @@
 										</div>
 									{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
 										<div class="mb-6">
-											<label
+											<div
 												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
 											>
 												Fill in the blank(s)
-											</label>
+											</div>
 											<div class="space-y-3">
 												{#each Array(Math.max(1, (detailQuestion as any).correct?.fills?.length || 1)) as _, idx}
 													<input
@@ -1322,8 +1355,36 @@
 				</div>
 			</div>
 
+			<div>
+				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
+					Topic
+				</div>
+				<div class="grid gap-2.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+					{#if topicsLoading}
+						<div class="animate-pulse flex flex-col gap-2">
+							{#each Array(4) as _}
+								<div class="h-9 rounded-xl bg-[var(--sb-border-color)]/30"></div>
+							{/each}
+						</div>
+					{:else}
+						{#each topicOptions as topic}
+							<button
+								type="button"
+								onclick={() => toggleTopic(topic.slug)}
+								class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedTopics.includes(topic.slug)
+									? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+									: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+							>
+								{topic.name?.en || topic.slug}
+							</button>
+						{/each}
+					{/if}
+				</div>
+			</div>
+
 			<div
 				class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]"
+
 			>
 				<button
 					type="button"
@@ -1384,5 +1445,20 @@
 	@keyframes toast-in {
 		from { opacity: 0; transform: translateY(12px); }
 		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	/* Custom Scrollbar */
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 4px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background: var(--sb-border-color);
+		border-radius: 10px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: var(--page-link);
 	}
 </style>

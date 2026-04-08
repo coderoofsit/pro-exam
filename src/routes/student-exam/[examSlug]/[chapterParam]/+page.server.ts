@@ -22,14 +22,20 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 
 	try {
 		let resolvedChapterId: string | null = null;
+		let chapterSlug: string | null = null;
 
 		if (chapterParam && isMongoObjectIdString(chapterParam)) {
 			resolvedChapterId = chapterParam;
+		} else {
+			chapterSlug = chapterParam;
 		}
 
 		let questionsRes: Awaited<ReturnType<typeof fetchQuestionsByChapter>> | null = null;
 		let detailedQuestion: Question | null = null;
 
+		// If we have an ID, we might want to fetch the chapter to get its slug
+		// But for now, we'll try to get it from questions response or detail if available
+		
 		if (resolvedChapterId) {
 			const listPromise = fetchQuestionsByChapter(
 				resolvedChapterId,
@@ -38,7 +44,8 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 				difficulty,
 				kind,
 				null,
-				topicSlug
+				topicSlug,
+				chapterSlug
 			);
 			if (questionId) {
 				const [list, detail] = await Promise.all([
@@ -57,8 +64,18 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			try {
 				detailedQuestion = await fetchQuestionById(questionId);
 			} catch (err) {
-				console.error('Failed to fetch detailed question', err);
+				// Silent
 			}
+		}
+
+		// Try to resolve chapterSlug from detailedQuestion if available
+		if (detailedQuestion && (detailedQuestion as any).chapterSlug) {
+			chapterSlug = (detailedQuestion as any).chapterSlug;
+		}
+		
+		// If still no slug, and we have questions, try to get from first question
+		if (!chapterSlug && questionsRes?.data?.length) {
+			chapterSlug = (questionsRes.data[0] as any).chapterSlug;
 		}
 
 		// Only use the current page for the initial review pool.
@@ -78,7 +95,8 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 				: null,
 			message: null as string | null,
 			questionId,
-			detailedQuestion
+			detailedQuestion,
+			chapterSlug
 		};
 	} catch (e) {
 		return {
@@ -111,6 +129,7 @@ export type PageData = {
 	message: string | null;
 	questionId: string | null;
 	detailedQuestion: Question | null;
+	chapterSlug: string | null;
 };
 
 export const actions: Actions = {
@@ -148,12 +167,37 @@ export const actions: Actions = {
 				}
 			};
 
+			const pendingApprove = data.get('approve');
+
+			const payload: Partial<Question> = { prompt: updatedPrompt };
+			if (pendingApprove === 'true') {
+				payload.approve = true;
+			} else if (pendingApprove === 'false') {
+				payload.approve = false;
+			}
+
 			const { updateQuestion } = await import('$lib/api/questions');
-			await updateQuestion(questionId, { prompt: updatedPrompt });
+			await updateQuestion(questionId, payload);
 			return { success: true };
 		} catch (err: any) {
 			console.error('Update failed:', err);
 			return fail(500, { message: err.message || 'Update failed' });
+		}
+	},
+	updateApprove: async ({ request }) => {
+		const data = await request.formData();
+		const questionId = data.get('questionId')?.toString();
+		const approve = data.get('approve') === 'true';
+		
+		if (!questionId) return fail(400, { message: 'Missing question ID' });
+		
+		try {
+			const { updateQuestionApproveStatus } = await import('$lib/api/questions');
+			await updateQuestionApproveStatus(questionId, approve);
+			return { success: true };
+		} catch (err: any) {
+			console.error('Update approve failed:', err);
+			return fail(500, { message: err.message || 'Update approve failed' });
 		}
 	}
 };

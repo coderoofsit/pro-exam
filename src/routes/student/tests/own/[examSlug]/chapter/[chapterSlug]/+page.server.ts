@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		const chapterId = chapter?._id ?? null;
 		if (!chapterId) throw new Error('Chapter not found');
 
-		const questionsRes = await fetchQuestionsByChapter(chapterId, safePage, QUESTIONS_PAGE_LIMIT, difficulty, kind, null, topicSlug);
+		const questionsRes = await fetchQuestionsByChapter(null, safePage, QUESTIONS_PAGE_LIMIT, difficulty, kind, null, topicSlug, chapterSlug);
 
 		return {
 			examSlug,
