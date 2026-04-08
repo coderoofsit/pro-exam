@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { updateQuestion } from '$lib/api/questions';
+  import { updateQuestion, updateQuestionApproveStatus } from '$lib/api/questions';
   import MathText from '$lib/components/MathText.svelte';
   import { questionPromptEnContent } from '$lib/api/questions';
 
@@ -18,6 +18,28 @@
   let draftCorrectIdentifiers = $state<string[]>([]);
   let draftFills = $state<string[]>([]);
   let draftInteger = $state('');
+
+  // Group questions by subjectSlug
+  const subjectGroups = $derived.by(() => {
+    const map = new Map<string, Array<Record<string, any>>>();
+    for (const q of questions) {
+      const key = String(q.subjectSlug || 'other');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(q);
+    }
+    return map;
+  });
+
+  const subjectTabs = $derived(Array.from(subjectGroups.keys()));
+  let activeTab = $state<string>('');
+
+  $effect(() => {
+    if (!activeTab && subjectTabs.length > 0) {
+      activeTab = subjectTabs[0];
+    }
+  });
+
+  const activeQuestions = $derived(subjectGroups.get(activeTab) ?? []);
 
   const examName = $derived.by(() =>
     examSlug
@@ -129,6 +151,17 @@
       }
     }
   }
+
+  async function toggleApprove(questionId: string, currentApprove: boolean) {
+    try {
+      await updateQuestionApproveStatus(questionId, !currentApprove);
+      questions = questions.map((q) =>
+        String(q._id) === questionId ? { ...q, approve: !currentApprove } : q
+      );
+    } catch {
+      // silent
+    }
+  }
 </script>
 
 <svelte:head>
@@ -155,8 +188,28 @@
           {saveError}
         </div>
       {/if}
+
+      <!-- Subject tabs -->
+      {#if subjectTabs.length > 1}
+        <div class="mb-5 flex flex-wrap gap-2">
+          {#each subjectTabs as tab}
+            <button
+              type="button"
+              onclick={() => (activeTab = tab)}
+              class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
+                {activeTab === tab
+                  ? 'bg-[var(--page-link)] text-white shadow-md'
+                  : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-white/70 hover:text-white'}"
+            >
+              {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              <span class="ml-1 text-xs opacity-70">({subjectGroups.get(tab)?.length ?? 0})</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
+
       <div class="space-y-3">
-        {#each questions as q, idx (q._id)}
+        {#each activeQuestions as q, idx (q._id)}
           {@const prompt = questionPromptEnContent(q as any)}
           {@const options = q.prompt?.en?.options ?? []}
           {@const explanation = q.prompt?.en?.explanation ?? ''}
@@ -181,6 +234,26 @@
                   {q.slug ? `slug: ${q.slug}` : 'slug: NA'}
                 </span>
                 {#if !isEditing}
+                  <!-- Approve status badge + toggle -->
+                  {#if q.approve}
+                    <span class="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-400">
+                      ✓Appr
+                    </span>
+                  {:else}
+                    <span class="rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-400">
+                      ✗Unappr
+                    </span>
+                  {/if}
+                  <button
+                    type="button"
+                    class="rounded-md border px-3 py-1 text-xs font-semibold transition
+                      {q.approve
+                        ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                        : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
+                    onclick={() => toggleApprove(String(q._id), !!q.approve)}
+                  >
+                    {q.approve ? 'Unapprove' : 'Approve'}
+                  </button>
                   <button
                     type="button"
                     class="btn-cta-subscription-outline px-3 py-1 text-xs"

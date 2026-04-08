@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 	const difficulty = url.searchParams.get('difficulty');
 	const kind = url.searchParams.get('kind');
 	const topicSlug = url.searchParams.get('topic');
+	const approve = url.searchParams.get('approve');
 
 	try {
 		let resolvedChapterId: string | null = null;
@@ -45,7 +46,8 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 				kind,
 				null,
 				topicSlug,
-				chapterSlug
+				chapterSlug,
+				approve
 			);
 			if (questionId) {
 				const [list, detail] = await Promise.all([
@@ -96,7 +98,8 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			message: null as string | null,
 			questionId,
 			detailedQuestion,
-			chapterSlug
+			chapterSlug,
+			approveStatus: approve
 		};
 	} catch (e) {
 		return {
@@ -130,6 +133,7 @@ export type PageData = {
 	questionId: string | null;
 	detailedQuestion: Question | null;
 	chapterSlug: string | null;
+	approveStatus: string | null;
 };
 
 export const actions: Actions = {

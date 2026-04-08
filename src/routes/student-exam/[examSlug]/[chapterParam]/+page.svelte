@@ -22,6 +22,7 @@
 	let selectedDifficulties = $state<string[]>([]);
 	let selectedKinds = $state<string[]>([]);
 	let selectedTopics = $state<string[]>([]);
+	let selectedApprove = $state<string>("");
 
 	let topicOptions = $state<{ _id: string; slug: string; name?: { en?: string } }[]>([]);
 	let topicsLoading = $state(false);
@@ -51,17 +52,20 @@
 	let detailLoadSeq = 0;
 	let detailAbort: AbortController | null = null;
 
+	// Keep filter state in sync with server-loaded data (source of truth on navigation)
 	$effect(() => {
-		if (browser) {
-			const params = new URLSearchParams(window.location.search);
-			const diffParam = params.get("difficulty");
-			const kindParam = params.get("kind");
-			const topicParam = params.get("topic");
+		const params = new URLSearchParams(
+			browser ? window.location.search : ""
+		);
+		const diffParam = params.get("difficulty");
+		const kindParam = params.get("kind");
+		const topicParam = params.get("topic");
 
-			selectedDifficulties = diffParam ? diffParam.split(",") : [];
-			selectedKinds = kindParam ? kindParam.split(",") : [];
-			selectedTopics = topicParam ? topicParam.split(",") : [];
-		}
+		selectedDifficulties = diffParam ? diffParam.split(",") : [];
+		selectedKinds = kindParam ? kindParam.split(",") : [];
+		selectedTopics = topicParam ? topicParam.split(",") : [];
+		// Use server-provided approveStatus as source of truth
+		selectedApprove = data.approveStatus ?? params.get("approve") ?? "";
 	});
 
 	let topicsLoadedFor = $state<string | null>(null);
@@ -164,28 +168,44 @@
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
 
+	// Build a stable filter string to namespace the cache per active filters
+	const activeFilterKey = $derived(
+		[
+			selectedDifficulties.slice().sort().join(','),
+			selectedKinds.slice().sort().join(','),
+			selectedTopics.slice().sort().join(','),
+			selectedApprove
+		].join('|')
+	);
+
 	const hasCurrentPage = $derived.by(() => {
 		if (!storeChapterKey) return false;
+		// Don't use cache when filters are active — always use fresh server data
+		if (data.approveStatus || (data as any).difficulty || (data as any).kind) return false;
 		$questionStore;
-		return questionStore.hasPage(storeChapterKey, data.safePage);
+		return questionStore.hasPage(storeChapterKey, data.safePage, activeFilterKey);
 	});
 
 	const displayQuestions = $derived.by(() => {
 		if (!storeChapterKey) return data.questions;
+		// If any filter is active, always use server data directly
+		if (data.approveStatus) return data.questions;
 		$questionStore;
 		return hasCurrentPage
 			? (questionStore.getQuestionsForPage(
 					storeChapterKey,
 					data.safePage,
-				) ?? [])
+					activeFilterKey,
+				) ?? data.questions)
 			: data.questions;
 	});
 
 	const displayPaginationMeta = $derived.by(() => {
 		if (!storeChapterKey) return data.paginationMeta;
+		if (data.approveStatus) return data.paginationMeta;
 		$questionStore;
 		return hasCurrentPage
-			? (questionStore.getPagination(storeChapterKey) ??
+			? (questionStore.getPagination(storeChapterKey, activeFilterKey) ??
 					data.paginationMeta)
 			: data.paginationMeta;
 	});
@@ -216,13 +236,16 @@
 		if (!browser) return;
 		if (!storeChapterKey) return;
 		if (!data.questions.length) return;
-		if (hasCurrentPage) return;
+		// Don't cache filtered results
+		if (data.approveStatus) return;
 
+		// Always write fresh server data to the correct filter-namespaced cache slot
 		questionStore.setQuestionsPage(
 			storeChapterKey,
 			data.safePage,
 			data.questions,
 			data.paginationMeta ?? undefined,
+			activeFilterKey,
 		);
 	});
 
@@ -240,6 +263,9 @@
 		}
 		if (selectedTopics.length > 0) {
 			params.set("topic", selectedTopics.join(","));
+		}
+		if (selectedApprove) {
+			params.set("approve", selectedApprove);
 		}
 		return params.toString();
 	};
@@ -276,10 +302,16 @@
 		filterDrawerOpen = false;
 	}
 
+	function setApprove(status: string) {
+		selectedApprove = status;
+		applyFilters();
+	}
+
 	function clearFilters() {
 		selectedDifficulties = [];
 		selectedKinds = [];
 		selectedTopics = [];
+		selectedApprove = "";
 		const url = `${chapterBaseUrl()}?page=1`;
 		void goto(url);
 		filterDrawerOpen = false;
@@ -514,13 +546,39 @@
 							</div>
 
 							{#if !effectiveQuestionId}
-								<button
-									type="button"
-									class="rounded-lg border border-[var(--page-card-border)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
-									onclick={() => (filterDrawerOpen = true)}
-								>
-									Filters
-								</button>
+								<div class="flex shrink-0 flex-wrap items-center justify-end gap-3 sm:gap-4">
+									<div class="flex items-center rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-1 shadow-sm">
+										<button
+											type="button"
+											onclick={() => setApprove("")}
+											class="rounded-md px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 {selectedApprove === "" ? 'bg-[var(--page-link)] text-white shadow-md' : 'text-[var(--page-text-muted)] hover:text-[var(--page-text)]'}"
+										>
+											All
+										</button>
+										<button
+											type="button"
+											onclick={() => setApprove("true")}
+											class="rounded-md px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 {selectedApprove === "true" ? 'bg-brand-secondary text-white shadow-md' : 'text-[var(--page-text-muted)] hover:text-brand-secondary'}"
+										>
+											Approved
+										</button>
+										<button
+											type="button"
+											onclick={() => setApprove("false")}
+											class="rounded-md px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 {selectedApprove === "false" ? 'bg-semantic-error text-white shadow-md' : 'text-[var(--page-text-muted)] hover:text-semantic-error'}"
+										>
+											Unapproved
+										</button>
+									</div>
+
+									<button
+										type="button"
+										class="relative rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)] shadow-sm"
+										onclick={() => (filterDrawerOpen = true)}
+									>
+										Filters
+									</button>
+								</div>
 							{/if}
 						</div>
 					</div>
@@ -670,6 +728,17 @@
 													</div>
 												</div>
 											{/if}
+											<div class="mt-1.5 pl-0.5 flex items-center gap-2">
+												{#if (q as any).approve === true}
+													<span class="inline-flex items-center gap-1 rounded border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-500 leading-tight">
+														✓ Approved
+													</span>
+												{:else}
+													<span class="inline-flex items-center gap-1 rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-400 leading-tight">
+														✗ Unapproved
+													</span>
+												{/if}
+											</div>
 										</button>
 									{/each}
 								</div>
@@ -917,6 +986,39 @@
 													Unapproved
 												</div>
 											{/if}
+											<!-- Quick approve toggle -->
+											<form
+												method="POST"
+												action="?/updateApprove"
+												use:enhance={() => {
+													return async ({ result }) => {
+														if (result.type === 'success') {
+															const newVal = !(detailQuestion as any).approve;
+															detailQuestion = { ...detailQuestion!, approve: newVal } as any;
+															questionStore.setCachedById(detailQuestion!._id, detailQuestion!);
+															showToast(newVal ? 'Approved' : 'Unapproved');
+														} else {
+															showToast('Failed to update', 'error');
+														}
+													};
+												}}
+											>
+												<input type="hidden" name="questionId" value={detailQuestion._id} />
+												<input type="hidden" name="approve" value={String(!(detailQuestion as any).approve)} />
+												<button
+													type="submit"
+													class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-sm transition
+														{(detailQuestion as any).approve
+															? 'border-semantic-error/40 bg-semantic-error/10 text-semantic-error hover:bg-semantic-error/20'
+															: 'border-brand-secondary/40 bg-brand-secondary/10 text-brand-secondary hover:bg-brand-secondary/20'}"
+												>
+													{#if (detailQuestion as any).approve}
+														✗ Unapprove
+													{:else}
+														✓ Approve
+													{/if}
+												</button>
+											</form>
 											<button
 												type="button"
 												onclick={() => (isEditing = true)}
