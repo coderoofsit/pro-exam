@@ -329,6 +329,17 @@
                 </div>
               </div>
             {:else}
+              <!-- Prompt images -->
+              {#if q.prompt?.en?.images?.length}
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                  {#each q.prompt.en.images as img}
+                    {#if img?.url}
+                      <img src={img.url} alt={img.alt ?? ''} class="max-h-48 w-full rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
+
               {#if isMcq || isMsq}
                 <ul class="mt-3 space-y-2 text-base text-white">
                   {#each options as opt}
@@ -343,6 +354,15 @@
                       </span>
                       <div class="min-w-0 flex-1 break-words text-[1.02rem] leading-[1.7] text-white">
                         <MathText content={opt.content ?? ''} />
+                        {#if opt.images?.length}
+                          <div class="mt-2 flex flex-wrap gap-2">
+                            {#each opt.images as img}
+                              {#if img?.url}
+                                <img src={img.url} alt={img.alt ?? ''} class="max-h-32 rounded border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
+                              {/if}
+                            {/each}
+                          </div>
+                        {/if}
                       </div>
                       {#if isCorrectOption}
                         <span class="ml-auto text-[11px] font-semibold text-emerald-300">Correct</span>
@@ -361,9 +381,18 @@
               {/if}
 
               {#if explanation}
-                <div class="mt-3 text-[1.05rem] leading-relaxed text-white">
-                  <span class="font-semibold">Explanation:</span>
-                  <span class="ml-1 inline"><MathText content={explanation} /></span>
+                <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-white">
+                  <span class="font-semibold text-sm">Explanation:</span>
+                  <div class="mt-1"><MathText content={explanation} /></div>
+                  {#if q.prompt?.en?.explanationImages?.length}
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      {#each q.prompt.en.explanationImages as img}
+                        {#if img?.url}
+                          <img src={img.url} alt={img.alt ?? ''} class="max-h-48 rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
+                        {/if}
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
               {/if}
             {/if}
