@@ -99,10 +99,12 @@ export async function googleLogin(params: {
   });
 }
 
-export async function getMembershipUsers(token?: string | null) {
+export async function getMembershipUsers(fetchFn?: typeof fetch, token?: string | null) {
   return apiRequest<MembershipResponse>({
     endpoint: '/api/v1/users/membership',
     method: 'GET',
+    fetch: fetchFn,
+    token
   });
 }
 

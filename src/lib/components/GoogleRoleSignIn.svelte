@@ -8,7 +8,6 @@
     type LoginResponse,
   } from "$lib/api/auth";
   import { authStore } from "$lib/stores/auth";
-  import { setApiToken } from "$lib/api/authToken";
 
   let {
     selected,
@@ -72,8 +71,16 @@
       const users = loginResponse.data?.users ?? [];
       const token = loginResponse.data?.token ?? null;
       if (token) {
-	setApiToken(token);
-}
+        const sessionRes = await fetch("/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        });
+        if (!sessionRes.ok) {
+          errorMessage = "Could not create login session.";
+          return;
+        }
+      }
       authStore.setAuthFromLoginResponse(loginResponse, selected);
       onSuccess?.(loginResponse);
 

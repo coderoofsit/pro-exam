@@ -71,26 +71,12 @@ function mapBackendRoleToAccountType(
 }
 
 /**
- * Mirror JWT to a cookie so SvelteKit `load` can send `Authorization` during SSR
- * (localStorage is not available on the server). Same name as localStorage: `auth_token`.
+ * JWT session cookie is managed by server endpoints (`/auth/session`, `/logout`).
+ * Client store keeps token in memory only.
  */
-function syncAuthTokenCookie(token: string | null) {
-  if (typeof document === "undefined") return;
-  const maxAgeSeconds = 60 * 60 * 24 * 30; // 30 days
-  if (token) {
-    const secure =
-      typeof location !== "undefined" && location.protocol === "https:"
-        ? "; Secure"
-        : "";
-    document.cookie = `${AUTH_STORAGE_KEY}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
-  } else {
-    document.cookie = `${AUTH_STORAGE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
-  }
-}
-
 function persistToken(token: string | null) {
-  // Token is persisted only in cookie (plus in-memory store), not localStorage.
-  syncAuthTokenCookie(token);
+  // no-op: token persistence is server-managed via httpOnly cookie
+  void token;
 }
 
 function persistProfileId(profileId: string | null) {
@@ -182,14 +168,8 @@ function createAuthStore() {
     },
 
     restore() {
-      if (typeof document === "undefined") return;
-      const tokenMatch = document.cookie.match(
-        new RegExp(`(?:^|;\\s*)${AUTH_STORAGE_KEY.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}=([^;]*)`)
-      );
-      const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
+      const token = null;
       const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
-
-      if (token) syncAuthTokenCookie(token);
 
       update((state) => ({
         ...state,
@@ -200,14 +180,8 @@ function createAuthStore() {
     },
 
     restoreToken() {
-      if (typeof document === "undefined") return;
-      const tokenMatch = document.cookie.match(
-        new RegExp(`(?:^|;\\s*)${AUTH_STORAGE_KEY.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}=([^;]*)`)
-      );
-      const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
+      const token = null;
       const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
-
-      if (token) syncAuthTokenCookie(token);
 
       update((state) => ({
         ...state,
