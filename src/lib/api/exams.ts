@@ -45,9 +45,9 @@ export async function fetchExamBySlug(
 	const response = await apiRequest<{ success: boolean; message: string; data: Exam }>({
 		endpoint: `/api/v1/exams/by-slug/${encodeURIComponent(slug)}`,
 		method: 'GET',
-		token: t,
 		headers: { 'Content-Type': 'application/json' },
-		fetch: fetchFn
+		fetch: fetchFn,
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch exam');
 	return response.data.data;
@@ -75,8 +75,8 @@ export async function fetchExamsPage(
 	}>({
 		endpoint: `/api/v1/exams?page=${page}&limit=${limit}`,
 		method: 'GET',
-		token: t,
 		headers: { 'Content-Type': 'application/json' },
+		token: t,
 		fetch: fetchFn
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch exams');

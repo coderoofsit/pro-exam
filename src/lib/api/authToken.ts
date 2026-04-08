@@ -1,40 +1,62 @@
 import { browser } from '$app/environment';
 import { get } from 'svelte/store';
-import { TOKEN } from '$lib/http';
 import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
 
 function normalizeBearer(raw: string | null | undefined): string | undefined {
 	if (!raw) return undefined;
-	const s = raw.trim();
-	if (!s) return undefined;
-	return s.startsWith('Bearer ') ? s.slice(7) : s;
+
+	const value = raw.trim();
+	if (!value) return undefined;
+
+	return value.startsWith('Bearer ') ? value.slice(7) : value;
 }
 
-/**
- * Resolves the JWT for API calls.
- * - Explicit `override` wins.
- * - In the **browser**, uses **localStorage** (canonical session) first, then authStore.
- *   Does **not** use the dev `TOKEN` env on the client so requests only carry the logged-in user’s token.
- * - On the **server**, falls back to env `TOKEN` only when needed for SSR tools (callers can pass `skipAuth` to avoid any token).
- */
+function getCookieValue(name: string): string | undefined {
+	if (!browser || typeof document === 'undefined') return undefined;
+
+	const escapedKey = name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+	const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${escapedKey}=([^;]*)`));
+
+	return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+/** Browser token resolver (override -> cookie -> store). */
 export function resolveApiToken(override?: string | null): string | undefined {
-	const o = normalizeBearer(override);
-	if (o) return o;
-	if (browser) {
-		if (typeof localStorage !== 'undefined') {
-			const fromLs = normalizeBearer(localStorage.getItem(AUTH_STORAGE_KEY));
-			if (fromLs) return fromLs;
-		}
-		if (typeof document !== 'undefined' && typeof document.cookie === 'string') {
-			const m = document.cookie.match(
-				new RegExp(`(?:^|;\\s*)${AUTH_STORAGE_KEY.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}=([^;]*)`)
-			);
-			const fromCookie = normalizeBearer(m ? decodeURIComponent(m[1]) : null);
-			if (fromCookie) return fromCookie;
-		}
-		const fromStore = normalizeBearer(get(authStore).token);
-		if (fromStore) return fromStore;
-		return undefined;
-	}
-	return normalizeBearer(TOKEN);
+	const overrideToken = normalizeBearer(override);
+	if (overrideToken) return overrideToken;
+
+	if (!browser) return undefined;
+
+	const cookieToken = normalizeBearer(getCookieValue(AUTH_STORAGE_KEY));
+	if (cookieToken) return cookieToken;
+
+	const storeToken = normalizeBearer(get(authStore).token);
+	if (storeToken) return storeToken;
+
+	return undefined;
+}
+
+export function setApiToken(token: string): void {
+	if (!browser) return;
+
+	const normalized = normalizeBearer(token);
+	if (!normalized) return;
+
+	document.cookie = [
+		`${AUTH_STORAGE_KEY}=${encodeURIComponent(normalized)}`,
+		'Path=/',
+		'Max-Age=2592000',
+		'SameSite=Lax'
+	].join('; ');
+}
+
+export function clearApiToken(): void {
+	if (!browser) return;
+
+	document.cookie = [
+		`${AUTH_STORAGE_KEY}=`,
+		'Path=/',
+		'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+		'SameSite=Lax'
+	].join('; ');
 }

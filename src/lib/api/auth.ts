@@ -103,7 +103,6 @@ export async function getMembershipUsers(token?: string | null) {
   return apiRequest<MembershipResponse>({
     endpoint: '/api/v1/users/membership',
     method: 'GET',
-    token
   });
 }
 
@@ -121,7 +120,6 @@ export async function selectMembershipProfile(params: {
       membershipId: params.membershipId,
       userProfiledId: params.userProfiledId
     },
-    token: params.token
   });
 }
 

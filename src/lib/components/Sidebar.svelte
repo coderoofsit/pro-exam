@@ -11,6 +11,7 @@
     type SelectMembershipApiBody
   } from '$lib/api/auth';
   import { themeStore } from '$lib/stores/theme';
+  import { clearApiToken } from '$lib/api/authToken';
 
   type Role = 'student' | 'tutor' | 'institute';
   type SidebarIcon = 'dashboard' | 'exams' | 'tests' | 'batch' | 'subscription';
@@ -191,7 +192,8 @@
   }
 
   async function handleLogout() {
-    authStore.logout();
+    clearApiToken();
+	 authStore.clear?.(); 
     profileDropdownOpen = false;
     await goto('/login');
   }

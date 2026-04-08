@@ -93,11 +93,12 @@ export async function fetchGetTestUser(
 	const st = params.status?.trim();
 	if (st) q.set('status', st);
 
+	const t = resolveApiToken(options?.token ?? null);
 	return apiRequest<GetTestUserApiResponse>({
 		endpoint: `/api/v1/tests/get-test-user?${q.toString()}`,
 		method: 'GET',
 		fetch: fetchFn,
-		...(options?.token ? { token: options.token } : {})
+		token: t
 	});
 }
 
@@ -127,7 +128,6 @@ export async function createRandomCustomTest(
 		endpoint: '/api/v1/tests/create-random-test',
 		method: 'POST',
 		data: body,
-		token: t
 	});
 }
 
@@ -159,7 +159,6 @@ export async function createManualCustomTest(body: CreateManualCustomTestBody, t
 		endpoint: '/api/v1/tests',
 		method: 'POST',
 		data: body,
-		token: t
 	});
 }
 

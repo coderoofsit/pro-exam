@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { apiRequest } from '../../http/api';
+import { resolveApiToken } from './authToken';
 
 /** Session payload after creating an attempt from a batch test (client-only). */
 export const BATCH_TEST_ATTEMPT_STORAGE_KEY = 'examflow-batch-test-attempt';
@@ -167,12 +168,13 @@ export async function createTestAttempt(
 	const payload: { testId: string; batchId?: string } = { testId: body.testId };
 	const b = body.batchId != null ? String(body.batchId).trim() : '';
 	if (b) payload.batchId = b;
+	const t = resolveApiToken(options?.token ?? null);
 	return apiRequest<CreateTestAttemptResponseBody>({
 		endpoint: '/api/v1/test-attempts',
 		method: 'POST',
 		data: payload,
 		fetch: fetchFn,
-		...(options?.token ? { token: options.token } : {})
+		token: t
 	});
 }
 
@@ -262,12 +264,13 @@ export async function updateTestAttemptQuestion(
 	options?: { token?: string }
 ) {
 	const path = `/api/v1/test-attempts/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(questionId)}`;
+	const t = resolveApiToken(options?.token ?? null);
 	const res = await apiRequest<unknown>({
 		endpoint: path,
 		method: 'PATCH',
 		data: body,
 		fetch: fetchFn,
-		...(options?.token ? { token: options.token } : {})
+		token: t
 	});
 	if (!res.success && (res.status === 405 || res.status === 501)) {
 		return apiRequest<unknown>({
@@ -275,7 +278,7 @@ export async function updateTestAttemptQuestion(
 			method: 'PUT',
 			data: body,
 			fetch: fetchFn,
-			...(options?.token ? { token: options.token } : {})
+			token: t
 		});
 	}
 	return res;
@@ -366,11 +369,12 @@ export async function fetchTestAttemptById(
 	if (!trimmed) {
 		return { success: false, message: 'Attempt id is required.' };
 	}
+	const t = resolveApiToken(options?.token ?? null);
 	const res = await apiRequest<TestAttemptByIdApiBody>({
 		endpoint: `/api/v1/test-attempts/${encodeURIComponent(trimmed)}`,
 		method: 'GET',
 		fetch: fetchFn,
-		...(options?.token ? { token: options.token } : {})
+		token: t
 	});
 	if (!res.success) {
 		return { success: false, message: res.message, status: res.status };

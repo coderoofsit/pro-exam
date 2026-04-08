@@ -1,12 +1,14 @@
 import type { PageServerLoad } from './$types';
 import { fetchExamsPage } from '$lib/api/exams';
 import { STUDENT_EXAMS_PAGE_SIZE } from '$lib/stores/exam';
+import { AUTH_STORAGE_KEY } from '$lib/stores/auth';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, cookies, fetch }) => {
 	const currentPage = Math.max(1, Number(url.searchParams.get('page')) || 1);
+	const token = cookies.get(AUTH_STORAGE_KEY) ?? null;
 
 	try {
-		const res = await fetchExamsPage(currentPage, STUDENT_EXAMS_PAGE_SIZE);
+		const res = await fetchExamsPage(currentPage, STUDENT_EXAMS_PAGE_SIZE, token, fetch);
 		return {
 			exams: res.data,
 			total: res.total,

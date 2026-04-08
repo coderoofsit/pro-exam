@@ -89,13 +89,7 @@ function syncAuthTokenCookie(token: string | null) {
 }
 
 function persistToken(token: string | null) {
-  if (typeof localStorage === "undefined") return;
-
-  if (token) {
-    localStorage.setItem(AUTH_STORAGE_KEY, token);
-  } else {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  }
+  // Token is persisted only in cookie (plus in-memory store), not localStorage.
   syncAuthTokenCookie(token);
 }
 
@@ -188,9 +182,11 @@ function createAuthStore() {
     },
 
     restore() {
-      if (typeof localStorage === "undefined") return;
-
-      const token = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (typeof document === "undefined") return;
+      const tokenMatch = document.cookie.match(
+        new RegExp(`(?:^|;\\s*)${AUTH_STORAGE_KEY.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}=([^;]*)`)
+      );
+      const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
       const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
 
       if (token) syncAuthTokenCookie(token);
@@ -204,9 +200,11 @@ function createAuthStore() {
     },
 
     restoreToken() {
-      if (typeof localStorage === "undefined") return;
-
-      const token = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (typeof document === "undefined") return;
+      const tokenMatch = document.cookie.match(
+        new RegExp(`(?:^|;\\s*)${AUTH_STORAGE_KEY.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}=([^;]*)`)
+      );
+      const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
       const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
 
       if (token) syncAuthTokenCookie(token);

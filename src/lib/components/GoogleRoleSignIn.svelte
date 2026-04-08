@@ -8,6 +8,7 @@
     type LoginResponse,
   } from "$lib/api/auth";
   import { authStore } from "$lib/stores/auth";
+  import { setApiToken } from "$lib/api/authToken";
 
   let {
     selected,
@@ -70,6 +71,9 @@
 
       const users = loginResponse.data?.users ?? [];
       const token = loginResponse.data?.token ?? null;
+      if (token) {
+	setApiToken(token);
+}
       authStore.setAuthFromLoginResponse(loginResponse, selected);
       onSuccess?.(loginResponse);
 

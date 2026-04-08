@@ -79,7 +79,6 @@ export async function fetchQuestionsByChapter(
 	}>({
 		endpoint: `/api/v1/questions?${params.toString()}`,
 		method: 'GET',
-		token: t,
 		headers: { 'Content-Type': 'application/json' }
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch questions');
@@ -109,7 +108,6 @@ export async function fetchQuestionsByChapterGroup(
 	}>({
 		endpoint: `/api/v1/questions?${params.toString()}`,
 		method: 'GET',
-		token: t,
 		headers: { 'Content-Type': 'application/json' }
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch questions');
@@ -129,7 +127,6 @@ export async function fetchQuestionById(
 	}>({
 		endpoint: `/api/v1/questions/${id}`,
 		method: 'GET',
-		token: t,
 		headers: { 'Content-Type': 'application/json' },
 		signal: opts?.signal
 	});
@@ -151,7 +148,6 @@ export async function updateQuestion(
 		endpoint: `/api/v1/questions/${id}`,
 		method: 'PATCH',
 		data: payload,
-		token: t,
 		headers: { 'Content-Type': 'application/json' }
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to update question');

@@ -2,12 +2,14 @@ import type { PageServerLoad } from './$types';
 import { fetchExamBySlug } from '$lib/api/exams';
 import { fetchChaptersByChapterGroupId, fetchChaptersHierarchy } from '$lib/api/chapters';
 import type { Chapter, GroupedChapterItem, GroupedSubjectRow } from '$lib/api/chapters';
+import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 	const examSlug = params.examSlug;
+	const token = getAuthTokenFromCookies(cookies) ?? null;
 
 	try {
-		const exam = await fetchExamBySlug(examSlug);
+		const exam = await fetchExamBySlug(examSlug, token, fetch);
 		const boardSlug = (exam as any).boardSlug;
 
 		if (!boardSlug || typeof boardSlug !== 'string') {

@@ -1,4 +1,5 @@
 import { apiRequest } from '../../http/api';
+import { resolveApiToken } from './authToken';
 
 export type SubscriptionPlan = {
 	_id: string;
@@ -57,11 +58,12 @@ export async function fetchSubscriptionPlans(
 	fetchFn?: typeof fetch,
 	options?: { token?: string }
 ) {
+	const t = resolveApiToken(options?.token ?? null);
 	return apiRequest<SubscriptionPlansResponseBody>({
 		endpoint: '/api/v1/subscription-plans',
 		method: 'GET',
 		fetch: fetchFn,
-		...(options?.token ? { token: options.token } : {})
+		token: t
 	});
 }
 
@@ -69,11 +71,12 @@ export async function startFreeTrial(params: {
 	planId: string;
 	token?: string | null;
 }) {
+	const t = resolveApiToken(params.token ?? null);
 	return apiRequest<{ success?: boolean; message?: string; data?: unknown }>({
 		endpoint: '/api/v1/subscription-transactions/free-trail',
 		method: 'POST',
 		data: { planId: params.planId },
-		token: params.token
+		token: t
 	});
 }
 
@@ -81,11 +84,12 @@ export async function createSubscriptionCheckout(params: {
 	planId: string;
 	token?: string | null;
 }) {
+	const t = resolveApiToken(params.token ?? null);
 	return apiRequest<SubscriptionCheckoutResponseBody>({
 		endpoint: '/api/v1/subscription-transactions/checkout',
 		method: 'POST',
 		data: { planId: params.planId },
-		token: params.token
+		token: t
 	});
 }
 
@@ -95,6 +99,7 @@ export async function verifySubscriptionPayment(params: {
 	razorpay_signature: string;
 	token?: string | null;
 }) {
+	const t = resolveApiToken(params.token ?? null);
 	return apiRequest<VerifySubscriptionPaymentResponseBody>({
 		endpoint: '/api/v1/subscription-transactions/verify',
 		method: 'POST',
@@ -103,7 +108,7 @@ export async function verifySubscriptionPayment(params: {
 			razorpay_payment_id: params.razorpay_payment_id,
 			razorpay_signature: params.razorpay_signature
 		},
-		token: params.token
+		token: t
 	});
 }
 
@@ -157,11 +162,12 @@ export async function fetchUserSubscription(options?: {
 	token?: string | null;
 	fetch?: typeof fetch;
 }) {
+	const t = resolveApiToken(options?.token ?? null);
 	return apiRequest<UserSubscriptionApiBody>({
 		endpoint: '/api/v1/subscription',
 		method: 'GET',
 		fetch: options?.fetch,
-		...(options?.token !== undefined ? { token: options.token } : {})
+		token: t
 	});
 }
 
@@ -182,7 +188,6 @@ export async function patchSubscriptionAutoRenew(params: {
 		endpoint: `/api/v1/subscription/auto-renew/${id}`,
 		method: 'PATCH',
 		data: { autoRenew: params.autoRenew },
-		token: params.token
 	});
 }
 
@@ -209,10 +214,11 @@ export async function fetchSubscriptionTransactions(options?: {
 	token?: string | null;
 	fetch?: typeof fetch;
 }) {
+	const t = resolveApiToken(options?.token ?? null);
 	return apiRequest<SubscriptionTransactionsListBody>({
 		endpoint: '/api/v1/subscription-transactions/get-all-transaction',
 		method: 'GET',
 		fetch: options?.fetch,
-		...(options?.token !== undefined ? { token: options.token } : {})
+		token: t
 	});
 }

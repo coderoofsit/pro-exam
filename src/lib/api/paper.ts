@@ -1,4 +1,5 @@
 import { apiRequest } from "../../http/api";
+import { resolveApiToken } from "./authToken";
 
 export type PaperItem = {
   _id: string;
@@ -49,11 +50,17 @@ export type GetPaperQuestionsResponse = {
   data: PaperQuestion[];
 };
 
-export async function getPapersByExamSlug(examSlug: string, fetchFn?: typeof fetch) {
+export async function getPapersByExamSlug(
+  examSlug: string,
+  fetchFn?: typeof fetch,
+  token?: string | null
+) {
+  const t = resolveApiToken(token);
   return apiRequest<GetPapersByExamResponse>({
-    endpoint: `/api/v1/papers/get-paper/${examSlug}`,
+    endpoint: `/api/v1/papers/get-paper/${encodeURIComponent(examSlug)}`,
     method: 'GET',
-    fetch: fetchFn
+    fetch: fetchFn,
+    token: t
   });
 }
 

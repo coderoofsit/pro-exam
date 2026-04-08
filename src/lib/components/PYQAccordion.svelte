@@ -3,6 +3,7 @@
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     createTestAttempt,
+    fetchTestAttemptById,
     findAttemptIdInApiResponse,
     peelTestAttemptEnvelope
   } from '$lib/api/testAttempts';
@@ -11,6 +12,7 @@
   export type PaperItem = {
     _id: string;
     testId?: string;
+    testAttemptedId?: string;
     name: string;
     slug: string;
     shift: string;
@@ -46,6 +48,7 @@
   let filterDropOpen = $state(false);
   let openYears      = $state<Set<number>>(new Set());
   let startingPaperId = $state<string | null>(null);
+  let viewingAnalysisId = $state<string | null>(null);
   let startPaperError = $state<string | null>(null);
 
 function viewPaper(paper: PaperItem) {
@@ -55,9 +58,34 @@ function viewPaper(paper: PaperItem) {
   void goto(`${basePath}/${encodeURIComponent(resolvedExamSlug)}/${encodeURIComponent(resolvedPaperId)}`);
 }
 
+  function analysisHref(paper: PaperItem, attemptId: string) {
+    return `/student/tests/analysis/${encodeURIComponent(attemptId)}?testName=${encodeURIComponent(paper.name)}`;
+  }
+
+  async function viewAnalysis(paper: PaperItem) {
+    const attemptId = (paper.testAttemptedId ?? '').trim();
+    if (!attemptId) return;
+    startPaperError = null;
+    viewingAnalysisId = paper._id;
+    try {
+      const res = await fetchTestAttemptById(attemptId);
+      if (!res.success) {
+        startPaperError = res.message || 'Could not load analysis';
+        return;
+      }
+      await goto(analysisHref(paper, attemptId));
+    } finally {
+      viewingAnalysisId = null;
+    }
+  }
+
   async function startPaperTest(paper: PaperItem) {
     if (startingPaperId) return;
-    const testId = (paper.testId ?? '').trim() || paper._id;
+    const testId = (paper.testId ?? '').trim();
+    if (!testId) {
+      startPaperError = 'Test id is missing for this paper.';
+      return;
+    }
     startPaperError = null;
     startingPaperId = paper._id;
     try {
@@ -396,18 +424,29 @@ function viewPaper(paper: PaperItem) {
     View Paper
   </button>
 
-  <!-- Start Test Button -->
-  <button
-    type="button"
-    class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
-    disabled={startingPaperId !== null}
-    onclick={() => startPaperTest(paper)}
-  >
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
-      <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
-    </svg>
-    {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
-  </button>
+  {#if !(paper.testAttemptedId ?? '').trim()}
+    <!-- Start Test Button -->
+    <button
+      type="button"
+      class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
+      disabled={startingPaperId !== null || viewingAnalysisId !== null}
+      onclick={() => startPaperTest(paper)}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
+        <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
+      </svg>
+      {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
+    </button>
+  {:else}
+    <button
+      type="button"
+      class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
+      disabled={startingPaperId !== null || viewingAnalysisId !== null}
+      onclick={() => void viewAnalysis(paper)}
+    >
+      {viewingAnalysisId === paper._id ? 'Opening…' : 'View Analysis'}
+    </button>
+  {/if}
 </div>
               </div>
             {/each}
