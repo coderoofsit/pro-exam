@@ -151,6 +151,7 @@ export const actions: Actions = {
 
 			const promptContent = data.get('promptContent')?.toString() ?? existing.prompt?.en?.content ?? '';
 			const explanationContent = data.get('explanationContent')?.toString() ?? existing.prompt?.en?.explanation ?? '';
+			const rePhrasedExplanationContent = data.get('rePhrasedExplanationContent')?.toString() ?? existing.prompt?.en?.rePhrasedExplanation ?? '';
 			
 			const newOptions = [...(existing.prompt?.en?.options || [])];
 			let i = 0;
@@ -170,6 +171,7 @@ export const actions: Actions = {
 					...(existing.prompt?.en || {}),
 					content: promptContent,
 					explanation: explanationContent,
+					rePhrasedExplanation: rePhrasedExplanationContent,
 					options: newOptions
 				}
 			};

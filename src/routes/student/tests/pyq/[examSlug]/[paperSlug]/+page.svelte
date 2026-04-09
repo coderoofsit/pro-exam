@@ -14,6 +14,7 @@
   let editingQuestionKind = $state<'MCQ' | 'MSQ' | 'INTEGER' | 'FILLS'>('MCQ');
   let draftContent = $state('');
   let draftExplanation = $state('');
+  let draftRePhrasedExplanation = $state('');
   let draftOptions = $state<Array<{ identifier: string; content: string }>>([]);
   let draftCorrectIdentifiers = $state<string[]>([]);
   let draftFills = $state<string[]>([]);
@@ -54,6 +55,7 @@
     saveError = null;
     draftContent = String(q?.prompt?.en?.content ?? '');
     draftExplanation = String(q?.prompt?.en?.explanation ?? '');
+    draftRePhrasedExplanation = String(q?.prompt?.en?.rePhrasedExplanation ?? '');
     const options = Array.isArray(q?.prompt?.en?.options) ? q.prompt.en.options : [];
     const kindRaw = String(q?.kind ?? '').toUpperCase();
     editingQuestionKind =
@@ -105,6 +107,7 @@
           en: {
             content: draftContent,
             explanation: draftExplanation,
+            rePhrasedExplanation: draftRePhrasedExplanation,
             options: editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ' ? options : []
           }
         },
@@ -276,6 +279,11 @@
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                   Explanation
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-lg text-white" rows="3" bind:value={draftExplanation}></textarea>
+                </label>
+
+                <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
+                  Re-phrased Explanation
+                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-white" rows="3" bind:value={draftRePhrasedExplanation}></textarea>
                 </label>
 
                 {#if editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ'}

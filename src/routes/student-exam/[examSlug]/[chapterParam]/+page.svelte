@@ -796,9 +796,9 @@
 							</div>
 						{/if}
 					{:else}
-						<div class="flex-1 overflow-y-auto pb-3">
+						<div class="flex-1 overflow-hidden min-h-0">
 							<div
-								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-4 shadow-sm flex flex-col h-full"
+								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-4 shadow-sm flex flex-col h-full min-h-0"
 							>
 								{#if detailLoading && !detailQuestion}
 									<div class="flex flex-col gap-4 animate-pulse" aria-busy="true">
@@ -838,11 +838,11 @@
 												}
 											};
 										}}
-										class="flex flex-col flex-1 h-full min-h-0 relative"
+										class="flex flex-col h-full min-h-0 overflow-hidden relative"
 									>
 										{#if form?.message}
 											<div
-												class="mb-4 rounded-md bg-semantic-error/10 p-3 text-sm text-semantic-error border border-semantic-error/20"
+												class="mb-4 shrink-0 rounded-md bg-semantic-error/10 p-3 text-sm text-semantic-error border border-semantic-error/20"
 											>
 												{form.message}
 											</div>
@@ -854,102 +854,121 @@
 											value={detailQuestion._id}
 										/>
 
-										<!-- Approval Status -->
-										<div class="mb-5 flex items-center justify-between rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
-											<div>
-												<h3 class="text-sm font-semibold text-[var(--page-text)]">Approval Status</h3>
-												<p class="text-xs text-[var(--page-text-muted)] mt-0.5">Toggle to approve or unapprove this question</p>
-											</div>
-											<select 
-												name="approve" 
-												class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
-											>
-												<option value="true" selected={(detailQuestion as any).approve}>Approved</option>
-												<option value="false" selected={!(detailQuestion as any).approve}>Unapproved</option>
-											</select>
-										</div>
-
-										<!-- Form body -->
-										<div class="mb-5">
-											<label
-												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
-												for="promptContent"
-											>
-												Question Text
-											</label>
-											<textarea
-												id="promptContent"
-												name="promptContent"
-												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
-												rows="5"
-												>{detailQuestion.prompt?.en?.content ?? ""}</textarea
-											>
-										</div>
-
-										<!-- Options Grid for Editing -->
-										{#if detailQuestion.prompt?.en?.options?.length}
-											<div class="mb-5">
-												<div
-													class="block text-sm font-semibold text-[var(--page-text)] mb-3"
-												>
-													Options
+										<!-- Scrollable form body -->
+										<div class="flex-1 overflow-y-auto min-h-0 pr-1">
+											<!-- Approval Status -->
+											<div class="mb-5 flex items-center justify-between rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
+												<div>
+													<h3 class="text-sm font-semibold text-[var(--page-text)]">Approval Status</h3>
+													<p class="text-xs text-[var(--page-text-muted)] mt-0.5">Toggle to approve or unapprove this question</p>
 												</div>
-												<div
-													class="grid grid-cols-1 md:grid-cols-2 gap-4"
+												<select 
+													name="approve" 
+													class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
 												>
-													{#each detailQuestion.prompt.en.options as option, i (option.identifier)}
-														<div
-															class="flex flex-col gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 shadow-sm"
-														>
+													<option value="true" selected={(detailQuestion as any).approve}>Approved</option>
+													<option value="false" selected={!(detailQuestion as any).approve}>Unapproved</option>
+												</select>
+											</div>
+
+											<!-- Form body -->
+											<div class="mb-5">
+												<label
+													class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+													for="promptContent"
+												>
+													Question Text
+												</label>
+												<textarea
+													id="promptContent"
+													name="promptContent"
+													class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+													rows="5"
+													>{detailQuestion.prompt?.en?.content ?? ""}</textarea
+												>
+											</div>
+
+											<!-- Options Grid for Editing -->
+											{#if detailQuestion.prompt?.en?.options?.length}
+												<div class="mb-5">
+													<div
+														class="block text-sm font-semibold text-[var(--page-text)] mb-3"
+													>
+														Options
+													</div>
+													<div
+														class="grid grid-cols-1 md:grid-cols-2 gap-4"
+													>
+														{#each detailQuestion.prompt.en.options as option, i (option.identifier)}
 															<div
-																class="flex items-center gap-2"
+																class="flex flex-col gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 shadow-sm"
 															>
-																<span
-																	class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]"
-																	>{option.identifier}</span
+																<div
+																	class="flex items-center gap-2"
 																>
-																<span
-																	class="text-xs font-semibold text-[var(--page-text-muted)]"
-																	>Content</span
+																	<span
+																		class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]"
+																		>{option.identifier}</span
+																	>
+																	<span
+																		class="text-xs font-semibold text-[var(--page-text-muted)]"
+																		>Content</span
+																	>
+																</div>
+																<input
+																	type="hidden"
+																	name="option_{i}_id"
+																	value={option.identifier}
+																/>
+																<textarea
+																	name="option_{i}_content"
+																	class="w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] p-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+																	rows="2"
+																	>{option.content ??
+																		""}</textarea
 																>
 															</div>
-															<input
-																type="hidden"
-																name="option_{i}_id"
-																value={option.identifier}
-															/>
-															<textarea
-																name="option_{i}_content"
-																class="w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] p-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
-																rows="2"
-																>{option.content ??
-																	""}</textarea
-															>
-														</div>
-													{/each}
+														{/each}
+													</div>
 												</div>
-											</div>
-										{/if}
+											{/if}
 
-										<!-- Explanation -->
-										<div class="mb-6">
-											<label
-												class="block text-sm font-semibold text-[var(--page-text)] mb-2"
-												for="explanationContent"
-												>Solution / Explanation</label
-											>
-											<textarea
-												name="explanationContent"
-												id="explanationContent"
-												class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
-												rows="4"
-												>{detailQuestion.prompt?.en?.explanation ?? ""}</textarea
-											>
+											<!-- Explanation -->
+											<div class="mb-5">
+												<label
+													class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+													for="explanationContent"
+													>Solution / Explanation</label
+												>
+												<textarea
+													name="explanationContent"
+													id="explanationContent"
+													class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+													rows="6"
+													>{detailQuestion.prompt?.en?.explanation ?? ""}</textarea
+												>
+											</div>
+
+											<!-- Re-phrased Explanation -->
+											<div class="mb-6">
+												<label
+													class="block text-sm font-semibold text-[var(--page-text)] mb-2"
+													for="rePhrasedExplanationContent"
+													>Re-phrased Explanation</label
+												>
+												<textarea
+													name="rePhrasedExplanationContent"
+													id="rePhrasedExplanationContent"
+													class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-[1rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+													rows="6"
+													>{detailQuestion.prompt?.en?.rePhrasedExplanation ?? ""}</textarea
+												>
+											</div>
 										</div>
 
 										<!-- Footer Buttons for Edit -->
 										<div
-											class="mt-auto flex flex-wrap items-center justify-end gap-3 border-t border-[var(--sh-exam-card-border)] pt-5"
+											class="shrink-0 flex flex-wrap items-center justify-end gap-3 border-t border-[var(--sh-exam-card-border)] pt-4 mt-2"
 										>
 											<button
 												type="button"
@@ -966,7 +985,9 @@
 										</div>
 									</form>
 								{:else}
-									<div
+									<div class="flex flex-col h-full min-h-0 overflow-hidden">
+										<div class="flex-1 overflow-y-auto min-h-0 pr-1">
+										<div
 										class="mb-3"
 									>
 										<div class="flex flex-wrap items-center gap-2 mb-1.5">
@@ -1353,9 +1374,10 @@
 											</div>
 										{/if}
 									{/if}
+									</div> <!-- end scrollable content -->
 
 									<div
-										class="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-3"
+										class="shrink-0 mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-3"
 									>
 										<button
 											type="button"
@@ -1388,6 +1410,7 @@
 											Next
 										</button>
 									</div>
+									</div> <!-- end flex col wrapper -->
 								{/if}
 							</div>
 						</div>
