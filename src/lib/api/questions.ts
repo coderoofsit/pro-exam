@@ -22,6 +22,7 @@ export type QuestionPrompt = {
 	options?: QuestionOption[];
 	explanation?: string;
 	explanationImages?: QuestionImage[];
+	rePhrasedExplanation?: string;
 };
 
 /** Full-detail shape from some endpoints; chapter list API may return only `_id` + `content`. */

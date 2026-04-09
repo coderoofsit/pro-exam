@@ -1317,6 +1317,16 @@
 													<MathText
 														content={detailQuestion.prompt.en.explanation}
 													/>
+													{#if detailQuestion.prompt.en.rePhrasedExplanation}
+														<div class="mt-4 border-t border-[var(--page-link)]/15 pt-4">
+															<div class="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--page-text-muted)]">
+																Re-phrased explanation
+															</div>
+															<MathText
+																content={detailQuestion.prompt.en.rePhrasedExplanation}
+															/>
+														</div>
+													{/if}
 													{#if detailQuestion.prompt.en.explanationImages?.length}
 														<div
 															class="mt-4 flex flex-wrap gap-3"

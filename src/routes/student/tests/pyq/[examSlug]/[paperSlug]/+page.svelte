@@ -213,6 +213,7 @@
           {@const prompt = questionPromptEnContent(q as any)}
           {@const options = q.prompt?.en?.options ?? []}
           {@const explanation = q.prompt?.en?.explanation ?? ''}
+          {@const rePhrasedExplanation = q.prompt?.en?.rePhrasedExplanation ?? ''}
           {@const fills = q.correct?.fills ?? []}
           {@const integerValue = q.correct?.integer}
           {@const kind = String(q.kind ?? '').toUpperCase()}
@@ -384,6 +385,12 @@
                 <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-white">
                   <span class="font-semibold text-sm">Explanation:</span>
                   <div class="mt-1"><MathText content={explanation} /></div>
+                  {#if rePhrasedExplanation}
+                    <div class="mt-3 border-t border-[var(--pyq-paper-border)]/60 pt-3">
+                      <span class="font-semibold text-sm">Re-phrased explanation:</span>
+                      <div class="mt-1"><MathText content={rePhrasedExplanation} /></div>
+                    </div>
+                  {/if}
                   {#if q.prompt?.en?.explanationImages?.length}
                     <div class="mt-3 flex flex-wrap gap-2">
                       {#each q.prompt.en.explanationImages as img}
