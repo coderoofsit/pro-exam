@@ -1,4 +1,5 @@
 import { apiRequest } from '../../http/api';
+import { resolveApiToken } from './authToken';
 
 export type TopicRow = {
 	_id: string;
@@ -70,10 +71,16 @@ export async function fetchTopicsByChapterSlug(
 }
 
 /** GET /api/v1/topics?examSlug=... — used by own-test random mode. */
-export async function fetchTopicsByExamSlug(examSlug: string, fetchFn?: typeof fetch) {
+export async function fetchTopicsByExamSlug(
+	examSlug: string,
+	fetchFn?: typeof fetch,
+	token?: string | null
+) {
+	const t = resolveApiToken(token ?? null);
 	return apiRequest<TopicsByExamApiBody>({
 		endpoint: `/api/v1/topics?examSlug=${encodeURIComponent(examSlug)}`,
 		method: 'GET',
-		fetch: fetchFn
+		fetch: fetchFn,
+		token: t
 	});
 }

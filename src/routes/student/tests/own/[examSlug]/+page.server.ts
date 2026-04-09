@@ -1,3 +1,4 @@
+import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 import { fetchGroupedChaptersByExamSlug, type GroupedSubjectRow } from '$lib/api/chapters';
 import { fetchExamBySlug } from '$lib/api/exams';
 import { fetchTopicsByExamSlug, type TopicsByExamSubjectRow } from '$lib/api/topics';
@@ -14,13 +15,14 @@ function boardIdFromExam(exam: Record<string, unknown> | null): string {
 	return typeof id === 'string' ? id.trim() : '';
 }
 
-export const load: PageServerLoad = async ({ params, fetch }) => {
+export const load: PageServerLoad = async ({ params, fetch, cookies }) => {
 	const { examSlug } = params;
+	const token = getAuthTokenFromCookies(cookies) ?? null;
 
 	const [chaptersResponse, topicsResponse, examResult] = await Promise.all([
-		fetchGroupedChaptersByExamSlug(examSlug, fetch),
-		fetchTopicsByExamSlug(examSlug, fetch),
-		fetchExamBySlug(examSlug, null, fetch).catch(() => null)
+		fetchGroupedChaptersByExamSlug(examSlug, fetch, token),
+		fetchTopicsByExamSlug(examSlug, fetch, token),
+		fetchExamBySlug(examSlug, token, fetch).catch(() => null)
 	]);
 
 	if (!chaptersResponse.success) {

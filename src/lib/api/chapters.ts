@@ -45,7 +45,8 @@ export async function fetchChapterBySlug(slug: string, token?: string | null): P
 	const response = await apiRequest<{ success: boolean; message: string; data: Chapter }>({
 		endpoint: `/api/v1/chapters?slug=${encodeURIComponent(slug)}`,
 		method: 'GET',
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch chapter');
 	return response.data.data;
@@ -56,7 +57,8 @@ export async function fetchChapterById(id: string, token?: string | null): Promi
 	const response = await apiRequest<{ success: boolean; message: string; data: Chapter }>({
 		endpoint: `/api/v1/chapters/${encodeURIComponent(id)}`,
 		method: 'GET',
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch chapter');
 	return response.data.data;
@@ -99,7 +101,8 @@ export async function fetchChaptersHierarchy(
 		endpoint: `/api/v1/chapters?boardSlug=${encodeURIComponent(boardSlug)}&examSlug=${encodeURIComponent(examSlug)}`,
 		method: 'GET',
 		headers: { 'Content-Type': 'application/json' },
-		fetch: fetchFn
+		fetch: fetchFn,
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch hierarchy');
 	return response.data.data;
@@ -123,7 +126,8 @@ export async function fetchChaptersByChapterGroupId(
 	}>({
 		endpoint: `/api/v1/chapters?${params.toString()}`,
 		method: 'GET',
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch chapters');
 	const payload = response.data.data;
@@ -170,14 +174,17 @@ export type GroupedChaptersByExamApiBody = {
 };
 
 /** Grouped chapters for `/api/v1/chapters?examSlug=…` (subjects → units → chapters). */
-export async function fetchGroupedChaptersByExamSlug(examSlug: string, fetchFn?: typeof fetch) {
-	// Must set `token` explicitly; this endpoint previously relied on callers,
-	// but the `custom` route calls it during SSR where `authStore` isn't available.
-	const t = resolveApiToken(null);
+export async function fetchGroupedChaptersByExamSlug(
+	examSlug: string,
+	fetchFn?: typeof fetch,
+	token?: string | null
+) {
+	const t = resolveApiToken(token ?? null);
 	return apiRequest<GroupedChaptersByExamApiBody>({
 		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}&grouped=1`,
 		method: 'GET',
-		fetch: fetchFn
+		fetch: fetchFn,
+		token: t
 	});
 }
 
@@ -198,7 +205,8 @@ export async function fetchChaptersPage(
 	}>({
 		endpoint: `/api/v1/chapters?boardSlug=${encodeURIComponent(boardSlug)}&examSlug=${encodeURIComponent(examSlug)}&page=${safePage}&limit=${safeLimit}`,
 		method: 'GET',
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch chapters');
 	return response.data.data;

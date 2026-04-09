@@ -81,7 +81,8 @@ export async function fetchQuestionsByChapter(
 	}>({
 		endpoint: `/api/v1/questions?${params.toString()}`,
 		method: 'GET',
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch questions');
 	return response.data.data;
@@ -110,7 +111,8 @@ export async function fetchQuestionsByChapterGroup(
 	}>({
 		endpoint: `/api/v1/questions?${params.toString()}`,
 		method: 'GET',
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch questions');
 	return response.data.data;
@@ -130,7 +132,8 @@ export async function fetchQuestionById(
 		endpoint: `/api/v1/questions/${id}`,
 		method: 'GET',
 		headers: { 'Content-Type': 'application/json' },
-		signal: opts?.signal
+		signal: opts?.signal,
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to fetch question');
 	return response.data.data;
@@ -150,7 +153,8 @@ export async function updateQuestion(
 		endpoint: `/api/v1/questions/${id}`,
 		method: 'PATCH',
 		data: payload,
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		token: t
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to update question');
 	return response.data.data;

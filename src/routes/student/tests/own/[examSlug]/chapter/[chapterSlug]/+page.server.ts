@@ -1,12 +1,14 @@
 import type { PageServerLoad } from './$types';
+import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 import { fetchChapterBySlug } from '$lib/api/chapters';
 import { fetchQuestionsByChapter } from '$lib/api/questions';
 
 const QUESTIONS_PAGE_LIMIT = 25;
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = async ({ params, url, cookies }) => {
 	const examSlug = params.examSlug;
 	const chapterSlug = params.chapterSlug;
+	const token = getAuthTokenFromCookies(cookies) ?? null;
 	const examId = String(url.searchParams.get('examId') ?? '').trim();
 	const boardId = String(url.searchParams.get('boardId') ?? '').trim();
 
@@ -17,11 +19,20 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const difficulty = url.searchParams.get('difficulty');
 
 	try {
-		const chapter = await fetchChapterBySlug(decodeURIComponent(chapterSlug));
+		const chapter = await fetchChapterBySlug(decodeURIComponent(chapterSlug), token);
 		const chapterId = chapter?._id ?? null;
 		if (!chapterId) throw new Error('Chapter not found');
 
-		const questionsRes = await fetchQuestionsByChapter(null, safePage, QUESTIONS_PAGE_LIMIT, difficulty, kind, null, topicSlug, chapterSlug);
+		const questionsRes = await fetchQuestionsByChapter(
+			chapterId,
+			safePage,
+			QUESTIONS_PAGE_LIMIT,
+			difficulty,
+			kind,
+			token,
+			topicSlug,
+			null
+		);
 
 		return {
 			examSlug,

@@ -1,14 +1,16 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 import { fetchQuestionsByChapter, fetchQuestionById } from '$lib/api/questions';
 import { isMongoObjectIdString } from '$lib/chapterRoutes';
 import type { Question } from '$lib/api/questions';
 
 const QUESTIONS_PAGE_LIMIT = 25;
 
-export const load: PageServerLoad = async ({ params, url, parent }) => {
+export const load: PageServerLoad = async ({ params, url, parent, cookies }) => {
 	const examSlug = params.examSlug;
 	const chapterParam = params.chapterParam;
+	const token = getAuthTokenFromCookies(cookies) ?? null;
 
 	const currentPageParam = Number(url.searchParams.get('page') || '1');
 	const safePage = Number.isNaN(currentPageParam) || currentPageParam < 1 ? 1 : currentPageParam;
@@ -44,7 +46,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 				QUESTIONS_PAGE_LIMIT,
 				difficulty,
 				kind,
-				null,
+				token,
 				topicSlug,
 				chapterSlug,
 				approve
@@ -52,7 +54,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			if (questionId) {
 				const [list, detail] = await Promise.all([
 					listPromise,
-					fetchQuestionById(questionId).catch((err) => {
+					fetchQuestionById(questionId, token).catch((err) => {
 						console.error('Failed to fetch detailed question', err);
 						return null;
 					})
@@ -64,7 +66,7 @@ export const load: PageServerLoad = async ({ params, url, parent }) => {
 			}
 		} else if (questionId) {
 			try {
-				detailedQuestion = await fetchQuestionById(questionId);
+				detailedQuestion = await fetchQuestionById(questionId, token);
 			} catch (err) {
 				// Silent
 			}
@@ -137,13 +139,14 @@ export type PageData = {
 };
 
 export const actions: Actions = {
-	updateQuestion: async ({ request }) => {
+	updateQuestion: async ({ request, cookies }) => {
 		const data = await request.formData();
 		const questionId = data.get('questionId')?.toString();
 		if (!questionId) return fail(400, { message: 'Missing question ID' });
+		const token = getAuthTokenFromCookies(cookies) ?? null;
 
 		try {
-			const existing = await fetchQuestionById(questionId);
+			const existing = await fetchQuestionById(questionId, token);
 			if (!existing) return fail(404, { message: 'Question not found' });
 
 			const promptContent = data.get('promptContent')?.toString() ?? existing.prompt?.en?.content ?? '';
@@ -181,23 +184,24 @@ export const actions: Actions = {
 			}
 
 			const { updateQuestion } = await import('$lib/api/questions');
-			await updateQuestion(questionId, payload);
+			await updateQuestion(questionId, payload, token);
 			return { success: true };
 		} catch (err: any) {
 			console.error('Update failed:', err);
 			return fail(500, { message: err.message || 'Update failed' });
 		}
 	},
-	updateApprove: async ({ request }) => {
+	updateApprove: async ({ request, cookies }) => {
 		const data = await request.formData();
 		const questionId = data.get('questionId')?.toString();
 		const approve = data.get('approve') === 'true';
+		const token = getAuthTokenFromCookies(cookies) ?? null;
 		
 		if (!questionId) return fail(400, { message: 'Missing question ID' });
 		
 		try {
 			const { updateQuestionApproveStatus } = await import('$lib/api/questions');
-			await updateQuestionApproveStatus(questionId, approve);
+			await updateQuestionApproveStatus(questionId, approve, token);
 			return { success: true };
 		} catch (err: any) {
 			console.error('Update approve failed:', err);
