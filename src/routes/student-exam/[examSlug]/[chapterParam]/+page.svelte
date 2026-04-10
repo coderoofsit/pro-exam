@@ -701,16 +701,16 @@
 									{/each}
 								</div>
 							{:else}
-								<div class="flex flex-col gap-2">
+								<div class="flex flex-col gap-4">
 									{#each displayQuestions as q, index (q._id)}
 										<button
 											type="button"
-											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-3 py-2 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
+											class="question-card group rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-4 py-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-md"
 											onclick={() => openQuestionPreview(index)}
 										>
 											<div class="flex items-baseline gap-2.5">
 												<div
-													class="shrink-0 text-[11px] font-medium text-[var(--page-text-muted)] opacity-70 mt-0.5"
+													class="shrink-0 text-[11px] font-normal text-[var(--page-text-muted)] opacity-60 mt-0.5"
 												>
 													Q{(data.safePage - 1) *
 														(displayPaginationMeta?.limit ??
@@ -719,7 +719,7 @@
 														1}
 												</div>
 												<div
-													class="flex-1 text-[0.93rem] font-medium leading-[1.5] text-[var(--page-text)]"
+													class="flex-1 text-[0.95rem] font-normal leading-relaxed text-[var(--page-text)]"
 												>
 													<MathText
 														content={questionPromptEnContent(

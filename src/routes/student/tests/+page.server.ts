@@ -3,5 +3,9 @@ import { loadStudentTestsPageData } from '$lib/student/tests/loadStudentTestsPag
 
 /** Cookie auth and API fetch — only server `load` receives `cookies`. */
 export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
-	return loadStudentTestsPageData({ fetch, url, cookies });
+	return {
+		streamed: {
+			testsData: loadStudentTestsPageData({ fetch, url, cookies })
+		}
+	};
 };

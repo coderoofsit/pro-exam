@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from '$lib/components/Skeleton.svelte';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -12,6 +13,8 @@
     type SubscriptionTransactionItem
   } from '$lib/api/subscription';
   import { authStore } from '$lib/stores/auth';
+
+  let { data } = $props<{ data: { streamed: { subscription: Promise<UserSubscriptionRecord | null> } } }>();
 
   /** UTC ISO → calendar date in IST, e.g. 24 Aug 2026 (no time). */
   function formatUtcIsoToIstDate(iso: string | null | undefined): string {
@@ -62,7 +65,7 @@
 
   let subscription = $state<UserSubscriptionRecord | null>(null);
   let loadError = $state<string | null>(null);
-  let loading = $state(true);
+  let loading = $state(false);
   let autoRenewBusy = $state(false);
   let actionError = $state<string | null>(null);
   /** True when no JWT is available (user not signed in). */
@@ -117,25 +120,20 @@
     if (paymentHistoryOpen) prefetchTransactions();
   }
 
-  async function loadSubscription() {
+  async function refreshSubscription() {
     if (!browser) return;
     actionError = null;
     const token = resolveApiToken();
     if (!token) {
-      loading = false;
-      subscription = null;
-      loadError = null;
       needsAuth = true;
       return;
     }
-    needsAuth = false;
     loading = true;
     loadError = null;
     const res = await fetchUserSubscription({ token });
     loading = false;
     if (!res.success) {
       loadError = res.message || 'Could not load subscription';
-      subscription = null;
       return;
     }
     const body = res.data;
@@ -143,13 +141,14 @@
   }
 
   async function setAutoRenew(enabled: boolean) {
-    if (!browser || autoRenewBusy || !subscription) return;
+    const subId = subscription?._id;
+    if (!browser || autoRenewBusy || !subId) return;
     const token = resolveApiToken();
     if (!token) return;
     autoRenewBusy = true;
     actionError = null;
     const res = await patchSubscriptionAutoRenew({
-      subscriptionId: subscription._id,
+      subscriptionId: subId,
       autoRenew: enabled,
       token
     });
@@ -160,14 +159,16 @@
     }
     const payload = res.data;
     if (payload?.success === true) {
-      subscription = { ...subscription, autoRenew: enabled };
+      subscription = { ...subscription!, autoRenew: enabled };
       return;
     }
     actionError = payload?.message || 'Could not update auto-renew';
   }
 
-  onMount(() => {
-    void loadSubscription();
+  $effect(() => {
+    data.streamed.subscription.then(s => {
+      subscription = s;
+    });
   });
 </script>
 
@@ -225,189 +226,199 @@
       <button
         type="button"
         class="text-xs font-semibold text-[var(--accent-cta-pink)] underline-offset-2 hover:underline"
-        onclick={() => void loadSubscription()}
+        onclick={() => void refreshSubscription()}
         disabled={loading}
       >
         Refresh
       </button>
     </div>
 
-    {#if loading}
-      <div class="mt-6 space-y-4 animate-pulse">
-        <div class="h-28 rounded-xl bg-[color-mix(in_srgb,var(--sh-exam-card-border)_55%,transparent)]"></div>
-        <div class="h-20 rounded-xl bg-[color-mix(in_srgb,var(--sh-exam-card-border)_40%,transparent)]"></div>
+    {#await data.streamed.subscription}
+      <div class="mt-6 space-y-4">
+        <div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5">
+           <Skeleton width="w-24" height="h-4" className="mb-4" />
+           <Skeleton width="w-48" height="h-8" className="mb-2" />
+           <Skeleton width="w-32" height="h-4" />
+           <div class="mt-6 grid gap-4 sm:grid-cols-2">
+              <Skeleton width="w-full" height="h-10" />
+              <Skeleton width="w-full" height="h-10" />
+           </div>
+        </div>
       </div>
-    {:else if loadError}
-      <p class="mt-4 text-sm text-[var(--pc-error-text)]" role="alert">{loadError}</p>
-      <button
-        type="button"
-        class="mt-3 rounded-lg border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-medium text-[var(--sh-section-title)] hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,transparent)]"
-        onclick={() => void loadSubscription()}
-      >
-        Try again
-      </button>
-    {:else if needsAuth}
-      <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">Sign in to see your subscription details.</p>
-    {:else if !subscription}
-      <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">
-        No subscription record found. Explore plans to get started.
-      </p>
-      <button
-        type="button"
-        class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))]"
-        onclick={goToPlans}
-      >
-        View plans
-      </button>
-    {:else}
-      <div class="mt-6 space-y-6">
-        <!-- Current period -->
-        <div
-          class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_32%,var(--sh-exam-card-border))] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)_0%,var(--sh-exam-card-bg)_100%)] p-4 sm:p-5"
+    {:then currentSub}
+      {@const effectiveSub = subscription ?? currentSub}
+      {#if loadError}
+        <p class="mt-4 text-sm text-[var(--pc-error-text)]" role="alert">{loadError}</p>
+        <button
+          type="button"
+          class="mt-3 rounded-lg border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-medium text-[var(--sh-section-title)] hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,transparent)]"
+          onclick={() => void refreshSubscription()}
         >
-          <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="rounded-full bg-[color-mix(in_srgb,var(--accent-cta-pink)_22%,transparent)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--accent-cta-pink)]"
-            >
-              Current plan
-            </span>
-            <span
-              class="rounded-full border border-[var(--sh-exam-card-border)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--sh-section-title)]"
-            >
-              {statusLabel(subscription.status)}
-            </span>
-            {#if subscription.current.planSnapshot.isTrial}
+          Try again
+        </button>
+      {:else if needsAuth}
+        <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">Sign in to see your subscription details.</p>
+      {:else if !effectiveSub}
+        <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">
+          No subscription record found. Explore plans to get started.
+        </p>
+        <button
+          type="button"
+          class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))]"
+          onclick={goToPlans}
+        >
+          View plans
+        </button>
+      {:else}
+        <div class="mt-6 space-y-6">
+          <!-- Current period -->
+          <div
+            class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_32%,var(--sh-exam-card-border))] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)_0%,var(--sh-exam-card-bg)_100%)] p-4 sm:p-5"
+          >
+            <div class="flex flex-wrap items-center gap-2">
               <span
-                class="rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-200"
+                class="rounded-full bg-[color-mix(in_srgb,var(--accent-cta-pink)_22%,transparent)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--accent-cta-pink)]"
               >
-                Trial
+                Current plan
               </span>
-            {/if}
-          </div>
-          <h3 class="mt-3 text-lg font-bold text-[var(--sh-section-title)]">
-            {subscription.current.planSnapshot.name}
-          </h3>
-          <p class="mt-1 text-sm text-[var(--sh-ai-sub)]">
-            {formatMoney(subscription.current.planSnapshot)}
-            <span class="text-[var(--sh-exam-card-border)]"> · </span>
-            <span class="capitalize">{subscription.current.source}</span>
-          </p>
-          <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt class="text-xs text-[var(--sh-ai-sub)]">Starts</dt>
-              <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
-                {formatUtcIsoToIstDate(subscription.current.startsAt)}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-xs text-[var(--sh-ai-sub)]">Ends</dt>
-              <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
-                {formatUtcIsoToIstDate(subscription.current.endsAt)}
-              </dd>
-            </div>
-            <div class="sm:col-span-2">
-              <dt class="text-xs text-[var(--sh-ai-sub)]">Overall window</dt>
-              <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
-                {formatUtcIsoToIstDate(subscription.startsDate)}
-                <span class="text-[var(--sh-ai-sub)]"> → </span>
-                {formatUtcIsoToIstDate(subscription.endsDate)}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <!-- Next periods -->
-        {#if subscription.next?.length}
-          <div>
-            <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--sh-ai-sub)]">
-              Scheduled next
-            </h3>
-            <ul class="flex flex-col gap-3">
-              {#each subscription.next as item, i (item.planId + item.startsAt + i)}
-                <li
-                  class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,var(--sh-exam-card-bg))] p-4"
+              <span
+                class="rounded-full border border-[var(--sh-exam-card-border)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--sh-section-title)]"
+              >
+                {statusLabel(effectiveSub.status)}
+              </span>
+              {#if effectiveSub.current.planSnapshot.isTrial}
+                <span
+                  class="rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-200"
                 >
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-semibold text-[var(--sh-section-title)]">
-                      {item.planSnapshot.name}
-                    </span>
-                    {#if item.planSnapshot.isTrial}
-                      <span
-                        class="rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-200"
-                      >
-                        Trial
-                      </span>
-                    {:else}
-                      <span
-                        class="rounded-full border border-[var(--sh-exam-card-border)] px-2 py-0.5 text-[10px] font-medium text-[var(--sh-ai-sub)]"
-                      >
-                        Paid
-                      </span>
-                    {/if}
-                    <span class="text-xs text-[var(--sh-ai-sub)]">· {formatMoney(item.planSnapshot)}</span>
-                  </div>
-                  <p class="mt-2 text-xs text-[var(--sh-ai-sub)]">
-                    Starts after your current plan · <span class="capitalize">{item.source}</span>
-                  </p>
-                  <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                    <div>
-                      <dt class="text-[11px] text-[var(--sh-ai-sub)]">Starts</dt>
-                      <dd class="font-medium text-[var(--sh-section-title)]">
-                        {formatUtcIsoToIstDate(item.startsAt)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt class="text-[11px] text-[var(--sh-ai-sub)]">Ends</dt>
-                      <dd class="font-medium text-[var(--sh-section-title)]">
-                        {formatUtcIsoToIstDate(item.endsAt)}
-                      </dd>
-                    </div>
-                  </dl>
-                </li>
-              {/each}
-            </ul>
-          </div>
-        {/if}
-
-        <!-- Auto-renew -->
-        <div
-          class="flex flex-col gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-[var(--sh-section-title)]">Auto-renew</p>
-            <p class="mt-0.5 text-xs text-[var(--sh-ai-sub)]">
-              {subscription.autoRenew
-                ? 'Your plan will renew automatically when the billing period ends.'
-                : 'Renewal is off — you may need to subscribe again after the current period.'}
+                  Trial
+                </span>
+              {/if}
+            </div>
+            <h3 class="mt-3 text-lg font-bold text-[var(--sh-section-title)]">
+              {effectiveSub.current.planSnapshot.name}
+            </h3>
+            <p class="mt-1 text-sm text-[var(--sh-ai-sub)]">
+              {formatMoney(effectiveSub.current.planSnapshot)}
+              <span class="text-[var(--sh-exam-card-border)]"> · </span>
+              <span class="capitalize">{effectiveSub.current.source}</span>
             </p>
-            {#if actionError}
-              <p class="mt-2 text-xs text-[var(--pc-error-text)]" role="alert">{actionError}</p>
-            {/if}
+            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt class="text-xs text-[var(--sh-ai-sub)]">Starts</dt>
+                <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
+                  {formatUtcIsoToIstDate(effectiveSub.current.startsAt)}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-xs text-[var(--sh-ai-sub)]">Ends</dt>
+                <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
+                  {formatUtcIsoToIstDate(effectiveSub.current.endsAt)}
+                </dd>
+              </div>
+              <div class="sm:col-span-2">
+                <dt class="text-xs text-[var(--sh-ai-sub)]">Overall window</dt>
+                <dd class="mt-0.5 font-medium text-[var(--sh-section-title)]">
+                  {formatUtcIsoToIstDate(effectiveSub.startsDate)}
+                  <span class="text-[var(--sh-ai-sub)]"> → </span>
+                  {formatUtcIsoToIstDate(effectiveSub.endsDate)}
+                </dd>
+              </div>
+            </dl>
           </div>
-          <div class="flex flex-shrink-0 flex-wrap gap-2">
-            {#if subscription.autoRenew}
-              <button
-                type="button"
-                class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--sh-exam-card-border))] bg-transparent px-4 py-2.5 text-sm font-semibold text-[var(--accent-cta-pink)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)] disabled:opacity-50"
-                disabled={autoRenewBusy}
-                onclick={() => void setAutoRenew(false)}
-              >
-                {autoRenewBusy ? '…' : 'Turn off auto-renew'}
-              </button>
-            {:else}
-              <button
-                type="button"
-                class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,transparent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-cta-pink)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_22%,transparent)] disabled:opacity-50"
-                disabled={autoRenewBusy}
-                onclick={() => void setAutoRenew(true)}
-              >
-                {autoRenewBusy ? '…' : 'Enable auto-renew'}
-              </button>
-            {/if}
+
+          <!-- Next periods -->
+          {#if effectiveSub.next?.length}
+            <div>
+              <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--sh-ai-sub)]">
+                Scheduled next
+              </h3>
+              <ul class="flex flex-col gap-3">
+                {#each effectiveSub.next as item, i (item.planId + item.startsAt + i)}
+                  <li
+                    class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,var(--sh-exam-card-bg))] p-4"
+                  >
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-xs font-semibold text-[var(--sh-section-title)]">
+                        {item.planSnapshot.name}
+                      </span>
+                      {#if item.planSnapshot.isTrial}
+                        <span
+                          class="rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-200"
+                        >
+                          Trial
+                        </span>
+                      {:else}
+                        <span
+                          class="rounded-full border border-[var(--sh-exam-card-border)] px-2 py-0.5 text-[10px] font-medium text-[var(--sh-ai-sub)]"
+                        >
+                          Paid
+                        </span>
+                      {/if}
+                      <span class="text-xs text-[var(--sh-ai-sub)]">· {formatMoney(item.planSnapshot)}</span>
+                    </div>
+                    <p class="mt-2 text-xs text-[var(--sh-ai-sub)]">
+                      Starts after your current plan · <span class="capitalize">{item.source}</span>
+                    </p>
+                    <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                      <div>
+                        <dt class="text-[11px] text-[var(--sh-ai-sub)]">Starts</dt>
+                        <dd class="font-medium text-[var(--sh-section-title)]">
+                          {formatUtcIsoToIstDate(item.startsAt)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt class="text-[11px] text-[var(--sh-ai-sub)]">Ends</dt>
+                        <dd class="font-medium text-[var(--sh-section-title)]">
+                          {formatUtcIsoToIstDate(item.endsAt)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+
+          <!-- Auto-renew -->
+          <div
+            class="flex flex-col gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-[var(--sh-section-title)]">Auto-renew</p>
+              <p class="mt-0.5 text-xs text-[var(--sh-ai-sub)]">
+                {effectiveSub.autoRenew
+                  ? 'Your plan will renew automatically when the billing period ends.'
+                  : 'Renewal is off — you may need to subscribe again after the current period.'}
+              </p>
+              {#if actionError}
+                <p class="mt-2 text-xs text-[var(--pc-error-text)]" role="alert">{actionError}</p>
+              {/if}
+            </div>
+            <div class="flex flex-shrink-0 flex-wrap gap-2">
+              {#if effectiveSub.autoRenew}
+                <button
+                  type="button"
+                  class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--sh-exam-card-border))] bg-transparent px-4 py-2.5 text-sm font-semibold text-[var(--accent-cta-pink)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)] disabled:opacity-50"
+                  disabled={autoRenewBusy}
+                  onclick={() => void setAutoRenew(false)}
+                >
+                  {autoRenewBusy ? '…' : 'Turn off auto-renew'}
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,transparent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-cta-pink)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_22%,transparent)] disabled:opacity-50"
+                  disabled={autoRenewBusy}
+                  onclick={() => void setAutoRenew(true)}
+                >
+                  {autoRenewBusy ? '…' : 'Enable auto-renew'}
+                </button>
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
-    {/if}
+      {/if}
+    {/await}
   </section>
 
   {#if !needsAuth}

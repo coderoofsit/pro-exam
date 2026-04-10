@@ -1,18 +1,25 @@
 <script lang="ts">
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import { browser } from '$app/environment';
 	import Exam from '$lib/components/Exam.svelte';
 	import { examStore, STUDENT_EXAMS_PAGE_SIZE } from '$lib/stores/exam';
 	import { fetchExamsPage } from '$lib/api/exams';
 	import type { Exam as ExamApi } from '$lib/api/exams';
 
+	interface ExamsData {
+		data: ExamApi[];
+		total: number;
+		lastPage: number;
+		limit: number;
+		currentPage: number;
+	}
+
 	let { data } = $props<{
 		data: {
-			exams: ExamApi[];
-			total: number;
-			lastPage: number;
-			limit: number;
 			currentPage: number;
-			message: string | null;
+			streamed: {
+				examsData: Promise<ExamsData>;
+			}
 		};
 	}>();
 
@@ -26,83 +33,49 @@
 		return examStore.hasPage(currentPage, STUDENT_EXAMS_PAGE_SIZE);
 	});
 
-	// Prefer cached store; fall back to server data for the first render.
-	const displayExams = $derived.by(() => {
-		$examStore;
-		return examStore.hasPage(currentPage, STUDENT_EXAMS_PAGE_SIZE)
-			? $examStore.examsByPage[currentPage] ?? []
-			: data.exams;
-	});
-
-	const effectiveLastPage = $derived.by(() => {
-		$examStore;
-		return $examStore.lastPage > 1 ? $examStore.lastPage : data.lastPage;
-	});
-
-	const paginationWindow = 2;
-	const startPage = $derived(Math.max(1, currentPage - paginationWindow));
-	const endPage = $derived(Math.min(effectiveLastPage, currentPage + paginationWindow));
-	const visiblePages = $derived(Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i));
-
-	// 1) Seed store with server-provided page so future navigations reuse it.
-	$effect(() => {
-		if (!browser) return;
-		if (!data.exams.length) return; // server didn't fetch this page
-		if (hasCurrentPage) return;
-
-		examStore.setExamsPage(currentPage, data.exams, {
-			total: data.total,
-			lastPage: data.lastPage,
-			limit: data.limit
-		});
-	});
-
-	// 2) For pages where SSR returned empty, fetch only if missing from store.
-	$effect(() => {
-		if (!browser) return;
-		if (isLoading) return;
-		if (data.exams.length) return; // server provided this page
-		if (hasCurrentPage) return;
-
-		isLoading = true;
-		error = null;
-
-		fetchExamsPage(currentPage, STUDENT_EXAMS_PAGE_SIZE)
-			.then((res) => {
-				examStore.setExamsPage(currentPage, res.data, {
-					total: res.total,
-					lastPage: res.lastPage,
-					limit: res.limit
-				});
-			})
-			.catch((e) => {
-				error = e instanceof Error ? e.message : 'Failed to fetch exams';
-			})
-			.finally(() => {
-				isLoading = false;
-			});
-	});
-
 	function buildPageLink(pageNum: number) {
 		return pageNum <= 1 ? '/student/exams' : `/student/exams?page=${pageNum}`;
 	}
+
+	$effect(() => {
+		if (!browser) return;
+		data.streamed.examsData.then((examsData) => {
+			if (!examsData?.data.length) return;
+			if (hasCurrentPage) return;
+			examStore.setExamsPage(currentPage, examsData.data, {
+				total: examsData.total,
+				lastPage: examsData.lastPage,
+				limit: examsData.limit
+			});
+		});
+	});
 </script>
 
-
-
 <svelte:head>
-
 	<title>All Exams</title>
-
 </svelte:head>
 
+{#await data.streamed.examsData}
+	<div class="mx-auto max-w-7xl px-4 py-8">
+		<Skeleton width="w-32" height="h-8" className="mb-6" />
+		<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+			{#each Array(10) as _}
+				<div class="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-4">
+					<Skeleton width="w-10" height="h-10" rounded="rounded-full" />
+					<Skeleton width="w-24" height="h-4" />
+				</div>
+			{/each}
+		</div>
+	</div>
+{:then examsData}
+	{@const displayExams = hasCurrentPage ? ($examStore.examsByPage[currentPage] ?? []) : examsData.data}
+	{@const effectiveLastPage = $examStore.lastPage > 1 ? $examStore.lastPage : examsData.lastPage}
+	{@const paginationWindow = 2}
+	{@const startPage = Math.max(1, currentPage - paginationWindow)}
+	{@const endPage = Math.min(effectiveLastPage, currentPage + paginationWindow)}
+	{@const visiblePages = Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i)}
 
 
-{#if error}
-	<div class="flex min-h-screen items-center justify-center text-semantic-error">{error}</div>
-{:else if isLoading || (data.exams.length === 0 && !hasCurrentPage)}
-	<div class="flex min-h-screen items-center justify-center text-[var(--page-text-muted)]">Loading...</div>
-{:else}
 	<Exam exams={displayExams} boardName="All" />
 
 	{#if effectiveLastPage > 1}
@@ -129,5 +102,9 @@
 			</div>
 		</div>
 	{/if}
-{/if}
+{:catch pageError}
+	<div class="flex min-h-[40vh] items-center justify-center text-semantic-error">
+		{pageError.message || 'Failed to fetch exams'}
+	</div>
+{/await}
 

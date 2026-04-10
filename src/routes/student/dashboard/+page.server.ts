@@ -11,17 +11,13 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	if (!token?.trim()) {
 		throw redirect(302, '/');
 	}
-	try {
-		const res = await fetchExamsPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE, token, fetch);
-		return {
-			exams: res.data,
-			message: null as string | null
-		};
-	} catch (e) {
-		return {
-			exams: [],
-			message: e instanceof Error ? e.message : 'Failed to fetch exams'
-		};
-	}
+
+	return {
+		streamed: {
+			exams: fetchExamsPage(DASHBOARD_EXAMS_PAGE, STUDENT_EXAMS_PAGE_SIZE, token, fetch)
+				.then(res => res.data)
+				.catch(() => [] as Exam[])
+		}
+	};
 };
 

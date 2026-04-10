@@ -1,13 +1,14 @@
 <script lang="ts">
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
 
-	let { data } = $props<{ data: { exams: Exam[]; message: string | null } }>();
+	interface StreamedData {
+		exams: Promise<Exam[]>;
+	}
+	let { data } = $props<{ data: { streamed: StreamedData } }>();
 
 	const FEATURED_EXAMS_COUNT = 7;
-
-	let exams = $state<Exam[]>([]);
-	let examsFetchError = $state<string | null>(null);
 
 	// preload for "Create Your Own Test"
 	let ownTestsPreloaded = false;
@@ -27,13 +28,6 @@
 				if (!ownTestsPreloaded) ownTestsPreloadPromise = null;
 			});
 	}
-
-	$effect(() => {
-		exams = data.exams;
-		examsFetchError = data.message;
-	});
-
-	const featuredExams = $derived(exams.slice(0, FEATURED_EXAMS_COUNT));
 
 	function getExamSlug(exam: Exam): string {
 		return (exam as any).slug ?? exam._id;
@@ -59,51 +53,55 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
-	{#if examsFetchError}
-		<div class="flex min-h-[40vh] items-center justify-center text-semantic-error">
-			{examsFetchError}
+	<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
+		<img
+			src="/Student-dash.png"
+			alt="ExamFlow student mascot"
+			class="student-dash-mascot h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
+		/>
+		<div>
+			<h1 class="text-2xl font-extrabold tracking-tight sm:text-4xl">
+				<span
+					class="bg-gradient-to-r from-[var(--marketing-exam-a)] via-[var(--marketing-exam-b)] to-[var(--marketing-exam-c)] bg-clip-text text-transparent"
+				>
+					EXAM
+				</span>
+				<span
+					class="bg-gradient-to-r from-[var(--marketing-flow-a)] to-[var(--marketing-flow-b)] bg-clip-text text-transparent"
+				>
+					FLOW
+				</span>
+			</h1>
+			<p class="text-base font-semibold text-[var(--marketing-tagline)] sm:text-xl">For Students</p>
 		</div>
-	{:else}
-		<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
-			<img
-				src="/Student-dash.png"
-				alt="ExamFlow student mascot"
-				class="student-dash-mascot h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
-			/>
-			<div>
-				<h1 class="text-2xl font-extrabold tracking-tight sm:text-4xl">
-					<span
-						class="bg-gradient-to-r from-[var(--marketing-exam-a)] via-[var(--marketing-exam-b)] to-[var(--marketing-exam-c)] bg-clip-text text-transparent"
-					>
-						EXAM
-					</span>
-					<span
-						class="bg-gradient-to-r from-[var(--marketing-flow-a)] to-[var(--marketing-flow-b)] bg-clip-text text-transparent"
-					>
-						FLOW
-					</span>
-				</h1>
-				<p class="text-base font-semibold text-[var(--marketing-tagline)] sm:text-xl">For Students</p>
-			</div>
-		</section>
+	</section>
 
-		<section class="min-w-0" aria-labelledby="pyq-heading">
-			<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
-					Chapter wise PYQ
-				</h2>
-				<a
-					href="/student/exams"
-					class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
-				>
-					View All
-				</a>
-			</div>
-
-			<div
-				class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+	<section class="min-w-0" aria-labelledby="pyq-heading">
+		<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
+				Chapter wise PYQ
+			</h2>
+			<a
+				href="/student/exams"
+				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
 			>
-				{#each featuredExams as exam (exam._id)}
+				View All
+			</a>
+		</div>
+
+		<div
+			class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+		>
+			{#await data.streamed.exams}
+				{#each Array(FEATURED_EXAMS_COUNT) as _}
+					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center">
+						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+						<Skeleton width="w-20" height="h-3" />
+						<Skeleton width="w-14" height="h-2" />
+					</div>
+				{/each}
+			{:then exams}
+				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<a
 						href="/student-exam/{getExamSlug(exam)}"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
@@ -132,31 +130,41 @@
 							</span>
 						{/if}
 					</a>
+				{:else}
+					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 				{/each}
-			</div>
+			{:catch}
+				<p class="col-span-full mt-4 text-sm text-semantic-error">Failed to load exams.</p>
+			{/await}
+		</div>
+	</section>
 
-			{#if featuredExams.length === 0}
-				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
-			{/if}
-		</section>
-
-		<section class="mt-10 min-w-0" aria-labelledby="qbc-heading">
-			<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<h2 id="qbc-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
-					Questions by Chapter
-				</h2>
-				<a
-					href="/student/exams"
-					class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
-				>
-					View All
-				</a>
-			</div>
-
-			<div
-				class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+	<section class="mt-10 min-w-0" aria-labelledby="qbc-heading">
+		<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			<h2 id="qbc-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
+				Questions by Chapter
+			</h2>
+			<a
+				href="/student/exams"
+				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
 			>
-				{#each featuredExams as exam (exam._id)}
+				View All
+			</a>
+		</div>
+
+		<div
+			class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+		>
+			{#await data.streamed.exams}
+				{#each Array(FEATURED_EXAMS_COUNT) as _}
+					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center">
+						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+						<Skeleton width="w-20" height="h-3" />
+						<Skeleton width="w-14" height="h-2" />
+					</div>
+				{/each}
+			{:then exams}
+				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<a
 						href="/student-exam/{getExamSlug(exam)}"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
@@ -185,13 +193,14 @@
 							</span>
 						{/if}
 					</a>
+				{:else}
+					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 				{/each}
-			</div>
-
-			{#if featuredExams.length === 0}
-				<p class="mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
-			{/if}
-		</section>
+			{:catch}
+				<p class="col-span-full mt-4 text-sm text-semantic-error">Failed to load exams.</p>
+			{/await}
+		</div>
+	</section>
 
 		<section class="mt-10 min-w-0" aria-label="Quick actions">
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -276,7 +285,7 @@
 
 		<section class="mt-10 min-w-0" aria-label="WhatsApp community">
 			<div
-				class="flex flex-col items-start gap-4 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--dash-glass-bg)] p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+				class="flex flex-col items-start gap-4 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--whatsapp-bg,var(--dash-glass-bg))] p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
 			>
 				<div class="flex min-w-0 items-start gap-3 sm:items-center">
 					<span class="flex h-10 w-10 shrink-0 items-center justify-center" aria-hidden="true">
@@ -410,6 +419,5 @@
 					WhatsApp
 				</a>
 			</div>
-		</section>
-	{/if}
+	</section>
 </div>
