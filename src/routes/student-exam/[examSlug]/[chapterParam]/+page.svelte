@@ -1096,13 +1096,6 @@
 												Report
 											</button>
 										</div>
-										{#if (detailQuestion as any).paperId}
-											<div
-												class="inline-flex rounded-md border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--page-link)]"
-											>
-												{(detailQuestion as any).paperId}
-											</div>
-										{/if}
 									</div>
 
 									<div
@@ -1135,6 +1128,16 @@
 											</div>
 										{/if}
 									</div>
+
+									{#if (detailQuestion as any).paperId}
+										<div class="mb-5">
+											<div
+												class="inline-flex rounded-md border border-[var(--page-link)]/10 bg-[var(--page-link)]/5 px-2.5 py-1 text-[0.7rem] font-bold uppercase tracking-wider text-[var(--page-link)]"
+											>
+												{(detailQuestion as any).paperId}
+											</div>
+										</div>
+									{/if}
 
 									{#if detailQuestion.prompt?.en?.options?.length}
 										<div
@@ -1371,16 +1374,7 @@
 													<MathText
 														content={detailQuestion.prompt.en.explanation}
 													/>
-													{#if detailQuestion.prompt.en.rePhrasedExplanation}
-														<div class="mt-4 border-t border-[var(--page-link)]/15 pt-4">
-															<div class="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--page-text-muted)]">
-																Re-phrased explanation
-															</div>
-															<MathText
-																content={detailQuestion.prompt.en.rePhrasedExplanation}
-															/>
-														</div>
-													{/if}
+
 													{#if detailQuestion.prompt.en.explanationImages?.length}
 														<div
 															class="mt-4 flex flex-wrap gap-3"
@@ -1401,6 +1395,40 @@
 																	/>
 																{/if}
 															{/each}
+														</div>
+													{/if}
+
+													{#if detailQuestion.prompt.en.rePhrasedExplanation}
+														<div class="mt-4 border-t border-[var(--page-link)]/15 pt-4">
+															<div class="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--page-text-muted)]">
+																Re-phrased explanation
+															</div>
+															<MathText
+																content={detailQuestion.prompt.en.rePhrasedExplanation}
+															/>
+															
+															{#if detailQuestion.prompt.en.rePhrasedImage?.length}
+																<div
+																	class="mt-4 flex flex-wrap gap-3"
+																>
+																	{#each detailQuestion.prompt.en.rePhrasedImage as img, imgIdx (`re-exp-${detailQuestion._id}-${imgIdx}`)}
+																		{@const src =
+																			imageSrc(
+																				img as ImageLike,
+																			)}
+																		{#if src}
+																			<img
+																				{src}
+																				alt={imageAlt(
+																					img as ImageLike,
+																				)}
+																				class="max-h-48 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
+																				loading="lazy"
+																			/>
+																		{/if}
+																	{/each}
+																</div>
+															{/if}
 														</div>
 													{/if}
 												</div>

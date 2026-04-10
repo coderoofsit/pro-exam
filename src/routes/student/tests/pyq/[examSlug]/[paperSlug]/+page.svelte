@@ -202,7 +202,7 @@
               class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
                 {activeTab === tab
                   ? 'bg-[var(--page-link)] text-white shadow-md'
-                  : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-white/70 hover:text-white'}"
+                  : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
             >
               {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               <span class="ml-1 text-xs opacity-70">({subjectGroups.get(tab)?.length ?? 0})</span>
@@ -227,14 +227,14 @@
           {@const isEditing = editingQuestionId === q._id}
           <section class="rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
             <div class="flex items-start justify-between gap-3">
-              <h2 class="text-base font-semibold text-white">
+              <h2 class="text-base font-semibold text-[var(--pyq-paper-title)]">
                 Q{idx + 1}. {#if isEditing}Editing question{:else}<MathText content={prompt} />{/if}
               </h2>
               <div class="flex items-center gap-2">
-                <span class="rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-semibold text-white">
+                <span class="rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-semibold text-[var(--pyq-paper-title)]">
                   {String(q.kind ?? 'NA').toUpperCase()}
                 </span>
-                <span class="max-w-[14rem] truncate rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-medium text-white/90" title={String(q.slug ?? '')}>
+                <span class="max-w-[14rem] truncate rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-medium text-[var(--pyq-paper-meta)]" title={String(q.slug ?? '')}>
                   {q.slug ? `slug: ${q.slug}` : 'slug: NA'}
                 </span>
                 {#if !isEditing}
@@ -273,17 +273,17 @@
               <div class="mt-3 space-y-3">
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                   Question
-                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-white" rows="3" bind:value={draftContent}></textarea>
+                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" rows="3" bind:value={draftContent}></textarea>
                 </label>
 
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                   Explanation
-                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-lg text-white" rows="3" bind:value={draftExplanation}></textarea>
+                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-lg text-[var(--pyq-paper-title)]" rows="3" bind:value={draftExplanation}></textarea>
                 </label>
 
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                   Re-phrased Explanation
-                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-white" rows="3" bind:value={draftRePhrasedExplanation}></textarea>
+                  <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" rows="3" bind:value={draftRePhrasedExplanation}></textarea>
                 </label>
 
                 {#if editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ'}
@@ -292,12 +292,12 @@
                       {@const selected = draftCorrectIdentifiers.includes(opt.identifier)}
                       <div class="flex items-center gap-2 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-2">
                         <input
-                          class="w-14 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-sm text-white"
+                          class="w-14 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-sm text-[var(--pyq-paper-title)]"
                           bind:value={draftOptions[optIndex].identifier}
                           placeholder="A"
                         />
                         <input
-                          class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-base text-white"
+                          class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-base text-[var(--pyq-paper-title)]"
                           bind:value={draftOptions[optIndex].content}
                           placeholder="Option text"
                         />
@@ -317,13 +317,13 @@
                 {:else if editingQuestionKind === 'INTEGER'}
                   <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                     Integer answer
-                    <input type="number" class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-white" bind:value={draftInteger} />
+                    <input type="number" class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" bind:value={draftInteger} />
                   </label>
                 {:else}
                   <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                     Fills (comma separated)
                     <input
-                      class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-white"
+                      class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]"
                       value={draftFills.join(', ')}
                       oninput={(e) => {
                         draftFills = (e.currentTarget as HTMLInputElement).value.split(',').map((s) => s.trim());
@@ -350,7 +350,7 @@
               {/if}
 
               {#if isMcq || isMsq}
-                <ul class="mt-3 space-y-2 text-base text-white">
+                <ul class="mt-3 space-y-2 text-base text-[var(--pyq-paper-title)]">
                   {#each options as opt}
                     {@const isCorrectOption = (q.correct?.identifiers ?? []).includes(opt.identifier)}
                     <li
@@ -361,7 +361,7 @@
                       <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pyq-paper-border)] text-[11px] font-semibold">
                         {opt.identifier}
                       </span>
-                      <div class="min-w-0 flex-1 break-words text-[1.02rem] leading-[1.7] text-white">
+                      <div class="min-w-0 flex-1 break-words text-[1.02rem] leading-[1.7] text-[var(--pyq-paper-title)]">
                         <MathText content={opt.content ?? ''} />
                         {#if opt.images?.length}
                           <div class="mt-2 flex flex-wrap gap-2">
@@ -390,15 +390,10 @@
               {/if}
 
               {#if explanation}
-                <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-white">
+                <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-[var(--pyq-paper-title)]">
                   <span class="font-semibold text-sm">Explanation:</span>
                   <div class="mt-1"><MathText content={explanation} /></div>
-                  {#if rePhrasedExplanation}
-                    <div class="mt-3 border-t border-[var(--pyq-paper-border)]/60 pt-3">
-                      <span class="font-semibold text-sm">Re-phrased explanation:</span>
-                      <div class="mt-1"><MathText content={rePhrasedExplanation} /></div>
-                    </div>
-                  {/if}
+                  
                   {#if q.prompt?.en?.explanationImages?.length}
                     <div class="mt-3 flex flex-wrap gap-2">
                       {#each q.prompt.en.explanationImages as img}
@@ -406,6 +401,23 @@
                           <img src={img.url} alt={img.alt ?? ''} class="max-h-48 rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
                         {/if}
                       {/each}
+                    </div>
+                  {/if}
+
+                  {#if rePhrasedExplanation}
+                    <div class="mt-3 border-t border-[var(--pyq-paper-border)]/60 pt-3">
+                      <span class="font-semibold text-sm">Re-phrased explanation:</span>
+                      <div class="mt-1"><MathText content={rePhrasedExplanation} /></div>
+
+                      {#if q.prompt?.en?.rePhrasedImage?.length}
+                        <div class="mt-3 flex flex-wrap gap-2">
+                          {#each q.prompt.en.rePhrasedImage as img}
+                            {#if img?.url}
+                              <img src={img.url} alt={img.alt ?? ''} class="max-h-48 rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
+                            {/if}
+                          {/each}
+                        </div>
+                      {/if}
                     </div>
                   {/if}
                 </div>
