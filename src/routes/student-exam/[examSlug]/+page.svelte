@@ -164,25 +164,20 @@
 
 <svelte:head>
 	<title>Student Exam {examSlug}</title>
-	<style>
-		body {
-			overflow: hidden;
-		}
-	</style>
 </svelte:head>
 
 <div
-	class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
+	class="flex h-full bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden px-4">
+	<div class="mx-auto flex h-full w-full max-w-7xl px-4">
 		{#if !showChapters}
-			<div class="flex flex-1 flex-col py-3">
+			<div class="flex flex-1 flex-col py-1">
 				<a
-					href="/student/exams"
-					class="mb-3 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
-				>
-					← Back to Exams
-				</a>
+	href="/student/exams"
+	class="mb-3 inline-flex w-fit items-center rounded-md text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
+>
+	← Back
+</a>
 
 				<div class="mb-4">
 					<h1 class="text-2xl font-bold md:text-3xl">
@@ -199,7 +194,7 @@
 					</p>
 				{:else if chaptersLoading && subjects.length === 0}
 					<div
-						class="flex-1 overflow-y-auto pb-3"
+						class="flex-1 pb-3"
 						aria-busy="true"
 						aria-label="Loading subjects"
 					>
@@ -225,7 +220,7 @@
 						No subjects found for this exam.
 					</p>
 				{:else}
-					<div class="flex-1 overflow-y-auto pb-3">
+					<div class="flex-1 pb-3">
 						<div
 							class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3"
 						>
@@ -253,8 +248,8 @@
 			</div>
 		{:else}
 			<aside
-				class="flex h-full w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
-			>
+	class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
+>
 				<div class="flex-1 overflow-y-auto p-4">
 					<button
 						type="button"
@@ -299,7 +294,7 @@
 				</div>
 			</aside>
 
-			<main class="flex min-h-0 flex-1 flex-col overflow-hidden">
+			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
 					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-6 py-3"
 				>
@@ -312,7 +307,7 @@
 							<p
 								class="mt-0.5 text-sm text-[var(--page-text-muted)]"
 							>
-								{displayChapters.length} chapters
+								{displayChapters.length} chapter
 							</p>
 						</div>
 					{/if}

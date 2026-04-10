@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-	<title>Student Dashboard</title>
+	<title>Student Home Page</title>
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">

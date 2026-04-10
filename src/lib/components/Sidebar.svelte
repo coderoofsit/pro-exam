@@ -53,20 +53,20 @@
 
   const navItemsByRole: Record<Role, SidebarItem[]> = {
     student: [
-      { id: 'sidebar-dashboard', label: 'Dashboard', href: '/student/dashboard', icon: 'dashboard' },
+      { id: 'sidebar-dashboard', label: 'Home', href: '/student/dashboard', icon: 'dashboard' },
       { id: 'sidebar-exams', label: 'Exams', href: '/student/exams', icon: 'exams' },
       { id: 'sidebar-tests', label: 'Tests', href: '/student/tests', icon: 'tests' },
       { id: 'sidebar-batch', label: 'Batch', href: '/student/batch', icon: 'batch' },
       { id: 'sidebar-subscription', label: 'Subscription', href: '/student/subscription', icon: 'subscription' }
     ],
     tutor: [
-      { id: 'sidebar-dashboard', label: 'Dashboard', href: '/tutor/dashboard', icon: 'dashboard' },
+      { id: 'sidebar-dashboard', label: 'Home', href: '/tutor/dashboard', icon: 'dashboard' },
       { id: 'sidebar-tests', label: 'Tests', href: '/tutor/tests', icon: 'tests' },
       { id: 'sidebar-batch', label: 'Batch', href: '/tutor/batch', icon: 'batch' },
       { id: 'sidebar-subscription', label: 'Subscription', href: '/tutor/subscription', icon: 'subscription' }
     ],
     institute: [
-      { id: 'sidebar-dashboard', label: 'Dashboard', href: '/institute/dashboard', icon: 'dashboard' },
+      { id: 'sidebar-dashboard', label: 'Home', href: '/institute/dashboard', icon: 'dashboard' },
       { id: 'sidebar-exams', label: 'Exams', href: '/institute/exams', icon: 'exams' },
       { id: 'sidebar-batch', label: 'Batch', href: '/institute/batch', icon: 'batch' },
       { id: 'sidebar-subscription', label: 'Subscription', href: '/institute/subscription', icon: 'subscription' }

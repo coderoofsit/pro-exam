@@ -526,14 +526,14 @@
 </svelte:head>
 
 <div
-	class="flex h-screen overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
+	class="flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
 	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
 				class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0"
 			>
-				<div class="py-3 shrink-0">
+				<div class="p-3 shrink-0">
 					{#if effectiveQuestionId !== null}
 						<button
 							type="button"
@@ -560,7 +560,7 @@
 						{data.message}
 					</div>
 				{:else}
-					<div class="py-3 shrink-0">
+					<div class="p-3 shrink-0">
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<h1 class="text-2xl font-bold md:text-3xl">
