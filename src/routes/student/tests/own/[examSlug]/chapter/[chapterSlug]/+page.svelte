@@ -11,12 +11,12 @@
   let topicOptions = $state<TopicRow[]>([]);
   let topicsLoading = $state(false);
   let selectedTopicSlug = $state<string[]>([]);
-  let selectedKind = $state<string>("");
+  let selectedKind = $state<string[]>([]);
   let selectedDifficulty = $state<string[]>([]);
   let filterDrawerOpen = $state(false);
   // pending = what's in the drawer before Apply
   let pendingTopic = $state<string[]>([]);
-  let pendingKind = $state<string>("");
+  let pendingKind = $state<string[]>([]);
   let pendingDifficulty = $state<string[]>([]);
   let topicsLoadedForSlug = $state<string | null>(null);
   let topicsAbort: AbortController | null = null;
@@ -30,11 +30,11 @@
     // sync filters from URL
     const params = new URLSearchParams(window.location.search);
     selectedTopicSlug = params.get("topic") ? params.get("topic")!.split(",") : [];
-    selectedKind = params.get("kind") ?? "";
+    selectedKind = params.get("kind") ? params.get("kind")!.split(",") : [];
     selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
 
     topicsLoadedForSlug = slug;
-    selectedTopicSlug = [];
+    // selectedTopicSlug = []; // FIXED: Don't reset selected topics from URL
     topicOptions = [];
     topicsAbort?.abort();
     topicsAbort = new AbortController();
@@ -128,43 +128,49 @@
 
   const selectedCount = $derived(selectedIds.size);
 
-  const questionsPageUrl = (p: number, opts?: { topic?: string[]; kind?: string; difficulty?: string[] }) => {
+  const questionsPageUrl = (p: number, opts?: { topic?: string[]; kind?: string[]; difficulty?: string[] }) => {
     const t = opts?.topic ?? selectedTopicSlug;
     const k = opts?.kind ?? selectedKind;
     const d = opts?.difficulty ?? selectedDifficulty;
     const params = new URLSearchParams({ mode: "manual", page: String(p), examId, boardId });
     if (t.length) params.set("topic", t.join(","));
-    if (k) params.set("kind", k);
+    if (k.length) params.set("kind", k.join(","));
     if (d.length) params.set("difficulty", d.join(","));
     return `/student/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(data.chapterSlug)}?${params.toString()}`;
   };
 
   function openDrawer() {
     pendingTopic = [...selectedTopicSlug];
-    pendingKind = selectedKind;
+    pendingKind = [...selectedKind];
     pendingDifficulty = [...selectedDifficulty];
     filterDrawerOpen = true;
   }
 
   function applyFilters() {
     selectedTopicSlug = [...pendingTopic];
-    selectedKind = pendingKind;
+    selectedKind = [...pendingKind];
     selectedDifficulty = [...pendingDifficulty];
     filterDrawerOpen = false;
     void goto(questionsPageUrl(1, { topic: pendingTopic, kind: pendingKind, difficulty: pendingDifficulty }));
   }
 
   function clearFilters() {
-    pendingTopic = []; pendingKind = ""; pendingDifficulty = [];
-    selectedTopicSlug = []; selectedKind = ""; selectedDifficulty = [];
+    pendingTopic = []; pendingKind = []; pendingDifficulty = [];
+    selectedTopicSlug = []; selectedKind = []; selectedDifficulty = [];
     filterDrawerOpen = false;
-    void goto(questionsPageUrl(1, { topic: [], kind: "", difficulty: [] }));
+    void goto(questionsPageUrl(1, { topic: [], kind: [], difficulty: [] }));
   }
 
   function togglePendingTopic(t: string) {
     pendingTopic = pendingTopic.includes(t)
       ? pendingTopic.filter(x => x !== t)
       : [...pendingTopic, t];
+  }
+
+  function togglePendingKind(k: string) {
+    pendingKind = pendingKind.includes(k)
+      ? pendingKind.filter(x => x !== k)
+      : [...pendingKind, k];
   }
 
   function togglePendingDifficulty(d: string) {
@@ -174,7 +180,7 @@
   }
 
   const activeFilterCount = $derived(
-    selectedTopicSlug.length + (selectedKind ? 1 : 0) + selectedDifficulty.length
+    selectedTopicSlug.length + selectedKind.length + selectedDifficulty.length
   );
 
   function imageSrc(image: ImageLike): string {
@@ -336,8 +342,8 @@
       <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
       <div class="grid gap-2.5">
         {#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as k}
-        <button type="button" onclick={() => pendingKind = pendingKind === k ? "" : k}
-          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind === k ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
+        <button type="button" onclick={() => togglePendingKind(k)}
+          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
           {k}
         </button>
         {/each}

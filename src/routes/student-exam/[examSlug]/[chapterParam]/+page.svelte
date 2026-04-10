@@ -8,6 +8,7 @@
 	import { browser } from "$app/environment";
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/stores";
+	import { createReport, type ReportReason } from "$lib/api/reports";
 
 	type Question = PageData["questions"][number];
 	type ImageLike =
@@ -43,6 +44,37 @@
 		if (toastTimer) clearTimeout(toastTimer);
 		toastMsg = msg; toastType = type;
 		toastTimer = setTimeout(() => { toastMsg = null; }, 3000);
+	}
+
+	// ── report ─────────────────────────────────────────────────────────────
+	let reportModalOpen = $state(false);
+	let reportingQuestionId = $state("");
+	let reportReason = $state<ReportReason>("WRONG_QUESTION");
+	let reportMessage = $state("");
+	let isSubmittingReport = $state(false);
+
+	function openReportModal(qid: string) {
+		reportingQuestionId = qid;
+		reportModalOpen = true;
+	}
+
+	async function handleReportSubmit() {
+		if (!reportingQuestionId || !reportReason) return;
+		isSubmittingReport = true;
+		try {
+			await createReport({
+				questionId: reportingQuestionId,
+				reason: reportReason,
+				message: reportMessage
+			});
+			showToast("Report submitted successfully");
+			reportModalOpen = false;
+			reportMessage = "";
+		} catch (e: any) {
+			showToast(e.message || "An error occurred", "error");
+		} finally {
+			isSubmittingReport = false;
+		}
 	}
 
 	/** Client-driven question view (shallow routing); stays in sync with server data on full navigations. */
@@ -669,17 +701,16 @@
 									{/each}
 								</div>
 							{:else}
-								<div class="flex flex-col gap-2.5">
+								<div class="flex flex-col gap-2">
 									{#each displayQuestions as q, index (q._id)}
 										<button
 											type="button"
-											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-4 py-3 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
-											onclick={() =>
-												openQuestionPreview(index)}
+											class="question-card group rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-3 py-2 text-left shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
+											onclick={() => openQuestionPreview(index)}
 										>
-											<div class="flex items-baseline gap-3">
+											<div class="flex items-baseline gap-2.5">
 												<div
-													class="shrink-0 text-xs font-medium text-[var(--page-text-muted)] opacity-70 mt-0.5"
+													class="shrink-0 text-[11px] font-medium text-[var(--page-text-muted)] opacity-70 mt-0.5"
 												>
 													Q{(data.safePage - 1) *
 														(displayPaginationMeta?.limit ??
@@ -688,7 +719,7 @@
 														1}
 												</div>
 												<div
-													class="flex-1 text-[1.02rem] leading-[1.7] text-[var(--page-text)]"
+													class="flex-1 text-[0.93rem] font-medium leading-[1.5] text-[var(--page-text)]"
 												>
 													<MathText
 														content={questionPromptEnContent(
@@ -708,7 +739,7 @@
 																	<img
 																		{src}
 																		alt={imageAlt(
-																			img as ImageLike,
+																	img as ImageLike,
 																		)}
 																		class="max-h-36 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
 																		loading="lazy"
@@ -728,17 +759,6 @@
 													</div>
 												</div>
 											{/if}
-											<div class="mt-1.5 pl-0.5 flex items-center gap-2">
-												{#if (q as any).approve === true}
-													<span class="inline-flex items-center gap-1 rounded border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-500 leading-tight">
-														✓ Approved
-													</span>
-												{:else}
-													<span class="inline-flex items-center gap-1 rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-400 leading-tight">
-														✗ Unapproved
-													</span>
-												{/if}
-											</div>
 										</button>
 									{/each}
 								</div>
@@ -1061,6 +1081,19 @@
 													></path>
 												</svg>
 												Edit
+											</button>
+											<button
+												type="button"
+												onclick={() => openReportModal(detailQuestion!._id)}
+												class="inline-flex items-center gap-1.5 rounded-lg border border-semantic-error/20 bg-semantic-error/5 px-2.5 py-1 text-xs font-semibold text-semantic-error shadow-sm hover:bg-semantic-error/10 transition"
+												title="Report Question"
+											>
+												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<circle cx="12" cy="12" r="10"></circle>
+													<line x1="12" y1="8" x2="12" y2="12"></line>
+													<line x1="12" y1="16" x2="12.01" y2="16"></line>
+												</svg>
+												Report
 											</button>
 										</div>
 										{#if (detailQuestion as any).paperId}
@@ -1549,9 +1582,93 @@
 	<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 	{/if}
 	<span>{toastMsg}</span>
-	<button onclick={() => toastMsg = null} aria-label="Dismiss">
+	<button onclick={() => (toastMsg = null)} aria-label="Dismiss">
 		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
 	</button>
+</div>
+{/if}
+
+<!-- ── Report Modal ── -->
+{#if reportModalOpen}
+<div class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+	<div 
+		class="fixed inset-0 bg-black/60 backdrop-blur-sm" 
+		role="button"
+		tabindex="0"
+		onclick={() => (reportModalOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' ? (reportModalOpen = false) : null}
+	></div>
+	<div class="relative w-full max-w-md bg-[var(--page-bg)] border border-[var(--page-card-border)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+		<div class="px-6 py-4 border-b border-[var(--page-card-border)] bg-[var(--page-card-bg)]/50">
+			<h3 class="text-lg font-bold text-[var(--page-text)] flex items-center gap-2">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-semantic-error">
+					<circle cx="12" cy="12" r="10"></circle>
+					<line x1="12" y1="8" x2="12" y2="12"></line>
+					<line x1="12" y1="16" x2="12.01" y2="16"></line>
+				</svg>
+				Report Question
+			</h3>
+		</div>
+		
+		<div class="p-6 space-y-4">
+			<div>
+				<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="reportReason">
+					Reason for reporting
+				</label>
+				<select 
+					id="reportReason"
+					bind:value={reportReason}
+					class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+				>
+					<option value="WRONG_QUESTION">Wrong Question</option>
+					<option value="WRONG_ANSWER">Wrong Answer</option>
+					<option value="WRONG_SOLUTION">Wrong Solution</option>
+					<option value="TYPO">Typo / Spelling error</option>
+					<option value="BAD_LATEX">Math Formatting (LaTeX) issue</option>
+					<option value="MISSING_IMAGE">Missing Image</option>
+					<option value="WRONG_OPTIONS">Incorrect Options</option>
+					<option value="DUPLICATE">Duplicate Question</option>
+					<option value="OTHER">Other</option>
+				</select>
+			</div>
+			
+			<div>
+				<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="reportMessage">
+					Description (optional)
+				</label>
+				<textarea 
+					id="reportMessage"
+					bind:value={reportMessage}
+					placeholder="Provide more details about the issue..."
+					rows="4"
+					class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition resize-none"
+				></textarea>
+			</div>
+		</div>
+
+		<div class="px-6 py-4 border-t border-[var(--page-card-border)] bg-[var(--page-card-bg)]/30 flex items-center justify-end gap-3">
+			<button 
+				type="button" 
+				class="px-4 py-2 text-sm font-semibold text-[var(--page-text-muted)] hover:text-[var(--page-text)] transition"
+				onclick={() => (reportModalOpen = false)}
+				disabled={isSubmittingReport}
+			>
+				Cancel
+			</button>
+			<button 
+				type="button" 
+				class="px-6 py-2 bg-semantic-error text-white text-sm font-bold rounded-lg shadow-lg shadow-semantic-error/20 hover:bg-semantic-error/90 transition disabled:opacity-50"
+				onclick={handleReportSubmit}
+				disabled={isSubmittingReport}
+			>
+				{#if isSubmittingReport}
+					Submitting...
+				{:else}
+					Submit Report
+				{/if}
+			</button>
+		</div>
+	</div>
 </div>
 {/if}
 
