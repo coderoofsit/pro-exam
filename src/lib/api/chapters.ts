@@ -181,7 +181,7 @@ export async function fetchGroupedChaptersByExamSlug(
 ) {
 	const t = resolveApiToken(token ?? null);
 	return apiRequest<GroupedChaptersByExamApiBody>({
-		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}&grouped=1`,
+		endpoint: `/api/v1/chapters?examSlug=${encodeURIComponent(examSlug)}`,
 		method: 'GET',
 		fetch: fetchFn,
 		token: t

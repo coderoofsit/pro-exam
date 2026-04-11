@@ -1149,6 +1149,10 @@ html[data-theme="light"] {
   --marketing-flow-b: #4f7eff;
   --marketing-tagline: #6366f1;
 
+  --logo-orange: #f97316;
+  --logo-blue: #3b82f6;
+  --logo-divider-ring: rgba(79, 126, 255, 0.22);
+
   --dash-pyq-card-border: rgba(79, 126, 255, 0.12);
   --dash-pyq-card-ring: rgba(79, 126, 255, 0.08);
   --dash-pyq-card-shadow: 0 6px 20px -10px rgba(79, 126, 255, 0.12);
