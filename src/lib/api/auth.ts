@@ -125,6 +125,88 @@ export async function selectMembershipProfile(params: {
   });
 }
 
+export type GetMembershipsResponse = {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data?: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    image?: string | null;
+    isActive?: boolean;
+    defaultProfile?: boolean;
+    preferredExams?: { _id: string; name?: { en?: string; hi?: string } | string; image?: string | null; slug?: string }[];
+    userProfileDetails?: {
+      _id: string;
+      email: string;
+      phone?: string | null;
+      countryCode?: number;
+      isVerified: boolean;
+      isVerifiedPhone: boolean;
+      authProvider?: string;
+      role?: string;
+      isActive?: boolean;
+    };
+    allProfiles?: {
+      _id: string;
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+      defaultProfile?: boolean;
+      isActive?: boolean;
+      teacherId?: { _id: string; firstName?: string; lastName?: string; role?: string } | null;
+      instituteId?: { _id: string; firstName?: string; lastName?: string; role?: string } | null;
+      adminId?: { _id: string; firstName?: string; lastName?: string; role?: string } | null;
+      preferredExams?: { _id: string; name?: { en?: string; hi?: string } | string; image?: string | null; slug?: string }[];
+    }[];
+  };
+};
+
+export async function getMembershipsDetail(params: {
+  membershipId: string;
+  userProfiledId: string;
+  token?: string | null;
+}) {
+  return apiRequest<GetMembershipsResponse>({
+    endpoint: `/api/v1/users/get-memberships?membershipId=${params.membershipId}&userProfiledId=${params.userProfiledId}`,
+    method: 'GET',
+    token: params.token
+  });
+}
+
+export async function updatePhone(params: { email: string; phone: string; token?: string | null }) {
+  return apiRequest<{ success: boolean; statusCode: number; message: string }>({
+    endpoint: '/api/v1/users/phone',
+    method: 'PATCH',
+    data: { email: params.email, phone: params.phone },
+    token: params.token
+  });
+}
+
+export async function sendPhoneOtp(params: { phone: string; token?: string | null }) {
+  return apiRequest<{ success: boolean; statusCode: number; message: string }>({
+    endpoint: '/api/v1/users/otp/phone',
+    method: 'POST',
+    data: { phone: params.phone },
+    token: params.token
+  });
+}
+
+export async function verifyPhoneOtp(params: {
+  phone: string;
+  otp: number;
+  token?: string | null;
+}) {
+  return apiRequest<{ success: boolean; statusCode: number; message: string }>({
+    endpoint: '/api/v1/users/otp/phone/verify',
+    method: 'POST',
+    data: { phone: params.phone, otp: params.otp },
+    token: params.token
+  });
+}
+
 export async function createMembershipProfile(params: {
   userId: string;
   role: 'student' | 'teacher' | 'institute';

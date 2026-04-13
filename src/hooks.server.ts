@@ -2,7 +2,7 @@ import { dev } from '$app/environment';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { AUTH_STORAGE_KEY } from '$lib/stores/auth';
 
-const PROTECTED_PREFIXES = ['/student/dashboard'];
+const PROTECTED_PREFIXES = ['/student/dashboard', '/student/settings'];
 
 function isProtectedPath(pathname: string): boolean {
 	return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
