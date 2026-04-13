@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
 	import Exam from '$lib/components/Exam.svelte';
 	import { examStore, STUDENT_EXAMS_PAGE_SIZE } from '$lib/stores/exam';
 	import { fetchExamsPage } from '$lib/api/exams';
@@ -24,6 +25,7 @@
 	}>();
 
 	const currentPage = $derived(data.currentPage);
+	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -76,7 +78,7 @@
 	{@const visiblePages = Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i)}
 
 
-	<Exam exams={displayExams} boardName="All" />
+	<Exam exams={displayExams} boardName="All" pyq={isPyq} />
 
 	{#if effectiveLastPage > 1}
 		<div class="mx-auto max-w-7xl px-4 pb-10">

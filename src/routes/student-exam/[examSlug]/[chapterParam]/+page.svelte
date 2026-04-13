@@ -6,6 +6,7 @@
 	import { enhance } from "$app/forms";
 	import { goto, replaceState } from "$app/navigation";
 	import { browser } from "$app/environment";
+	import { page } from "$app/state";
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/stores";
 	import { createReport, type ReportReason } from "$lib/api/reports";
@@ -197,6 +198,7 @@
 	const PAGINATION_WINDOW = 2;
 
 	const isLoading = $derived($navigating !== null);
+	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
 
@@ -298,6 +300,9 @@
 		}
 		if (selectedApprove) {
 			params.set("approve", selectedApprove);
+		}
+		if (isPyq) {
+			params.set("pyq", "true");
 		}
 		return params.toString();
 	};
@@ -545,7 +550,7 @@
 					{:else}
 						<button
 							type="button"
-							onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters`)}
+							onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`)}
 							class="inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
 						>
 							← Back to Chapters

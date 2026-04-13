@@ -61,7 +61,8 @@ export async function fetchQuestionsByChapter(
 	token?: string | null,
 	topicSlug?: string | null,
 	chapterSlug?: string | null,
-	approve?: string | null
+	approve?: string | null,
+	pyq?: string | null
 ): Promise<QuestionsPageResponse> {
 	const t = resolveApiToken(token);
 	const safePage = Number.isNaN(page) || page < 1 ? 1 : page;
@@ -76,6 +77,7 @@ export async function fetchQuestionsByChapter(
 	if (kind) params.set('kind', kind);
 	if (topicSlug) params.set('topicSlug', topicSlug);
 	if (approve) params.set('approve', approve);
+	if (pyq) params.set('pyq', pyq);
 	const response = await apiRequest<{
 		success: boolean;
 		message: string;

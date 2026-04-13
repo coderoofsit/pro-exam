@@ -22,6 +22,7 @@ export const load: PageServerLoad = async ({ params, url, parent, cookies }) => 
 	const kind = url.searchParams.get('kind');
 	const topicSlug = url.searchParams.get('topic');
 	const approve = url.searchParams.get('approve');
+	const pyq = url.searchParams.get('pyq');
 
 	try {
 		let resolvedChapterId: string | null = null;
@@ -49,7 +50,8 @@ export const load: PageServerLoad = async ({ params, url, parent, cookies }) => 
 				token,
 				topicSlug,
 				chapterSlug,
-				approve
+				approve,
+				pyq
 			);
 			if (questionId) {
 				const [list, detail] = await Promise.all([

@@ -103,6 +103,7 @@
 
 	const examTitle = $derived(titleFromExamSlug(examSlug));
 	const viewParam = $derived(page.url.searchParams.get("view"));
+	const pyqParam = $derived(page.url.searchParams.get("pyq"));
 
 	const selectedSubject = $derived.by(() => {
 		return (
@@ -142,6 +143,7 @@
 			sessionStorage.setItem(`exam-${examSlug}-subject`, slug);
 			const url = new URL(window.location.href);
 			url.searchParams.set("view", "chapters");
+			if (pyqParam === 'true') url.searchParams.set("pyq", "true");
 			void goto(url.toString(), {
 				noScroll: true,
 				replaceState: true,
@@ -323,7 +325,7 @@
 							>
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
-										href={`/student-exam/${examSlug}/${chapter._id}?page=1`}
+										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
 										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
 									>
 										<div

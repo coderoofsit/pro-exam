@@ -1,12 +1,15 @@
 <script lang="ts">
 	import type { Exam as ExamApi } from '$lib/api/exams';
 
-	// Backend payloads don't always match the strict frontend `Exam` type (slug/name i18n can vary).
-	// Use `any` internally so routing works reliably.
-	let { exams, boardName }: { exams: ExamApi[]; boardName: string } = $props();
+	let { exams, boardName, pyq = false }: { exams: ExamApi[]; boardName: string; pyq?: boolean } = $props();
 
 	function getExamSlug(exam: any): string {
 		return exam?.slug ?? exam?._id ?? '';
+	}
+
+	function getExamHref(exam: any): string {
+		const slug = getExamSlug(exam);
+		return pyq ? `/student-exam/${slug}?pyq=true` : `/student-exam/${slug}`;
 	}
 
 	function getExamNameEn(exam: any): string {
@@ -46,7 +49,7 @@
 		>
 			{#each exams as exam (exam._id)}
 				<a
-					href="/student-exam/{getExamSlug(exam)}"
+					href={getExamHref(exam)}
 					class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 				>
 					{#if exam.image}

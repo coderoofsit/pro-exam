@@ -82,7 +82,7 @@
 				Chapter wise PYQ
 			</h2>
 			<a
-				href="/student/exams"
+				href="/student/exams?pyq=true"
 				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
 			>
 				View All
@@ -103,7 +103,7 @@
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<a
-						href="/student-exam/{getExamSlug(exam)}"
+						href="/student-exam/{getExamSlug(exam)}?pyq=true"
 						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
 					>
 						{#if exam.image}
