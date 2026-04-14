@@ -75,6 +75,7 @@ export type SelectMembershipApiBody = {
   data: {
     token: string;
     users: MembershipUser[];
+    fcmToken?: string | null;
   };
 };
 
@@ -122,6 +123,7 @@ export async function selectMembershipProfile(params: {
       membershipId: params.membershipId,
       userProfiledId: params.userProfiledId
     },
+    token: params.token
   });
 }
 
@@ -203,6 +205,18 @@ export async function verifyPhoneOtp(params: {
     endpoint: '/api/v1/users/otp/phone/verify',
     method: 'POST',
     data: { phone: params.phone, otp: params.otp },
+    token: params.token
+  });
+}
+
+export async function updateFcmToken(params: {
+  fcmToken: string;
+  token?: string | null;
+}) {
+  return apiRequest<{ success: boolean; statusCode: number; message: string }>({
+    endpoint: '/api/v1/users/update-fcm',
+    method: 'PATCH',
+    data: { fcmToken: params.fcmToken },
     token: params.token
   });
 }

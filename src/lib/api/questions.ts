@@ -146,7 +146,8 @@ export async function fetchQuestionById(
 export async function updateQuestion(
 	id: string,
 	payload: Partial<Question>,
-	token?: string | null
+	token?: string | null,
+	signal?: AbortSignal
 ): Promise<Question> {
 	const t = resolveApiToken(token);
 	const response = await apiRequest<{
@@ -158,7 +159,8 @@ export async function updateQuestion(
 		method: 'PATCH',
 		data: payload,
 		headers: { 'Content-Type': 'application/json' },
-		token: t
+		token: t,
+		signal
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to update question');
 	return response.data.data;
@@ -167,7 +169,8 @@ export async function updateQuestion(
 export async function updateQuestionApproveStatus(
 	id: string,
 	approve: boolean,
-	token?: string | null
+	token?: string | null,
+	signal?: AbortSignal
 ): Promise<Question> {
 	const t = resolveApiToken(token);
 	const response = await apiRequest<{
@@ -179,7 +182,8 @@ export async function updateQuestionApproveStatus(
 		method: 'PATCH',
 		data: { approve },
 		token: t,
-		headers: { 'Content-Type': 'application/json' }
+		headers: { 'Content-Type': 'application/json' },
+		signal
 	});
 	if (!response.success) throw new Error(response.message || 'Unable to update question approval');
 	return response.data.data;

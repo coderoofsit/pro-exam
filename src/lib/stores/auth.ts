@@ -39,6 +39,8 @@ export type AuthState = {
 
 /** Key used for JWT in `localStorage` (also read by API token resolution before store hydrates). */
 export const AUTH_STORAGE_KEY = "auth_token";
+/** Cookie key for FCM token mirrored by `/auth/session`. */
+export const FCM_TOKEN_STORAGE_KEY = "fcm_token";
 const AUTH_PROFILE_ID_KEY = "auth_profile_id";
 
 const initialState: AuthState = {

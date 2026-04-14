@@ -2,14 +2,21 @@
   import { browser } from "$app/environment";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
+  import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
     getMembershipUsers,
     selectMembershipProfile,
+    updateFcmToken,
     type MembershipUser,
     type MembershipResponse,
     type SelectMembershipApiBody,
   } from "$lib/api/auth";
+  import {
+    listenForegroundMessages,
+    requestNotificationPermissionAndToken,
+  } from "$lib/fcm";
+  import { fetchUnreadNotificationCount } from "$lib/api/notifications";
   import { themeStore } from "$lib/stores/theme";
 
   type Role = "student" | "tutor" | "institute";
@@ -31,6 +38,11 @@
   let searchValue = $state("");
   let isLoadingUsers = $state(false);
   let selectingMembershipDefault = $state(false);
+  let notificationSidebarOpen = $state(false);
+  let unreadNotificationCount = $state(0);
+  let membershipSwitchRequestId = $state(0);
+  let fcmTokenFetchInFlight: Promise<string> | null = null;
+  let unreadCountRequestInFlight: Promise<void> | null = null;
   /** Prevents repeated GET /membership (effect re-runs, dev double-mount, failed attempts). */
   let membershipFetchCompleted = $state(false);
   /** Tracks route transitions so we auto-collapse nav once when entering “create own test” exam flow. */
@@ -52,6 +64,14 @@
 
   function closeProfileDropdown() {
     profileDropdownOpen = false;
+  }
+
+  function openNotificationSidebar() {
+    notificationSidebarOpen = true;
+  }
+
+  function closeNotificationSidebar() {
+    notificationSidebarOpen = false;
   }
 
   const navItemsByRole: Record<Role, SidebarItem[]> = {
@@ -206,7 +226,113 @@
     }
   }
 
+  async function syncAuthSessionCookies(token: string, fcmToken?: string | null) {
+    try {
+      const response = await fetch("/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, fcmToken: fcmToken ?? "" }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error("[Sidebar] Failed to sync session cookies.", error);
+      return false;
+    }
+  }
+
+  async function getFcmTokenFromFirebase(): Promise<string> {
+    if (!browser) return "";
+    if (fcmTokenFetchInFlight) return fcmTokenFetchInFlight;
+
+    fcmTokenFetchInFlight = (async () => {
+      console.log("[Sidebar] Requesting FCM token from Firebase...");
+      const fcmResult = await requestNotificationPermissionAndToken();
+      if (!fcmResult.success || !fcmResult.token?.trim()) {
+        console.warn(
+          "[Sidebar] Firebase FCM token unavailable:",
+          fcmResult.success ? "empty token" : (fcmResult.error ?? "unknown"),
+        );
+        return "";
+      }
+      console.log("[Sidebar] Firebase FCM token received.");
+      return fcmResult.token.trim();
+    })();
+
+    try {
+      return await fcmTokenFetchInFlight;
+    } finally {
+      fcmTokenFetchInFlight = null;
+    }
+  }
+
+  async function refreshUnreadNotificationCount() {
+    if (unreadCountRequestInFlight) {
+      await unreadCountRequestInFlight;
+      return;
+    }
+
+    unreadCountRequestInFlight = (async () => {
+      const res = await fetchUnreadNotificationCount(undefined, {
+        token: $authStore.token,
+      });
+      if (!res.success) {
+        console.error("[Sidebar] Failed to fetch unread notification count.", res.message);
+        return;
+      }
+      const body = res.data;
+      if (!body?.success) {
+        console.error(
+          "[Sidebar] Unread notification count API returned unsuccessful response.",
+          body?.message ?? "Unknown error",
+        );
+        return;
+      }
+      unreadNotificationCount = Math.max(0, Number(body.data) || 0);
+    })();
+
+    try {
+      await unreadCountRequestInFlight;
+    } finally {
+      unreadCountRequestInFlight = null;
+    }
+  }
+
+  async function resolveAndSyncFcmToken(params: {
+    authToken: string;
+    responseFcmToken?: string | null;
+  }) {
+    const incomingToken = params.responseFcmToken?.trim() ?? "";
+    if (incomingToken) return incomingToken;
+
+    const freshFcmToken = await getFcmTokenFromFirebase();
+    if (!freshFcmToken) {
+      return "";
+    }
+    const updateRes = await updateFcmToken({
+      fcmToken: freshFcmToken,
+      token: params.authToken,
+    });
+
+    if (!updateRes.success) {
+      console.error("[Sidebar] Failed to update FCM token.", updateRes.message);
+      return "";
+    }
+    const updateBody = updateRes.data as
+      | { success?: boolean; message?: string }
+      | undefined;
+    if (updateBody?.success === false) {
+      console.error(
+        "[Sidebar] update-fcm rejected by API.",
+        updateBody.message ?? "Unknown API error",
+      );
+      return "";
+    }
+
+    return freshFcmToken;
+  }
+
   async function selectUser(index: number) {
+    const requestId = ++membershipSwitchRequestId;
     const user = $authStore.users[index];
     if (!user) return;
 
@@ -240,13 +366,32 @@
       }
 
       const root = res.data as SelectMembershipApiBody;
-      console.log(root);
       if (
         root?.success === true &&
-        root.data?.token &&
+        root.data &&
+        typeof root.data.token === "string" &&
+        root.data.token.trim().length > 0 &&
         Array.isArray(root.data.users) &&
         root.data.users.length > 0
       ) {
+        const finalFcmToken = await resolveAndSyncFcmToken({
+          authToken: root.data.token,
+          responseFcmToken: root.data.fcmToken ?? "",
+        });
+        if (requestId !== membershipSwitchRequestId) return;
+
+        const sessionSynced = await syncAuthSessionCookies(
+          root.data.token,
+          finalFcmToken,
+        );
+        if (!sessionSynced) {
+          console.error(
+            "[Sidebar] Failed to sync auth/fcm session cookies after membership switch.",
+          );
+          return;
+        }
+        if (requestId !== membershipSwitchRequestId) return;
+
         const mapped = mapMembershipUsers(root.data.users);
         authStore.setAuthAfterMembership({
           token: root.data.token,
@@ -401,6 +546,57 @@
     if (selectedUserIndex > $authStore.users.length - 1) {
       selectedUserIndex = 0;
     }
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    console.log("[Sidebar][Dot] Initializing foreground message listener.");
+    let disposed = false;
+    let unsubscribe: null | (() => void) = null;
+
+    void listenForegroundMessages((payload) => {
+      console.log(
+        "[Sidebar][Dot] Foreground push notification received in app (independent of system toast settings).",
+        payload,
+      );
+      void refreshUnreadNotificationCount();
+      console.log("[Sidebar][Dot] Refreshing unread count from backend.");
+    }).then((off) => {
+      if (disposed) {
+        console.log(
+          "[Sidebar][Dot] Listener resolved after dispose, calling unsubscribe immediately.",
+        );
+        off?.();
+        return;
+      }
+      unsubscribe = off ?? null;
+      console.log(
+        "[Sidebar][Dot] Foreground listener ready.",
+        unsubscribe ? "unsubscribe attached" : "no unsubscribe returned",
+      );
+    }).catch((error) => {
+      console.error("[Sidebar][Dot] Failed to initialize foreground listener.", error);
+    });
+
+    return () => {
+      disposed = true;
+      console.log("[Sidebar][Dot] Cleaning up foreground listener.");
+      unsubscribe?.();
+    };
+  });
+
+  $effect(() => {
+    if (!browser || !$authStore.token) return;
+    void refreshUnreadNotificationCount();
+  });
+
+  $effect(() => {
+    if (!browser || !$authStore.token) return;
+    if (page.url.pathname !== "/student/dashboard") return;
+    console.log(
+      "[Sidebar][UnreadCount] Dashboard loaded, refreshing unread count in background.",
+    );
+    void refreshUnreadNotificationCount();
   });
 
   function onToggleTheme() {
@@ -830,6 +1026,7 @@
             type="button"
             aria-label="Notifications"
             title="Notifications"
+            onclick={openNotificationSidebar}
             class="
               relative flex h-11 w-11 items-center justify-center rounded-xl
               bg-[var(--topbar-icon-btn-bg)]
@@ -855,9 +1052,13 @@
                 stroke-linecap="round"
               />
             </svg>
-            <span
-              class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[var(--topbar-notif-dot)]"
-            ></span>
+            {#if unreadNotificationCount > 0}
+              <span
+                class="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none text-white"
+              >
+                {unreadNotificationCount}
+              </span>
+            {/if}
           </button>
 
           <div class="relative">
@@ -1117,6 +1318,10 @@
         </div>
       </div>
     </header>
+    <Notification
+      open={notificationSidebarOpen}
+      onClose={closeNotificationSidebar}
+    />
     <main
       id="layout-main-scroll"
       class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-0 {isTestAttemptRoute

@@ -1,6 +1,6 @@
 import { dev } from '$app/environment';
 import { redirect, type Cookies, type RequestHandler } from '@sveltejs/kit';
-import { AUTH_STORAGE_KEY } from '$lib/stores/auth';
+import { AUTH_STORAGE_KEY, FCM_TOKEN_STORAGE_KEY } from '$lib/stores/auth';
 
 const clearCookieOptions = {
 	path: '/',
@@ -12,6 +12,7 @@ const clearCookieOptions = {
 
 function clearAuthCookieAndRedirect(cookies: Cookies) {
 	cookies.delete(AUTH_STORAGE_KEY, clearCookieOptions);
+	cookies.delete(FCM_TOKEN_STORAGE_KEY, clearCookieOptions);
 	throw redirect(302, '/');
 }
 
