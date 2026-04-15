@@ -154,7 +154,7 @@
 </script>
 
 <svelte:head>
-  <title>{batch?.name ?? 'Batch'} — ExamFlow</title>
+  <title>{batch?.name ?? 'Batch'} — Exam Abhyas</title>
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">

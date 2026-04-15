@@ -201,7 +201,7 @@
 </script>
 
 <svelte:head>
-  <title>{title} — Manual test · ExamFlow</title>
+  <title>{title} — Manual test · Exam Abhyas</title>
 </svelte:head>
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">

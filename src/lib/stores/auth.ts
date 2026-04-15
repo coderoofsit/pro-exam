@@ -19,6 +19,9 @@ export type AuthUser = {
   _id: string;
   /** Profile document id — required for select-membership when present on API. */
   userProfileId?: string;
+  /** From populated GET /membership `userProfileId` (shared across profiles). */
+  profileEmail?: string;
+  profilePhone?: string;
   firstName?: string;
   lastName?: string;
   image?: string;

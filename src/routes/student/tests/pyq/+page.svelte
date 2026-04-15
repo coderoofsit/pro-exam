@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-  <title>Chapter wise PYQ — ExamFlow</title>
+  <title>Chapter wise PYQ — Exam Abhyas</title>
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">

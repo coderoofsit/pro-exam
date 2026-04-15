@@ -6,6 +6,7 @@
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
     getMembershipUsers,
+    normalizeMembershipProfileRef,
     selectMembershipProfile,
     updateFcmToken,
     type MembershipUser,
@@ -452,26 +453,31 @@
       const bp = b.defaultProfile ? 1 : 0;
       return bp - ap;
     });
-    return sorted.map((user) => ({
-      _id: user._id,
-      userProfileId: user.userProfileId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      image: user.image,
-      defaultProfile: user.defaultProfile,
-      subscription: user.subscription
-        ? {
-            isSubscribed: !!user.subscription.isSubscribed,
-            isTrial: !!user.subscription.isTrial,
-            planId: user.subscription.planId ?? null,
-            expiry: user.subscription.expiry ?? null,
-            trialUsed: !!user.subscription.trialUsed,
-          }
-        : null,
-      instituteId: null,
-      teacherId: null,
-      adminId: null,
-    }));
+    return sorted.map((user) => {
+      const prof = normalizeMembershipProfileRef(user.userProfileId);
+      return {
+        _id: user._id,
+        userProfileId: prof.userProfileId,
+        profileEmail: prof.email,
+        profilePhone: prof.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        image: user.image,
+        defaultProfile: user.defaultProfile,
+        subscription: user.subscription
+          ? {
+              isSubscribed: !!user.subscription.isSubscribed,
+              isTrial: !!user.subscription.isTrial,
+              planId: user.subscription.planId ?? null,
+              expiry: user.subscription.expiry ?? null,
+              trialUsed: !!user.subscription.trialUsed,
+            }
+          : null,
+        instituteId: null,
+        teacherId: null,
+        adminId: null,
+      };
+    });
   }
 
   async function loadUsersIfMissing() {
@@ -661,7 +667,7 @@
             block whitespace-nowrap overflow-hidden text-ellipsis tracking-tight
             text-[length:var(--sb-font-size-brand)] font-[var(--sb-font-brand)]
             text-[var(--sb-brand-name-color)]
-          ">ExamFlow</span
+          ">Exam Abhyas</span
           >
           <span
             class="
@@ -888,7 +894,29 @@
           </svg>
         </span>
         {#if !isCollapsed}
-          <span class="whitespace-nowrap">Collapse</span>
+          {#if defaultProfileUser?.profileEmail || defaultProfileUser?.profilePhone}
+            <span
+              class="flex min-w-0 flex-col items-start gap-0.5 text-left normal-case tracking-normal"
+            >
+              {#if defaultProfileUser.profileEmail}
+                <span
+                  class="max-w-[11rem] truncate text-[10px] leading-tight text-[var(--sb-collapse-text)]"
+                  title={defaultProfileUser.profileEmail}
+                >
+                  {defaultProfileUser.profileEmail}
+                </span>
+              {/if}
+              {#if defaultProfileUser.profilePhone}
+                <span
+                  class="text-[10px] leading-tight text-[var(--sb-collapse-text)]"
+                >
+                  {defaultProfileUser.profilePhone}
+                </span>
+              {/if}
+            </span>
+          {:else}
+            <span class="whitespace-nowrap">Collapse</span>
+          {/if}
         {/if}
       </button>
     </div>

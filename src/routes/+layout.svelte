@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import favicon from '$lib/assets/favicon.svg';
-  import type { MembershipUser } from '$lib/api/auth';
+  import { normalizeMembershipProfileRef, type MembershipUser } from '$lib/api/auth';
   import '../app.css';
   import { authStore } from '$lib/stores/auth';
 
@@ -28,15 +28,20 @@
     }
 
     authStore.setAuth({
-      users: (data?.membershipUsers ?? []).map((user) => ({
-        _id: user._id,
-        userProfileId: user.userProfileId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        image: user.image,
-        defaultProfile: user.defaultProfile,
-        subscription: user.subscription
-      })),
+      users: (data?.membershipUsers ?? []).map((user) => {
+        const prof = normalizeMembershipProfileRef(user.userProfileId);
+        return {
+          _id: user._id,
+          userProfileId: prof.userProfileId,
+          profileEmail: prof.email,
+          profilePhone: prof.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          image: user.image,
+          defaultProfile: user.defaultProfile,
+          subscription: user.subscription
+        };
+      }),
       token,
       role: $authStore.role,
       profileId: $authStore.profileId

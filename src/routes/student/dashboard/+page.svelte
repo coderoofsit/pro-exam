@@ -57,7 +57,7 @@
 	<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
 		<img
 			src="/Student-dash.png"
-			alt="ExamFlow student mascot"
+			alt="Exam Abhyas student mascot"
 			class="student-dash-mascot h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
 		/>
 		<div>

@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-  <title>Batches — ExamFlow</title>
+  <title>Batches — Exam Abhyas</title>
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">

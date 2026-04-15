@@ -506,7 +506,7 @@
 </script>
 
 <svelte:head>
-  <title>{examName} — Create test · ExamFlow</title>
+  <title>{examName} — Create test · Exam Abhyas</title>
 </svelte:head>
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">

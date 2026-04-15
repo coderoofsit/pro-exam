@@ -3,7 +3,7 @@ import { apiRequest } from '../../http/api';
 import { resolveApiToken } from './authToken';
 
 /** Session payload after creating an attempt from a batch test (client-only). */
-export const BATCH_TEST_ATTEMPT_STORAGE_KEY = 'examflow-batch-test-attempt';
+export const BATCH_TEST_ATTEMPT_STORAGE_KEY = 'Exam Abhyas-batch-test-attempt';
 
 export type TestAttemptOption = {
 	identifier: string;

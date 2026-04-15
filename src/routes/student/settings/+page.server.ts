@@ -1,7 +1,12 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { AUTH_STORAGE_KEY } from '$lib/stores/auth';
-import { getMembershipsDetail, getMembershipUsers, type GetMembershipsResponse } from '$lib/api/auth';
+import {
+	getMembershipsDetail,
+	getMembershipUsers,
+	normalizeMembershipProfileRef,
+	type GetMembershipsResponse
+} from '$lib/api/auth';
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get(AUTH_STORAGE_KEY) ?? null;
@@ -18,10 +23,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		const users: any[] = body?.data?.users ?? [];
 		const defaultUser = users.find((u: any) => u.defaultProfile) ?? users[0] ?? null;
 
-		if (defaultUser?._id && defaultUser?.userProfileId) {
+		const { userProfileId: userProfiledId } = normalizeMembershipProfileRef(
+			defaultUser?.userProfileId
+		);
+
+		if (defaultUser?._id && userProfiledId) {
 			const detailRes = await getMembershipsDetail({
 				membershipId: defaultUser._id,
-				userProfiledId: defaultUser.userProfileId,
+				userProfiledId,
 				token
 			});
 

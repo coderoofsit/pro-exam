@@ -100,7 +100,7 @@
 </script>
 
 <svelte:head>
-  <title>{testName} — ExamFlow</title>
+  <title>{testName} — Exam Abhyas</title>
 </svelte:head>
 
 {#if data.loadError}

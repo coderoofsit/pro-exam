@@ -166,14 +166,14 @@
   }
 
   $effect(() => {
-    data.streamed.subscription.then(s => {
+    data.streamed.subscription.then((s:any) => {
       subscription = s;
     });
   });
 </script>
 
 <svelte:head>
-  <title>Subscription — ExamFlow</title>
+  <title>Subscription — Exam Abhyas</title>
 </svelte:head>
 
 <div
@@ -183,7 +183,7 @@
     <p
       class="mb-3 inline-flex items-center justify-center rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_45%,transparent)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sh-ai-sub)]"
     >
-      ExamFlow for students
+      Exam Abhyas for students
     </p>
     <h1 class="text-3xl font-bold tracking-tight text-[var(--sh-section-title)] sm:text-4xl">
       Go beyond limits — practise without ceilings

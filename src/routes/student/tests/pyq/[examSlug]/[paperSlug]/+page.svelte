@@ -168,7 +168,7 @@
 </script>
 
 <svelte:head>
-  <title>{examName || 'PYQ'} Paper Questions · ExamFlow</title>
+  <title>{examName || 'PYQ'} Paper Questions · Exam Abhyas</title>
 </svelte:head>
 
 <div class="min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">

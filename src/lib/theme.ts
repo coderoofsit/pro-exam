@@ -1,4 +1,4 @@
-export const THEME_STORAGE_KEY = 'examflow-theme';
+export const THEME_STORAGE_KEY = 'Exam Abhyas-theme';
 
 export type ThemeMode = 'light' | 'dark';
 

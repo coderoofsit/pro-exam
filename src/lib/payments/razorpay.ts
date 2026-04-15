@@ -139,7 +139,7 @@ export async function openRazorpayCheckout(
 			order_id: params.orderId,
 			amount: params.amount,
 			currency: params.currency,
-			name: params.name ?? 'ExamFlow',
+			name: params.name ?? 'Exam Abhyas',
 			description: params.description ?? 'Subscription purchase',
 			prefill: params.prefill,
 			notes: params.notes,

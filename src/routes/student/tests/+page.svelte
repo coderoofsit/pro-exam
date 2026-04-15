@@ -265,7 +265,7 @@
 </script>
 
 <svelte:head>
-  <title>Tests — ExamFlow</title>
+  <title>Tests — Exam Abhyas</title>
 </svelte:head>
 
 <div

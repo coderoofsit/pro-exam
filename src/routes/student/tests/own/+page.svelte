@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-  <title>Create your own test — ExamFlow</title>
+  <title>Create your own test — Exam Abhyas</title>
 </svelte:head>
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">

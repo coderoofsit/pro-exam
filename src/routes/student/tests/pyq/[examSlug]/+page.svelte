@@ -1,18 +1,3 @@
-<!-- <script lang="ts">
-  import type { PageData } from './$types';
-  import PYQAccordion from '$lib/components/PYQAccordion.svelte';
-
-  let { data }: { data: PageData } = $props();
-
-  const papersByYear = data.papersByYear ?? [];
-  const error        = data.error ?? null;
-  const examSlug     = data.examSlug ?? '';
-
-  const examName = examSlug
-    .split('-')
-    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-</script> -->
 
 <script lang="ts">
   import type { PageData } from './$types';
@@ -36,7 +21,7 @@
 </script>
 
 <svelte:head>
-  <title>{examName} — PYQ Papers · ExamFlow</title>
+  <title>{examName} — PYQ Papers · Exam Abhyas</title>
 </svelte:head>
 
 <div class="min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">

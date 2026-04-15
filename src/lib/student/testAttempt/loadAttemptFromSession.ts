@@ -23,7 +23,7 @@ export type AttemptPagePayload = {
 };
 
 /** Set by tests page when createTestAttempt fails after navigating away. */
-export const ATTEMPT_START_ERROR_KEY = 'examflow-attempt-start-error';
+export const ATTEMPT_START_ERROR_KEY = 'Exam Abhyas-attempt-start-error';
 
 function parseSectionMeta(parsed: BatchTestAttemptSession): TestAttemptSectionMeta[] | undefined {
 	const raw = parsed.sections;

@@ -7,7 +7,9 @@
 		type SubscriptionPlan
 	} from '$lib/api/subscription';
 	import { openRazorpayCheckout } from '$lib/payments/razorpay';
+	import { afterPhoneVerifiedAction } from '$lib/stores/afterPhoneVerified';
 	import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
+	import { get } from 'svelte/store';
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 
@@ -35,6 +37,19 @@
 	const selectedPlan = $derived(
 		selectedPlanId ? (visiblePlans.find((p) => p._id === selectedPlanId) ?? null) : null
 	);
+
+	const hasProfilePhone = $derived(!!defaultProfile?.profilePhone?.trim());
+
+	/** Paid plan requires a verified phone on file — blocks Continue until added. */
+	const continueBlockedNoPhone = $derived(
+		!!selectedPlan && !selectedPlan.isTrial && !hasProfilePhone
+	);
+
+	function requestPhoneThenResumeCheckout() {
+		afterPhoneVerifiedAction.set(() => {
+			void startPaidPlanCheckout();
+		});
+	}
 
 	onMount(() => {
 		if (!data.ssrAuthMissing || typeof localStorage === 'undefined') return;
@@ -73,7 +88,21 @@
 			return;
 		}
 
+		if (!hasProfilePhone) {
+			requestPhoneThenResumeCheckout();
+			return;
+		}
+
 		void startPaidPlanCheckout();
+	}
+
+	function onSelectPlan(plan: SubscriptionPlan) {
+		selectedPlanId = plan._id;
+		paidError = null;
+		trialError = null;
+		if (!plan.isTrial && !hasProfilePhone) {
+			requestPhoneThenResumeCheckout();
+		}
 	}
 
 	function cancelTrialConfirm() {
@@ -109,6 +138,13 @@
 	async function startPaidPlanCheckout() {
 		if (!selectedPlanId || !selectedPlan || selectedPlan.isTrial) return;
 
+		const payUser =
+			get(authStore).users.find((u) => u.defaultProfile) ?? get(authStore).users[0];
+		if (!payUser?.profilePhone?.trim()) {
+			showPhoneRequiredModal = true;
+			return;
+		}
+
 		submittingPaid = true;
 		paidError = null;
 
@@ -134,13 +170,13 @@
 				orderId: checkout.orderId,
 				amount: checkout.amount,
 				currency: checkout.currency,
-				name: 'ExamFlow',
+				name: 'Exam Abhyas',
 				description: `${selectedPlan.name} subscription`,
 				prefill: {
 					name:
 						[defaultProfile?.firstName, defaultProfile?.lastName].filter(Boolean).join(' ') || undefined,
-					// email: defaultProfile?.email || undefined,
-					// contact: defaultProfile?.phone || undefined
+					email: defaultProfile?.profileEmail || undefined,
+					contact: defaultProfile?.profilePhone || undefined
 				},
 				notes: {
 					planId: selectedPlan._id,
@@ -186,7 +222,7 @@
 </script>
 
 <svelte:head>
-	<title>Choose a plan — ExamFlow</title>
+	<title>Choose a plan — Exam Abhyas</title>
 </svelte:head>
 
 <div class="relative mx-auto max-w-7xl px-4 pb-28 pt-2 sm:px-5 sm:pb-10">
@@ -245,11 +281,7 @@
             {selectedPlanId === plan._id
 						? 'border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_08%,var(--sh-exam-card-bg))] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]'
 						: 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-md'}"
-					onclick={() => {
-						selectedPlanId = plan._id;
-						paidError = null;
-						trialError = null;
-					}}
+					onclick={() => onSelectPlan(plan)}
 				>
 					{#if plan.isTrial}
 						<span
@@ -339,6 +371,8 @@
 						<span class="font-medium text-[var(--sh-section-title)]">Ready when you are.</span>
 						{#if selectedPlan?.isTrial}
 							Continue to confirm and start your free trial.
+						{:else if continueBlockedNoPhone}
+							Add and verify your phone number (popup) to pay for this plan.
 						{:else}
 							Continue to pay securely and activate your plan.
 						{/if}
@@ -350,7 +384,10 @@
 				<button
 					type="button"
 					class="btn-cta-subscription sm:shrink-0"
-					disabled={!selectedPlanId || submittingTrial || submittingPaid}
+					disabled={!selectedPlanId ||
+						submittingTrial ||
+						submittingPaid ||
+						continueBlockedNoPhone}
 					onclick={onContinue}
 				>
 					{#if submittingTrial}
