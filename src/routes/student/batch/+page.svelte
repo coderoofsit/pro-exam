@@ -55,7 +55,7 @@
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto  px-4 py-8 ml-0">
+  <div class="mx-auto  px-4 py-8 ">
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <label class="w-full max-w-sm sm:max-w-xs">
         <span class="sr-only">Search batches</span>
