@@ -171,7 +171,10 @@
             Verified
           </span>
         {:else if hasPhone}
-          <button type="button" onclick={openVerifyPhone} class="text-xs font-medium text-amber-500 hover:underline">Verify number</button>
+          <div class="flex items-center gap-3">
+            <button type="button" onclick={openVerifyPhone} class="text-xs font-medium text-amber-500 hover:underline">Verify number</button>
+            <button type="button" onclick={openAddPhone} class="text-xs font-medium text-[var(--page-text-muted)] hover:underline">Edit</button>
+          </div>
         {:else}
           <button type="button" onclick={openAddPhone} class="text-xs font-medium text-[var(--page-link,#6366f1)] hover:underline">Add number</button>
         {/if}

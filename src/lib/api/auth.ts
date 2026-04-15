@@ -107,6 +107,8 @@ export type SelectMembershipApiBody = {
     token: string;
     users: MembershipUser[];
     fcmToken?: string | null;
+    phone?: string | null;
+    isVerifiedPhone?: boolean;
   };
 };
 

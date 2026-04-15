@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
@@ -9,6 +9,9 @@
     normalizeMembershipProfileRef,
     selectMembershipProfile,
     updateFcmToken,
+    sendPhoneOtp,
+    updatePhone,
+    verifyPhoneOtp,
     type MembershipUser,
     type MembershipResponse,
     type SelectMembershipApiBody,
@@ -48,6 +51,37 @@
   let membershipFetchCompleted = $state(false);
   /** Tracks route transitions so we auto-collapse nav once when entering “create own test” exam flow. */
   let wasOwnTestExamRoute = $state(false);
+
+  // -- Phone verification modal --
+  let phoneModal = $state({ open: false, phone: '', step: 'input' as 'input' | 'otp', otp: '', loading: false, error: '', success: '' });
+
+  function normalizePhone(raw: string) {
+    const digits = raw.replace(/\D/g, '');
+    return digits.length > 10 ? digits.slice(-10) : digits;
+  }
+
+  async function phoneModalSendOtp() {
+    phoneModal.error = ''; phoneModal.success = '';
+    const phone = normalizePhone(phoneModal.phone);
+    if (!/^\d{10}$/.test(phone)) { phoneModal.error = 'Enter a valid 10-digit number.'; return; }
+    phoneModal.loading = true;
+    const res = await sendPhoneOtp({ phone, token: $authStore.token });
+    phoneModal.loading = false;
+    if (!res.success) { phoneModal.error = res.message || 'Failed to send OTP.'; return; }
+    phoneModal.step = 'otp'; phoneModal.success = 'OTP sent!';
+  }
+
+  async function phoneModalVerify() {
+    phoneModal.error = ''; phoneModal.success = '';
+    const otp = Number(String(phoneModal.otp).trim());
+    if (!otp) { phoneModal.error = 'Enter the OTP.'; return; }
+    phoneModal.loading = true;
+    const res = await verifyPhoneOtp({ phone: normalizePhone(phoneModal.phone), otp, token: $authStore.token });
+    phoneModal.loading = false;
+    if (!res.success) { phoneModal.error = res.message || 'Invalid OTP.'; return; }
+    phoneModal.success = 'Phone verified!';
+    setTimeout(() => { phoneModal.open = false; invalidateAll(); }, 900);
+  }
 
   /** Full-bleed, no extra top inset — timer + question should sit under the app topbar. */
   const isTestAttemptRoute = $derived(
@@ -399,6 +433,12 @@
           users: mapped,
           role: $authStore.role,
         });
+
+        // Show phone modal if phone missing or not verified
+        if (!root.data.phone || !root.data.isVerifiedPhone) {
+          phoneModal = { open: true, phone: root.data.phone ?? '', step: 'input', otp: '', loading: false, error: '', success: '' };
+        }
+
         hardReloadCurrentPage();
         return;
       }
@@ -1368,3 +1408,51 @@
     </main>
   </div>
 </div>
+
+{#if phoneModal.open}
+  <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true">
+    <div class="w-full max-w-sm rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-2xl">
+      <h2 class="mb-1 text-base font-bold text-[var(--page-text)]">
+        {phoneModal.step === 'input' ? (phoneModal.phone ? 'Verify Phone Number' : 'Add Phone Number') : 'Enter OTP'}
+      </h2>
+      <p class="mb-4 text-xs text-[var(--page-text-muted)]">
+        {phoneModal.step === 'input' ? 'Add and verify your phone to secure your account.' : `OTP sent to ${phoneModal.phone}`}
+      </p>
+
+      {#if phoneModal.error}
+        <p class="mb-3 rounded-lg bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">{phoneModal.error}</p>
+      {/if}
+      {#if phoneModal.success}
+        <p class="mb-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">{phoneModal.success}</p>
+      {/if}
+
+      {#if phoneModal.step === 'input'}
+        <input
+          type="tel"
+          bind:value={phoneModal.phone}
+          placeholder="10-digit phone number"
+          class="mb-4 w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:outline-none"
+        />
+        <div class="flex gap-2">
+          <button onclick={() => { phoneModal.open = false; }} class="flex-1 rounded-xl border border-[var(--page-card-border)] py-2.5 text-sm font-semibold text-[var(--page-text-muted)] hover:bg-[var(--page-card-border)]/20 transition">Skip</button>
+          <button onclick={phoneModalSendOtp} disabled={phoneModal.loading} class="flex-1 rounded-xl bg-[var(--page-link)] py-2.5 text-sm font-bold text-white disabled:opacity-50 transition">
+            {phoneModal.loading ? 'Sending…' : 'Send OTP'}
+          </button>
+        </div>
+      {:else}
+        <input
+          type="text"
+          bind:value={phoneModal.otp}
+          placeholder="Enter OTP"
+          class="mb-4 w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:outline-none"
+        />
+        <div class="flex gap-2">
+          <button onclick={() => { phoneModal.step = 'input'; phoneModal.otp = ''; phoneModal.error = ''; }} class="flex-1 rounded-xl border border-[var(--page-card-border)] py-2.5 text-sm font-semibold text-[var(--page-text-muted)] hover:bg-[var(--page-card-border)]/20 transition">Back</button>
+          <button onclick={phoneModalVerify} disabled={phoneModal.loading} class="flex-1 rounded-xl bg-[var(--page-link)] py-2.5 text-sm font-bold text-white disabled:opacity-50 transition">
+            {phoneModal.loading ? 'Verifying…' : 'Verify'}
+          </button>
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}
