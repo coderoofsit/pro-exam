@@ -42,6 +42,7 @@
     class="ctm-backdrop"
     onclick={handleBackdrop}
     role="dialog"
+    tabindex="-1"
     aria-modal="true"
     aria-label="Create Mock Test"
   >
