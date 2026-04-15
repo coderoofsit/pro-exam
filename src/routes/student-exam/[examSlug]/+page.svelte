@@ -171,7 +171,7 @@
 <div
 	class="flex h-full bg-[var(--page-bg)] text-[var(--page-text)] "
 >
-	<div class="mx-auto flex h-full w-full max-w-7xl px-4 pl-0 ml-0">
+	<div class="mx-auto flex h-full w-full max-w-7xl px-4 pl-0 ">
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<a
@@ -298,7 +298,7 @@
 
 			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-3 py-3 ml-0"
+					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-3 py-3 "
 				>
 					{#if selectedSubject}
 						<div class="mb-3 shrink-0">

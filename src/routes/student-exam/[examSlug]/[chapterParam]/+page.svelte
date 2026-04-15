@@ -582,10 +582,10 @@
 <div
 	class="flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	<div class="mx-auto flex h-full w-full  overflow-hidden ml-0">
+	<div class="mx-auto flex h-full w-full  overflow-hidden ">
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
-				class="mx-auto flex h-full w-full flex-col px-4 md:px-6 overflow-hidden min-h-0 ml-0"
+				class="mx-auto flex h-full w-full flex-col px-4 md:px-6 overflow-hidden min-h-0 "
 			>
 				<div class="p-3 shrink-0">
 					{#if effectiveQuestionId !== null}

@@ -21,7 +21,7 @@
 	}
 </script>
 
-<div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)] ml-0">
+<div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
 	<a
 		href="/student/dashboard"
 		class="mb-5 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
