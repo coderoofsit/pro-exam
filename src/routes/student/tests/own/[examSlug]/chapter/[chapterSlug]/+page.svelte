@@ -139,11 +139,13 @@
     return `/student/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(data.chapterSlug)}?${params.toString()}`;
   };
 
-  function openDrawer() {
-    pendingTopic = [...selectedTopicSlug];
-    pendingKind = [...selectedKind];
-    pendingDifficulty = [...selectedDifficulty];
-    filterDrawerOpen = true;
+  function toggleFilterPanel() {
+    if (!filterDrawerOpen) {
+      pendingTopic = [...selectedTopicSlug];
+      pendingKind = [...selectedKind];
+      pendingDifficulty = [...selectedDifficulty];
+    }
+    filterDrawerOpen = !filterDrawerOpen;
   }
 
   function applyFilters() {
@@ -221,7 +223,7 @@
         <button
           type="button"
           class="relative rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
-          onclick={openDrawer}
+          onclick={toggleFilterPanel}
         >
           Filters{#if activeFilterCount > 0}<span class="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--page-link)] text-[10px] font-bold text-white">{activeFilterCount}</span>{/if}
         </button>
@@ -233,6 +235,84 @@
           Back
         </button>
       </div>
+    </div>
+
+    <div class="mb-6">
+      <button
+        type="button"
+        class="flex items-center gap-2 rounded-lg text-sm font-medium text-[var(--sh-ai-sub)] hover:text-[var(--sh-section-title)]"
+        onclick={toggleFilterPanel}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        {filterDrawerOpen ? 'Hide Filters' : 'Show Filters'}
+      </button>
+
+      {#if filterDrawerOpen}
+        <div class="mt-3 grid gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4">
+          <div>
+            <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
+            <div class="flex flex-wrap gap-2.5">
+              {#each ["easy", "medium", "hard"] as diff}
+                <button
+                  type="button"
+                  onclick={() => togglePendingDifficulty(diff)}
+                  class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                >
+                  {diff}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div>
+            <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
+            <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as k}
+                <button
+                  type="button"
+                  onclick={() => togglePendingKind(k)}
+                  class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                >
+                  {k}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          {#if topicOptions.length > 0}
+            <div>
+              <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Topic</div>
+              {#if topicsLoading}
+                <div class="text-xs text-[var(--page-text-muted)]">Loading...</div>
+              {:else}
+                <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  <button
+                    type="button"
+                    onclick={() => (pendingTopic = [])}
+                    class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                  >
+                    All Topics
+                  </button>
+                  {#each topicOptions as t (t._id)}
+                    <button
+                      type="button"
+                      onclick={() => togglePendingTopic(t.slug)}
+                      class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                    >
+                      {t.name?.en ?? t.slug}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          {/if}
+
+          <div class="flex items-center gap-3 border-t border-[var(--sb-border-color)] pt-4">
+            <button type="button" class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-collapse-hover-bg)]" onclick={clearFilters}>Clear</button>
+            <button type="button" class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--page-link-hover)]" onclick={applyFilters}>Apply</button>
+          </div>
+        </div>
+      {/if}
     </div>
 
     {#if data.message}
@@ -309,75 +389,3 @@
     {/if}
   </div>
 </div>
-
-{#if filterDrawerOpen}
-<div
-  class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
-  role="button" tabindex="0"
-  onclick={() => (filterDrawerOpen = false)}
-  onkeydown={(e) => e.key === "Escape" ? (filterDrawerOpen = false) : null}
-></div>
-<aside class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl overflow-y-auto">
-  <div class="mb-4 flex items-center justify-between">
-    <h3 class="text-base font-semibold text-[var(--page-text)]">Filters</h3>
-    <button type="button" class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]" onclick={() => (filterDrawerOpen = false)}>Close</button>
-  </div>
-
-  <div class="space-y-5">
-    <!-- Difficulty -->
-    <div>
-      <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
-      <div class="flex flex-wrap gap-2.5">
-        {#each ["easy", "medium", "hard"] as diff}
-        <button type="button" onclick={() => togglePendingDifficulty(diff)}
-          class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
-          {diff}
-        </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- Type -->
-    <div>
-      <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
-      <div class="grid gap-2.5">
-        {#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as k}
-        <button type="button" onclick={() => togglePendingKind(k)}
-          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
-          {k}
-        </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- Topic -->
-    {#if topicOptions.length > 0}
-    <div>
-      <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Topic</div>
-      {#if topicsLoading}
-      <div class="text-xs text-[var(--page-text-muted)]">Loading...</div>
-      {:else}
-      <div class="grid gap-2.5">
-        <button type="button" onclick={() => pendingTopic = []}
-          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
-          All Topics
-        </button>
-        {#each topicOptions as t (t._id)}
-        <button type="button" onclick={() => togglePendingTopic(t.slug)}
-          class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}">
-          {t.name?.en ?? t.slug}
-        </button>
-        {/each}
-      </div>
-      {/if}
-    </div>
-    {/if}
-
-    <!-- Actions -->
-    <div class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]">
-      <button type="button" class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] transition" onclick={clearFilters}>Clear</button>
-      <button type="button" class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--page-link-hover)] transition" onclick={applyFilters}>Apply</button>
-    </div>
-  </div>
-</aside>
-{/if}

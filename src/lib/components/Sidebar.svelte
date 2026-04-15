@@ -1400,7 +1400,7 @@
         <div
           class={isTestAttemptRoute
             ? "flex min-h-0 flex-1 flex-col"
-            : "min-h-0 pt-6"}
+            : "min-h-0 p-0"}
         >
           {@render children?.()}
         </div>

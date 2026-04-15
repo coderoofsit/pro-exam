@@ -320,7 +320,6 @@
 
 					<div class="mt-10 flex flex-wrap items-center justify-center gap-1.5">
 						{#if safePage > 1}
-							<a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
 							<a class="pagination-btn" href={questionsPageUrl(safePage - 1)}>Prev</a>
 						{/if}
 						{#each visiblePageNumbers as pageNumber}
@@ -331,9 +330,14 @@
 								{pageNumber}
 							</a>
 						{/each}
+						{#if paginationMeta && !visiblePageNumbers.includes(paginationMeta.lastPage)}
+							<span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
+							<a class="pagination-btn px-3.5" href={questionsPageUrl(paginationMeta.lastPage)}
+								>{paginationMeta.lastPage}</a
+							>
+						{/if}
 						{#if paginationMeta && safePage < paginationMeta.lastPage}
 							<a class="pagination-btn" href={questionsPageUrl(safePage + 1)}>Next</a>
-							<a class="pagination-btn" href={questionsPageUrl(paginationMeta.lastPage)}>Last →</a>
 						{/if}
 					</div>
 				{/if}

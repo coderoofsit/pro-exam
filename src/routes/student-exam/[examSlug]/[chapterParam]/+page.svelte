@@ -51,12 +51,36 @@
 	let reportModalOpen = $state(false);
 	let reportingQuestionId = $state("");
 	let reportReason = $state<ReportReason>("WRONG_QUESTION");
+	const reportReasonOptions: { value: ReportReason; label: string }[] = [
+		{ value: "WRONG_QUESTION", label: "Wrong Question" },
+		{ value: "WRONG_ANSWER", label: "Wrong Answer" },
+		{ value: "WRONG_SOLUTION", label: "Wrong Solution" },
+		{ value: "TYPO", label: "Typo / Spelling error" },
+		{ value: "BAD_LATEX", label: "Math Formatting (LaTeX) issue" },
+		{ value: "MISSING_IMAGE", label: "Missing Image" },
+		{ value: "WRONG_OPTIONS", label: "Incorrect Options" },
+		{ value: "DUPLICATE", label: "Duplicate Question" },
+		{ value: "OTHER", label: "Other" }
+	];
+	let reportReasonDropdownOpen = $state(false);
+	let reportReasonDropdownRef = $state<HTMLElement | null>(null);
 	let reportMessage = $state("");
 	let isSubmittingReport = $state(false);
 
 	function openReportModal(qid: string) {
 		reportingQuestionId = qid;
 		reportModalOpen = true;
+		reportReasonDropdownOpen = false;
+	}
+
+	function closeReportModal() {
+		reportModalOpen = false;
+		reportReasonDropdownOpen = false;
+	}
+
+	function selectReportReason(reason: ReportReason) {
+		reportReason = reason;
+		reportReasonDropdownOpen = false;
 	}
 
 	async function handleReportSubmit() {
@@ -69,7 +93,7 @@
 				message: reportMessage
 			});
 			showToast("Report submitted successfully");
-			reportModalOpen = false;
+			closeReportModal();
 			reportMessage = "";
 		} catch (e: any) {
 			showToast(e.message || "An error occurred", "error");
@@ -77,6 +101,31 @@
 			isSubmittingReport = false;
 		}
 	}
+
+	$effect(() => {
+		if (!browser || !reportReasonDropdownOpen) return;
+		const handlePointerDown = (event: MouseEvent) => {
+			const target = event.target;
+			if (
+				reportReasonDropdownRef &&
+				target instanceof Node &&
+				!reportReasonDropdownRef.contains(target)
+			) {
+				reportReasonDropdownOpen = false;
+			}
+		};
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				reportReasonDropdownOpen = false;
+			}
+		};
+		document.addEventListener("mousedown", handlePointerDown);
+		document.addEventListener("keydown", handleEscape);
+		return () => {
+			document.removeEventListener("mousedown", handlePointerDown);
+			document.removeEventListener("keydown", handleEscape);
+		};
+	});
 
 	/** Client-driven question view (shallow routing); stays in sync with server data on full navigations. */
 	let effectiveQuestionId = $state<string | null>(null);
@@ -533,10 +582,10 @@
 <div
 	class="flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	<div class="mx-auto flex h-full w-full max-w-7xl overflow-hidden">
+	<div class="mx-auto flex h-full w-full  overflow-hidden ml-0">
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
-				class="mx-auto flex h-full w-full max-w-6xl flex-col px-4 md:px-6 overflow-hidden min-h-0"
+				class="mx-auto flex h-full w-full flex-col px-4 md:px-6 overflow-hidden min-h-0 ml-0"
 			>
 				<div class="p-3 shrink-0">
 					{#if effectiveQuestionId !== null}
@@ -610,15 +659,113 @@
 
 									<button
 										type="button"
-										class="relative rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)] shadow-sm"
-										onclick={() => (filterDrawerOpen = true)}
+										class="flex items-center gap-2 rounded-lg text-sm font-medium text-[var(--sh-ai-sub)] hover:text-[var(--sh-section-title)]"
+										onclick={() =>
+											(filterDrawerOpen = !filterDrawerOpen)}
 									>
-										Filters
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+										{filterDrawerOpen ? "Hide Filters" : "Show Filters"}
 									</button>
 								</div>
 							{/if}
 						</div>
 					</div>
+
+					{#if !effectiveQuestionId && filterDrawerOpen}
+						<div class="mb-4">
+							<div
+								class="mt-3 grid gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4"
+							>
+								<div>
+									<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
+										Difficulty
+									</div>
+									<div class="flex flex-wrap gap-2.5">
+										{#each ["easy", "medium", "hard"] as diff}
+											<button
+												type="button"
+												onclick={() => toggleDifficulty(diff)}
+												class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {selectedDifficulties.includes(
+													diff,
+												)
+													? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+													: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+											>
+												{diff}
+											</button>
+										{/each}
+									</div>
+								</div>
+
+								<div>
+									<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
+										Type
+									</div>
+									<div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+										{#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as kindOption}
+											<button
+												type="button"
+												onclick={() => toggleKind(kindOption)}
+												class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedKinds.includes(
+													kindOption,
+												)
+													? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+													: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+											>
+												{kindOption}
+											</button>
+										{/each}
+									</div>
+								</div>
+
+								<div>
+									<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
+										Topic
+									</div>
+									<div class="max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+										{#if topicsLoading}
+											<div class="animate-pulse grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+												{#each Array(4) as _}
+													<div class="h-9 rounded-xl bg-[var(--sb-border-color)]/30"></div>
+												{/each}
+											</div>
+										{:else}
+											<div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+												{#each topicOptions as topic}
+													<button
+														type="button"
+														onclick={() => toggleTopic(topic.slug)}
+														class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedTopics.includes(topic.slug)
+															? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+															: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+													>
+														{topic.name?.en || topic.slug}
+													</button>
+												{/each}
+											</div>
+										{/if}
+									</div>
+								</div>
+
+								<div class="flex items-center gap-3 border-t border-[var(--sb-border-color)] pt-4">
+									<button
+										type="button"
+										class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
+										onclick={clearFilters}
+									>
+										Clear
+									</button>
+									<button
+										type="button"
+										class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--page-link-hover)]"
+										onclick={applyFilters}
+									>
+										Apply
+									</button>
+								</div>
+							</div>
+						</div>
+					{/if}
 
 					{#if displayQuestions.length === 0}
 						<div class="flex flex-1 items-center justify-center">
@@ -639,11 +786,6 @@
 									{#if data.safePage > 1}
 										<a
 											class="pagination-btn"
-											href={questionsPageUrl(1)}
-											>← First</a
-										>
-										<a
-											class="pagination-btn"
 											href={questionsPageUrl(
 												data.safePage - 1,
 											)}>Prev</a
@@ -661,6 +803,15 @@
 											{pageNumber}
 										</a>
 									{/each}
+									{#if !visiblePageNumbers.includes(displayPaginationMeta.lastPage)}
+										<span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
+										<a
+											class="pagination-btn px-3.5"
+											href={questionsPageUrl(displayPaginationMeta.lastPage)}
+										>
+											{displayPaginationMeta.lastPage}
+										</a>
+									{/if}
 
 									{#if data.safePage < displayPaginationMeta.lastPage}
 										<a
@@ -669,18 +820,12 @@
 												data.safePage + 1,
 											)}>Next</a
 										>
-										<a
-											class="pagination-btn"
-											href={questionsPageUrl(
-												displayPaginationMeta.lastPage,
-											)}>Last →</a
-										>
 									{/if}
 								</div>
 							</div>
 						{/if}
 
-						<div class="flex-1 overflow-y-auto pb-3">
+						<div class="flex-1 overflow-y-auto py-3">
 							{#if isLoading}
 								<div class="flex flex-col gap-2.5">
 									{#each Array(10) as _, i}
@@ -780,11 +925,6 @@
 									{#if data.safePage > 1}
 										<a
 											class="pagination-btn"
-											href={questionsPageUrl(1)}
-											>← First</a
-										>
-										<a
-											class="pagination-btn"
 											href={questionsPageUrl(
 												data.safePage - 1,
 											)}>Prev</a
@@ -802,6 +942,15 @@
 											{pageNumber}
 										</a>
 									{/each}
+									{#if !visiblePageNumbers.includes(displayPaginationMeta.lastPage)}
+										<span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
+										<a
+											class="pagination-btn px-3.5"
+											href={questionsPageUrl(displayPaginationMeta.lastPage)}
+										>
+											{displayPaginationMeta.lastPage}
+										</a>
+									{/if}
 
 									{#if data.safePage < displayPaginationMeta.lastPage}
 										<a
@@ -809,12 +958,6 @@
 											href={questionsPageUrl(
 												data.safePage + 1,
 											)}>Next</a
-										>
-										<a
-											class="pagination-btn"
-											href={questionsPageUrl(
-												displayPaginationMeta.lastPage,
-											)}>Last →</a
 										>
 									{/if}
 								</div>
@@ -1550,125 +1693,6 @@
 	</div>
 </div>
 
-{#if filterDrawerOpen}
-	<div
-		class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
-		role="button"
-		tabindex="0"
-		onclick={() => (filterDrawerOpen = false)}
-		onkeydown={(e) =>
-			e.key === "Escape" ? (filterDrawerOpen = false) : null}
-	></div>
-
-	<aside
-		class="fixed left-0 top-0 z-40 h-full w-[300px] border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)] p-6 shadow-2xl"
-	>
-		<div class="mb-4 flex items-center justify-between">
-			<h3 class="text-base font-semibold text-[var(--page-text)]">
-				Filters
-			</h3>
-			<button
-				type="button"
-				class="rounded px-2 py-1 text-sm text-[var(--page-text-muted)] hover:bg-[var(--page-bg)]"
-				onclick={() => (filterDrawerOpen = false)}
-			>
-				Close
-			</button>
-		</div>
-
-		<div class="space-y-5">
-			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
-					Difficulty
-				</div>
-				<div class="flex flex-wrap gap-2.5">
-					{#each ["easy", "medium", "hard"] as diff}
-						<button
-							type="button"
-							onclick={() => toggleDifficulty(diff)}
-							class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {selectedDifficulties.includes(
-								diff,
-							)
-								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
-								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-						>
-							{diff}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
-					Type
-				</div>
-				<div class="grid gap-2.5">
-					{#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as kindOption}
-						<button
-							type="button"
-							onclick={() => toggleKind(kindOption)}
-							class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedKinds.includes(
-								kindOption,
-							)
-								? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
-								: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-						>
-							{kindOption}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<div>
-				<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
-					Topic
-				</div>
-				<div class="grid gap-2.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-					{#if topicsLoading}
-						<div class="animate-pulse flex flex-col gap-2">
-							{#each Array(4) as _}
-								<div class="h-9 rounded-xl bg-[var(--sb-border-color)]/30"></div>
-							{/each}
-						</div>
-					{:else}
-						{#each topicOptions as topic}
-							<button
-								type="button"
-								onclick={() => toggleTopic(topic.slug)}
-								class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedTopics.includes(topic.slug)
-									? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
-									: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-							>
-								{topic.name?.en || topic.slug}
-							</button>
-						{/each}
-					{/if}
-				</div>
-			</div>
-
-			<div
-				class="flex items-center gap-3 pt-4 border-t border-[var(--sb-border-color)]"
-
-			>
-				<button
-					type="button"
-					class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)] transition"
-					onclick={clearFilters}
-				>
-					Clear
-				</button>
-				<button
-					type="button"
-					class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--page-link-hover)] transition"
-					onclick={applyFilters}
-				>
-					Apply
-				</button>
-			</div>
-		</div>
-	</aside>
-{/if}
-
 <!-- ── Toast notification ── -->
 {#if toastMsg}
 <div class="toast-wrap {toastType}" role="alert" aria-live="polite">
@@ -1691,8 +1715,8 @@
 		class="fixed inset-0 bg-black/60 backdrop-blur-sm" 
 		role="button"
 		tabindex="0"
-		onclick={() => (reportModalOpen = false)}
-		onkeydown={(e) => e.key === 'Escape' ? (reportModalOpen = false) : null}
+		onclick={closeReportModal}
+		onkeydown={(e) => e.key === 'Escape' ? closeReportModal() : null}
 	></div>
 	<div class="relative w-full max-w-md bg-[var(--page-bg)] border border-[var(--page-card-border)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 		<div class="px-6 py-4 border-b border-[var(--page-card-border)] bg-[var(--page-card-bg)]/50">
@@ -1711,21 +1735,56 @@
 				<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="reportReason">
 					Reason for reporting
 				</label>
-				<select 
-					id="reportReason"
-					bind:value={reportReason}
-					class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
-				>
-					<option value="WRONG_QUESTION">Wrong Question</option>
-					<option value="WRONG_ANSWER">Wrong Answer</option>
-					<option value="WRONG_SOLUTION">Wrong Solution</option>
-					<option value="TYPO">Typo / Spelling error</option>
-					<option value="BAD_LATEX">Math Formatting (LaTeX) issue</option>
-					<option value="MISSING_IMAGE">Missing Image</option>
-					<option value="WRONG_OPTIONS">Incorrect Options</option>
-					<option value="DUPLICATE">Duplicate Question</option>
-					<option value="OTHER">Other</option>
-				</select>
+				<div class="relative" bind:this={reportReasonDropdownRef}>
+					<button
+						type="button"
+						id="reportReason"
+						class="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-left text-sm text-[var(--page-text)] transition hover:border-[var(--page-link)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)]"
+						aria-haspopup="listbox"
+						aria-expanded={reportReasonDropdownOpen}
+						onclick={() => (reportReasonDropdownOpen = !reportReasonDropdownOpen)}
+					>
+						<span class="truncate">
+							{reportReasonOptions.find((option) => option.value === reportReason)?.label ?? "Select reason"}
+						</span>
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							class="shrink-0 text-[var(--page-text-muted)] transition-transform {reportReasonDropdownOpen ? 'rotate-180' : ''}"
+							aria-hidden="true"
+						>
+							<path d="M6 9l6 6 6-6"></path>
+						</svg>
+					</button>
+					{#if reportReasonDropdownOpen}
+						<div class="absolute left-0 right-0 z-10 mt-2 max-h-60 overflow-y-auto rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] shadow-xl">
+							<ul role="listbox" aria-labelledby="reportReason" class="py-1">
+								{#each reportReasonOptions as option (option.value)}
+									<li>
+										<button
+											type="button"
+											role="option"
+											aria-selected={reportReason === option.value}
+											class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition {reportReason === option.value ? 'bg-[var(--page-link)]/12 text-[var(--page-link)]' : 'text-[var(--page-text)] hover:bg-[var(--page-card-bg)]/70'}"
+											onclick={() => selectReportReason(option.value)}
+										>
+											<span class="truncate">{option.label}</span>
+											{#if reportReason === option.value}
+												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="shrink-0">
+													<path d="M20 6L9 17l-5-5"></path>
+												</svg>
+											{/if}
+										</button>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+				</div>
 			</div>
 			
 			<div>
@@ -1746,7 +1805,7 @@
 			<button 
 				type="button" 
 				class="px-4 py-2 text-sm font-semibold text-[var(--page-text-muted)] hover:text-[var(--page-text)] transition"
-				onclick={() => (reportModalOpen = false)}
+				onclick={closeReportModal}
 				disabled={isSubmittingReport}
 			>
 				Cancel

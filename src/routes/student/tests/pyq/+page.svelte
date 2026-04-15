@@ -19,7 +19,7 @@
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
-  <div class="max-w-5xl mx-auto px-4 py-8">
+  <div class="mx-auto px-4 py-8 ml-0">
     <!-- Error state -->
     {#if error}
       <div class="

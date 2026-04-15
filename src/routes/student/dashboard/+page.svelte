@@ -53,7 +53,7 @@
 	<title>Student Home Page</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
+<div class="mx-auto w-full  min-w-0 text-[var(--page-text)] ml-0">
 	<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
 		<img
 			src="/Student-dash.png"

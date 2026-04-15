@@ -201,7 +201,6 @@
 
       <div class="mt-10 flex flex-wrap items-center justify-center gap-1.5">
         {#if data.currentPage > 1}
-          <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
           <a class="pagination-btn" href={questionsPageUrl(data.currentPage - 1)}>Prev</a>
         {/if}
         {#each visiblePageNumbers as pageNumber}
@@ -212,9 +211,12 @@
             {pageNumber}
           </a>
         {/each}
+        {#if data.lastPage > 1 && !visiblePageNumbers.includes(data.lastPage)}
+          <span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
+          <a class="pagination-btn px-3.5" href={questionsPageUrl(data.lastPage)}>{data.lastPage}</a>
+        {/if}
         {#if data.currentPage < data.lastPage}
           <a class="pagination-btn" href={questionsPageUrl(data.currentPage + 1)}>Next</a>
-          <a class="pagination-btn" href={questionsPageUrl(data.lastPage)}>Last →</a>
         {/if}
       </div>
     {/if}

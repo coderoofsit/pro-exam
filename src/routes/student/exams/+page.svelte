@@ -84,7 +84,6 @@
 		<div class="mx-auto max-w-7xl px-4 pb-10">
 			<div class="mt-8 flex flex-wrap items-center justify-center gap-1.5">
 				{#if currentPage > 1}
-					<a class="pagination-btn" href={buildPageLink(1)}>← First</a>
 					<a class="pagination-btn" href={buildPageLink(currentPage - 1)}>Prev</a>
 				{/if}
 
@@ -96,10 +95,15 @@
 						{pageNum}
 					</a>
 				{/each}
+				{#if !visiblePages.includes(effectiveLastPage)}
+					<span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
+					<a class="pagination-btn px-3.5" href={buildPageLink(effectiveLastPage)}
+						>{effectiveLastPage}</a
+					>
+				{/if}
 
 				{#if currentPage < effectiveLastPage}
 					<a class="pagination-btn" href={buildPageLink(currentPage + 1)}>Next</a>
-					<a class="pagination-btn" href={buildPageLink(effectiveLastPage)}>Last →</a>
 				{/if}
 			</div>
 		</div>

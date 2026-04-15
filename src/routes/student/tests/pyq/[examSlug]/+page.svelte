@@ -25,7 +25,7 @@
 </svelte:head>
 
 <div class="min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-4xl px-4 py-8">
+  <div class="mx-auto px-4 py-8 ml-0">
     {#if error}
       <div class="
         flex items-center gap-3 rounded-2xl px-5 py-4 text-sm

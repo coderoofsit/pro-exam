@@ -169,9 +169,9 @@
 </svelte:head>
 
 <div
-	class="flex h-full bg-[var(--page-bg)] text-[var(--page-text)]"
+	class="flex h-full bg-[var(--page-bg)] text-[var(--page-text)] "
 >
-	<div class="mx-auto flex h-full w-full max-w-7xl px-4">
+	<div class="mx-auto flex h-full w-full max-w-7xl px-4 pl-0 ml-0">
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<a
@@ -252,7 +252,7 @@
 			<aside
 	class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
 >
-				<div class="flex-1 overflow-y-auto p-4">
+				<div class="flex-1 overflow-y-auto p-2">
 					<button
 						type="button"
 						onclick={backToSubjects}
@@ -298,7 +298,7 @@
 
 			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-6 py-3"
+					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-3 py-3 ml-0"
 				>
 					{#if selectedSubject}
 						<div class="mb-3 shrink-0">
@@ -319,7 +319,7 @@
 							No chapters found for this subject.
 						</p>
 					{:else}
-						<div class="flex-1 overflow-y-auto pb-3">
+						<div class="flex-1 overflow-y-auto py-4">
 							<div
 								class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-2"
 							>
@@ -328,9 +328,7 @@
 										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
 										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
 									>
-										<div
-											class="absolute left-0 top-0 h-1 w-full bg-[var(--sh-tool-card-hover-border)] opacity-0 transition-opacity group-hover:opacity-100"
-										></div>
+										
 										<h2
 											class="text-sm font-semibold leading-snug"
 										>

@@ -32,7 +32,7 @@
 </svelte:head>
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-5xl px-4 py-8">
+  <div class="mx-auto  px-4 py-8 ml-0">
     <CustomeModal
       open={showChoiceModal}
       dismissible={false}
