@@ -349,6 +349,19 @@
                 </div>
               {/if}
 
+              {#if q.prompt?.en?.rePhrasedQuestionImage?.length}
+                <div class="mt-2">
+                  <div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-[var(--pyq-paper-meta)]">Rephrased image</div>
+                  <div class="grid grid-cols-2 gap-2">
+                    {#each q.prompt.en.rePhrasedQuestionImage as img}
+                      {#if img?.url}
+                        <img src={img.url} alt={img.alt ?? ''} class="max-h-48 w-full rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
+                      {/if}
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
               {#if isMcq || isMsq}
                 <ul class="mt-3 space-y-2 text-base text-[var(--pyq-paper-title)]">
                   {#each options as opt}
@@ -370,6 +383,19 @@
                                 <img src={img.url} alt={img.alt ?? ''} class="max-h-32 rounded border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
                               {/if}
                             {/each}
+                          </div>
+                        {/if}
+
+                        {#if opt.rePhrasedOptionImage?.length}
+                          <div class="mt-2">
+                            <div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-[var(--pyq-paper-meta)]">Rephrased image</div>
+                            <div class="flex flex-wrap gap-2">
+                              {#each opt.rePhrasedOptionImage as img}
+                                {#if img?.url}
+                                  <img src={img.url} alt={img.alt ?? ''} class="max-h-32 rounded border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
+                                {/if}
+                              {/each}
+                            </div>
                           </div>
                         {/if}
                       </div>

@@ -1338,6 +1338,20 @@
 												{/each}
 											</div>
 										{/if}
+
+										{#if (detailQuestion as any).prompt?.en?.rePhrasedQuestionImage?.length}
+											<div class="mt-2">
+												<div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-[var(--page-text-muted)]">Rephrased image</div>
+												<div class="grid grid-cols-2 gap-2.5">
+													{#each (detailQuestion as any).prompt.en.rePhrasedQuestionImage as img, imgIdx (`rq-${detailQuestion._id}-${imgIdx}`)}
+														{@const src = imageSrc(img as ImageLike)}
+														{#if src}
+															<img {src} alt={imageAlt(img as ImageLike)} class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm" loading="lazy" />
+														{/if}
+													{/each}
+												</div>
+											</div>
+										{/if}
 									</div>
 
 									{#if (detailQuestion as any).paperId}
@@ -1428,6 +1442,20 @@
 																		/>
 																	{/if}
 																{/each}
+															</div>
+														{/if}
+
+														{#if (option as any).rePhrasedOptionImage?.length}
+															<div class="mt-2">
+																<div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-[var(--page-text-muted)]">Rephrased image</div>
+																<div class="flex flex-wrap gap-2">
+																	{#each (option as any).rePhrasedOptionImage as img, imgIdx (`ropt-${detailQuestion._id}-${option.identifier}-${imgIdx}`)}
+																		{@const src = imageSrc(img as ImageLike)}
+																		{#if src}
+																			<img {src} alt={imageAlt(img as ImageLike)} class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm" loading="lazy" />
+																		{/if}
+																	{/each}
+																</div>
 															</div>
 														{/if}
 													</div>
