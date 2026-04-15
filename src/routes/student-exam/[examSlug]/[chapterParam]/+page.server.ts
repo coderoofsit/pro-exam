@@ -180,11 +180,32 @@ export const actions: Actions = {
 
 			const pendingApprove = data.get('approve');
 
-			const payload: Partial<Question> = { prompt: updatedPrompt };
+			const payload: Partial<Question> & { correct?: any } = { prompt: updatedPrompt };
 			if (pendingApprove === 'true') {
 				payload.approve = true;
 			} else if (pendingApprove === 'false') {
 				payload.approve = false;
+			}
+
+			// Parse correct answer based on kind
+			const kind = (existing as any).kind as string;
+			if (kind === 'MCQ' || kind === 'TRUE_FALSE') {
+				const identifier = data.get('correct_identifier')?.toString();
+				if (identifier) payload.correct = { identifiers: [identifier] };
+			} else if (kind === 'MSQ') {
+				const identifiers = data.getAll('correct_identifier').map(v => v.toString()).filter(Boolean);
+				if (identifiers.length) payload.correct = { identifiers };
+			} else if (kind === 'INTEGER') {
+				const intVal = data.get('correct_integer')?.toString();
+				if (intVal !== undefined && intVal !== '') payload.correct = { integer: Number(intVal) };
+			} else if (kind === 'FILL_BLANK') {
+				const fillsCount = Number(data.get('correct_fills_count') ?? 1);
+				const fills: string[] = [];
+				for (let fi = 0; fi < fillsCount; fi++) {
+					const v = data.get(`correct_fill_${fi}`)?.toString() ?? '';
+					fills.push(v);
+				}
+				payload.correct = { fills };
 			}
 
 			const { updateQuestion } = await import('$lib/api/questions');

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
+	import ExamPaper from '$lib/components/ExamPaper.svelte';
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
 
@@ -89,47 +90,23 @@
 			</a>
 		</div>
 
-		<div
-			class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
-		>
+		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#await data.streamed.exams}
 				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center">
+					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center">
 						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
 						<Skeleton width="w-20" height="h-3" />
-						<Skeleton width="w-14" height="h-2" />
 					</div>
 				{/each}
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
-					<a
-						href="/student-exam/{getExamSlug(exam)}?pyq=true"
-						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
-					>
-						{#if exam.image}
-							<img
-								src={exam.image}
-								alt=""
-								class="h-9 w-9 shrink-0 rounded-full border border-[var(--page-card-border)] object-cover ring-1 ring-[var(--page-card-border)]"
-							/>
-						{:else}
-							<div
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
-							>
-								{getExamNameEn(exam)[0]?.toUpperCase() ?? '?'}
-							</div>
-						{/if}
-						<span
-							class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
-						>
-							{getExamNameEn(exam)}
-						</span>
-						{#if getExamSub(exam)}
-							<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
-								{getExamSub(exam)}
-							</span>
-						{/if}
-					</a>
+					<ExamPaper
+						id={exam._id}
+						name={getExamNameEn(exam)}
+						image={(exam as any).image ?? null}
+						slug={getExamSlug(exam)}
+						href={`/student-exam/${getExamSlug(exam)}?pyq=true`}
+					/>
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 				{/each}
@@ -152,47 +129,23 @@
 			</a>
 		</div>
 
-		<div
-			class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
-		>
+		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#await data.streamed.exams}
 				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center">
+					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center">
 						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
 						<Skeleton width="w-20" height="h-3" />
-						<Skeleton width="w-14" height="h-2" />
 					</div>
 				{/each}
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
-					<a
-						href="/student-exam/{getExamSlug(exam)}"
-						class="group flex min-h-[118px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--page-link)]"
-					>
-						{#if exam.image}
-							<img
-								src={exam.image}
-								alt=""
-								class="h-9 w-9 shrink-0 rounded-full border border-[var(--page-card-border)] object-cover ring-1 ring-[var(--page-card-border)]"
-							/>
-						{:else}
-							<div
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--page-card-border)] bg-[var(--page-avatar-bg)] text-xs font-bold text-[var(--page-avatar-text)] ring-1 ring-[var(--page-card-border)]"
-							>
-								{getExamNameEn(exam)[0]?.toUpperCase() ?? '?'}
-							</div>
-						{/if}
-						<span
-							class="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-[var(--page-card-heading)] group-hover:text-[var(--page-link)]"
-						>
-							{getExamNameEn(exam)}
-						</span>
-						{#if getExamSub(exam)}
-							<span class="line-clamp-1 w-full text-[11px] leading-tight text-[var(--page-card-sub)]">
-								{getExamSub(exam)}
-							</span>
-						{/if}
-					</a>
+					<ExamPaper
+						id={exam._id}
+						name={getExamNameEn(exam)}
+						image={(exam as any).image ?? null}
+						slug={getExamSlug(exam)}
+						href={`/student-exam/${getExamSlug(exam)}`}
+					/>
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 				{/each}

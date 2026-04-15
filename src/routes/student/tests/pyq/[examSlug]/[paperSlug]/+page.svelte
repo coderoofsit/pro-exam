@@ -215,8 +215,8 @@
         {#each activeQuestions as q, idx (q._id)}
           {@const prompt = questionPromptEnContent(q as any)}
           {@const options = q.prompt?.en?.options ?? []}
-          {@const explanation = q.prompt?.en?.explanation ?? ''}
-          {@const rePhrasedExplanation = q.prompt?.en?.rePhrasedExplanation ?? ''}
+          {@const explanation = (q.prompt?.en?.explanation ?? '').trim()}
+          {@const rePhrasedExplanation = (q.prompt?.en?.rePhrasedExplanation ?? '').trim()}
           {@const fills = q.correct?.fills ?? []}
           {@const integerValue = q.correct?.integer}
           {@const kind = String(q.kind ?? '').toUpperCase()}
@@ -389,13 +389,16 @@
                 </div>
               {/if}
 
-              {#if explanation}
+              {#if explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length}
                 <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-[var(--pyq-paper-title)]">
-                  <span class="font-semibold text-sm">Explanation:</span>
-                  <div class="mt-1"><MathText content={explanation} /></div>
+                  {#if explanation}
+                    <span class="font-semibold text-sm">Explanation:</span>
+                    <div class="mt-1"><MathText content={explanation} /></div>
+                  {/if}
                   
                   {#if q.prompt?.en?.explanationImages?.length}
-                    <div class="mt-3 flex flex-wrap gap-2">
+                    {#if !explanation}<span class="font-semibold text-sm">Explanation:</span>{/if}
+                    <div class="mt-2 flex flex-wrap gap-2">
                       {#each q.prompt.en.explanationImages as img}
                         {#if img?.url}
                           <img src={img.url} alt={img.alt ?? ''} class="max-h-48 rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />
@@ -404,13 +407,15 @@
                     </div>
                   {/if}
 
-                  {#if rePhrasedExplanation}
+                  {#if rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length}
                     <div class="mt-3 border-t border-[var(--pyq-paper-border)]/60 pt-3">
                       <span class="font-semibold text-sm">Re-phrased explanation:</span>
-                      <div class="mt-1"><MathText content={rePhrasedExplanation} /></div>
+                      {#if rePhrasedExplanation}
+                        <div class="mt-1"><MathText content={rePhrasedExplanation} /></div>
+                      {/if}
 
                       {#if q.prompt?.en?.rePhrasedImage?.length}
-                        <div class="mt-3 flex flex-wrap gap-2">
+                        <div class="mt-2 flex flex-wrap gap-2">
                           {#each q.prompt.en.rePhrasedImage as img}
                             {#if img?.url}
                               <img src={img.url} alt={img.alt ?? ''} class="max-h-48 rounded-lg border border-[var(--pyq-paper-border)] object-contain bg-black/20" loading="lazy" />

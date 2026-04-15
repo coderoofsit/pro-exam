@@ -989,6 +989,69 @@
 													>{detailQuestion.prompt?.en?.rePhrasedExplanation ?? ""}</textarea
 												>
 											</div>
+
+											<!-- Correct Answer Editing -->
+											{#if (detailQuestion as any).kind === 'MCQ' || (detailQuestion as any).kind === 'MSQ' || (detailQuestion as any).kind === 'TRUE_FALSE'}
+												{@const qKind = (detailQuestion as any).kind}
+												{@const qCorrect = (detailQuestion as any).correct}
+												<div class="mb-6 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
+													<div class="text-sm font-semibold text-[var(--page-text)] mb-3">
+														Correct Answer{qKind === 'MSQ' ? 's' : ''} <span class="text-xs font-normal text-[var(--page-text-muted)]">({qKind})</span>
+													</div>
+													<div class="flex flex-wrap gap-3">
+														{#each (detailQuestion.prompt?.en?.options ?? []) as opt}
+															<label class="flex items-center gap-2 cursor-pointer select-none">
+																<input
+																	type={qKind === 'MSQ' ? 'checkbox' : 'radio'}
+																	name="correct_identifier"
+																	value={opt.identifier}
+																	checked={qCorrect?.identifiers?.includes(opt.identifier) ?? false}
+																	class="accent-[var(--page-link)] w-4 h-4"
+																/>
+																<span class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 text-xs font-bold text-[var(--page-link)]">{opt.identifier}</span>
+																<span class="text-sm text-[var(--page-text)] max-w-[160px] truncate">{opt.content}</span>
+															</label>
+														{/each}
+													</div>
+												</div>
+											{:else if (detailQuestion as any).kind === 'INTEGER'}
+												{@const qCorrect = (detailQuestion as any).correct}
+												<div class="mb-6 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
+													<label class="block text-sm font-semibold text-[var(--page-text)] mb-2" for="correct_integer">
+														Correct Answer <span class="text-xs font-normal text-[var(--page-text-muted)]">(INTEGER)</span>
+													</label>
+													<input
+														type="number"
+														id="correct_integer"
+														name="correct_integer"
+														value={qCorrect?.integer ?? ''}
+														class="w-full max-w-xs rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+														placeholder="Enter integer"
+													/>
+												</div>
+											{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
+												{@const qCorrect = (detailQuestion as any).correct}
+												<div class="mb-6 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4">
+													<div class="text-sm font-semibold text-[var(--page-text)] mb-3">
+														Correct Fills <span class="text-xs font-normal text-[var(--page-text-muted)]">(FILL_BLANK)</span>
+													</div>
+													<div class="space-y-2">
+														{#each (qCorrect?.fills ?? ['']) as fill, fi}
+															<div class="flex items-center gap-2">
+																<span class="text-xs text-[var(--page-text-muted)] w-5 shrink-0">{fi + 1}.</span>
+																<input
+																	type="text"
+																	name="correct_fill_{fi}"
+																	value={fill}
+																	class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
+																	placeholder="Fill {fi + 1}"
+																/>
+															</div>
+														{/each}
+													</div>
+													<input type="hidden" name="correct_fills_count" value={qCorrect?.fills?.length ?? 1} />
+												</div>
+											{/if}
 										</div>
 
 										<!-- Footer Buttons for Edit -->
@@ -1168,7 +1231,7 @@
 
 												<button
 													type="button"
-													class="group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200 {showAsCorrect
+													class="group relative flex items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200 {showAsCorrect
 														? 'border-semantic-success bg-semantic-success/5 shadow-[0_0_15px_rgba(22,163,74,0.1)]'
 														: showAsWrong
 															? 'border-semantic-error bg-semantic-error/5 shadow-[0_0_15px_rgba(220,38,38,0.1)]'
@@ -1182,7 +1245,7 @@
 															option.identifier)}
 												>
 													<span
-														class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold {showAsCorrect
+														class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold {showAsCorrect
 															? 'border-semantic-success bg-semantic-success text-white'
 															: showAsWrong
 																? 'border-semantic-error bg-semantic-error text-white'
