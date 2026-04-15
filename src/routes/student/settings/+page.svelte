@@ -44,9 +44,15 @@
     showVerifyPhone = true; showAddPhone = false;
   }
 
+  // Normalize phone: strip country code prefix, keep last 10 digits
+  function normalizePhone(raw: string): string {
+    const digits = raw.replace(/\D/g, '');
+    return digits.length > 10 ? digits.slice(-10) : digits;
+  }
+
   async function handleSaveAndSendOtp() {
     actionError = ''; actionSuccess = '';
-    const phone = phoneInput.trim();
+    const phone = normalizePhone(phoneInput.trim());
     if (!/^\d{10}$/.test(phone)) { actionError = 'Enter a valid 10-digit phone number.'; return; }
     const email = profile?.userProfileDetails?.email;
     if (!email) { actionError = 'Email not found. Please refresh.'; return; }
@@ -61,8 +67,9 @@
   }
 
   async function doSendOtp(phone: string) {
+    const normalized = normalizePhone(phone);
     sendingOtp = true;
-    const res = await sendPhoneOtp({ phone, token: $authStore.token });
+    const res = await sendPhoneOtp({ phone: normalized, token: $authStore.token });
     sendingOtp = false;
     if (!res.success) { actionError = res.message || 'Failed to send OTP.'; return; }
     otpSent = true; actionSuccess = 'OTP sent to your phone.';
@@ -71,15 +78,15 @@
 
   async function handleResendOtp() {
     actionError = ''; actionSuccess = '';
-    await doSendOtp(phoneInput.trim());
+    await doSendOtp(String(phoneInput).trim());
   }
 
   async function handleVerifyOtp() {
     actionError = ''; actionSuccess = '';
-    const otp = Number(otpInput.trim());
+    const otp = Number(String(otpInput).trim());
     if (!otp) { actionError = 'Enter the OTP.'; return; }
     verifyingOtp = true;
-    const res = await verifyPhoneOtp({ phone: phoneInput.trim(), otp, token: $authStore.token });
+    const res = await verifyPhoneOtp({ phone: normalizePhone(String(phoneInput).trim()), otp, token: $authStore.token });
     verifyingOtp = false;
     if (!res.success) { actionError = res.message || 'Invalid OTP.'; return; }
     actionSuccess = 'Phone verified successfully.';
