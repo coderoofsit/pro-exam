@@ -628,7 +628,7 @@
 </div>
 
 <div
-  class="pointer-events-none fixed bottom-0 left-0 right-0 z-[50] flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 md:left-[var(--sb-width-expanded)]"
+  class="pointer-events-none fixed bottom-[68px] md:bottom-0 left-0 right-0 z-[50] flex justify-center px-3 pb-4 md:pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 md:left-[var(--sb-width-expanded)]"
   role="region"
   aria-label="Upgrade subscription"
 >
