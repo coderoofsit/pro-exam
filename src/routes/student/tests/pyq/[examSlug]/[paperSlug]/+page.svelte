@@ -226,45 +226,59 @@
           {@const isFill = kind === 'FILLS' || (!isMcq && !isMsq && !isInteger && fills.length > 0)}
           {@const isEditing = editingQuestionId === q._id}
           <section class="rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
-            <div class="flex items-start justify-between gap-3">
+            <div class="space-y-2">
               <h2 class="text-base font-semibold text-[var(--pyq-paper-title)]">
                 Q{idx + 1}. {#if isEditing}Editing question{:else}<MathText content={prompt} />{/if}
               </h2>
-              <div class="flex items-center gap-2">
-                <span class="rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-semibold text-[var(--pyq-paper-title)]">
-                  {String(q.kind ?? 'NA').toUpperCase()}
-                </span>
-                <span class="max-w-[14rem] truncate rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-medium text-[var(--pyq-paper-meta)]" title={String(q.slug ?? '')}>
-                  {q.slug ? `slug: ${q.slug}` : 'slug: NA'}
-                </span>
-                {#if !isEditing}
-                  <!-- Approve status badge + toggle -->
-                  {#if q.approve}
-                    <span class="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-400">
-                      ✓Appr
-                    </span>
-                  {:else}
-                    <span class="rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-400">
-                      ✗Unappr
+
+              <!-- Keep meta/actions in a separate row so question text stays continuous -->
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-xs font-semibold text-[var(--pyq-paper-title)]">
+                    {String(q.kind ?? 'NA').toUpperCase()}
+                  </span>
+                  <span class="max-w-[14rem] truncate rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-sm font-semibold text-[var(--pyq-paper-meta)]" title={String(q.slug ?? '')}>
+                    {q.slug ? `slug: ${q.slug}` : 'slug: NA'}
+                  </span>
+
+                  {#if !isEditing && q.chapterSlug}
+                    <span class="rounded-md bg-black/20 px-2 py-1 text-sm font-semibold text-white">
+                      Chapter: {String(q.chapterSlug)}
                     </span>
                   {/if}
-                  <button
-                    type="button"
-                    class="rounded-md border px-3 py-1 text-xs font-semibold transition
-                      {q.approve
-                        ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                        : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
-                    onclick={() => toggleApprove(String(q._id), !!q.approve)}
-                  >
-                    {q.approve ? 'Unapprove' : 'Approve'}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-cta-subscription-outline px-3 py-1 text-xs"
-                    onclick={() => startEdit(q)}
-                  >
-                    Edit
-                  </button>
+                </div>
+
+                {#if !isEditing}
+                  <div class="flex items-center gap-2">
+                    <!-- Approve status badge + toggle -->
+                    {#if q.approve}
+                      <span class="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-400">
+                        ✓Appr
+                      </span>
+                    {:else}
+                      <span class="rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-400">
+                        ✗Unappr
+                      </span>
+                    {/if}
+
+                    <button
+                      type="button"
+                      class="rounded-md border px-3 py-1 text-xs font-semibold transition
+                        {q.approve
+                          ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                          : 'border-emerald-500/40 bg-red-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
+                      onclick={() => toggleApprove(String(q._id), !!q.approve)}
+                    >
+                      {q.approve ? 'Unapprove' : 'Approve'}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-cta-subscription-outline px-3 py-1 text-xs"
+                      onclick={() => startEdit(q)}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 {/if}
               </div>
             </div>

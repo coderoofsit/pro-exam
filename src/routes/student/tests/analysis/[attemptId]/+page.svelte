@@ -730,6 +730,11 @@
 								q.prompt?.content ??
 								"Question not available"}
 						/>
+						{#if q.chapterSlug}
+							<div class="mt-1 text-sm font-semibold text-white">
+								Chapter: {String(q.chapterSlug)}
+							</div>
+						{/if}
 					</div>
 
 					<!-- question images -->
