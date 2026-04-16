@@ -160,7 +160,10 @@
 			}
 
 			const checkout = checkoutRes.data?.data;
-			if (!checkout?.orderId || !checkout?.razorpayKeyId) {
+			if (
+				!checkout?.razorpayKeyId ||
+				(!checkout?.subscriptionId && !checkout?.orderId)
+			) {
 				paidError = 'Invalid checkout response from server.';
 				return;
 			}
@@ -168,10 +171,11 @@
 			const payment = await openRazorpayCheckout({
 				key: checkout.razorpayKeyId,
 				orderId: checkout.orderId,
+				subscriptionId: checkout.subscriptionId,
 				amount: checkout.amount,
 				currency: checkout.currency,
-				name: 'Exam Abhyas',
-				description: `${selectedPlan.name} subscription`,
+				name: checkout.name ?? 'Exam Abhyas',
+				description: checkout.description ?? `${selectedPlan.name} subscription`,
 				prefill: {
 					name:
 						[defaultProfile?.firstName, defaultProfile?.lastName].filter(Boolean).join(' ') || undefined,
@@ -179,7 +183,7 @@
 					contact: defaultProfile?.profilePhone || undefined
 				},
 				notes: {
-					planId: selectedPlan._id,
+					planId: checkout.planId ?? selectedPlan._id,
 					planName: selectedPlan.name
 				},
 				theme: {
@@ -187,8 +191,13 @@
 				}
 			});
 
+			if (!payment?.razorpay_subscription_id) {
+				paidError = 'Payment succeeded but subscription id is missing from Razorpay response.';
+				return;
+			}
+
 			const verifyRes = await verifySubscriptionPayment({
-				razorpay_order_id: payment.razorpay_order_id,
+				razorpay_subscription_id: payment.razorpay_subscription_id,
 				razorpay_payment_id: payment.razorpay_payment_id,
 				razorpay_signature: payment.razorpay_signature,
 				token: $authStore.token

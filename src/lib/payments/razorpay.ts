@@ -5,7 +5,8 @@ declare global {
 }
 
 export type RazorpaySuccessPayload = {
-	razorpay_order_id: string;
+	razorpay_order_id?: string;
+	razorpay_subscription_id?: string;
 	razorpay_payment_id: string;
 	razorpay_signature: string;
 };
@@ -26,9 +27,10 @@ type RazorpayFailurePayload = {
 
 type RazorpayOptions = {
 	key: string;
-	order_id: string;
-	amount: number;
-	currency: string;
+	order_id?: string;
+	subscription_id?: string;
+	amount?: number;
+	currency?: string;
 	name?: string;
 	description?: string;
 	image?: string;
@@ -92,7 +94,8 @@ export function loadRazorpayScript(): Promise<boolean> {
 
 export type OpenRazorpayCheckoutParams = {
 	key: string;
-	orderId: string;
+	orderId?: string;
+	subscriptionId?: string;
 	amount: number;
 	currency: string;
 	name?: string;
@@ -134,9 +137,16 @@ export async function openRazorpayCheckout(
 			reject(error);
 		};
 
-		const instance = new Razorpay({
+		if (!params.orderId && !params.subscriptionId) {
+			safeReject(new Error('Either `orderId` or `subscriptionId` must be provided.'));
+			return;
+		}
+
+		// Construct options dynamically so we don't pass `order_id: undefined` for subscriptions.
+		const razorpayOptions: RazorpayOptions = {
 			key: params.key,
 			order_id: params.orderId,
+			subscription_id: params.subscriptionId,
 			amount: params.amount,
 			currency: params.currency,
 			name: params.name ?? 'Exam Abhyas',
@@ -156,7 +166,14 @@ export async function openRazorpayCheckout(
 				confirm_close: true,
 				animation: true
 			}
-		});
+		};
+
+		// Only attach one of these IDs when present.
+		// (Razorpay may behave differently if it sees both.)
+		if (!params.orderId) delete (razorpayOptions as any).order_id;
+		if (!params.subscriptionId) delete (razorpayOptions as any).subscription_id;
+
+		const instance = new Razorpay(razorpayOptions);
 
 		instance.on('payment.failed', (response) => {
 			const message =

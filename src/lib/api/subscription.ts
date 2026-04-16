@@ -32,10 +32,17 @@ export type SubscriptionCheckoutResponseBody = {
 	data: {
 		transactionId: string;
 		razorpayKeyId: string;
-		orderId: string;
+		// Newer backend returns `subscriptionId` for Razorpay subscription checkout.
+		// Older backend used `orderId` for one-time payments.
+		subscriptionId?: string;
+		orderId?: string;
+		status?: string;
+		planId?: string;
 		amount: number;
 		currency: string;
-		receipt: string;
+		name?: string;
+		description?: string;
+		receipt?: string;
 	};
 };
 
@@ -94,20 +101,22 @@ export async function createSubscriptionCheckout(params: {
 }
 
 export async function verifySubscriptionPayment(params: {
-	razorpay_order_id: string;
+	razorpay_subscription_id: string;
 	razorpay_payment_id: string;
 	razorpay_signature: string;
 	token?: string | null;
 }) {
 	const t = resolveApiToken(params.token ?? null);
+	const payload: Record<string, string> = {
+		razorpay_subscription_id: params.razorpay_subscription_id,
+		razorpay_payment_id: params.razorpay_payment_id,
+		razorpay_signature: params.razorpay_signature
+	};
+
 	return apiRequest<VerifySubscriptionPaymentResponseBody>({
 		endpoint: '/api/v1/subscription-transactions/verify',
 		method: 'POST',
-		data: {
-			razorpay_order_id: params.razorpay_order_id,
-			razorpay_payment_id: params.razorpay_payment_id,
-			razorpay_signature: params.razorpay_signature
-		},
+		data: payload,
 		token: t
 	});
 }
