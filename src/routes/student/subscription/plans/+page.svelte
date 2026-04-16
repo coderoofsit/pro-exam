@@ -370,7 +370,7 @@
 		{/if}
 
 		<div
-			class="pointer-events-none fixed bottom-0 left-0 right-0 z-[50] flex justify-center border-t border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 md:left-[var(--sb-left-offset)]"
+			class="pointer-events-none fixed bottom-[68px] md:bottom-0 left-0 right-0 z-[50] flex justify-center border-t border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-4 py-4 pb-4 md:pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 md:left-[var(--sb-left-offset)]"
 		>
 			<div
 				class="pointer-events-auto flex w-full max-w-2xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"

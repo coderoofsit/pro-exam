@@ -250,8 +250,8 @@
 			</div>
 		{:else}
 			<aside
-	class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
->
+				class="sticky top-0 hidden md:flex h-screen w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
+			>
 				<div class="flex-1 overflow-y-auto p-2">
 					<button
 						type="button"
@@ -298,8 +298,30 @@
 
 			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-3 py-3 "
+					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-4 md:px-3 py-3 "
 				>
+					<button
+						type="button"
+						onclick={backToSubjects}
+						class="mb-4 inline-flex w-fit items-center gap-2 rounded-lg bg-[var(--page-card-bg)] border border-[var(--sh-exam-card-border)] px-3 py-1.5 text-sm font-medium text-[var(--page-text-muted)] md:hidden transition hover:text-[var(--page-link-hover)]"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+						>
+							<path
+								d="M15 18l-6-6 6-6"
+								stroke="currentColor"
+								stroke-width="2.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						Back to Subjects
+					</button>
+
 					{#if selectedSubject}
 						<div class="mb-3 shrink-0">
 							<h2 class="text-xl font-bold">

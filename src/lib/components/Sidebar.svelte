@@ -39,7 +39,6 @@
   let sidebarCollapsed = $state(false);
   let profileDropdownOpen = $state(false);
   let selectedUserIndex = $state(0);
-  let searchValue = $state("");
   let isLoadingUsers = $state(false);
   let selectingMembershipDefault = $state(false);
   let notificationSidebarOpen = $state(false);
@@ -655,13 +654,14 @@
 >
   <aside
     class="
-    relative flex h-dvh flex-shrink-0 flex-col overflow-hidden
+    relative h-dvh flex-shrink-0 flex-col overflow-hidden
     border-r border-[var(--sb-border-color)]
     bg-[linear-gradient(160deg,var(--sb-bg-from)_0%,var(--sb-bg-to)_100%)]
     shadow-[var(--sb-shadow)]
     transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
     before:absolute before:inset-x-0 before:top-0 before:h-px before:pointer-events-none
     before:bg-[linear-gradient(90deg,transparent,var(--sb-edge-glow),transparent)]
+    hidden md:flex
     {isCollapsed
       ? 'w-[var(--sb-width-collapsed)]'
       : 'w-[var(--sb-width-expanded)]'}
@@ -974,42 +974,7 @@
     "
     >
       <div class="flex items-center justify-between gap-4">
-        <div class="relative w-full max-w-[560px]">
-          <span
-            class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--topbar-search-icon)]"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="11"
-                cy="11"
-                r="7"
-                stroke="currentColor"
-                stroke-width="1.8"
-              />
-              <path
-                d="M20 20l-3.5-3.5"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
-            </svg>
-          </span>
-          <input
-            bind:value={searchValue}
-            type="text"
-            placeholder="Search exams, tests, batches..."
-            class="
-              h-11 w-full rounded-xl pl-11 pr-4 text-sm outline-none
-              bg-[var(--topbar-search-bg)]
-              border border-[var(--topbar-search-border)]
-              text-[var(--topbar-search-text)]
-              placeholder:text-[var(--topbar-search-placeholder)]
-              transition-[border,box-shadow] duration-150
-              focus:border-[var(--topbar-search-border-focus)]
-              focus:ring-4 focus:ring-[var(--topbar-search-ring-focus)]
-            "
-          />
-        </div>
+        <div></div>
         <div class="flex items-center gap-2.5 flex-shrink-0">
           <button
             type="button"
@@ -1394,7 +1359,7 @@
       id="layout-main-scroll"
       class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-0 {isTestAttemptRoute
         ? 'flex flex-col px-0 pb-0'
-        : 'px-6 pb-6'}"
+        : 'px-4 pb-24 md:px-6 md:pb-6'}"
     >
       {#key page.url.pathname}
         <div
@@ -1456,3 +1421,73 @@
     </div>
   </div>
 {/if}
+
+<!-- Mobile Bottom Navigation -->
+<nav
+  class="
+    fixed bottom-0 left-0 right-0 z-[100] flex h-16 items-center justify-around
+    md:hidden px-4
+    bg-[var(--topbar-bg)] border-t border-[var(--topbar-border)]
+    shadow-[0_-4px_16px_rgba(0,0,0,0.06)]
+    backdrop-blur-xl
+  "
+>
+  {#each sidebarNavItems as navItem}
+    {@const active = isActive(navItem.href)}
+    <a
+      href={navItem.href}
+      class="
+        relative flex flex-col items-center justify-center gap-1 min-w-[64px]
+        transition-colors duration-200
+        {active ? 'text-[var(--sb-nav-active-text)]' : 'text-[var(--sb-nav-text)]'}
+      "
+    >
+      <div
+        class="
+        flex items-center justify-center w-8 h-8 rounded-lg
+        transition-all duration-200
+        {active ? 'bg-[var(--sb-nav-active-bg)] shadow-[var(--sb-nav-active-glow)]' : ''}
+      "
+      >
+        <span class="flex items-center justify-center">
+          {#if navItem.icon === "dashboard"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" stroke-width="2" />
+              <rect x="13" y="3" width="8" height="5" rx="2" stroke="currentColor" stroke-width="2" />
+              <rect x="13" y="12" width="8" height="9" rx="2" stroke="currentColor" stroke-width="2" />
+              <rect x="3" y="15" width="8" height="6" rx="2" stroke="currentColor" stroke-width="2" />
+            </svg>
+          {:else if navItem.icon === "exams"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="2" />
+              <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          {:else if navItem.icon === "tests"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path d="M9 12l2 2 4-4M16 3l2 2-6 6M18 5l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          {:else if navItem.icon === "batch"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2" />
+              <path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <circle cx="17" cy="7" r="2.25" stroke="currentColor" stroke-width="2" />
+              <path d="M21 20c0-2.485-1.79-4.5-4-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          {:else if navItem.icon === "subscription"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+          {/if}
+        </span>
+      </div>
+      <span class="text-[10px] font-semibold tracking-tight">{navItem.label}</span>
+      {#if active}
+        <span class="absolute -bottom-1 w-1 h-1 rounded-full bg-[var(--sb-nav-active-indicator)]"></span>
+      {:else}
+        <span class="absolute -bottom-1 w-1 h-1 rounded-full bg-transparent"></span>
+      {/if}
+    </a>
+  {/each}
+</nav>
