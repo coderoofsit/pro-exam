@@ -582,7 +582,7 @@
 <div
 	class="flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	<div class="mx-auto flex h-full w-full  overflow-hidden ">
+	<div class="mx-auto max-w-6xl flex h-full w-full  overflow-hidden ">
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
 				class="mx-auto flex h-full w-full flex-col px-4 md:px-6 overflow-hidden min-h-0 "
