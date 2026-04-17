@@ -169,9 +169,9 @@
 </svelte:head>
 
 <div
-	class="flex h-full bg-[var(--page-bg)] text-[var(--page-text)] "
+	class="flex h-full bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	<div class="mx-auto flex h-full w-full max-w-7xl px-4 pl-0 ">
+	<div class="mx-auto flex h-full w-full px-4 md:px-6">
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<a
@@ -298,7 +298,7 @@
 
 			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden px-4 md:px-3 py-3 "
+					class="mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden px-4 md:px-6 py-5"
 				>
 					<button
 						type="button"
@@ -322,19 +322,7 @@
 						Back to Subjects
 					</button>
 
-					{#if selectedSubject}
-						<div class="mb-3 shrink-0">
-							<h2 class="text-xl font-bold">
-								{selectedSubject.name?.en ??
-									selectedSubject.slug}
-							</h2>
-							<p
-								class="mt-0.5 text-sm text-[var(--page-text-muted)]"
-							>
-								{displayChapters.length} chapter
-							</p>
-						</div>
-					{/if}
+
 
 					{#if displayChapters.length === 0}
 						<p class="text-[var(--page-text-muted)]">
@@ -343,25 +331,21 @@
 					{:else}
 						<div class="flex-1 overflow-y-auto py-4">
 							<div
-								class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-2"
+								class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
 							>
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
 										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
-										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--sh-tool-card-hover-border)] hover:shadow-[var(--sh-tool-card-hover-shadow)]"
+										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
 									>
 										
 										<h2
 											class="text-sm font-semibold leading-snug"
 										>
-											{chapter.order}. {chapter.name
-												?.en ?? chapter.slug}
+											{chapter.name?.en ?? chapter.slug}
 										</h2>
-										<p class="mt-0.5 text-xs opacity-70">
-											{groupName}
-										</p>
 										<p
-											class="mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition group-hover:text-[var(--sh-section-link-hover)]"
+											class="mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition group-hover:text-[var(--accent-cta-pink)]"
 										>
 											View questions
 											<span

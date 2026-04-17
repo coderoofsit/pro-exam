@@ -201,16 +201,17 @@
 
   const sidebarNavItems = $derived(navItemsByRole[role]);
   const isDark = $derived($themeStore === "dark");
-  const isOwnTestExamRoute = $derived(
-    /^\/student\/tests\/own\/[^/]+/.test(page.url.pathname),
+  const isAutoCollapseRoute = $derived(
+    /^\/student\/tests\/own\/[^/]+/.test(page.url.pathname) ||
+    (/^\/student-exam/.test(page.url.pathname) && page.url.searchParams.get("view") === "chapters")
   );
   const isCollapsed = $derived(sidebarCollapsed);
 
   $effect(() => {
-    if (isOwnTestExamRoute && !wasOwnTestExamRoute) {
+    if (isAutoCollapseRoute && !wasOwnTestExamRoute) {
       sidebarCollapsed = true;
     }
-    wasOwnTestExamRoute = isOwnTestExamRoute;
+    wasOwnTestExamRoute = isAutoCollapseRoute;
   });
 
   $effect(() => {
