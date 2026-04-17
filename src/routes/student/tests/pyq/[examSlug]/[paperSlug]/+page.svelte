@@ -172,7 +172,7 @@
 </svelte:head>
 
 <div class="min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto  px-4 py-8">
+  <div class="mx-auto max-w-6xl px-4 py-8">
     <h1 class="mb-5 text-xl font-bold text-[var(--pyq-accordion-title)]">
       {examName} Paper Questions
     </h1>
