@@ -38,7 +38,11 @@
 
   let sidebarCollapsed = $state(false);
   let profileDropdownOpen = $state(false);
-  let selectedUserIndex = $state(0);
+  let selectedUserIndex = $state(
+    $authStore.users.findIndex((u) => u.defaultProfile) !== -1
+      ? $authStore.users.findIndex((u) => u.defaultProfile)
+      : 0,
+  );
   let isLoadingUsers = $state(false);
   let selectingMembershipDefault = $state(false);
   let notificationSidebarOpen = $state(false);
@@ -367,18 +371,29 @@
 
   async function selectUser(index: number) {
     const requestId = ++membershipSwitchRequestId;
-    const user = $authStore.users[index];
-    if (!user) return;
+    const clickedUser = $authStore.users[index];
+    if (!clickedUser) return;
 
-    if (user.defaultProfile) {
-      selectedUserIndex = index;
+    // Immediately update local store for instant visual feedback:
+    // 1. Mark clicked user as default
+    // 2. Sort users so default is at top
+    // 3. This triggers $effect to sync selectedUserIndex to 0
+    const locallyUpdatedUsers = $authStore.users.map((u, i) => ({
+      ...u,
+      defaultProfile: i === index,
+    })).sort((a, b) => (b.defaultProfile ? 1 : 0) - (a.defaultProfile ? 1 : 0));
+
+    authStore.setUsers(locallyUpdatedUsers);
+
+    if (clickedUser.defaultProfile) {
       profileDropdownOpen = false;
+      hardReloadCurrentPage();
       return;
     }
 
     /** Membership row `_id` + `userProfileId` from GET /membership (required by API). */
-    const membershipId = user._id;
-    const userProfiledId = user.userProfileId?.trim();
+    const membershipId = clickedUser._id;
+    const userProfiledId = clickedUser.userProfileId?.trim();
     if (!userProfiledId) {
       console.error(
         "[Sidebar] Missing userProfileId on user — run GET /membership first or refresh the page.",
@@ -590,6 +605,13 @@
 
     if (selectedUserIndex > $authStore.users.length - 1) {
       selectedUserIndex = 0;
+    }
+  });
+
+  $effect(() => {
+    const idx = $authStore.users.findIndex((u) => u.defaultProfile);
+    if (idx !== -1) {
+      selectedUserIndex = idx;
     }
   });
 
@@ -965,15 +987,15 @@
   <div class="flex min-h-0 min-w-0 flex-1 flex-col">
     <header
       class="
-      sticky top-0 z-30 flex-shrink-0
-      px-6 py-3
+      fixed top-0 right-0 left-0 md:left-[var(--sb-left-offset)] z-30
+      h-[68px] flex items-center px-6
       bg-[var(--topbar-bg)]
       border-b border-[var(--topbar-border)]
       shadow-[var(--topbar-shadow)]
       backdrop-blur-md
     "
     >
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex flex-1 items-center justify-between gap-4">
         <div></div>
         <div class="flex items-center gap-2.5 flex-shrink-0">
           <button
@@ -1100,7 +1122,7 @@
               onclick={toggleProfileDropdown}
               disabled={selectingMembershipDefault}
               class="
-                flex items-center gap-2.5 rounded-xl px-3 py-2
+                flex w-[160px] items-center gap-2.5 rounded-xl px-3 py-2
                 bg-[var(--topbar-profile-bg)]
                 border border-[var(--topbar-profile-border)]
                 transition-[border] duration-150
@@ -1126,15 +1148,14 @@
                 </div>
               {/if}
 
-              <div class="hidden text-left sm:block">
+              <div class="hidden min-w-0 flex-1 text-left sm:block">
                 <p
-                  class="max-w-[130px] truncate text-sm font-semibold text-[var(--topbar-profile-name)]"
+                  class="truncate text-sm font-semibold text-[var(--topbar-profile-name)]"
                 >
-                  {currentUser?.firstName}
-                  {currentUser?.lastName}
+                  {currentUser?.firstName ?? ""} {currentUser?.lastName ?? ""}
                 </p>
                 <p
-                  class="text-[11px] capitalize text-[var(--topbar-profile-role)]"
+                  class="truncate text-[11px] capitalize text-[var(--topbar-profile-role)]"
                 >
                   {role}
                 </p>
@@ -1357,7 +1378,7 @@
     />
     <main
       id="layout-main-scroll"
-      class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-0 {isTestAttemptRoute
+      class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-[68px] {isTestAttemptRoute
         ? 'flex flex-col px-0 pb-0'
         : 'px-4 pb-24 md:px-6 md:pb-6'}"
     >

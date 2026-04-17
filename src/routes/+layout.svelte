@@ -28,20 +28,22 @@
     }
 
     authStore.setAuth({
-      users: (data?.membershipUsers ?? []).map((user) => {
-        const prof = normalizeMembershipProfileRef(user.userProfileId);
-        return {
-          _id: user._id,
-          userProfileId: prof.userProfileId,
-          profileEmail: prof.email,
-          profilePhone: prof.phone,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          image: user.image,
-          defaultProfile: user.defaultProfile,
-          subscription: user.subscription
-        };
-      }),
+      users: (data?.membershipUsers ?? [])
+        .sort((a, b) => (b.defaultProfile ? 1 : 0) - (a.defaultProfile ? 1 : 0))
+        .map((user) => {
+          const prof = normalizeMembershipProfileRef(user.userProfileId);
+          return {
+            _id: user._id,
+            userProfileId: prof.userProfileId,
+            profileEmail: prof.email,
+            profilePhone: prof.phone,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            image: user.image,
+            defaultProfile: user.defaultProfile,
+            subscription: user.subscription
+          };
+        }),
       token,
       role: $authStore.role,
       profileId: $authStore.profileId
