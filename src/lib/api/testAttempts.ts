@@ -161,13 +161,17 @@ export type BatchTestAttemptSession = {
 };
 
 export async function createTestAttempt(
-	body: { testId: string; batchId?: string | null },
+	body: { testId: string; batchId?: string | null; testAttemptId?: string | null },
 	fetchFn?: typeof fetch,
 	options?: { token?: string }
 ) {
-	const payload: { testId: string; batchId?: string } = { testId: body.testId };
+	const payload: { testId: string; batchId?: string; testAttemptId?: string } = {
+		testId: body.testId
+	};
 	const b = body.batchId != null ? String(body.batchId).trim() : '';
 	if (b) payload.batchId = b;
+	const attemptId = body.testAttemptId != null ? String(body.testAttemptId).trim() : '';
+	if (attemptId) payload.testAttemptId = attemptId;
 	const t = resolveApiToken(options?.token ?? null);
 	return apiRequest<CreateTestAttemptResponseBody>({
 		endpoint: '/api/v1/test-attempts',

@@ -167,8 +167,13 @@
     return `/student/tests/analysis/${aid}?testName=${encodeURIComponent(testName(item))}`;
   }
 
+  function getAttemptId(item: GetTestUserItem) {
+    const aid = item.attemptId;
+    return typeof aid === "string" && aid.trim().length > 0 ? aid.trim() : null;
+  }
+
   async function handleViewAnalysis(item: GetTestUserItem) {
-    const aid = item.attemptId?.trim();
+    const aid = getAttemptId(item);
     if (!aid) return;
     viewingAnalysisId = aid;
     await goto(analysisHref(item));
@@ -191,7 +196,10 @@
     pendingStartModalOpen = false;
   }
 
-  async function onStartTest(item: GetTestUserItem) {
+  async function onStartTest(
+    item: GetTestUserItem,
+    options?: { testAttemptId?: string | null },
+  ) {
     if (startingTestId) return;
 
     const testId = item._id;
@@ -208,6 +216,7 @@
         const res = await createTestAttempt({
           testId,
           batchId: batchIdStr || null,
+          testAttemptId: options?.testAttemptId ?? null,
         });
 
         if (!res.success) {
@@ -261,6 +270,15 @@
     } finally {
       startingTestId = null;
     }
+  }
+
+  function onReAttemptClick(item: GetTestUserItem) {
+    const attemptId = getAttemptId(item);
+    if (!attemptId) {
+      startTestError = "Could not re-attempt test: missing attempt id.";
+      return;
+    }
+    void onStartTest(item, { testAttemptId: attemptId });
   }
 </script>
 
@@ -526,6 +544,13 @@
                       <div class="flex shrink-0 items-center justify-center gap-2 px-4 pb-4 sm:pb-0">
                         {#if hasExistingAttempt(item)}
                           <button onclick={() => handleViewAnalysis(item)} class="btn-cta-subscription-outline text-xs px-4 py-2">View Analysis</button>
+                          <button
+                            onclick={() => onReAttemptClick(item)}
+                            class="btn-cta-subscription text-xs px-4 py-2"
+                            disabled={startingTestId === item._id}
+                          >
+                            {startingTestId === item._id ? "Starting..." : "Re-attempt"}
+                          </button>
                         {:else}
                           <button onclick={() => onStartTestClick(item)} class="btn-cta-subscription text-xs px-4 py-2">Start Test</button>
                         {/if}
