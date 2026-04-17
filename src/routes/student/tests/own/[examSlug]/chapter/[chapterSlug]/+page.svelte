@@ -238,14 +238,7 @@
     </div>
 
     <div class="mb-6">
-      <button
-        type="button"
-        class="flex items-center gap-2 rounded-lg text-sm font-medium text-[var(--sh-ai-sub)] hover:text-[var(--sh-section-title)]"
-        onclick={toggleFilterPanel}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        {filterDrawerOpen ? 'Hide Filters' : 'Show Filters'}
-      </button>
+      
 
       {#if filterDrawerOpen}
         <div class="mt-3 grid gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4">
