@@ -331,22 +331,22 @@
 
   /* Year accordion row */
   --pyq-accordion-bg: #ffffff;
-  --pyq-accordion-border: #e2e8f0;
+  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 28%, #e2e8f0);
   --pyq-accordion-hover-bg: #f8faff;
-  --pyq-accordion-hover-border: #4f7eff;
+  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 62%, #e2e8f0);
   --pyq-accordion-title: #1a1f36;
   --pyq-accordion-count: #64748b;
   --pyq-accordion-chevron: #94a3b8;
   --pyq-accordion-chevron-active: #4f7eff;
   --pyq-accordion-active-bg: #ffffff;
-  --pyq-accordion-active-border: #4f7eff;
+  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 68%, #e2e8f0);
 
   /* Paper card inside accordion */
   --pyq-paper-bg: #f8faff;
   --pyq-paper-border: #e2e8f0;
-  --pyq-paper-hover-bg: #eef2ff;
-  --pyq-paper-hover-border: #4f7eff;
-  --pyq-paper-hover-shadow: 0 4px 16px rgba(79, 126, 255, 0.12);
+  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, #ffffff);
+  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 60%, #e2e8f0);
+  --pyq-paper-hover-shadow: 0 4px 16px color-mix(in srgb, var(--accent-cta-pink) 26%, transparent);
   --pyq-paper-title: #1a1f36;
   --pyq-paper-meta: #64748b;
   --pyq-paper-meta-label: #94a3b8;
@@ -649,20 +649,20 @@
   --pyq-sort-btn-hover-border: rgba(139, 92, 246, 0.50);
   --pyq-sort-btn-hover-text: #C4B5FD;
   --pyq-accordion-bg: rgba(255, 255, 255, 0.03);
-  --pyq-accordion-border: rgba(139, 92, 246, 0.18);
+  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 32%, rgba(139, 92, 246, 0.18));
   --pyq-accordion-hover-bg: rgba(139, 92, 246, 0.06);
-  --pyq-accordion-hover-border: rgba(139, 92, 246, 0.40);
+  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 72%, rgba(139, 92, 246, 0.40));
   --pyq-accordion-title: #ffffff;
   --pyq-accordion-count: #A1A1AA;
   --pyq-accordion-chevron: #52525B;
   --pyq-accordion-chevron-active: #A78BFA;
   --pyq-accordion-active-bg: rgba(139, 92, 246, 0.05);
-  --pyq-accordion-active-border: rgba(139, 92, 246, 0.40);
+  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 76%, rgba(139, 92, 246, 0.40));
   --pyq-paper-bg: rgba(255, 255, 255, 0.03);
   --pyq-paper-border: rgba(139, 92, 246, 0.14);
-  --pyq-paper-hover-bg: rgba(139, 92, 246, 0.08);
-  --pyq-paper-hover-border: rgba(139, 92, 246, 0.40);
-  --pyq-paper-hover-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, rgba(139, 92, 246, 0.08));
+  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 74%, rgba(139, 92, 246, 0.40));
+  --pyq-paper-hover-shadow: 0 4px 20px color-mix(in srgb, var(--accent-cta-pink) 30%, transparent);
   --pyq-paper-title: #ffffff;
   --pyq-paper-meta: #A1A1AA;
   --pyq-paper-meta-label: #71717A;
@@ -1571,21 +1571,21 @@ html[data-theme='dark'] .student-dash-mascot {
   --pyq-sort-btn-hover-text: #C4B5FD;
 
   --pyq-accordion-bg: rgba(255, 255, 255, 0.03);
-  --pyq-accordion-border: rgba(139, 92, 246, 0.18);
+  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 32%, rgba(139, 92, 246, 0.18));
   --pyq-accordion-hover-bg: rgba(139, 92, 246, 0.06);
-  --pyq-accordion-hover-border: rgba(139, 92, 246, 0.40);
+  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 72%, rgba(139, 92, 246, 0.40));
   --pyq-accordion-title: #ffffff;
   --pyq-accordion-count: #A1A1AA;
   --pyq-accordion-chevron: #52525B;
   --pyq-accordion-chevron-active: #A78BFA;
   --pyq-accordion-active-bg: rgba(139, 92, 246, 0.05);
-  --pyq-accordion-active-border: rgba(139, 92, 246, 0.40);
+  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 76%, rgba(139, 92, 246, 0.40));
 
   --pyq-paper-bg: rgba(255, 255, 255, 0.03);
   --pyq-paper-border: rgba(139, 92, 246, 0.14);
-  --pyq-paper-hover-bg: rgba(139, 92, 246, 0.08);
-  --pyq-paper-hover-border: rgba(139, 92, 246, 0.40);
-  --pyq-paper-hover-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, rgba(139, 92, 246, 0.08));
+  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 74%, rgba(139, 92, 246, 0.40));
+  --pyq-paper-hover-shadow: 0 4px 20px color-mix(in srgb, var(--accent-cta-pink) 30%, transparent);
   --pyq-paper-title: #ffffff;
   --pyq-paper-meta: #A1A1AA;
   --pyq-paper-meta-label: #71717A;
@@ -2288,9 +2288,9 @@ html[data-theme='dark'] .student-dash-mascot {
 }
 
 .own-subject-card:hover {
-  border-color: var(--accent-cta-pink);
-  background: color-mix(in srgb, var(--sh-exam-card-border) 18%, var(--sh-exam-card-bg));
-  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.2);
+  border-color: color-mix(in srgb, var(--accent-cta-pink) 88%, #b91c74);
+  background: color-mix(in srgb, var(--accent-cta-pink) 14%, var(--sh-exam-card-bg));
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--accent-cta-pink) 55%, transparent);
   transform: translateY(-2px);
 }
 
@@ -2424,7 +2424,7 @@ html[data-theme='dark'] .student-dash-mascot {
 }
 
 .own-unit__trigger:hover {
-  background: color-mix(in srgb, var(--sh-exam-card-border) 14%, var(--sh-exam-card-bg));
+  background: color-mix(in srgb, var(--accent-cta-pink) 12%, var(--sh-exam-card-bg));
 }
 
 .own-unit__chev {
@@ -2648,12 +2648,23 @@ html[data-theme='dark'] .student-dash-mascot {
 }
 
 .own-chapter-row:hover {
-  background: color-mix(in srgb, var(--sh-exam-card-border) 12%, var(--sh-exam-card-bg));
-  border-color: color-mix(in srgb, var(--accent-cta-pink) 35%, var(--sh-exam-card-border));
+  background: color-mix(in srgb, var(--accent-cta-pink) 14%, var(--sh-exam-card-bg));
+  border-color: color-mix(in srgb, var(--accent-cta-pink) 75%, var(--sh-exam-card-border));
+  box-shadow: 0 8px 20px -14px color-mix(in srgb, var(--accent-cta-pink) 52%, transparent);
 }
 
 .own-chapter-row .own-check {
   flex-shrink: 0;
+}
+
+.own-test-chapter-page .own-check__visual[data-own-accent] {
+  border-color: color-mix(in srgb, var(--accent-cta-pink) 65%, var(--sh-exam-card-border));
+}
+
+.own-test-chapter-page .own-check input:checked + .own-check__visual[data-own-accent],
+.own-test-chapter-page .own-check input:indeterminate + .own-check__visual[data-own-accent] {
+  background: var(--accent-cta-pink);
+  border-color: var(--accent-cta-pink);
 }
 
 .own-chapter-row .own-chapter__label {
@@ -2912,6 +2923,72 @@ a.student-batch-card:hover {
   background: color-mix(in srgb, var(--accent-cta-pink) 10%, var(--sh-exam-card-bg));
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   transform: none;
+}
+
+/* Attention variant for key CTAs (Start Test / Re-attempt). */
+.btn-attention {
+  position: relative;
+  overflow: hidden;
+  animation: btnAttentionPulse 2.2s ease-in-out infinite;
+}
+
+.btn-attention::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -160%;
+  width: 65%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-cta-pink) 24%, #ffffff) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  animation: btnAttentionShimmer 2.4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes btnAttentionPulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--accent-cta-pink) 68%, transparent);
+  }
+  50% {
+    box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--accent-cta-pink) 85%, transparent);
+  }
+}
+
+@keyframes btnAttentionShimmer {
+  0% {
+    left: -160%;
+  }
+  100% {
+    left: 180%;
+  }
+}
+
+/* Student tests filter dropdowns (light + dark). */
+.tests-filter-select {
+  color: var(--sh-exam-card-title);
+}
+
+.tests-filter-select option {
+  background: var(--sh-exam-card-bg);
+  color: var(--sh-exam-card-title);
+}
+
+[data-theme="dark"] .tests-filter-select {
+  color-scheme: dark;
+  background: #11162a;
+  color: #e5e7eb;
+  border-color: rgba(236, 72, 153, 0.35);
+}
+
+[data-theme="dark"] .tests-filter-select option {
+  background: #11162a;
+  color: #e5e7eb;
 }
 
 /* ── MOVED FROM ANALYSIS PAGE ── */

@@ -9,6 +9,7 @@
 
   const exams = $derived(data.exams ?? []);
   const error = $derived(data.error ?? null);
+  let openingExamId = $state<string | null>(null);
 
   /** `?mode=manual|random` — no persistence; back to bare /student/tests/own shows the modal again */
   const creationMode = $derived.by(() => {
@@ -24,6 +25,21 @@
 
   function onBack() {
     goto('/student/tests');
+  }
+
+  async function openExam(item: (typeof exams)[number], e: MouseEvent) {
+    e.preventDefault();
+    if (openingExamId) return;
+    openingExamId = item._id;
+    const href =
+      '/student/tests/own/' +
+      (item?.slug ?? '') +
+      (creationMode ? `?mode=${creationMode}` : '');
+    try {
+      await goto(href);
+    } finally {
+      openingExamId = null;
+    }
   }
 </script>
 
@@ -42,6 +58,16 @@
     />
 
     {#if !showChoiceModal}
+      <div class="mb-4 flex justify-start">
+        <button
+          type="button"
+          class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+          onclick={onBack}
+        >
+          Back
+        </button>
+      </div>
+
       {#if error}
         <div
           class="
@@ -95,6 +121,8 @@
               name={item?.name?.en ?? 'Unnamed'}
               image={item?.image ?? null}
               slug={item?.slug ?? ''}
+              loading={openingExamId === item._id}
+              onNavigate={(e) => void openExam(item, e)}
               href={'/student/tests/own/' +
                 (item?.slug ?? '') +
                 (creationMode ? `?mode=${creationMode}` : '')}
@@ -104,4 +132,10 @@
       {/if}
     {/if}
   </div>
+
+  {#if openingExamId}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-[2px]">
+      <span class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-cta-pink)] border-r-transparent"></span>
+    </div>
+  {/if}
 </div>

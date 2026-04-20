@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
 
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
@@ -15,6 +16,7 @@
   let openUnitIds = $state<Set<string>>(new Set());
   let subjectRailOpen = $state(true);
   let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
+  let openingChapterId = $state<string | null>(null);
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
   const manualUiStateKey = $derived(`own-manual-ui::${examSlug}`);
@@ -89,14 +91,26 @@
             .filter((id) => validUnitIds.has(id))
         : [];
 
-      openSubjectSlug = savedSubject || groupedSubjects[0]?.subject?.slug || '';
-      openUnitIds = new Set(savedUnits);
+      const subjectToOpen = savedSubject || groupedSubjects[0]?.subject?.slug || '';
+      openSubjectSlug = subjectToOpen;
+      openUnitIds = new Set(
+        savedUnits.length
+          ? savedUnits
+          : (groupedSubjects.find((g) => g.subject.slug === subjectToOpen)?.data ?? []).map((u) =>
+              String(u.chapterGroup._id)
+            )
+      );
       return;
     }
   } catch {}
 
-  openSubjectSlug = groupedSubjects[0]?.subject?.slug || '';
-  openUnitIds = new Set();
+  const defaultSubject = groupedSubjects[0]?.subject?.slug || '';
+  openSubjectSlug = defaultSubject;
+  openUnitIds = new Set(
+    (groupedSubjects.find((g) => g.subject.slug === defaultSubject)?.data ?? []).map((u) =>
+      String(u.chapterGroup._id)
+    )
+  );
 });
 
 $effect(() => {
@@ -152,6 +166,16 @@ $effect(() => {
   function chapterHref(chSlug: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId });
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
+  }
+
+  async function openChapter(chSlug: string, chapterId: string) {
+    if (openingChapterId) return;
+    openingChapterId = chapterId;
+    try {
+      await goto(chapterHref(chSlug));
+    } finally {
+      openingChapterId = null;
+    }
   }
 
 </script>
@@ -246,19 +270,25 @@ $effect(() => {
                   {#each unit.data as ch (ch._id)}
                     {@const qCount = questionCountByChapterId.get(ch._id) || 0}
                     <li>
-                      <div class="own-chapter-row own-chapter-row--manual w-full">
+                      <button
+                        type="button"
+                        class="own-chapter-row own-chapter-row--manual w-full cursor-pointer text-left"
+                        disabled={openingChapterId !== null}
+                        aria-busy={openingChapterId === ch._id}
+                        onclick={() => void openChapter(ch.slug, ch._id)}
+                      >
                         <span class="own-chapter__label">{ch.name?.en ?? ch.slug}</span>
                         {#if qCount > 0}
                           <span class="text-xs text-[var(--own-muted)] mr-2">{qCount} q.</span>
                         {/if}
-                        <a
-                          class="own-chapter__next"
-                          href={chapterHref(ch.slug)}
-                          aria-label="Open chapter {ch.name?.en ?? ch.slug}"
-                        >
-                          <span aria-hidden="true">→</span>
-                        </a>
-                      </div>
+                        <span class="own-chapter__next" aria-hidden="true">
+                          {#if openingChapterId === ch._id}
+                            <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
+                          {:else}
+                            <span aria-hidden="true">→</span>
+                          {/if}
+                        </span>
+                      </button>
                     </li>
                   {/each}
                 </ul>

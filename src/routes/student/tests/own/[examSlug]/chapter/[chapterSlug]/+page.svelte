@@ -127,6 +127,11 @@
   }
 
   const selectedCount = $derived(selectedIds.size);
+  const selectedCountInChapter = $derived.by(() => {
+    const currentChapterId = String(chapterId ?? "").trim() || String(data.chapter?._id ?? "");
+    if (!currentChapterId) return selectedCount;
+    return selectedRows.filter((r) => String(r.chapterId).trim() === currentChapterId).length;
+  });
 
   const questionsPageUrl = (p: number, opts?: { topic?: string[]; kind?: string[]; difficulty?: string[] }) => {
     const t = opts?.topic ?? selectedTopicSlug;
@@ -206,38 +211,55 @@
   <title>{title} — Manual test · Exam Abhyas</title>
 </svelte:head>
 
-<div class="own-test-page min-h-full font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0 flex-1">
-        <p class="text-sm text-[var(--own-muted)]">Exam · {data.examSlug}</p>
-        <h1 class="own-heading-xl mt-2">{title}</h1>
+<div class="own-test-page own-test-chapter-page min-h-full font-sans transition-colors duration-300">
+  <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
+    <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div class="min-w-0">
         {#if data.paginationMeta}
-          <p class="mt-2 text-sm text-[var(--own-muted)]">
+          <p class="text-sm text-[var(--own-muted)]">
             {data.paginationMeta.total} questions • Page {data.safePage} of {data.paginationMeta.lastPage}
           </p>
         {/if}
+        <p class="mt-1 text-xs text-[var(--page-text-muted)]">
+          Chapter: {title} • Selected: {selectedCountInChapter}
+        </p>
       </div>
 
-      <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+      {#if data.paginationMeta && data.paginationMeta.lastPage > 1}
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:px-3">
+          {#if data.safePage > 1}
+            <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
+            <a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
+          {/if}
+          <span class="text-xs text-[var(--page-text-muted)]">
+            Page {data.safePage} / {data.paginationMeta.lastPage}
+          </span>
+          {#if data.safePage < data.paginationMeta.lastPage}
+            <a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
+            <a class="pagination-btn" href={questionsPageUrl(data.paginationMeta.lastPage)}>Last →</a>
+          {/if}
+        </div>
+      {/if}
+
+      <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
         <button
           type="button"
-          class="relative rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+          class="rounded-lg border border-[var(--accent-cta-pink)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
           onclick={toggleFilterPanel}
         >
           Filters{#if activeFilterCount > 0}<span class="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--page-link)] text-[10px] font-bold text-white">{activeFilterCount}</span>{/if}
         </button>
         <button
           type="button"
-          class="rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
+          class="rounded-lg border border-[var(--accent-cta-pink)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
           onclick={() => goto(`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`)}
         >
-          Back
+          Resume test creation
         </button>
       </div>
     </div>
 
-    <div class="mb-6">
+    <div class="mb-4">
       
 
       {#if filterDrawerOpen}
@@ -249,7 +271,7 @@
                 <button
                   type="button"
                   onclick={() => togglePendingDifficulty(diff)}
-                  class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
                 >
                   {diff}
                 </button>
@@ -264,7 +286,7 @@
                 <button
                   type="button"
                   onclick={() => togglePendingKind(k)}
-                  class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                  class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
                 >
                   {k}
                 </button>
@@ -282,7 +304,7 @@
                   <button
                     type="button"
                     onclick={() => (pendingTopic = [])}
-                    class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                    class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
                   >
                     All Topics
                   </button>
@@ -290,7 +312,7 @@
                     <button
                       type="button"
                       onclick={() => togglePendingTopic(t.slug)}
-                      class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
+                      class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
                     >
                       {t.name?.en ?? t.slug}
                     </button>
@@ -300,8 +322,8 @@
             </div>
           {/if}
 
-          <div class="flex items-center gap-3 border-t border-[var(--sb-border-color)] pt-4">
-            <button type="button" class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-collapse-hover-bg)]" onclick={clearFilters}>Clear</button>
+          <div class="flex items-center gap-3 border-t border-[var(--sh-exam-card-border)] pt-4">
+            <button type="button" class="flex-1 rounded-xl border border-[var(--sh-exam-card-border)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--accent-cta-pink)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--accent-cta-pink)]" onclick={clearFilters}>Clear</button>
             <button type="button" class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--page-link-hover)]" onclick={applyFilters}>Apply</button>
           </div>
         </div>
@@ -313,7 +335,7 @@
         {data.message}
       </div>
     {:else if data.questions.length === 0}
-      <div class="rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
+      <div class="rounded-2xl border border-[var(--accent-cta-pink)]/35 bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
         No questions found.
       </div>
     {:else}
@@ -321,25 +343,28 @@
         {#each data.questions as q, index (q._id)}
           <button
             type="button"
-            class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3.5 text-left"
+            class="rounded-xl border border-[var(--accent-cta-pink)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--accent-cta-pink)]/70"
             onclick={() => toggleQuestion(q._id)}
           >
-            <div class="flex items-start gap-3">
-              <label class="own-check mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(q._id)}
-                  onchange={() => toggleQuestion(q._id)}
-                  aria-label="Select question"
-                />
-                <span class="own-check__visual" data-own-accent="0"></span>
-              </label>
+            <div class="flex gap-3">
+              <!-- Center 18px checkbox in the first line box: line-height 1.8 × 1.02rem -->
+              <span class="flex shrink-0 items-center self-start pt-[calc((1.836rem-18px)/2)]">
+                <label class="own-check">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(q._id)}
+                    onchange={() => toggleQuestion(q._id)}
+                    aria-label="Select question"
+                  />
+                  <span class="own-check__visual" data-own-accent="0"></span>
+                </label>
+              </span>
 
               <div class="min-w-0 flex-1">
-                <div class="mb-1 text-xs font-medium text-[var(--page-text-muted)]">
-                  Q{(data.safePage - 1) * (data.paginationMeta?.limit ?? 25) + index + 1}
-                </div>
                 <div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
+                  <span class="mr-2 inline font-medium text-[var(--page-text-muted)]">
+                    {(data.safePage - 1) * (data.paginationMeta?.limit ?? 25) + index + 1}.
+                  </span>
                   <MathText content={questionPromptEnContent(q)} />
                 </div>
                 {#if promptImages(q).length > 0}
@@ -350,7 +375,7 @@
                         <img
                           {src}
                           alt={imageAlt(img)}
-                          class="max-h-48 w-full rounded-lg border border-[var(--page-card-border)] object-contain"
+                          class="max-h-48 w-full rounded-lg border border-[var(--accent-cta-pink)]/30 object-contain"
                           loading="lazy"
                         />
                       {/if}

@@ -3,7 +3,7 @@ import { fetchGetTestUser, type GetTestUserItem } from '$lib/api/tests';
 import { fetchTestAttemptById, type TestAttemptSummary } from '$lib/api/testAttempts';
 import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = 5;
 
 async function loadAttemptAnalysis(
 	url: URL,

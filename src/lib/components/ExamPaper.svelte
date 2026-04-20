@@ -6,9 +6,11 @@
     slug: string;
     yearRange?: string;  
     href: string;
+    loading?: boolean;
+    onNavigate?: (e: MouseEvent) => void;
   };
 
-  let { id, name, image, slug, yearRange, href }: Props = $props();
+  let { id, name, image, slug, yearRange, href, loading = false, onNavigate }: Props = $props();
   function handleImgError(e: Event) {
     (e.currentTarget as HTMLImageElement).style.display = 'none';
   }
@@ -25,6 +27,9 @@
 
 <a
   {href}
+  onclick={onNavigate}
+  aria-busy={loading}
+  aria-disabled={loading}
   class="
     group flex flex-col items-center justify-center gap-1.5
     rounded-xl px-3 py-3 w-full min-h-[118px] overflow-hidden text-center
@@ -36,6 +41,7 @@
     hover:bg-[color-mix(in_srgb,var(--sh-exam-card-border)_18%,var(--sh-exam-card-bg))]
     hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.2)]
     hover:-translate-y-0.5
+    {loading ? 'pointer-events-none opacity-80' : ''}
   "
 >
   <div class="

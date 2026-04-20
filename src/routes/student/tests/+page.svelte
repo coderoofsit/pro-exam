@@ -1,5 +1,6 @@
 <script lang="ts">
   import Skeleton from "$lib/components/Skeleton.svelte";
+  import GeneralActionButton from "$lib/components/GeneralActionButton.svelte";
   import { goto, invalidateAll, preloadData } from "$app/navigation";
   import { page } from "$app/state";
   import { authStore, AUTH_STORAGE_KEY } from "$lib/stores/auth";
@@ -151,6 +152,11 @@
     return hrefWithParams({ page: p });
   }
 
+  async function goToPage(p: number) {
+    if (p < 1) return;
+    await goto(hrefForPage(p), { keepFocus: true, noScroll: true, replaceState: true });
+  }
+
   // function analysisHref(item: GetTestUserItem) {
   //   const aid = item.attemptId?.trim();
   //   if (!aid) return '#';
@@ -287,10 +293,10 @@
 </svelte:head>
 
 <div
-  class="min-h-full px-4 py-8 font-sans transition-colors duration-300 sm:px-5"
+  class="min-h-full px-4 py-3 font-sans transition-colors duration-300 sm:px-5"
 >
   <div class="mx-auto max-w-5xl">
-    <section class="mt-2 min-w-0" aria-label="Quick actions">
+    <section class="mt-1 min-w-0" aria-label="Quick actions">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <a
           href="/student/tests/pyq"
@@ -379,16 +385,7 @@
       </div>
     </section>
 
-    <section class="mt-10 min-w-0" aria-labelledby="your-tests-heading">
-      <div class="mb-6 flex flex-row items-stretch gap-2 sm:items-center">
-        <input
-          type="search"
-          bind:value={searchDraft}
-          placeholder="Search by name…"
-          aria-label="Search tests"
-          class="min-h-[2.75rem] min-w-0 flex-1 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm text-[var(--sh-exam-card-title)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--sh-ai-sub)] hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_42%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_30%,transparent)]"
-        />
-      </div>
+    <section class="mt-4 min-w-0" aria-labelledby="your-tests-heading">
 
       {#await data.streamed.testsData}
         <div class="space-y-4">
@@ -416,7 +413,7 @@
         {@const totalPages = pagination?.totalPages ?? 1}
         {@const showPagination = totalPages > 1}
 
-        <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {#if pagination}
             <p class="text-xs text-[var(--sh-ai-sub)]">
               {pagination.total} total · page {pagination.page} of {pagination.totalPages}
@@ -451,24 +448,33 @@
           </p>
         {:else}
           {#if filterOptions}
-            <div class="mb-6">
-               <button
+            <div class="mb-3">
+              <div class="flex w-full flex-row items-center gap-2">
+                <input
+                  type="search"
+                  bind:value={searchDraft}
+                  placeholder="Search by name…"
+                  aria-label="Search tests"
+                  class="min-h-[2.5rem] min-w-0 w-full max-w-xl rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm text-[var(--sh-exam-card-title)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--sh-ai-sub)] hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_42%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_30%,transparent)]"
+                />
+                <button
                   type="button"
-                  class="flex items-center gap-2 rounded-lg text-sm font-medium text-[var(--sh-ai-sub)] hover:text-[var(--sh-section-title)]"
+                  class="ml-auto inline-flex min-h-[2.5rem] shrink-0 items-center gap-2 rounded-lg border border-[var(--sh-exam-card-border)] px-3 text-sm font-medium text-[var(--sh-ai-sub)] transition hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)]"
                   onclick={() => (filtersOpen = !filtersOpen)}
-               >
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                 {filtersOpen ? 'Hide Filters' : 'Show Filters'}
-               </button>
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Filter
+                </button>
+              </div>
 
                {#if filtersOpen}
-                <div class="mt-3 grid gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="mt-2 grid gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4 sm:grid-cols-2 lg:grid-cols-4">
                   <!-- filter selects ... -->
                    <label class="min-w-0 sm:col-span-2 lg:col-span-1">
                     <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Creator</span>
                     <select
                       value={testsData.creatorUserId ?? ""}
-                      class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
+                      class="tests-filter-select w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
                       onchange={(e) => onFilterSelect("creatorUserId", e.currentTarget.value)}
                     >
                       <option value="">All creators</option>
@@ -481,7 +487,7 @@
                     <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Exam</span>
                     <select
                       value={testsData.examId ?? ""}
-                      class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
+                      class="tests-filter-select w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
                       onchange={(e) => onFilterSelect("examId", e.currentTarget.value)}
                     >
                       <option value="">All exams</option>
@@ -494,7 +500,7 @@
                     <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Kind</span>
                     <select
                       value={testsData.kind ?? ""}
-                      class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
+                      class="tests-filter-select w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
                       onchange={(e) => onFilterSelect("kind", e.currentTarget.value)}
                     >
                       <option value="">All</option>
@@ -507,7 +513,7 @@
                     <span class="mb-1 block text-xs font-medium text-[var(--sh-ai-sub)]">Status</span>
                     <select
                       value={testsData.status ?? ""}
-                      class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
+                      class="tests-filter-select w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2.5 text-sm"
                       onchange={(e) => onFilterSelect("status", e.currentTarget.value)}
                     >
                       <option value="">All</option>
@@ -531,28 +537,35 @@
               {#each items as item (item._id)}
                 <li>
                   <!-- item row contents (same as before) -->
-                    <div class="flex flex-col gap-4 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] transition-all duration-200 sm:flex-row sm:items-center sm:justify-between hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-sm">
-                      <div class="min-w-0 flex-1 px-4 py-4 sm:pl-5">
-                        <p class="font-semibold text-[var(--pyq-paper-title)] line-clamp-1">{testName(item)}</p>
-                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--pyq-paper-meta)]">
+                    <div class="flex flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] transition-all duration-200 sm:flex-row sm:items-center sm:justify-between hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-sm">
+                      <div class="min-w-0 flex-1 px-4 py-3 sm:pl-5">
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--pyq-paper-meta)]">
+                          <p class="mr-2 text-base font-semibold text-[var(--pyq-paper-title)] leading-tight">{testName(item)}</p>
                           <span class="rounded bg-[var(--sh-tool-card-bg)] px-1.5 py-0.5 font-bold uppercase tracking-wider">{item.kind}</span>
                           <span>{item.questionCount ?? 0} Qs</span>
                           {#if item.settings?.durationMinutes}<span>· {item.settings.durationMinutes} min</span>{/if}
                           <span>· {item.status}</span>
                         </div>
                       </div>
-                      <div class="flex shrink-0 items-center justify-center gap-2 px-4 pb-4 sm:pb-0">
+                      <div class="flex shrink-0 items-center justify-center gap-2 px-4 py-3 sm:py-0">
                         {#if hasExistingAttempt(item)}
-                          <button onclick={() => handleViewAnalysis(item)} class="btn-cta-subscription-outline text-xs px-4 py-2">View Analysis</button>
-                          <button
-                            onclick={() => onReAttemptClick(item)}
-                            class="btn-cta-subscription text-xs px-4 py-2"
+                          <GeneralActionButton
+                            text="View Analysis"
+                            onClick={() => void handleViewAnalysis(item)}
+                          />
+                          <GeneralActionButton
+                            text={startingTestId === item._id ? "Starting..." : "Re-attempt"}
+                            onClick={() => onReAttemptClick(item)}
                             disabled={startingTestId === item._id}
-                          >
-                            {startingTestId === item._id ? "Starting..." : "Re-attempt"}
-                          </button>
+                            variant="highlight"
+                          />
                         {:else}
-                          <button onclick={() => onStartTestClick(item)} class="btn-cta-subscription text-xs px-4 py-2">Start Test</button>
+                          <GeneralActionButton
+                            text={startingTestId === item._id ? "Starting..." : "Start Test"}
+                            onClick={() => onStartTestClick(item)}
+                            disabled={startingTestId === item._id}
+                            variant="highlight"
+                          />
                         {/if}
                       </div>
                     </div>
@@ -562,9 +575,19 @@
 
             {#if showPagination}
               <nav class="mt-8 flex items-center justify-center gap-4">
-                <a class="pagination-btn {currentPage <= 1 ? 'pointer-events-none opacity-40' : ''}" href={hrefForPage(currentPage - 1)}>Prev</a>
+                <GeneralActionButton
+                  text="Prev"
+                  onClick={() => void goToPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className={currentPage <= 1 ? "opacity-40" : ""}
+                />
                 <span class="text-sm font-medium">{currentPage} / {totalPages}</span>
-                <a class="pagination-btn {currentPage >= totalPages ? 'pointer-events-none opacity-40' : ''}" href={hrefForPage(currentPage + 1)}>Next</a>
+                <GeneralActionButton
+                  text="Next"
+                  onClick={() => void goToPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className={currentPage >= totalPages ? "opacity-40" : ""}
+                />
               </nav>
             {/if}
           {/if}
