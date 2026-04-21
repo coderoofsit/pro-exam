@@ -20,7 +20,7 @@
   import { openRazorpayCheckout } from '$lib/payments/razorpay';
   import { authStore } from '$lib/stores/auth';
 
-  let { data } = $props<{ data: { streamed: { subscription: Promise<UserSubscriptionRecord | null> } } }>();
+  let { data } = $props<{ data: { plans: SubscriptionPlan[]; streamed: { subscription: Promise<UserSubscriptionRecord | null> } } }>();
 
   /** UTC ISO → calendar date in IST, e.g. 24 Aug 2026 (no time). */
   function formatUtcIsoToIstDate(iso: string | null | undefined): string {
@@ -78,6 +78,7 @@
   let needsAuth = $state(false);
 
   let transactions = $state<SubscriptionTransactionItem[]>([]);
+  const serverPlans = $derived(data.plans ?? []);
   let plans = $state<SubscriptionPlan[]>([]);
   let selectedPlanId = $state<string | null>(null);
   let checkoutBusy = $state(false);
@@ -98,6 +99,13 @@
   );
 
   const hasProfilePhone = $derived(!!defaultProfile?.profilePhone?.trim());
+
+  $effect(() => {
+    if (plans.length === 0 && serverPlans.length > 0) {
+      plans = [...serverPlans];
+      if (!selectedPlanId) selectedPlanId = serverPlans[0]?._id ?? null;
+    }
+  });
 
   async function loadTransactions() {
     if (!browser) return;
@@ -128,8 +136,6 @@
     const token = resolveApiToken();
     if (!token) {
       plansError = null;
-      plans = [];
-      needsAuth = true;
       return;
     }
     plansLoading = true;
@@ -309,6 +315,11 @@
 
   $effect(() => {
     if (!browser || plansRequested) return;
+    if (serverPlans.length > 0) {
+      plansRequested = true;
+      if (!selectedPlanId && plans.length > 0) selectedPlanId = plans[0]._id;
+      return;
+    }
     const token = resolveApiToken();
     if (!token) return;
     plansRequested = true;
