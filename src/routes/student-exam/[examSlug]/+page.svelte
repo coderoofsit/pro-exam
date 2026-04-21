@@ -174,20 +174,16 @@
 	<div class="mx-auto flex h-full w-full px-4 md:px-6">
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
-				<a
-	href="/student/exams"
-	class="mb-3 inline-flex w-fit items-center rounded-md text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
->
-	← Back
-</a>
-
-				<div class="mb-4">
+				<div class="mb-4 flex items-center gap-4">
+					<a
+						href="/student/exams"
+						class="inline-flex w-fit items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+					>
+						← Back
+					</a>
 					<h1 class="text-2xl font-bold md:text-3xl">
 						{examTitle}
 					</h1>
-					<p class="mt-0.5 text-sm text-[var(--page-text-muted)]">
-						Select a subject, then open units/chapters
-					</p>
 				</div>
 
 				{#if chaptersError}
@@ -230,7 +226,7 @@
 								<button
 									type="button"
 									onclick={() => selectSubject(s.slug)}
-									class="group flex flex-col rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3 text-left shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]"
+									class="group flex flex-col rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_36%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[var(--accent-cta-pink)] hover:shadow-[0_10px_28px_-10px_color-mix(in_srgb,var(--accent-cta-pink)_52%,transparent)]"
 								>
 									<h2
 										class="text-base font-semibold leading-snug text-[var(--sh-exam-card-title)]"
@@ -336,7 +332,7 @@
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
 										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
-										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--sh-tool-card-border)] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[var(--shadow-item)] transition hover:-translate-y-1 hover:border-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_36%,var(--sh-tool-card-border))] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[var(--accent-cta-pink)] hover:shadow-[0_10px_28px_-10px_color-mix(in_srgb,var(--accent-cta-pink)_52%,transparent)]"
 									>
 										
 										<h2

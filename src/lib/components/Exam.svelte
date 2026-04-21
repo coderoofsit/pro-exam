@@ -2,7 +2,12 @@
 	import type { Exam as ExamApi } from '$lib/api/exams';
 	import ExamPaper from '$lib/components/ExamPaper.svelte';
 
-	let { exams, boardName, pyq = false }: { exams: ExamApi[]; boardName: string; pyq?: boolean } = $props();
+let {
+	exams,
+	boardName,
+	pyq = false,
+	hideBoardTitle = false
+}: { exams: ExamApi[]; boardName: string; pyq?: boolean; hideBoardTitle?: boolean } = $props();
 
 	function getExamSlug(exam: any): string {
 		return exam?.slug ?? exam?._id ?? '';
@@ -22,19 +27,21 @@
 </script>
 
 <div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
-	<a
-		href="/student/dashboard"
-		class="mb-5 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
-	>
-		← Back to Dashboard
-	</a>
-
-	<div class="mb-6">
-		<h1 class="break-words text-2xl font-bold text-[var(--page-text)] md:text-3xl">{boardName} Exams</h1>
-		<p class="mt-1 break-words text-sm text-[var(--page-text-muted)]">
+	<div class="mt-3 mb-3 flex items-center gap-3">
+		<a
+			href="/student/dashboard"
+			class="inline-flex items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)]"
+		>
+			← Back
+		</a>
+		<p class="text-sm text-[var(--page-text-muted)]">
 			{exams.length} exam{exams.length !== 1 ? 's' : ''} available
 		</p>
 	</div>
+
+	{#if !hideBoardTitle}
+		<h1 class="mb-6 mt-1 text-xl font-bold text-[var(--page-text)] md:text-2xl">{boardName} Exams</h1>
+	{/if}
 
 	{#if exams.length === 0}
 		<p class="text-[var(--page-text-muted)]">No exams found for this board.</p>

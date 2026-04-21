@@ -587,26 +587,6 @@
 			<div
 				class="mx-auto flex h-full w-full flex-col px-4 md:px-6 overflow-hidden min-h-0 "
 			>
-				<div class="p-3 shrink-0">
-					{#if effectiveQuestionId !== null}
-						<button
-							type="button"
-							onclick={closeQuestionPreview}
-							class="inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
-						>
-							← Back to Questions
-						</button>
-					{:else}
-						<button
-							type="button"
-							onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`)}
-							class="inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
-						>
-							← Back to Chapters
-						</button>
-					{/if}
-				</div>
-
 				{#if data.message}
 					<div
 						class="flex flex-1 items-center justify-center text-semantic-error"
@@ -615,19 +595,29 @@
 					</div>
 				{:else}
 					<div class="p-3 shrink-0">
-						<div class="flex items-start justify-between gap-3">
-							<div>
-								<h1 class="text-2xl font-bold md:text-3xl">
-									Questions
-								</h1>
-								{#if displayPaginationMeta}
-									<p
-										class="mt-1 text-sm text-[var(--page-text-muted)]"
+						<div class="flex items-center justify-between gap-3">
+							<div class="flex items-center gap-3 text-sm text-[var(--page-text-muted)]">
+								{#if effectiveQuestionId !== null}
+									<button
+										type="button"
+										onclick={closeQuestionPreview}
+										class="inline-flex items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
 									>
-										{displayPaginationMeta.total} questions •
-										Page {data.safePage}
-										of {displayPaginationMeta.lastPage}
-									</p>
+										← Back to Questions
+									</button>
+								{:else}
+									<button
+										type="button"
+										onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`)}
+										class="inline-flex items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+									>
+										← Back to Chapters
+									</button>
+								{/if}
+								{#if displayPaginationMeta}
+									<span>
+										{displayPaginationMeta.total} questions • Page {data.safePage} of {displayPaginationMeta.lastPage}
+									</span>
 								{/if}
 							</div>
 

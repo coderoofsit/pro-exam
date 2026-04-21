@@ -1,10 +1,15 @@
 <script lang="ts">
   import Skeleton from '$lib/components/Skeleton.svelte';
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { goto, invalidateAll } from '$app/navigation';
   import { resolveApiToken } from '$lib/api/authToken';
   import {
+    startFreeTrial,
+    createSubscriptionCheckout,
+    verifySubscriptionPayment,
+    fetchSubscriptionPlans,
+    sortSubscriptionPlans,
+    type SubscriptionPlan,
     fetchUserSubscription,
     fetchSubscriptionTransactions,
     patchSubscriptionAutoRenew,
@@ -12,6 +17,7 @@
     type SubscriptionPeriod,
     type SubscriptionTransactionItem
   } from '$lib/api/subscription';
+  import { openRazorpayCheckout } from '$lib/payments/razorpay';
   import { authStore } from '$lib/stores/auth';
 
   let { data } = $props<{ data: { streamed: { subscription: Promise<UserSubscriptionRecord | null> } } }>();
@@ -72,6 +78,13 @@
   let needsAuth = $state(false);
 
   let transactions = $state<SubscriptionTransactionItem[]>([]);
+  let plans = $state<SubscriptionPlan[]>([]);
+  let selectedPlanId = $state<string | null>(null);
+  let checkoutBusy = $state(false);
+  let checkoutError = $state<string | null>(null);
+  let plansLoading = $state(false);
+  let plansError = $state<string | null>(null);
+  let plansRequested = $state(false);
   /** Not loading until first hover / open prefetch. */
   let transactionsLoading = $state(false);
   let transactionsError = $state<string | null>(null);
@@ -79,6 +92,12 @@
   let transactionsPrefetchStarted = $state(false);
   /** Collapsed by default; list hidden until user expands. */
   let paymentHistoryOpen = $state(false);
+
+  const selectedPlan = $derived(
+    selectedPlanId ? plans.find((p) => p._id === selectedPlanId) ?? null : null
+  );
+
+  const hasProfilePhone = $derived(!!defaultProfile?.profilePhone?.trim());
 
   async function loadTransactions() {
     if (!browser) return;
@@ -103,6 +122,123 @@
     transactions = [...list].sort(
       (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
     );
+  }
+
+  async function loadPlans() {
+    const token = resolveApiToken();
+    if (!token) {
+      plansError = null;
+      plans = [];
+      needsAuth = true;
+      return;
+    }
+    plansLoading = true;
+    plansError = null;
+    const res = await fetchSubscriptionPlans(fetch, { token });
+    plansLoading = false;
+    if (!res.success) {
+      const msg = res.message || 'Could not load plans';
+      if (msg.toLowerCase().includes('authorization header missing')) {
+        plansError = null;
+        needsAuth = true;
+      } else {
+        plansError = msg;
+      }
+      plans = [];
+      return;
+    }
+    const list = Array.isArray(res.data?.data) ? res.data.data : [];
+    plans = sortSubscriptionPlans(list);
+    if (!selectedPlanId && plans.length > 0) selectedPlanId = plans[0]._id;
+  }
+
+  function formatPlanPrice(plan: SubscriptionPlan): string {
+    if (plan.isTrial && plan.price === 0) return 'Free trial';
+    if (plan.currency === 'INR') return `₹${plan.price.toLocaleString('en-IN')}`;
+    return `${plan.currency} ${plan.price}`;
+  }
+
+  function selectPlan(planId: string) {
+    selectedPlanId = planId;
+    checkoutError = null;
+  }
+
+  async function onContinueWithSelectedPlan() {
+    if (checkoutBusy || !selectedPlan) return;
+    const token = resolveApiToken();
+    if (!token) {
+      needsAuth = true;
+      return;
+    }
+    checkoutBusy = true;
+    checkoutError = null;
+    try {
+      if (selectedPlan.isTrial) {
+        const trialRes = await startFreeTrial({ planId: selectedPlan._id, token });
+        if (!trialRes.success) {
+          checkoutError = trialRes.message || 'Could not start trial';
+          return;
+        }
+        await refreshSubscription();
+        await invalidateAll();
+        return;
+      }
+
+      if (!hasProfilePhone) {
+        checkoutError = 'Please add a phone number in your profile before checkout.';
+        return;
+      }
+
+      const checkoutRes = await createSubscriptionCheckout({ planId: selectedPlan._id, token });
+      if (!checkoutRes.success) {
+        checkoutError = checkoutRes.message || 'Could not create checkout';
+        return;
+      }
+      const checkout = checkoutRes.data?.data;
+      if (!checkout?.razorpayKeyId || (!checkout?.subscriptionId && !checkout?.orderId)) {
+        checkoutError = 'Invalid checkout response from server.';
+        return;
+      }
+
+      const payment = await openRazorpayCheckout({
+        key: checkout.razorpayKeyId,
+        orderId: checkout.orderId,
+        subscriptionId: checkout.subscriptionId,
+        amount: checkout.amount,
+        currency: checkout.currency,
+        name: checkout.name ?? 'Exam Abhyas',
+        description: checkout.description ?? `${selectedPlan.name} subscription`,
+        prefill: {
+          name: [defaultProfile?.firstName, defaultProfile?.lastName].filter(Boolean).join(' ') || undefined,
+          email: defaultProfile?.profileEmail || undefined,
+          contact: defaultProfile?.profilePhone || undefined
+        },
+        notes: { planId: selectedPlan._id, planName: selectedPlan.name },
+        theme: { color: '#111827' }
+      });
+
+      if (!payment?.razorpay_subscription_id) {
+        checkoutError = 'Payment succeeded but subscription id is missing.';
+        return;
+      }
+
+      const verifyRes = await verifySubscriptionPayment({
+        razorpay_subscription_id: payment.razorpay_subscription_id,
+        razorpay_payment_id: payment.razorpay_payment_id,
+        razorpay_signature: payment.razorpay_signature,
+        token
+      });
+      if (!verifyRes.success) {
+        checkoutError = verifyRes.message || 'Payment verification failed.';
+        return;
+      }
+      await refreshSubscription();
+      await invalidateAll();
+    } catch (e) {
+      checkoutError = e instanceof Error ? e.message : 'Payment could not be completed.';
+    } finally {
+      checkoutBusy = false;
+    }
   }
 
   /** One-shot prefetch on hover/focus so opening the panel usually shows data immediately. */
@@ -169,6 +305,14 @@
     data.streamed.subscription.then((s:any) => {
       subscription = s;
     });
+  });
+
+  $effect(() => {
+    if (!browser || plansRequested) return;
+    const token = resolveApiToken();
+    if (!token) return;
+    plansRequested = true;
+    void loadPlans();
   });
 </script>
 
@@ -262,13 +406,72 @@
         <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">
           No subscription record found. Explore plans to get started.
         </p>
-        <button
-          type="button"
-          class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))]"
-          onclick={goToPlans}
-        >
-          View plans
-        </button>
+        {#if plansLoading}
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {#each [1, 2, 3] as sk (sk)}
+              <div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4">
+                <Skeleton width="w-28" height="h-5" />
+                <Skeleton width="w-20" height="h-3" className="mt-2" />
+                <Skeleton width="w-24" height="h-7" className="mt-3" />
+                <div class="mt-4 space-y-2">
+                  <Skeleton width="w-full" height="h-3" />
+                  <Skeleton width="w-11/12" height="h-3" />
+                  <Skeleton width="w-9/12" height="h-3" />
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else if plansError}
+          <p class="mt-4 text-sm text-[var(--pc-error-text)]">{plansError}</p>
+        {:else if plans.length > 0}
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {#each plans as plan (plan._id)}
+              <button
+                type="button"
+                class="group flex min-h-0 w-full min-w-0 flex-col rounded-xl border p-4 text-left transition hover:shadow-[0_8px_24px_-10px_color-mix(in_srgb,var(--accent-cta-pink)_35%,transparent)] {selectedPlanId === plan._id ? 'border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_8%,var(--sh-exam-card-bg))]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] hover:border-[var(--accent-cta-pink)]'}"
+                onclick={() => selectPlan(plan._id)}
+              >
+                <div class="mb-2 flex items-start justify-between gap-2">
+                  <h3 class="text-base font-bold text-[var(--sh-section-title)]">{plan.name}</h3>
+                  {#if plan.isTrial}
+                    <span class="rounded-full bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]">
+                      Trial
+                    </span>
+                  {/if}
+                </div>
+                <p class="text-xs text-[var(--sh-ai-sub)]">{plan.durationDays} days</p>
+                <p class="mt-2 text-2xl font-bold text-[var(--sh-section-title)]">{formatPlanPrice(plan)}</p>
+                <ul class="mt-3 space-y-1.5 text-xs text-[var(--sh-ai-sub)]">
+                  {#each plan.description ?? [] as line (line)}
+                    <li class="flex gap-2">
+                      <span class="text-[var(--accent-cta-cyan)]">✓</span>
+                      <span class="leading-snug">{line}</span>
+                    </li>
+                  {/each}
+                </ul>
+              </button>
+            {/each}
+          </div>
+          {#if checkoutError}
+            <p class="mt-3 text-sm text-[var(--pc-error-text)]">{checkoutError}</p>
+          {/if}
+          <button
+            type="button"
+            class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))] disabled:opacity-50"
+            onclick={() => void onContinueWithSelectedPlan()}
+            disabled={!selectedPlan || checkoutBusy}
+          >
+            {checkoutBusy ? 'Processing…' : 'Continue'}
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))]"
+            onclick={goToPlans}
+          >
+            View plans
+          </button>
+        {/if}
       {:else}
         <div class="mt-6 space-y-6">
           <!-- Current period -->

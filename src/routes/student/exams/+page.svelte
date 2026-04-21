@@ -78,7 +78,7 @@
 	{@const visiblePages = Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i)}
 
 
-	<Exam exams={displayExams} boardName="All" pyq={isPyq} />
+	<Exam exams={displayExams} boardName="All" pyq={isPyq} hideBoardTitle={true} />
 
 	{#if effectiveLastPage > 1}
 		<div class="mx-auto max-w-7xl px-4 pb-10">
