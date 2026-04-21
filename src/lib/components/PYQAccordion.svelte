@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     createTestAttempt,
@@ -48,14 +49,21 @@
   let filterDropOpen = $state(false);
   let openYears      = $state<Set<number>>(new Set());
   let startingPaperId = $state<string | null>(null);
+  let viewingPaperId = $state<string | null>(null);
   let viewingAnalysisId = $state<string | null>(null);
   let startPaperError = $state<string | null>(null);
 
-function viewPaper(paper: PaperItem) {
+async function viewPaper(paper: PaperItem) {
+  if (viewingPaperId || startingPaperId || viewingAnalysisId) return;
   const resolvedExamSlug = (examSlug ?? '').trim();
   const resolvedPaperId = (paper?._id ?? '').trim();
   if (!resolvedExamSlug || !resolvedPaperId) return;
-  void goto(`${basePath}/${encodeURIComponent(resolvedExamSlug)}/${encodeURIComponent(resolvedPaperId)}`);
+  viewingPaperId = paper._id;
+  try {
+    await goto(`${basePath}/${encodeURIComponent(resolvedExamSlug)}/${encodeURIComponent(resolvedPaperId)}`);
+  } finally {
+    viewingPaperId = null;
+  }
 }
 
   function analysisHref(paper: PaperItem, attemptId: string) {
@@ -178,6 +186,11 @@ function viewPaper(paper: PaperItem) {
     visible.reduce((sum, g) => sum + g.papers.length, 0)
   );
 
+  function openFirstVisibleYear() {
+    const firstYear = visible[0]?.year;
+    openYears = new Set(typeof firstYear === 'number' ? [firstYear] : []);
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────
   function toggleAccordion(year: number) {
     const next = new Set(openYears);
@@ -188,12 +201,14 @@ function viewPaper(paper: PaperItem) {
 
   function toggleSort() {
     sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+    openFirstVisibleYear();
   }
 
   function selectYear(year: number | 'all') {
     selectedYear = year;
     filterDropOpen = false;
     if (year !== 'all') openYears = new Set([year]);
+    else openFirstVisibleYear();
   }
 
   function examTitle() {
@@ -207,6 +222,10 @@ function viewPaper(paper: PaperItem) {
     const count = papersByYear.find(g => g.year === year)?.papers.length ?? 0;
     return `${examTitle()} ${year} Papers (${count} Papers)`;
   }
+
+  onMount(() => {
+    openFirstVisibleYear();
+  });
 </script>
 
 <!-- ════════════════════════════════════════════════════════
@@ -221,7 +240,7 @@ function viewPaper(paper: PaperItem) {
   </div>
 {/if}
 
-<div class="flex items-center justify-between gap-3 mb-5 flex-wrap">
+<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
 
   <p class="text-sm text-[var(--pyq-header-text)]">
     Showing all PYQ mock
@@ -233,41 +252,45 @@ function viewPaper(paper: PaperItem) {
   <div class="flex items-center gap-2">
 
     <!-- Year filter -->
-    <div class="relative">
+    <div class="relative" class:z-[80]={filterDropOpen}>
       <button
         type="button"
         onclick={() => { filterDropOpen = !filterDropOpen; }}
         class="
-          inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium
-          bg-[var(--pyq-sort-btn-bg)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--pyq-sort-btn-border))]
+          inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium
+          bg-[var(--pyq-sort-btn-bg)] border border-[var(--pyq-sort-btn-border)]
           text-[var(--pyq-sort-btn-text)] transition-all duration-150
-          hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,var(--pyq-sort-btn-bg))] hover:border-[var(--accent-cta-pink)]
-          hover:text-[var(--pyq-header-count)]
-          {filterDropOpen ? 'border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,var(--pyq-sort-btn-bg))] text-[var(--pyq-header-count)]' : ''}
+          hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:border-[var(--pyq-sort-btn-hover-border)]
+          hover:text-[var(--pyq-sort-btn-hover-text)]
+          {filterDropOpen ? 'border-[var(--pyq-sort-btn-hover-border)] bg-[var(--pyq-sort-btn-hover-bg)] text-[var(--pyq-sort-btn-hover-text)]' : ''}
         "
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="text-[var(--accent-cta-pink)]">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="text-[var(--pyq-sort-btn-icon)]">
           <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/>
           <path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         {selectedYear === 'all' ? 'All Years' : String(selectedYear)}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-          class="text-[var(--accent-cta-pink)] transition-transform duration-200 {filterDropOpen ? 'rotate-180' : ''}">
+          class="text-[var(--pyq-sort-btn-icon)] transition-transform duration-200 {filterDropOpen ? 'rotate-180' : ''}">
           <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8"
             stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
 
       {#if filterDropOpen}
-        <button class="fixed inset-0 z-10 cursor-default bg-transparent"
+        <button
+          type="button"
+          class="fixed inset-0 z-[70] cursor-default bg-[var(--pyq-dropdown-scrim)] backdrop-blur-[1px]"
           aria-label="Close year filter"
           onclick={() => { filterDropOpen = false; }}></button>
 
-        <div class="
-          absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-2xl
-          bg-[var(--pyq-accordion-bg)] border border-[var(--pyq-accordion-active-border)]
-          shadow-[0_16px_48px_rgba(5,7,13,0.20)]
-        ">
+        <div
+          class="
+          absolute right-0 z-[80] mt-2 w-72 overflow-hidden rounded-2xl
+          border border-[var(--pyq-accordion-active-border)]
+          bg-[var(--pyq-dropdown-bg)] shadow-[0_16px_48px_rgba(5,7,13,0.28)]
+        "
+        >
           <button type="button" onclick={() => selectYear('all')}
             class="
               flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm
@@ -324,20 +347,20 @@ function viewPaper(paper: PaperItem) {
     <button type="button" onclick={toggleSort}
       title="Sort {sortOrder === 'desc' ? 'oldest first' : 'newest first'}"
       class="
-        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium
-        bg-[var(--pyq-sort-btn-bg)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_38%,var(--pyq-sort-btn-border))]
+        inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-medium
+        bg-[var(--pyq-sort-btn-bg)] border border-[var(--pyq-sort-btn-border)]
         text-[var(--pyq-sort-btn-text)] transition-all duration-150
-        hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,var(--pyq-sort-btn-bg))] hover:border-[var(--accent-cta-pink)]
-        hover:text-[var(--pyq-header-count)]
+        hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:border-[var(--pyq-sort-btn-hover-border)]
+        hover:text-[var(--pyq-sort-btn-hover-text)]
       ">
-      <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--pyq-sort-btn-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_10%,var(--pyq-sort-btn-bg))] text-[var(--accent-cta-pink)]">
+      <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] text-[var(--pyq-sort-btn-icon)]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M7 3v18M7 21l-3-3M7 21l3-3M17 21V3M17 3l-3 3M17 3l3 3"
             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
       Sort
-      <span class="font-bold text-[var(--accent-cta-pink)]">{sortOrder === 'desc' ? '↓' : '↑'}</span>
+      <span class="font-bold text-[var(--pyq-sort-btn-icon)]">{sortOrder === 'desc' ? '↓' : '↑'}</span>
     </button>
   </div>
 </div>
@@ -345,22 +368,22 @@ function viewPaper(paper: PaperItem) {
 <!-- ════════════════════════════════════════════════════════
      ACCORDION LIST
 ════════════════════════════════════════════════════════ -->
-<div class="flex flex-col gap-3">
+<div class="flex flex-col gap-2">
   {#each visible as group (group.year)}
     {@const isOpen = openYears.has(group.year)}
 
     <div class="
-      rounded-2xl border overflow-hidden
+      rounded-xl border overflow-hidden
       transition-[border-color,background] duration-200
       {isOpen
-        ? 'bg-[var(--pyq-accordion-active-bg)] border-[var(--pyq-accordion-active-border)]'
+        ? 'bg-[var(--pyq-accordion-open-bg)] border-[var(--pyq-accordion-open-border)]'
         : 'bg-[var(--pyq-accordion-bg)] border-[var(--pyq-accordion-border)]'}
     ">
       <!-- Trigger -->
       <button type="button" onclick={() => toggleAccordion(group.year)}
         aria-expanded={isOpen}
         class="
-          w-full flex items-center justify-between px-5 py-4 text-left
+          w-full flex items-center justify-between px-4 py-3 text-left
           transition-colors duration-150
           {isOpen ? '' : 'hover:bg-[var(--pyq-accordion-hover-bg)]'}
         ">
@@ -369,10 +392,10 @@ function viewPaper(paper: PaperItem) {
         </span>
         <span class="
           flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full border
-          border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--pyq-accordion-border))]
-          bg-[color-mix(in_srgb,var(--accent-cta-pink)_10%,var(--pyq-accordion-bg))]
-          text-[var(--accent-cta-pink)] transition-all duration-200
-          {isOpen ? 'rotate-180 border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_18%,var(--pyq-accordion-bg))]' : ''}
+          border-[var(--pyq-accordion-border)]
+          bg-[var(--pyq-accordion-hover-bg)]
+          text-[var(--pyq-accordion-chevron-active)] transition-all duration-200
+          {isOpen ? 'rotate-180 border-[var(--pyq-accordion-open-border)] bg-[var(--pyq-accordion-open-bg)]' : ''}
         ">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8"
@@ -383,17 +406,18 @@ function viewPaper(paper: PaperItem) {
 
       <!-- Body -->
       {#if isOpen}
-        <div class="px-4 pb-4">
-          <div class="border-t border-[var(--pyq-accordion-divider)] mb-3"></div>
+        <div class="px-2.5 pb-2.5">
+          <div class="mb-1.5 border-t border-[var(--pyq-accordion-divider)]"></div>
 
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-1.5">
             {#each group.papers as paper (paper._id)}
               <div
-                class="flex flex-col gap-4 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] pl-0 transition-all duration-200 sm:flex-row sm:items-center sm:justify-between sm:gap-6 hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-[var(--pyq-paper-hover-shadow)]"
+                class="flex flex-col gap-2 overflow-hidden rounded-xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] pl-0 transition-all duration-200 sm:flex-row sm:items-center sm:justify-between sm:gap-3 hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-[var(--pyq-paper-hover-shadow)]"
               >
-                <div class="min-w-0 flex-1 self-stretch px-4 py-4 sm:pl-5">
-                  <p class="font-semibold text-[var(--pyq-paper-title)]">{paper.name}</p>
-                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--pyq-paper-meta)]">
+                <div class="min-w-0 flex-1 px-3 py-2 sm:pl-3.5">
+                  <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                    <p class="font-semibold text-[var(--pyq-paper-title)]">{paper.name}</p>
+                    <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--pyq-paper-meta)]">
                     {#if paper.examSchedule?.date}
                       <span>{paper.examSchedule.date}</span>
                       <span class="opacity-50">·</span>
@@ -410,25 +434,32 @@ function viewPaper(paper: PaperItem) {
                         >{paper.shift}</span
                       >
                     {/if}
+                    </div>
                   </div>
                 </div>
               <div
-  class="flex w-full shrink-0 items-center justify-center gap-2 border-t border-[var(--pyq-paper-border)] px-4 py-4 sm:w-auto sm:justify-end sm:border-0 sm:px-4 sm:py-4 sm:pl-0"
+  class="flex w-full shrink-0 items-center justify-center gap-1.5 border-t border-[var(--pyq-paper-border)] px-2 py-2 sm:w-auto sm:justify-end sm:border-0 sm:px-2 sm:py-2 sm:pl-0"
 >
   <!-- View Paper Button -->
   <button
     type="button"
-    class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
-    onclick={() => viewPaper(paper)}
+    class="btn-cta-subscription-outline h-8 min-w-[7.25rem] px-3 text-xs justify-center"
+    disabled={startingPaperId !== null || viewingAnalysisId !== null || viewingPaperId !== null}
+    onclick={() => void viewPaper(paper)}
   >
-    View Paper
+    {#if viewingPaperId === paper._id}
+      <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
+      Opening...
+    {:else}
+      View Paper
+    {/if}
   </button>
 
   {#if !(paper.testAttemptedId ?? '').trim()}
     <!-- Start Test Button -->
     <button
       type="button"
-      class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
+      class="btn-cta-subscription-outline h-8 min-w-[7.25rem] px-3 text-xs justify-center disabled:opacity-60"
       disabled={startingPaperId !== null || viewingAnalysisId !== null}
       onclick={() => startPaperTest(paper)}
     >
@@ -440,7 +471,7 @@ function viewPaper(paper: PaperItem) {
   {:else}
     <button
       type="button"
-      class="btn-cta-subscription-outline min-w-[8.5rem] justify-center disabled:opacity-60"
+      class="btn-cta-subscription-outline h-8 min-w-[7.25rem] px-3 text-xs justify-center disabled:opacity-60"
       disabled={startingPaperId !== null || viewingAnalysisId !== null}
       onclick={() => void viewAnalysis(paper)}
     >

@@ -673,17 +673,15 @@
 </script>
 
 <div
-  class="flex h-dvh min-h-0 bg-[var(--page-bg)] font-sans text-[var(--page-text)]"
+  class="flex h-dvh min-h-0 items-stretch bg-[var(--page-bg)] font-sans text-[var(--page-text)]"
 >
   <aside
     class="
-    relative h-dvh flex-shrink-0 flex-col overflow-hidden
+    relative z-20 flex h-dvh min-h-0 flex-shrink-0 flex-col overflow-hidden
     border-r border-[var(--sb-border-color)]
     bg-[linear-gradient(160deg,var(--sb-bg-from)_0%,var(--sb-bg-to)_100%)]
     shadow-[var(--sb-shadow)]
     transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-    before:absolute before:inset-x-0 before:top-0 before:h-px before:pointer-events-none
-    before:bg-[linear-gradient(90deg,transparent,var(--sb-edge-glow),transparent)]
     hidden md:flex
     {isCollapsed
       ? 'w-[var(--sb-width-collapsed)]'
@@ -691,7 +689,7 @@
   "
   >
     <div
-      class="flex items-center gap-3 px-4 py-[18px] min-h-[68px] border-b border-[var(--sb-divider)] flex-shrink-0"
+      class="flex h-[68px] flex-shrink-0 items-center gap-3 border-b border-[var(--sb-divider)] px-4"
     >
       <div
         class="
@@ -985,10 +983,10 @@
     </div>
   </aside>
 
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col self-stretch">
     <header
       class="
-      fixed top-0 right-0 left-0 md:left-[var(--sb-left-offset)] z-30
+      fixed top-0 right-0 left-0 md:left-[var(--sb-left-offset)] z-40
       h-[68px] flex items-center px-6
       bg-[var(--topbar-bg)]
       border-b border-[var(--topbar-border)]

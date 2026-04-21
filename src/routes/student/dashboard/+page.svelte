@@ -53,32 +53,9 @@
 	<title>Student Home Page</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)] ">
-	<section class="mb-10 flex min-w-0 items-center justify-center gap-3 sm:gap-5">
-		<img
-			src="/Student-dash.png"
-			alt="Exam Abhyas student mascot"
-			class="student-dash-mascot h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
-		/>
-		<div>
-			<h1 class="text-2xl font-extrabold tracking-tight sm:text-4xl">
-				<span
-					class="bg-gradient-to-r from-[var(--marketing-exam-a)] via-[var(--marketing-exam-b)] to-[var(--marketing-exam-c)] bg-clip-text text-transparent"
-				>
-					EXAM
-				</span>
-				<span
-					class="bg-gradient-to-r from-[var(--marketing-flow-a)] to-[var(--marketing-flow-b)] bg-clip-text text-transparent"
-				>
-					FLOW
-				</span>
-			</h1>
-			<p class="text-base font-semibold text-[var(--marketing-tagline)] sm:text-xl">For Students</p>
-		</div>
-	</section>
-
+<div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	<section class="min-w-0" aria-labelledby="pyq-heading">
-		<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+		<div class="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 			<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
 				Chapter wise PYQ
 			</h2>
@@ -116,8 +93,8 @@
 		</div>
 	</section>
 
-	<section class="mt-10 min-w-0" aria-labelledby="qbc-heading">
-		<div class="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+	<section class="mt-2 min-w-0" aria-labelledby="qbc-heading">
+		<div class="mb-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 			<h2 id="qbc-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
 				Questions by Chapter
 			</h2>
@@ -155,8 +132,8 @@
 		</div>
 	</section>
 
-		<section class="mt-10 min-w-0" aria-label="Quick actions">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+		<section class="mt-6 min-w-0" aria-label="Quick actions">
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<a
 					href="/student/tests/pyq"
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
@@ -236,9 +213,9 @@
 			</div>
 		</section>
 
-		<section class="mt-10 min-w-0" aria-label="WhatsApp community">
+		<section class="mt-6 min-w-0" aria-label="WhatsApp community">
 			<div
-				class="flex flex-col items-start gap-4 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--whatsapp-bg,var(--dash-glass-bg))] p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+				class="flex flex-col items-start gap-3 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--whatsapp-bg,var(--dash-glass-bg))] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
 			>
 				<div class="flex min-w-0 items-start gap-3 sm:items-center">
 					<span class="flex h-10 w-10 shrink-0 items-center justify-center" aria-hidden="true">
@@ -280,7 +257,7 @@
 			</div>
 		</section>
 
-		<div class="relative mt-16 flex items-center justify-center">
+		<div class="relative mt-8 flex items-center justify-center">
 			<div class="absolute inset-x-0 top-1/2 h-px bg-[var(--dash-divider)]"></div>
 			<div class="relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--logo-divider-ring)] bg-[var(--page-bg)]">
 				<svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
@@ -290,7 +267,7 @@
 			</div>
 		</div>
 
-		<section class="mt-8 min-w-0 pb-6 text-center" aria-label="Social media links">
+		<section class="mt-5 min-w-0 pb-4 text-center" aria-label="Social media links">
 			<h2 class="text-xl font-bold text-[var(--page-text)] sm:text-2xl">We're on social media</h2>
 			<p class="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-[var(--page-text-muted)]">
 				Follow us &amp; share with your friends. It motivates us to keep working hard for you to bring new features &amp; keep the app FREE.

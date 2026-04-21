@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import { goto } from '$app/navigation';
   import { updateQuestion, updateQuestionApproveStatus } from '$lib/api/questions';
   import MathText from '$lib/components/MathText.svelte';
   import { questionPromptEnContent } from '$lib/api/questions';
@@ -165,14 +166,28 @@
       // silent
     }
   }
+
+  function onBack() {
+    void goto(`/student/tests/pyq/${encodeURIComponent(examSlug)}`);
+  }
 </script>
 
 <svelte:head>
   <title>{examName || 'PYQ'} Paper Questions · Exam Abhyas</title>
 </svelte:head>
 
-<div class="min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
+<div class="pyq-papers-page min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mb-4 flex justify-start">
+      <button
+        type="button"
+        class="rounded-lg border border-[var(--pyq-accordion-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-sm text-[var(--pyq-header-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+        onclick={onBack}
+      >
+        ← Back
+      </button>
+    </div>
+
     <h1 class="mb-5 text-xl font-bold text-[var(--pyq-accordion-title)]">
       {examName} Paper Questions
     </h1>

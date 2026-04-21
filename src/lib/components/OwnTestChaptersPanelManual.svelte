@@ -19,7 +19,6 @@
   let openingChapterId = $state<string | null>(null);
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
-  const manualUiStateKey = $derived(`own-manual-ui::${examSlug}`);
   $effect(() => {
     if (!browser) return;
     try {
@@ -61,72 +60,19 @@
 
   
 
+  function firstUnitIdForSubject(slug: string): string | null {
+    const row = groupedSubjects.find((g) => g.subject.slug === slug);
+    const firstUnit = row?.data?.[0];
+    return firstUnit ? String(firstUnit.chapterGroup._id) : null;
+  }
+
   $effect(() => {
-  if (!browser) return;
-  if (!groupedSubjects.length) return;
-
-  try {
-    const raw = sessionStorage.getItem(manualUiStateKey);
-
-    if (raw) {
-      const parsed = JSON.parse(raw) as {
-        openSubjectSlug?: string;
-        openUnitIds?: string[];
-      };
-
-      const validSubjectSlugs = new Set(groupedSubjects.map((g) => g.subject.slug));
-      const validUnitIds = new Set(
-        groupedSubjects.flatMap((g) => (g.data ?? []).map((u) => String(u.chapterGroup._id)))
-      );
-
-      const savedSubject =
-        typeof parsed?.openSubjectSlug === 'string' &&
-        validSubjectSlugs.has(parsed.openSubjectSlug)
-          ? parsed.openSubjectSlug
-          : '';
-
-      const savedUnits = Array.isArray(parsed?.openUnitIds)
-        ? parsed.openUnitIds
-            .map((id) => String(id))
-            .filter((id) => validUnitIds.has(id))
-        : [];
-
-      const subjectToOpen = savedSubject || groupedSubjects[0]?.subject?.slug || '';
-      openSubjectSlug = subjectToOpen;
-      openUnitIds = new Set(
-        savedUnits.length
-          ? savedUnits
-          : (groupedSubjects.find((g) => g.subject.slug === subjectToOpen)?.data ?? []).map((u) =>
-              String(u.chapterGroup._id)
-            )
-      );
-      return;
-    }
-  } catch {}
-
-  const defaultSubject = groupedSubjects[0]?.subject?.slug || '';
-  openSubjectSlug = defaultSubject;
-  openUnitIds = new Set(
-    (groupedSubjects.find((g) => g.subject.slug === defaultSubject)?.data ?? []).map((u) =>
-      String(u.chapterGroup._id)
-    )
-  );
-});
-
-$effect(() => {
-  if (!browser) return;
-  if (!groupedSubjects.length) return;
-
-  try {
-    sessionStorage.setItem(
-      manualUiStateKey,
-      JSON.stringify({
-        openSubjectSlug,
-        openUnitIds: Array.from(openUnitIds)
-      })
-    );
-  } catch {}
-});
+    if (!groupedSubjects.length) return;
+    const defaultSubject = groupedSubjects[0]?.subject?.slug || '';
+    openSubjectSlug = defaultSubject;
+    const firstUnitId = firstUnitIdForSubject(defaultSubject);
+    openUnitIds = new Set(firstUnitId ? [firstUnitId] : []);
+  });
 
 
 
@@ -146,7 +92,8 @@ $effect(() => {
   function onSubjectCardClick(slug: string, e: MouseEvent) {
     if ((e.target as HTMLElement).closest('a')) return;
     openSubjectSlug = slug;
-    openUnitIds = new Set();
+    const firstUnitId = firstUnitIdForSubject(slug);
+    openUnitIds = new Set(firstUnitId ? [firstUnitId] : []);
   }
 
   function onSubjectCardKeydown(slug: string, e: KeyboardEvent) {

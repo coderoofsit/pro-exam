@@ -316,49 +316,56 @@
   --sh-social-btn-hover-text: #1a1f36;
 
 
-  /* ── PYQ PAPERS PAGE ─────────────────────────────────────────────────── */
-  --pyq-page-bg: #f5f7ff;
+  /* ── PYQ PAPERS PAGE (light) — neutral page fill; cards + hovers use pink accent like dark */
+  --pyq-page-bg: #f8fafc;
 
   /* Header bar (showing count + sort) */
   --pyq-header-text: #64748b;
   --pyq-header-count: #1a1f36;
   --pyq-sort-btn-bg: #ffffff;
-  --pyq-sort-btn-border: #e2e8f0;
+  --pyq-sort-btn-border: rgba(236, 72, 153, 0.32);
   --pyq-sort-btn-text: #64748b;
-  --pyq-sort-btn-hover-bg: #eef2ff;
-  --pyq-sort-btn-hover-border: #4f7eff;
-  --pyq-sort-btn-hover-text: #4f7eff;
+  --pyq-sort-btn-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, #ffffff);
+  --pyq-sort-btn-hover-border: rgba(236, 72, 153, 0.55);
+  --pyq-sort-btn-hover-text: #be185d;
+  --pyq-sort-btn-icon: #ec4899;
 
   /* Year accordion row */
   --pyq-accordion-bg: #ffffff;
-  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 28%, #e2e8f0);
-  --pyq-accordion-hover-bg: #f8faff;
-  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 62%, #e2e8f0);
+  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 38%, #e2e8f0);
+  --pyq-accordion-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 7%, #ffffff);
+  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 48%, #e2e8f0);
   --pyq-accordion-title: #1a1f36;
   --pyq-accordion-count: #64748b;
   --pyq-accordion-chevron: #94a3b8;
-  --pyq-accordion-chevron-active: #4f7eff;
+  --pyq-accordion-chevron-active: #ec4899;
   --pyq-accordion-active-bg: #ffffff;
-  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 68%, #e2e8f0);
+  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 52%, #e2e8f0);
+  --pyq-accordion-open-bg: color-mix(in srgb, var(--accent-cta-pink) 6%, #ffffff);
+  --pyq-accordion-open-border: color-mix(in srgb, var(--accent-cta-pink) 45%, #e2e8f0);
 
   /* Paper card inside accordion */
-  --pyq-paper-bg: #f8faff;
-  --pyq-paper-border: #e2e8f0;
-  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, #ffffff);
-  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 60%, #e2e8f0);
-  --pyq-paper-hover-shadow: 0 4px 16px color-mix(in srgb, var(--accent-cta-pink) 26%, transparent);
+  --pyq-paper-bg: #ffffff;
+  --pyq-paper-border: rgba(236, 72, 153, 0.22);
+  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 9%, #ffffff);
+  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 52%, rgba(236, 72, 153, 0.28));
+  --pyq-paper-hover-shadow: 0 4px 20px color-mix(in srgb, var(--accent-cta-pink) 22%, transparent);
   --pyq-paper-title: #1a1f36;
   --pyq-paper-meta: #64748b;
   --pyq-paper-meta-label: #94a3b8;
-  --pyq-paper-badge-bg: #eef2ff;
-  --pyq-paper-badge-border: #c7d7ff;
-  --pyq-paper-badge-text: #4f7eff;
-  --pyq-paper-arrow-bg: #eef2ff;
-  --pyq-paper-arrow-color: #4f7eff;
-  --pyq-paper-arrow-hover-bg: #dde8ff;
+  --pyq-paper-badge-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, #ffffff);
+  --pyq-paper-badge-border: rgba(236, 72, 153, 0.32);
+  --pyq-paper-badge-text: #be185d;
+  --pyq-paper-arrow-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, #ffffff);
+  --pyq-paper-arrow-color: #ec4899;
+  --pyq-paper-arrow-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 16%, #ffffff);
 
   /* Divider inside open accordion */
-  --pyq-accordion-divider: #e2e8f0;
+  --pyq-accordion-divider: rgba(236, 72, 153, 0.14);
+
+  /* Year filter dropdown — must be opaque (accordion bg is translucent in dark) */
+  --pyq-dropdown-bg: #ffffff;
+  --pyq-dropdown-scrim: rgba(15, 23, 42, 0.35);
 
   /* ── STUDENT / TESTS / OWN — “Create your own test” ─────────────────────
      Components: src/lib/components/OwnTestChaptersPanel.svelte
@@ -639,40 +646,47 @@
 
   /* ── PYQ PAPERS PAGE (dark) — must live here so PYQ / batch test rows inherit
      dark surfaces; light-theme values in :root would otherwise show white cards. */
-  --pyq-page-bg: #0C0E1A;
+  --pyq-page-bg: #0c0e1a;
   --pyq-header-text: #A1A1AA;
   --pyq-header-count: #ffffff;
   --pyq-sort-btn-bg: rgba(255, 255, 255, 0.05);
-  --pyq-sort-btn-border: rgba(139, 92, 246, 0.22);
+  --pyq-sort-btn-border: rgba(236, 72, 153, 0.28);
   --pyq-sort-btn-text: #A1A1AA;
-  --pyq-sort-btn-hover-bg: rgba(139, 92, 246, 0.10);
-  --pyq-sort-btn-hover-border: rgba(139, 92, 246, 0.50);
-  --pyq-sort-btn-hover-text: #C4B5FD;
+  --pyq-sort-btn-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 14%, rgba(255, 255, 255, 0.06));
+  --pyq-sort-btn-hover-border: rgba(244, 114, 182, 0.55);
+  --pyq-sort-btn-hover-text: #fbcfe8;
   --pyq-accordion-bg: rgba(255, 255, 255, 0.03);
-  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 32%, rgba(139, 92, 246, 0.18));
-  --pyq-accordion-hover-bg: rgba(139, 92, 246, 0.06);
-  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 72%, rgba(139, 92, 246, 0.40));
+  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 42%, rgba(255, 255, 255, 0.08));
+  --pyq-accordion-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, rgba(255, 255, 255, 0.04));
+  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 58%, rgba(255, 255, 255, 0.1));
   --pyq-accordion-title: #ffffff;
   --pyq-accordion-count: #A1A1AA;
   --pyq-accordion-chevron: #52525B;
-  --pyq-accordion-chevron-active: #A78BFA;
-  --pyq-accordion-active-bg: rgba(139, 92, 246, 0.05);
-  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 76%, rgba(139, 92, 246, 0.40));
+  --pyq-accordion-chevron-active: #f472b6;
+  --pyq-accordion-active-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, rgba(255, 255, 255, 0.04));
+  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 62%, rgba(255, 255, 255, 0.12));
+  --pyq-accordion-open-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, rgba(255, 255, 255, 0.04));
+  --pyq-accordion-open-border: color-mix(in srgb, var(--accent-cta-pink) 55%, rgba(255, 255, 255, 0.1));
+  --pyq-sort-btn-icon: #f472b6;
   --pyq-paper-bg: rgba(255, 255, 255, 0.03);
-  --pyq-paper-border: rgba(139, 92, 246, 0.14);
-  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, rgba(139, 92, 246, 0.08));
-  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 74%, rgba(139, 92, 246, 0.40));
+  --pyq-paper-border: rgba(236, 72, 153, 0.2);
+  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 14%, rgba(255, 255, 255, 0.05));
+  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 55%, rgba(236, 72, 153, 0.28));
   --pyq-paper-hover-shadow: 0 4px 20px color-mix(in srgb, var(--accent-cta-pink) 30%, transparent);
   --pyq-paper-title: #ffffff;
   --pyq-paper-meta: #A1A1AA;
   --pyq-paper-meta-label: #71717A;
-  --pyq-paper-badge-bg: rgba(139, 92, 246, 0.12);
-  --pyq-paper-badge-border: rgba(139, 92, 246, 0.28);
-  --pyq-paper-badge-text: #C4B5FD;
-  --pyq-paper-arrow-bg: rgba(139, 92, 246, 0.12);
-  --pyq-paper-arrow-color: #A78BFA;
-  --pyq-paper-arrow-hover-bg: rgba(139, 92, 246, 0.25);
-  --pyq-accordion-divider: rgba(139, 92, 246, 0.12);
+  --pyq-paper-badge-bg: color-mix(in srgb, var(--accent-cta-pink) 18%, rgba(255, 255, 255, 0.06));
+  --pyq-paper-badge-border: rgba(244, 114, 182, 0.38);
+  --pyq-paper-badge-text: #fbcfe8;
+  --pyq-paper-arrow-bg: color-mix(in srgb, var(--accent-cta-pink) 16%, rgba(255, 255, 255, 0.05));
+  --pyq-paper-arrow-color: #f472b6;
+  --pyq-paper-arrow-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 28%, rgba(255, 255, 255, 0.06));
+  --pyq-accordion-divider: rgba(236, 72, 153, 0.16);
+
+  /* Year filter dropdown — solid surface so list rows never show through */
+  --pyq-dropdown-bg: color-mix(in srgb, var(--accent-cta-pink) 7%, #14141f);
+  --pyq-dropdown-scrim: rgba(0, 0, 0, 0.55);
 
   /* ─── APP SHELL & MAIN CONTENT ───────────────────────────────────────────
      Main column background and typography. --topbar-page-bg aliases --page-bg.
@@ -1326,15 +1340,6 @@ html[data-theme='dark'] .question-card:hover {
   box-shadow: var(--question-card-hover-shadow);
 }
 
-/* Student dashboard hero mascot: screen blend vanishes on light backgrounds */
-.student-dash-mascot {
-  mix-blend-mode: normal;
-}
-
-html[data-theme='dark'] .student-dash-mascot {
-  mix-blend-mode: screen;
-}
-
 .q-tag {
   display: inline-flex;
   align-items: center;
@@ -1559,44 +1564,50 @@ html[data-theme='dark'] .student-dash-mascot {
   --sh-social-btn-hover-text: #ffffff;
 
   /* ── PYQ PAPERS PAGE ─────────────────────────────────────────────────── */
-  --pyq-page-bg: #0C0E1A;
+  --pyq-page-bg: #0c0e1a;
 
   --pyq-header-text: #A1A1AA;
   --pyq-header-count: #ffffff;
   --pyq-sort-btn-bg: rgba(255, 255, 255, 0.05);
-  --pyq-sort-btn-border: rgba(139, 92, 246, 0.22);
+  --pyq-sort-btn-border: rgba(236, 72, 153, 0.28);
   --pyq-sort-btn-text: #A1A1AA;
-  --pyq-sort-btn-hover-bg: rgba(139, 92, 246, 0.10);
-  --pyq-sort-btn-hover-border: rgba(139, 92, 246, 0.50);
-  --pyq-sort-btn-hover-text: #C4B5FD;
+  --pyq-sort-btn-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 14%, rgba(255, 255, 255, 0.06));
+  --pyq-sort-btn-hover-border: rgba(244, 114, 182, 0.55);
+  --pyq-sort-btn-hover-text: #fbcfe8;
 
   --pyq-accordion-bg: rgba(255, 255, 255, 0.03);
-  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 32%, rgba(139, 92, 246, 0.18));
-  --pyq-accordion-hover-bg: rgba(139, 92, 246, 0.06);
-  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 72%, rgba(139, 92, 246, 0.40));
+  --pyq-accordion-border: color-mix(in srgb, var(--accent-cta-pink) 42%, rgba(255, 255, 255, 0.08));
+  --pyq-accordion-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, rgba(255, 255, 255, 0.04));
+  --pyq-accordion-hover-border: color-mix(in srgb, var(--accent-cta-pink) 58%, rgba(255, 255, 255, 0.1));
   --pyq-accordion-title: #ffffff;
   --pyq-accordion-count: #A1A1AA;
   --pyq-accordion-chevron: #52525B;
-  --pyq-accordion-chevron-active: #A78BFA;
-  --pyq-accordion-active-bg: rgba(139, 92, 246, 0.05);
-  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 76%, rgba(139, 92, 246, 0.40));
+  --pyq-accordion-chevron-active: #f472b6;
+  --pyq-accordion-active-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, rgba(255, 255, 255, 0.04));
+  --pyq-accordion-active-border: color-mix(in srgb, var(--accent-cta-pink) 62%, rgba(255, 255, 255, 0.12));
+  --pyq-accordion-open-bg: color-mix(in srgb, var(--accent-cta-pink) 10%, rgba(255, 255, 255, 0.04));
+  --pyq-accordion-open-border: color-mix(in srgb, var(--accent-cta-pink) 55%, rgba(255, 255, 255, 0.1));
+  --pyq-sort-btn-icon: #f472b6;
 
   --pyq-paper-bg: rgba(255, 255, 255, 0.03);
-  --pyq-paper-border: rgba(139, 92, 246, 0.14);
-  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 12%, rgba(139, 92, 246, 0.08));
-  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 74%, rgba(139, 92, 246, 0.40));
+  --pyq-paper-border: rgba(236, 72, 153, 0.2);
+  --pyq-paper-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 14%, rgba(255, 255, 255, 0.05));
+  --pyq-paper-hover-border: color-mix(in srgb, var(--accent-cta-pink) 55%, rgba(236, 72, 153, 0.28));
   --pyq-paper-hover-shadow: 0 4px 20px color-mix(in srgb, var(--accent-cta-pink) 30%, transparent);
   --pyq-paper-title: #ffffff;
   --pyq-paper-meta: #A1A1AA;
   --pyq-paper-meta-label: #71717A;
-  --pyq-paper-badge-bg: rgba(139, 92, 246, 0.12);
-  --pyq-paper-badge-border: rgba(139, 92, 246, 0.28);
-  --pyq-paper-badge-text: #C4B5FD;
-  --pyq-paper-arrow-bg: rgba(139, 92, 246, 0.12);
-  --pyq-paper-arrow-color: #A78BFA;
-  --pyq-paper-arrow-hover-bg: rgba(139, 92, 246, 0.25);
+  --pyq-paper-badge-bg: color-mix(in srgb, var(--accent-cta-pink) 18%, rgba(255, 255, 255, 0.06));
+  --pyq-paper-badge-border: rgba(244, 114, 182, 0.38);
+  --pyq-paper-badge-text: #fbcfe8;
+  --pyq-paper-arrow-bg: color-mix(in srgb, var(--accent-cta-pink) 16%, rgba(255, 255, 255, 0.05));
+  --pyq-paper-arrow-color: #f472b6;
+  --pyq-paper-arrow-hover-bg: color-mix(in srgb, var(--accent-cta-pink) 28%, rgba(255, 255, 255, 0.06));
 
-  --pyq-accordion-divider: rgba(139, 92, 246, 0.12);
+  --pyq-accordion-divider: rgba(236, 72, 153, 0.16);
+
+  --pyq-dropdown-bg: color-mix(in srgb, var(--accent-cta-pink) 7%, #14141f);
+  --pyq-dropdown-scrim: rgba(0, 0, 0, 0.55);
 
   /* ── STUDENT / TESTS / OWN (dark) — same files as light ─────────────── */
   --own-page-bg: transparent;
@@ -2921,6 +2932,27 @@ a.student-batch-card:hover {
 .btn-cta-subscription-outline:disabled:hover {
   border-color: color-mix(in srgb, var(--accent-cta-pink) 38%, var(--sh-exam-card-border));
   background: color-mix(in srgb, var(--accent-cta-pink) 10%, var(--sh-exam-card-bg));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transform: none;
+}
+
+/* PYQ papers list — outline CTAs use same pink border / hover language as accordion (light + dark) */
+.pyq-papers-page .btn-cta-subscription-outline {
+  border: 1px solid color-mix(in srgb, var(--accent-cta-pink) 42%, var(--pyq-paper-border));
+  background: color-mix(in srgb, var(--accent-cta-pink) 9%, var(--pyq-paper-bg));
+  color: var(--pyq-paper-title);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.pyq-papers-page .btn-cta-subscription-outline:hover {
+  border-color: var(--accent-cta-pink);
+  background: color-mix(in srgb, var(--accent-cta-pink) 16%, var(--pyq-paper-bg));
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--accent-cta-pink) 30%, transparent);
+}
+
+.pyq-papers-page .btn-cta-subscription-outline:disabled:hover {
+  border-color: color-mix(in srgb, var(--accent-cta-pink) 42%, var(--pyq-paper-border));
+  background: color-mix(in srgb, var(--accent-cta-pink) 9%, var(--pyq-paper-bg));
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   transform: none;
 }
