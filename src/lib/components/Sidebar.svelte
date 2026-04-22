@@ -132,12 +132,12 @@
         href: "/student/tests",
         icon: "tests",
       },
-      {
-        id: "sidebar-batch",
-        label: "Batch",
-        href: "/student/batch",
-        icon: "batch",
-      },
+      // {
+      //   id: "sidebar-batch",
+      //   label: "Batch",
+      //   href: "/student/batch",
+      //   icon: "batch",
+      // },
       {
         id: "sidebar-subscription",
         label: "Subscription",

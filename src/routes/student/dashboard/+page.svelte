@@ -204,7 +204,7 @@
 							<path d="M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
 						</svg>
 					</span>
-					<span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Your Batch Tests</span>
+					<!-- <span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Your Batch Tests</span> -->
 					<span
 						class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]"
 					>
