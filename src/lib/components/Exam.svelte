@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Exam as ExamApi } from '$lib/api/exams';
-	import ExamPaper from '$lib/components/ExamPaper.svelte';
+	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 let {
 	exams,
@@ -26,14 +27,9 @@ let {
 	}
 </script>
 
-<div class="mx-auto w-full max-w-6xl min-w-0 text-[var(--page-text)]">
+<div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	<div class="mt-3 mb-3 flex items-center gap-3">
-		<a
-			href="/student/dashboard"
-			class="inline-flex items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)]"
-		>
-			← Back
-		</a>
+		<BackButton href="/student/dashboard" label="Back" />
 		<p class="text-sm text-[var(--page-text-muted)]">
 			{exams.length} exam{exams.length !== 1 ? 's' : ''} available
 		</p>
@@ -48,11 +44,11 @@ let {
 	{:else}
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#each exams as exam (exam._id)}
-				<ExamPaper
+				<ExamBoxCard
 					id={exam._id}
 					name={getExamNameEn(exam)}
 					image={exam.image ?? null}
-					slug={getExamSlug(exam)}
+					variant="dashboard"
 					href={getExamHref(exam)}
 				/>
 			{/each}

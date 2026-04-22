@@ -11,6 +11,7 @@
 		buildChaptersBySubjectFromGrouped,
 		buildSubjectsFromGrouped,
 	} from "$lib/student-exam/groupedExamData";
+	import BackButton from "$lib/components/BackButton.svelte";
 
 	type SubjectNavRow = {
 		_id: string;
@@ -175,12 +176,7 @@
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<div class="mb-4 flex items-center gap-4">
-					<a
-						href="/student/exams"
-						class="inline-flex w-fit items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
-					>
-						← Back
-					</a>
+					<BackButton href="/student/exams" label="Back" />
 					<h1 class="text-2xl font-bold md:text-3xl">
 						{examTitle}
 					</h1>
@@ -226,7 +222,7 @@
 								<button
 									type="button"
 									onclick={() => selectSubject(s.slug)}
-									class="group flex flex-col rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_36%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[var(--accent-cta-pink)] hover:shadow-[0_10px_28px_-10px_color-mix(in_srgb,var(--accent-cta-pink)_52%,transparent)]"
+									class="exam-route-card group flex flex-col rounded-[var(--radius-card)] p-3 text-left"
 								>
 									<h2
 										class="text-base font-semibold leading-snug text-[var(--sh-exam-card-title)]"
@@ -249,27 +245,11 @@
 				class="sticky top-0 hidden md:flex h-screen w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
 			>
 				<div class="flex-1 overflow-y-auto p-2">
-					<button
-						type="button"
-						onclick={backToSubjects}
-						class="mb-3 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-[var(--sb-collapse-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
-					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-						>
-							<path
-								d="M15 18l-6-6 6-6"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
-						Back to Subjects
-					</button>
+					<BackButton
+						label="Back"
+						onClick={backToSubjects}
+						className="mb-3 justify-start border-[var(--sb-border-color)] bg-transparent text-[var(--sb-collapse-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
+					/>
 					<h2
 						class="mb-3 mt-2 text-xs font-semibold uppercase tracking-wider text-[var(--sb-nav-text)] opacity-70"
 					>
@@ -296,30 +276,6 @@
 				<div
 					class="mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden px-4 md:px-6 py-5"
 				>
-					<button
-						type="button"
-						onclick={backToSubjects}
-						class="mb-4 inline-flex w-fit items-center gap-2 rounded-lg bg-[var(--page-card-bg)] border border-[var(--sh-exam-card-border)] px-3 py-1.5 text-sm font-medium text-[var(--page-text-muted)] md:hidden transition hover:text-[var(--page-link-hover)]"
-					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-						>
-							<path
-								d="M15 18l-6-6 6-6"
-								stroke="currentColor"
-								stroke-width="2.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
-						Back to Subjects
-					</button>
-
-
-
 					{#if displayChapters.length === 0}
 						<p class="text-[var(--page-text-muted)]">
 							No chapters found for this subject.
@@ -332,7 +288,7 @@
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
 										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
-										class="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--accent-cta-pink)_36%,var(--sh-tool-card-border))] bg-[var(--sh-tool-card-bg)] p-3 text-left text-[var(--sh-tool-card-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[var(--accent-cta-pink)] hover:shadow-[0_10px_28px_-10px_color-mix(in_srgb,var(--accent-cta-pink)_52%,transparent)]"
+										class="exam-route-card group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] p-3 text-left text-[var(--sh-tool-card-text)]"
 									>
 										
 										<h2
@@ -341,7 +297,7 @@
 											{chapter.name?.en ?? chapter.slug}
 										</h2>
 										<p
-											class="mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition group-hover:text-[var(--accent-cta-pink)]"
+											class="exam-route-card__link mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition"
 										>
 											View questions
 											<span

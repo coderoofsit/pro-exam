@@ -1,6 +1,7 @@
 <script lang="ts">
   import ExamPaper from '$lib/components/ExamPaper.svelte';
   import CustomeModal from '$lib/components/customeModal.svelte';
+  import BackButton from '$lib/components/BackButton.svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import type { PageData } from './$types';
@@ -59,13 +60,7 @@
 
     {#if !showChoiceModal}
       <div class="mb-4 flex justify-start">
-        <button
-          type="button"
-          class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
-          onclick={onBack}
-        >
-          ← Back
-        </button>
+        <BackButton label="Back" href="/student/tests" />
       </div>
 
       {#if error}

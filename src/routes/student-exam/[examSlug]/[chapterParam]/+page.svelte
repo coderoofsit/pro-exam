@@ -10,6 +10,7 @@
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/stores";
 	import { createReport, type ReportReason } from "$lib/api/reports";
+import BackButton from "$lib/components/BackButton.svelte";
 
 	type Question = PageData["questions"][number];
 	type ImageLike =
@@ -425,32 +426,71 @@
 	const questionsPageUrl = (p: number) =>
 		`${chapterBaseUrl()}?${activeFiltersQuery({ page: p })}`;
 
-	const paginationStartPage = $derived(
-		displayPaginationMeta
-			? Math.max(1, data.safePage - PAGINATION_WINDOW)
-			: 1,
-	);
+	type PaginationItem =
+		| { type: "page"; page: number }
+		| { type: "ellipsis"; key: string; targetPage: number };
 
-	const paginationEndPage = $derived(
-		displayPaginationMeta
-			? Math.min(
-					displayPaginationMeta.lastPage,
-					data.safePage + PAGINATION_WINDOW,
-				)
-			: 1,
-	);
+	const paginationItems = $derived.by((): PaginationItem[] => {
+		const meta = displayPaginationMeta;
+		if (!meta || meta.lastPage <= 1) return [];
 
-	const visiblePageNumbers = $derived(
-		Array.from(
-			{
-				length: Math.max(
-					0,
-					paginationEndPage - paginationStartPage + 1,
-				),
-			},
-			(_, i) => paginationStartPage + i,
-		),
-	);
+		const last = meta.lastPage;
+		const current = data.safePage;
+		const sibling = Math.max(1, PAGINATION_WINDOW - 1);
+		const items: PaginationItem[] = [];
+
+		const pushPage = (page: number) => {
+			items.push({ type: "page", page });
+		};
+
+		const pushRange = (start: number, end: number) => {
+			for (let p = start; p <= end; p += 1) pushPage(p);
+		};
+
+		if (last <= 7) {
+			pushRange(1, last);
+			return items;
+		}
+
+		pushPage(1);
+
+		const leftGap = current - sibling > 2;
+		const rightGap = current + sibling < last - 1;
+
+		if (!leftGap && rightGap) {
+			// Near start: 1 2 3 ... last
+			pushRange(2, Math.min(last - 1, 2 + sibling * 2));
+			items.push({
+				type: "ellipsis",
+				key: "right",
+				targetPage: Math.min(last - 1, current + sibling * 2 + 2),
+			});
+		} else if (leftGap && !rightGap) {
+			// Near end: 1 ... (last-2) (last-1) last
+			items.push({
+				type: "ellipsis",
+				key: "left",
+				targetPage: Math.max(2, current - sibling * 2 - 2),
+			});
+			pushRange(Math.max(2, last - (sibling * 2 + 1)), last - 1);
+		} else if (leftGap && rightGap) {
+			// Middle: 1 ... (current-1) current (current+1) ... last
+			items.push({
+				type: "ellipsis",
+				key: "left",
+				targetPage: Math.max(2, current - sibling - 1),
+			});
+			pushRange(current - sibling, current + sibling);
+			items.push({
+				type: "ellipsis",
+				key: "right",
+				targetPage: Math.min(last - 1, current + sibling + 1),
+			});
+		}
+
+		pushPage(last);
+		return items;
+	});
 
 	function openQuestionPreview(index: number) {
 		const q = displayQuestions[index];
@@ -595,27 +635,18 @@
 					</div>
 				{:else}
 					<div class="p-3 shrink-0">
-						<div class="flex items-center justify-between gap-3">
-							<div class="flex items-center gap-3 text-sm text-[var(--page-text-muted)]">
+						<div class="flex items-start justify-between gap-3">
+							<div class="flex flex-col gap-1.5 text-sm text-[var(--page-text-muted)]">
 								{#if effectiveQuestionId !== null}
-									<button
-										type="button"
-										onclick={closeQuestionPreview}
-										class="inline-flex items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
-									>
-										← Back to Questions
-									</button>
+									<BackButton label="Back" onClick={closeQuestionPreview} />
 								{:else}
-									<button
-										type="button"
-										onclick={() => void goto(`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`)}
-										class="inline-flex items-center rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--page-card-bg)] px-3 py-1.5 text-sm text-[var(--page-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
-									>
-										← Back to Chapters
-									</button>
+									<BackButton
+										label="Back"
+										href={`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`}
+									/>
 								{/if}
 								{#if displayPaginationMeta}
-									<span>
+									<span class="pl-1">
 										{displayPaginationMeta.total} questions • Page {data.safePage} of {displayPaginationMeta.lastPage}
 									</span>
 								{/if}
@@ -623,6 +654,47 @@
 
 							{#if !effectiveQuestionId}
 								<div class="flex shrink-0 flex-wrap items-center justify-end gap-3 sm:gap-4">
+									{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
+										<div class="flex flex-wrap items-center justify-center gap-1.5">
+											{#if data.safePage > 1}
+												<a
+													class="pagination-btn"
+													href={questionsPageUrl(data.safePage - 1)}
+												>
+													Prev
+												</a>
+											{/if}
+
+											{#each paginationItems as item (`top-${item.type}-${item.type === 'page' ? item.page : item.key}`)}
+												{#if item.type === "page"}
+													<a
+														class="pagination-btn px-3.5 {item.page === data.safePage ? 'page-link-active' : ''}"
+														href={questionsPageUrl(item.page)}
+													>
+														{item.page}
+													</a>
+												{:else}
+													<a
+														class="pagination-btn px-3.5"
+														href={questionsPageUrl(item.targetPage)}
+														aria-label="Jump pages"
+													>
+														...
+													</a>
+												{/if}
+											{/each}
+
+											{#if data.safePage < displayPaginationMeta.lastPage}
+												<a
+													class="pagination-btn"
+													href={questionsPageUrl(data.safePage + 1)}
+												>
+													Next
+												</a>
+											{/if}
+										</div>
+									{/if}
+
 									<div class="flex items-center rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-1 shadow-sm">
 										<button
 											type="button"
@@ -766,55 +838,6 @@
 							</div>
 						</div>
 					{:else if !effectiveQuestionId}
-						{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
-							<div
-								class="shrink-0 border-b border-[var(--page-card-border)] pb-3"
-							>
-								<div
-									class="flex flex-wrap items-center justify-center gap-1.5"
-								>
-									{#if data.safePage > 1}
-										<a
-											class="pagination-btn"
-											href={questionsPageUrl(
-												data.safePage - 1,
-											)}>Prev</a
-										>
-									{/if}
-
-									{#each visiblePageNumbers as pageNumber}
-										<a
-											class="pagination-btn px-3.5 {pageNumber ===
-											data.safePage
-												? 'page-link-active'
-												: ''}"
-											href={questionsPageUrl(pageNumber)}
-										>
-											{pageNumber}
-										</a>
-									{/each}
-									{#if !visiblePageNumbers.includes(displayPaginationMeta.lastPage)}
-										<span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
-										<a
-											class="pagination-btn px-3.5"
-											href={questionsPageUrl(displayPaginationMeta.lastPage)}
-										>
-											{displayPaginationMeta.lastPage}
-										</a>
-									{/if}
-
-									{#if data.safePage < displayPaginationMeta.lastPage}
-										<a
-											class="pagination-btn"
-											href={questionsPageUrl(
-												data.safePage + 1,
-											)}>Next</a
-										>
-									{/if}
-								</div>
-							</div>
-						{/if}
-
 						<div class="flex-1 overflow-y-auto py-3">
 							{#if isLoading}
 								<div class="flex flex-col gap-2.5">
@@ -848,15 +871,15 @@
 											class="question-card group rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-4 py-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-md"
 											onclick={() => openQuestionPreview(index)}
 										>
-											<div class="flex items-baseline gap-2.5">
+											<div class="flex items-center gap-2.5">
 												<div
-													class="shrink-0 text-[11px] font-normal text-[var(--page-text-muted)] opacity-60 mt-0.5"
+													class="shrink-0 text-[11px] font-medium text-[var(--page-text-muted)] opacity-90"
 												>
-													Q{(data.safePage - 1) *
+													{(data.safePage - 1) *
 														(displayPaginationMeta?.limit ??
 															10) +
 														index +
-														1}
+														1}.
 												</div>
 												<div
 													class="flex-1 text-[0.95rem] font-normal leading-relaxed text-[var(--page-text)]"
@@ -921,26 +944,24 @@
 										>
 									{/if}
 
-									{#each visiblePageNumbers as pageNumber}
-										<a
-											class="pagination-btn px-3.5 {pageNumber ===
-											data.safePage
-												? 'page-link-active'
-												: ''}"
-											href={questionsPageUrl(pageNumber)}
-										>
-											{pageNumber}
-										</a>
+									{#each paginationItems as item (`bottom-${item.type}-${item.type === 'page' ? item.page : item.key}`)}
+										{#if item.type === "page"}
+											<a
+												class="pagination-btn px-3.5 {item.page === data.safePage ? 'page-link-active' : ''}"
+												href={questionsPageUrl(item.page)}
+											>
+												{item.page}
+											</a>
+										{:else}
+											<a
+												class="pagination-btn px-3.5"
+												href={questionsPageUrl(item.targetPage)}
+												aria-label="Jump pages"
+											>
+												...
+											</a>
+										{/if}
 									{/each}
-									{#if !visiblePageNumbers.includes(displayPaginationMeta.lastPage)}
-										<span class="pagination-btn px-3.5 pointer-events-none opacity-70">...</span>
-										<a
-											class="pagination-btn px-3.5"
-											href={questionsPageUrl(displayPaginationMeta.lastPage)}
-										>
-											{displayPaginationMeta.lastPage}
-										</a>
-									{/if}
 
 									{#if data.safePage < displayPaginationMeta.lastPage}
 										<a
@@ -1212,13 +1233,6 @@
 										class="mb-3"
 									>
 										<div class="flex flex-wrap items-center gap-2 mb-1.5">
-											{#if currentQuestionNumber !== null}
-												<div
-													class="inline-flex rounded-md border border-[var(--page-text-muted)]/20 bg-[var(--page-text-muted)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--page-text-muted)]"
-												>
-													Q{currentQuestionNumber}
-												</div>
-											{/if}
 											{#if (detailQuestion as any).approve}
 												<div class="inline-flex rounded-md border border-brand-secondary/30 bg-brand-secondary/10 px-2 py-0.5 text-xs font-semibold text-brand-secondary">
 													Approved
@@ -1302,11 +1316,18 @@
 									<div
 										class="mb-5 text-[1.05rem] leading-relaxed text-[var(--page-text)]"
 									>
+										<div class="flex items-start gap-2">
+											{#if currentQuestionNumber !== null}
+												<span class="shrink-0 font-semibold text-[var(--page-text-muted)]">
+													{currentQuestionNumber}.
+												</span>
+											{/if}
 										<MathText
 											content={questionPromptEnContent(
 												detailQuestion,
 											)}
 										/>
+										</div>
 										{#if promptImagesOnly(detailQuestion).length}
 											<div
 												class="mt-3 grid grid-cols-2 gap-2.5"

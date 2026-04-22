@@ -3,6 +3,7 @@
 	import { chapterQuestionsPath } from '$lib/chapterRoutes';
 	import type { Chapter, ChaptersHierarchyResponse } from '$lib/api/chapters';
 	import { chapterStore } from '$lib/stores/chapter';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 	let { data } = $props<{
 		data: {
@@ -88,15 +89,7 @@
 	<aside
 		class="sticky top-0 z-[1] flex max-h-[calc(100dvh-7rem)] w-64 shrink-0 flex-col overflow-y-auto overscroll-contain border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-4"
 	>
-		<a
-			href="/student/exams/{examSlug}/subject"
-			class="mb-4 flex items-center gap-2 text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
-		>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-				<path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-			</svg>
-			Back to subjects
-		</a>
+		<BackButton href="/student/exams/{examSlug}/subject" label="Back" className="mb-4" />
 		<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Subjects</h2>
 		{#if data.hierarchy?.subjects}
 			<nav class="space-y-0.5">

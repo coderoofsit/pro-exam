@@ -1,8 +1,8 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
   import type { PageData } from './$types';
   import TestAttempt from '$lib/components/TestAttempt.svelte';
+  import BackButton from '$lib/components/BackButton.svelte';
   import {
     loadAttemptDataFromSession,
     readAttemptStartError,
@@ -111,13 +111,7 @@
     role="alert"
   >
     <p class="max-w-md text-sm text-[var(--pc-error-text)]">{prelaunchError}</p>
-    <button
-      type="button"
-      class="rounded-xl border border-[var(--ta-nav-btn-border)] bg-[var(--ta-nav-btn-bg)] px-5 py-2.5 text-sm font-medium text-[var(--ta-nav-btn-text)] transition hover:bg-[var(--ta-nav-btn-hover-bg)]"
-      onclick={() => void goto('/student/tests')}
-    >
-      Back to tests
-    </button>
+    <BackButton label="Back to tests" href="/student/tests" />
   </div>
 {:else if isPrelaunch && !showAttempt}
   <div

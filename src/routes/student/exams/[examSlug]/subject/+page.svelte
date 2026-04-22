@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import type { ChaptersHierarchyResponse } from '$lib/api/chapters';
 	import { chapterStore } from '$lib/stores/chapter';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 	let { data } = $props<{
 		data: {
@@ -39,12 +40,7 @@
 
 <div class="min-h-screen bg-[var(--page-bg)] text-[var(--page-text)]">
 	<div class="mx-auto max-w-7xl px-4 py-10">
-		<a
-			href="/student/dashboard"
-			class="mb-6 inline-block text-sm text-[var(--page-text-muted)] transition hover:text-[var(--page-link-hover)]"
-		>
-			← Back to Dashboard
-		</a>
+		<BackButton href="/student/dashboard" label="Back to Dashboard" className="mb-6" />
 		<div class="mb-8">
 			<h1 class="text-3xl font-bold md:text-4xl">{data.exam ? getExamTitleEn(data.exam, data.examSlug) : data.examSlug}</h1>
 			<p class="mt-2 text-base text-[var(--page-text-muted)]">Select a subject, then a chapter to view questions</p>

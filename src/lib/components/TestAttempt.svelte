@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { onDestroy, onMount, tick } from 'svelte';
   import MathText from '$lib/components/MathText.svelte';
+  import BackButton from '$lib/components/BackButton.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     extractQuestionId,
@@ -1105,13 +1106,11 @@ function clearCurrentAnswer() {
       <p class="mt-4 text-xs text-[var(--ta-palette-sub)]">
         Redirecting to your tests in a few seconds…
       </p>
-      <button
-        type="button"
-        onclick={() => goToTestsList()}
-        class="mt-6 w-full rounded-xl bg-[var(--ta-nav-btn-primary-bg)] py-3 text-sm font-semibold text-[var(--ta-nav-btn-primary-text)] shadow-[var(--ta-nav-btn-primary-shadow)] transition hover:opacity-95"
-      >
-        Back to my tests
-      </button>
+      <BackButton
+        label="Back to my tests"
+        onClick={() => goToTestsList()}
+        className="mt-6 w-full bg-[var(--ta-nav-btn-primary-bg)] text-[var(--ta-nav-btn-primary-text)] shadow-[var(--ta-nav-btn-primary-shadow)] hover:bg-[var(--ta-nav-btn-primary-bg)] hover:text-[var(--ta-nav-btn-primary-text)]"
+      />
     </div>
   </div>
 {/if}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
-	import ExamPaper from '$lib/components/ExamPaper.svelte';
+	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
 
@@ -77,11 +77,12 @@
 				{/each}
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
-					<ExamPaper
+					<ExamBoxCard
 						id={exam._id}
 						name={getExamNameEn(exam)}
 						image={(exam as any).image ?? null}
-						slug={getExamSlug(exam)}
+						subtitle={getExamSub(exam) ?? undefined}
+						variant="dashboard"
 						href={`/student-exam/${getExamSlug(exam)}?pyq=true`}
 					/>
 				{:else}
@@ -116,11 +117,12 @@
 				{/each}
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
-					<ExamPaper
+					<ExamBoxCard
 						id={exam._id}
 						name={getExamNameEn(exam)}
 						image={(exam as any).image ?? null}
-						slug={getExamSlug(exam)}
+						subtitle={getExamSub(exam) ?? undefined}
+						variant="dashboard"
 						href={`/student-exam/${getExamSlug(exam)}`}
 					/>
 				{:else}
