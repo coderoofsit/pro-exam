@@ -187,7 +187,7 @@
 					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
 				</a>
 
-				<a
+				<!-- <a
 					href="/student/batch"
 					data-sveltekit-preload-data="hover"
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
@@ -204,14 +204,14 @@
 							<path d="M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
 						</svg>
 					</span>
-					<!-- <span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Your Batch Tests</span> -->
+					<span class="min-w-0 flex-1 font-semibold text-[var(--dash-cta-text)]">Your Batch Tests</span>
 					<span
 						class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]"
 					>
 						Updated
 					</span>
 					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
-				</a>
+				</a> -->
 			</div>
 		</section>
 
