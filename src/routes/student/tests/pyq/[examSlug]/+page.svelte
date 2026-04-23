@@ -1,23 +1,20 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import PYQAccordion from '$lib/components/PYQAccordion.svelte';
-  import BackButton from '$lib/components/BackButton.svelte';
+  import type { PapersByYearItem } from '$lib/components/PYQAccordion.svelte';
 
   let { data }: { data: PageData } = $props();
 
-  console.log('Page data response:', data);
-  console.log('papersByYear:', data.papersByYear);
-  console.log('error:', data.error);
-  console.log('examSlug:', data.examSlug);
+  const papersByYear = $derived((data.papersByYear ?? []) as PapersByYearItem[]);
+  const error = $derived(data.error ?? null);
+  const examSlug = $derived(data.examSlug ?? '');
 
-  const papersByYear = data.papersByYear ?? [];
-  const error        = data.error ?? null;
-  const examSlug     = data.examSlug ?? '';
-
-  const examName = examSlug
-    .split('-')
-    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  const examName = $derived(
+    examSlug
+      .split('-')
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+  );
 
 </script>
 
@@ -27,10 +24,6 @@
 
 <div class="pyq-papers-page min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-4 ">
-    <div class="mb-4 flex justify-start">
-      <BackButton label="Back" tone="pyq" href="/student/tests/pyq" />
-    </div>
-
     {#if error}
       <div class="
         flex items-center gap-3 rounded-2xl px-5 py-4 text-sm
@@ -76,6 +69,7 @@
         {papersByYear}
         {examSlug}
         basePath="/student/tests/pyq"
+        backHref="/student/tests/pyq"
       />
     {/if}
 

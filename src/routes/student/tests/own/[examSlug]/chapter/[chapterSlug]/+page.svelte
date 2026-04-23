@@ -4,6 +4,7 @@
   import { fetchTopicsByChapterSlug, type TopicRow } from "$lib/api/topics";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
+  import BackButton from "$lib/components/BackButton.svelte";
   import { browser } from "$app/environment";
 
   let { data }: { data: PageData } = $props();
@@ -213,6 +214,9 @@
 
 <div class="own-test-page own-test-chapter-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
+    <div class="mb-4 flex justify-start">
+      <BackButton label="Back" href={`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`} />
+    </div>
     <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">
         {#if data.paginationMeta}
@@ -244,14 +248,14 @@
       <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
         <button
           type="button"
-          class="rounded-lg border border-[var(--accent-cta-pink)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+          class="rounded-lg border border-[var(--page-link)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:text-[var(--page-link)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--page-link)_40%,transparent)]"
           onclick={toggleFilterPanel}
         >
           Filters{#if activeFilterCount > 0}<span class="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--page-link)] text-[10px] font-bold text-white">{activeFilterCount}</span>{/if}
         </button>
         <button
           type="button"
-          class="rounded-lg border border-[var(--accent-cta-pink)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--accent-cta-pink)_40%,transparent)]"
+          class="rounded-lg border border-[var(--page-link)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:text-[var(--page-link)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--page-link)_40%,transparent)]"
           onclick={() => goto(`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`)}
         >
           ← Resume test creation
@@ -271,7 +275,7 @@
                 <button
                   type="button"
                   onclick={() => togglePendingDifficulty(diff)}
-                  class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
                 >
                   {diff}
                 </button>
@@ -286,7 +290,7 @@
                 <button
                   type="button"
                   onclick={() => togglePendingKind(k)}
-                  class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
+                  class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
                 >
                   {k}
                 </button>
@@ -304,7 +308,7 @@
                   <button
                     type="button"
                     onclick={() => (pendingTopic = [])}
-                    class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
+                    class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
                   >
                     All Topics
                   </button>
@@ -312,7 +316,7 @@
                     <button
                       type="button"
                       onclick={() => togglePendingTopic(t.slug)}
-                      class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--accent-cta-pink)]/60'}"
+                      class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
                     >
                       {t.name?.en ?? t.slug}
                     </button>
@@ -323,7 +327,7 @@
           {/if}
 
           <div class="flex items-center gap-3 border-t border-[var(--sh-exam-card-border)] pt-4">
-            <button type="button" class="flex-1 rounded-xl border border-[var(--sh-exam-card-border)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--accent-cta-pink)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--accent-cta-pink)]" onclick={clearFilters}>Clear</button>
+            <button type="button" class="flex-1 rounded-xl border border-[var(--sh-exam-card-border)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--page-link)]" onclick={clearFilters}>Clear</button>
             <button type="button" class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--page-link-hover)]" onclick={applyFilters}>Apply</button>
           </div>
         </div>
@@ -335,7 +339,7 @@
         {data.message}
       </div>
     {:else if data.questions.length === 0}
-      <div class="rounded-2xl border border-[var(--accent-cta-pink)]/35 bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
+      <div class="rounded-2xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
         No questions found.
       </div>
     {:else}
@@ -343,7 +347,7 @@
         {#each data.questions as q, index (q._id)}
           <button
             type="button"
-            class="rounded-xl border border-[var(--accent-cta-pink)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--accent-cta-pink)]/70"
+            class="rounded-xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--page-link)]/70"
             onclick={() => toggleQuestion(q._id)}
           >
             <div class="flex gap-3">
@@ -375,7 +379,7 @@
                         <img
                           {src}
                           alt={imageAlt(img)}
-                          class="max-h-48 w-full rounded-lg border border-[var(--accent-cta-pink)]/30 object-contain"
+                          class="max-h-48 w-full rounded-lg border border-[var(--page-link)]/30 object-contain"
                           loading="lazy"
                         />
                       {/if}

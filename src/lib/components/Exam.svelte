@@ -7,8 +7,9 @@ let {
 	exams,
 	boardName,
 	pyq = false,
-	hideBoardTitle = false
-}: { exams: ExamApi[]; boardName: string; pyq?: boolean; hideBoardTitle?: boolean } = $props();
+	hideBoardTitle = false,
+	basePath
+}: { exams: ExamApi[]; boardName: string; pyq?: boolean; hideBoardTitle?: boolean; basePath?: string } = $props();
 
 	function getExamSlug(exam: any): string {
 		return exam?.slug ?? exam?._id ?? '';
@@ -16,6 +17,10 @@ let {
 
 	function getExamHref(exam: any): string {
 		const slug = getExamSlug(exam);
+		if (basePath) {
+			const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+			return `${normalizedBasePath}/${encodeURIComponent(slug)}`;
+		}
 		return pyq ? `/student-exam/${slug}?pyq=true` : `/student-exam/${slug}`;
 	}
 

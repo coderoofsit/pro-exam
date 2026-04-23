@@ -116,6 +116,7 @@
               name={item?.name?.en ?? 'Unnamed'}
               image={item?.image ?? null}
               slug={item?.slug ?? ''}
+              variant="dashboard"
               loading={openingExamId === item._id}
               onNavigate={(e) => void openExam(item, e)}
               href={'/student/tests/own/' +
@@ -130,7 +131,7 @@
 
   {#if openingExamId}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-[2px]">
-      <span class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-cta-pink)] border-r-transparent"></span>
+      <span class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[var(--page-link)] border-r-transparent"></span>
     </div>
   {/if}
 </div>

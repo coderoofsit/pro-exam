@@ -1,17 +1,12 @@
 <script lang="ts">
+  import Exam from '$lib/components/Exam.svelte';
+  import type { Exam as ExamApi } from '$lib/api/exams';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
 
-  const exams = data.exams ?? [];
-  const error = data.error ?? null;
-
-  function examName(item: any): string {
-    return item?.name?.en ?? 'Unnamed';
-  }
-  function examInitials(name: string): string {
-    return name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
-  }
+  const exams = $derived((data.exams ?? []) as ExamApi[]);
+  const error = $derived(data.error ?? null);
 </script>
 
 <svelte:head>
@@ -19,7 +14,7 @@
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-6xl px-4 py-8 ">
+  <div class="mx-auto max-w-7xl px-4 pt-0 pb-8">
     <!-- Error state -->
     {#if error}
       <div class="
@@ -59,37 +54,13 @@
         <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">Check back later for PYQ content</p>
       </div>
     {:else}
-      <div class="flex flex-wrap gap-3">
-        {#each exams as item (item._id)}
-          <a
-            href={"/student/tests/pyq/" + (item?.slug ?? '')}
-            class="group relative flex flex-col items-center justify-center gap-3 rounded-2xl p-4 w-[260px] min-h-[120px] overflow-hidden no-underline
-              border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))]
-              bg-[var(--sh-exam-card-bg)]
-              shadow-[0_1px_2px_rgba(15,23,42,0.06)]
-              transition-all duration-200
-              hover:border-[var(--accent-cta-pink)]
-              hover:bg-[color-mix(in_srgb,var(--sh-exam-card-border)_18%,var(--sh-exam-card-bg))]
-              hover:-translate-y-0.5"
-          >
-            <span class="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-arrow-bg)]">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="text-[var(--accent-cta-pink)]" aria-hidden="true">
-                <path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--sh-exam-card-arrow-bg)] ring-2 ring-[var(--sh-exam-card-border)]">
-              {#if item?.image}
-                <img src={item.image} alt={examName(item)} class="h-full w-full rounded-full object-contain" />
-              {:else}
-                <span class="text-sm font-bold text-[var(--sh-exam-card-arrow-color)]">{examInitials(examName(item))}</span>
-              {/if}
-            </div>
-            <p class="text-center text-[13px] font-bold leading-tight tracking-wide line-clamp-2 text-[var(--sh-exam-card-title)] group-hover:text-[var(--accent-cta-pink)] transition-colors">
-              {examName(item)}
-            </p>
-          </a>
-        {/each}
-      </div>
+      <Exam
+        exams={exams}
+        boardName="All"
+        pyq={true}
+        hideBoardTitle={true}
+        basePath="/student/tests/pyq"
+      />
     {/if}
 
   </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import BackButton from '$lib/components/BackButton.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     createTestAttempt,
@@ -34,13 +35,15 @@
     papersByYear: PapersByYearItem[];
     examSlug: string;
     basePath?: string;
+    backHref?: string;
   };
 
   // ── Props ──────────────────────────────────────────────────────────────
   let {
     papersByYear,
     examSlug,
-    basePath = '/student/tests/pyq'
+    basePath = '/student/tests/pyq',
+    backHref
   }: Props = $props();
 
   // ── Accordion state ────────────────────────────────────────────────────
@@ -241,13 +244,14 @@ async function viewPaper(paper: PaperItem) {
 {/if}
 
 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-
-  <p class="text-sm text-[var(--pyq-header-text)]">
-    Showing all PYQ mock
-    <span class="font-semibold text-[var(--pyq-header-count)]">
-      ({visiblePapers}{selectedYear !== 'all' ? ` of ${totalPapers}` : ''})
-    </span>
-  </p>
+  <div class="flex flex-wrap items-center gap-3">
+    {#if backHref}
+      <BackButton label="Back" tone="pyq" href={backHref} />
+    {/if}
+    <p class="text-sm font-semibold text-[var(--pyq-header-count)]">
+      PYQ Mock available {visiblePapers}{selectedYear !== 'all' ? ` of ${totalPapers}` : ''}
+    </p>
+  </div>
 
   <div class="flex items-center gap-2">
 

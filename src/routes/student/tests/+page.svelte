@@ -46,6 +46,8 @@
 
   let filtersOpen = $state(false);
   let searchDraft = $state("");
+  const testsActionBtnClass =
+    "!h-9 !min-w-[7.25rem] !rounded-xl !px-3 !text-sm !font-normal !border-[var(--pyq-sort-btn-border)] !bg-[var(--pyq-sort-btn-bg)] !text-[var(--pyq-sort-btn-text)] !shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:!border-[var(--pyq-sort-btn-hover-border)] hover:!bg-[var(--pyq-sort-btn-hover-bg)] hover:!text-[var(--pyq-sort-btn-hover-text)] hover:!shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--page-link)_30%,transparent)]";
 
   const querySignature = $derived(page.url.search);
 
@@ -455,11 +457,11 @@
                   bind:value={searchDraft}
                   placeholder="Search by name…"
                   aria-label="Search tests"
-                  class="min-h-[2.5rem] min-w-0 w-full max-w-xl rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm text-[var(--sh-exam-card-title)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--sh-ai-sub)] hover:border-[color-mix(in_srgb,var(--accent-cta-pink)_42%,var(--sh-exam-card-border))] focus:border-[var(--accent-cta-pink)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--accent-cta-pink)_30%,transparent)]"
+                  class="min-h-[2.25rem] min-w-0 w-full max-w-xl rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 py-2 text-sm text-[var(--pyq-sort-btn-text)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--pyq-header-text)] hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] focus:border-[var(--pyq-sort-btn-hover-border)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--page-link)_30%,transparent)]"
                 />
                 <button
                   type="button"
-                  class="ml-auto inline-flex min-h-[2.5rem] shrink-0 items-center gap-2 rounded-lg border border-[var(--sh-exam-card-border)] px-3 text-sm font-medium text-[var(--sh-ai-sub)] transition hover:border-[var(--accent-cta-pink)] hover:text-[var(--accent-cta-pink)]"
+                  class="ml-auto inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)]"
                   onclick={() => (filtersOpen = !filtersOpen)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -552,12 +554,14 @@
                           <GeneralActionButton
                             text="View Analysis"
                             onClick={() => void handleViewAnalysis(item)}
+                            className={testsActionBtnClass}
                           />
                           <GeneralActionButton
                             text={startingTestId === item._id ? "Starting..." : "Re-attempt"}
                             onClick={() => onReAttemptClick(item)}
                             disabled={startingTestId === item._id}
                             variant="highlight"
+                            className={testsActionBtnClass}
                           />
                         {:else}
                           <GeneralActionButton
@@ -565,6 +569,7 @@
                             onClick={() => onStartTestClick(item)}
                             disabled={startingTestId === item._id}
                             variant="highlight"
+                            className={testsActionBtnClass}
                           />
                         {/if}
                       </div>

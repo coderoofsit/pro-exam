@@ -176,8 +176,8 @@
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<div class="mb-4 flex items-center gap-4">
-					<BackButton href="/student/exams" label="Back" />
-					<h1 class="text-2xl font-bold md:text-3xl">
+					<BackButton href="/student/exams" label="Back" className="self-center" />
+					<h1 class="text-2xl font-bold leading-none md:text-3xl">
 						{examTitle}
 					</h1>
 				</div>

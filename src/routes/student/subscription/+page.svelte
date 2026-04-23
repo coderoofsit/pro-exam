@@ -1,7 +1,7 @@
 <script lang="ts">
   import Skeleton from '$lib/components/Skeleton.svelte';
   import { browser } from '$app/environment';
-  import { goto, invalidateAll } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
   import { resolveApiToken } from '$lib/api/authToken';
   import {
     startFreeTrial,
@@ -61,10 +61,6 @@
     return status || '—';
   }
 
-  function goToPlans() {
-    void goto('/student/subscription/plans');
-  }
-
   const defaultProfile = $derived(
     $authStore.users.find((u) => u.defaultProfile) ?? $authStore.users[0] ?? null
   );
@@ -91,19 +87,30 @@
   let transactionsError = $state<string | null>(null);
   /** True after first automatic prefetch starts (hover / first open) — avoids duplicate GETs. */
   let transactionsPrefetchStarted = $state(false);
-  /** Collapsed by default; list hidden until user expands. */
-  let paymentHistoryOpen = $state(false);
+  /** Payment history is expanded by default. */
+  let paymentHistoryOpen = $state(true);
 
   const selectedPlan = $derived(
     selectedPlanId ? plans.find((p) => p._id === selectedPlanId) ?? null : null
   );
 
   const hasProfilePhone = $derived(!!defaultProfile?.profilePhone?.trim());
+  const trialUsed = $derived(!!defaultProfile?.subscription?.trialUsed);
+  const visiblePlans = $derived(plans.filter((p) => !(p.isTrial && trialUsed)));
 
   $effect(() => {
     if (plans.length === 0 && serverPlans.length > 0) {
       plans = [...serverPlans];
-      if (!selectedPlanId) selectedPlanId = serverPlans[0]?._id ?? null;
+    }
+  });
+
+  $effect(() => {
+    if (visiblePlans.length === 0 || !selectedPlanId) {
+      if (visiblePlans.length === 0) selectedPlanId = null;
+      return;
+    }
+    if (!visiblePlans.some((p) => p._id === selectedPlanId)) {
+      selectedPlanId = null;
     }
   });
 
@@ -325,6 +332,11 @@
     plansRequested = true;
     void loadPlans();
   });
+
+  $effect(() => {
+    if (!browser || !paymentHistoryOpen || transactionsPrefetchStarted) return;
+    prefetchTransactions();
+  });
 </script>
 
 <svelte:head>
@@ -368,7 +380,7 @@
   {/if}
 
   <section
-    class="mb-10 rounded-2xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
+    class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
     aria-labelledby="sub-live-heading"
   >
     <div class="flex flex-wrap items-start justify-between gap-3">
@@ -380,7 +392,7 @@
       </h2>
       <button
         type="button"
-        class="text-xs font-semibold text-[var(--accent-cta-pink)] underline-offset-2 hover:underline"
+        class="text-xs font-semibold text-[var(--page-link)] underline-offset-2 hover:underline"
         onclick={() => void refreshSubscription()}
         disabled={loading}
       >
@@ -415,83 +427,17 @@
         <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">Sign in to see your subscription details.</p>
       {:else if !effectiveSub}
         <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">
-          No subscription record found. Explore plans to get started.
+          No subscription record found. Choose a plan below to get started.
         </p>
-        {#if plansLoading}
-          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {#each [1, 2, 3] as sk (sk)}
-              <div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4">
-                <Skeleton width="w-28" height="h-5" />
-                <Skeleton width="w-20" height="h-3" className="mt-2" />
-                <Skeleton width="w-24" height="h-7" className="mt-3" />
-                <div class="mt-4 space-y-2">
-                  <Skeleton width="w-full" height="h-3" />
-                  <Skeleton width="w-11/12" height="h-3" />
-                  <Skeleton width="w-9/12" height="h-3" />
-                </div>
-              </div>
-            {/each}
-          </div>
-        {:else if plansError}
-          <p class="mt-4 text-sm text-[var(--pc-error-text)]">{plansError}</p>
-        {:else if plans.length > 0}
-          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {#each plans as plan (plan._id)}
-              <button
-                type="button"
-                class="group flex min-h-0 w-full min-w-0 flex-col rounded-xl border p-4 text-left transition hover:shadow-[0_8px_24px_-10px_color-mix(in_srgb,var(--accent-cta-pink)_35%,transparent)] {selectedPlanId === plan._id ? 'border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_8%,var(--sh-exam-card-bg))]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] hover:border-[var(--accent-cta-pink)]'}"
-                onclick={() => selectPlan(plan._id)}
-              >
-                <div class="mb-2 flex items-start justify-between gap-2">
-                  <h3 class="text-base font-bold text-[var(--sh-section-title)]">{plan.name}</h3>
-                  {#if plan.isTrial}
-                    <span class="rounded-full bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]">
-                      Trial
-                    </span>
-                  {/if}
-                </div>
-                <p class="text-xs text-[var(--sh-ai-sub)]">{plan.durationDays} days</p>
-                <p class="mt-2 text-2xl font-bold text-[var(--sh-section-title)]">{formatPlanPrice(plan)}</p>
-                <ul class="mt-3 space-y-1.5 text-xs text-[var(--sh-ai-sub)]">
-                  {#each plan.description ?? [] as line (line)}
-                    <li class="flex gap-2">
-                      <span class="text-[var(--accent-cta-cyan)]">✓</span>
-                      <span class="leading-snug">{line}</span>
-                    </li>
-                  {/each}
-                </ul>
-              </button>
-            {/each}
-          </div>
-          {#if checkoutError}
-            <p class="mt-3 text-sm text-[var(--pc-error-text)]">{checkoutError}</p>
-          {/if}
-          <button
-            type="button"
-            class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))] disabled:opacity-50"
-            onclick={() => void onContinueWithSelectedPlan()}
-            disabled={!selectedPlan || checkoutBusy}
-          >
-            {checkoutBusy ? 'Processing…' : 'Continue'}
-          </button>
-        {:else}
-          <button
-            type="button"
-            class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))]"
-            onclick={goToPlans}
-          >
-            View plans
-          </button>
-        {/if}
       {:else}
         <div class="mt-6 space-y-6">
           <!-- Current period -->
           <div
-            class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_32%,var(--sh-exam-card-border))] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)_0%,var(--sh-exam-card-bg)_100%)] p-4 sm:p-5"
+            class="rounded-xl border border-[color-mix(in_srgb,var(--page-link)_32%,var(--sh-exam-card-border))] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--page-link)_12%,transparent)_0%,var(--sh-exam-card-bg)_100%)] p-4 sm:p-5"
           >
             <div class="flex flex-wrap items-center gap-2">
               <span
-                class="rounded-full bg-[color-mix(in_srgb,var(--accent-cta-pink)_22%,transparent)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--accent-cta-pink)]"
+                class="rounded-full bg-[color-mix(in_srgb,var(--page-link)_22%,transparent)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--page-link)]"
               >
                 Current plan
               </span>
@@ -612,7 +558,7 @@
               {#if effectiveSub.autoRenew}
                 <button
                   type="button"
-                  class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--sh-exam-card-border))] bg-transparent px-4 py-2.5 text-sm font-semibold text-[var(--accent-cta-pink)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)] disabled:opacity-50"
+                  class="rounded-xl border border-[color-mix(in_srgb,var(--page-link)_45%,var(--sh-exam-card-border))] bg-transparent px-4 py-2.5 text-sm font-semibold text-[var(--page-link)] transition-colors hover:bg-[color-mix(in_srgb,var(--page-link)_12%,transparent)] disabled:opacity-50"
                   disabled={autoRenewBusy}
                   onclick={() => void setAutoRenew(false)}
                 >
@@ -621,7 +567,7 @@
               {:else}
                 <button
                   type="button"
-                  class="rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,transparent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-cta-pink)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_22%,transparent)] disabled:opacity-50"
+                  class="rounded-xl border border-[color-mix(in_srgb,var(--page-link)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_14%,transparent)] px-4 py-2.5 text-sm font-semibold text-[var(--page-link)] transition-colors hover:bg-[color-mix(in_srgb,var(--page-link)_22%,transparent)] disabled:opacity-50"
                   disabled={autoRenewBusy}
                   onclick={() => void setAutoRenew(true)}
                 >
@@ -634,6 +580,87 @@
       {/if}
     {/await}
   </section>
+
+  {#if !needsAuth}
+    <section
+      class="mb-10 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 sm:p-6"
+      aria-labelledby="sub-plans-heading"
+    >
+      <h2 id="sub-plans-heading" class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
+        Upgrade plans
+      </h2>
+
+      {#if plansLoading}
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {#each [1, 2, 3] as sk (sk)}
+            <div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4">
+              <Skeleton width="w-28" height="h-5" />
+              <Skeleton width="w-20" height="h-3" className="mt-2" />
+              <Skeleton width="w-24" height="h-7" className="mt-3" />
+              <div class="mt-4 space-y-2">
+                <Skeleton width="w-full" height="h-3" />
+                <Skeleton width="w-11/12" height="h-3" />
+                <Skeleton width="w-9/12" height="h-3" />
+              </div>
+            </div>
+          {/each}
+        </div>
+      {:else if plansError}
+        <p class="mt-4 text-sm text-[var(--pc-error-text)]">{plansError}</p>
+      {:else if visiblePlans.length > 0}
+        <p class="mt-3 text-xs text-[var(--sh-ai-sub)]">
+          Select a plan below, then continue to checkout.
+        </p>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {#each visiblePlans as plan (plan._id)}
+            <button
+              type="button"
+              class="group flex min-h-0 w-full min-w-0 cursor-pointer flex-col rounded-xl border p-4 text-left transition hover:shadow-[0_8px_24px_-10px_color-mix(in_srgb,var(--page-link)_35%,transparent)] {selectedPlanId === plan._id ? 'border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_10%,var(--sh-exam-card-bg))] ring-1 ring-[color-mix(in_srgb,var(--page-link)_40%,transparent)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] hover:border-[var(--page-link)]'}"
+              onclick={() => selectPlan(plan._id)}
+              aria-pressed={selectedPlanId === plan._id}
+            >
+              <div class="mb-2 flex items-start justify-between gap-2">
+                <h3 class="text-base font-bold text-[var(--sh-section-title)]">{plan.name}</h3>
+                <div class="flex items-center gap-2">
+                  {#if plan.isTrial}
+                    <span class="rounded-full bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]">
+                      Trial
+                    </span>
+                  {/if}
+                  <span class="inline-flex h-4 w-4 items-center justify-center rounded border text-[10px] {selectedPlanId === plan._id ? 'border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,transparent)] text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] text-transparent'}">
+                    ✓
+                  </span>
+                </div>
+              </div>
+              <p class="text-xs text-[var(--sh-ai-sub)]">{plan.durationDays} days</p>
+              <p class="mt-2 text-2xl font-bold text-[var(--sh-section-title)]">{formatPlanPrice(plan)}</p>
+              <ul class="mt-3 space-y-1.5 text-xs text-[var(--sh-ai-sub)]">
+                {#each plan.description ?? [] as line (line)}
+                  <li class="flex gap-2">
+                    <span class="text-[var(--page-link)]">✓</span>
+                    <span class="leading-snug">{line}</span>
+                  </li>
+                {/each}
+              </ul>
+            </button>
+          {/each}
+        </div>
+        {#if checkoutError}
+          <p class="mt-3 text-sm text-[var(--pc-error-text)]">{checkoutError}</p>
+        {/if}
+        <button
+          type="button"
+          class="mt-4 inline-flex rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--page-link)_35%,var(--sh-exam-card-hover-border))] transition-colors hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--page-link))] disabled:opacity-50"
+          onclick={() => void onContinueWithSelectedPlan()}
+          disabled={!selectedPlan || checkoutBusy}
+        >
+          {checkoutBusy ? 'Processing…' : 'Continue'}
+        </button>
+      {:else}
+        <p class="mt-4 text-sm text-[var(--sh-ai-sub)]">No plans available right now.</p>
+      {/if}
+    </section>
+  {/if}
 
   {#if !needsAuth}
     <section
@@ -655,7 +682,7 @@
             Payment history
           </h2>
           <p class="mt-0.5 text-xs text-[var(--sh-ai-sub)]">
-            Hover to preload · click to expand. Dates in IST.
+            Open by default · click to collapse. Dates in IST.
           </p>
         </div>
         <span
@@ -684,7 +711,7 @@
           <div class="flex flex-wrap items-center justify-end gap-2 pb-3 pt-4">
             <button
               type="button"
-              class="text-xs font-semibold text-[var(--accent-cta-pink)] underline-offset-2 hover:underline disabled:opacity-50"
+              class="text-xs font-semibold text-[var(--page-link)] underline-offset-2 hover:underline disabled:opacity-50"
               onclick={() => void loadTransactions()}
               disabled={transactionsLoading}
             >
@@ -761,7 +788,7 @@
       class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
     >
       <div
-        class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-cta-pink)_20%,transparent)] text-[var(--accent-cta-pink)]"
+        class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--page-link)_20%,transparent)] text-[var(--page-link)]"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -826,28 +853,28 @@
     <h2 class="text-lg font-bold text-[var(--sh-section-title)] sm:text-xl">Why upgrade now?</h2>
     <ul class="mt-4 space-y-3 text-sm leading-relaxed text-[var(--sh-ai-sub)] sm:text-base">
       <li class="flex gap-3">
-        <span class="text-[var(--accent-cta-pink)]" aria-hidden="true">✓</span>
+        <span class="text-[var(--page-link)]" aria-hidden="true">✓</span>
         <span>Compare your attempts over time and spot weak topics before exam day.</span>
       </li>
       <li class="flex gap-3">
-        <span class="text-[var(--accent-cta-pink)]" aria-hidden="true">✓</span>
+        <span class="text-[var(--page-link)]" aria-hidden="true">✓</span>
         <span>Priority access to new question banks and PYQ-style papers as we add them.</span>
       </li>
       <li class="flex gap-3">
-        <span class="text-[var(--accent-cta-pink)]" aria-hidden="true">✓</span>
+        <span class="text-[var(--page-link)]" aria-hidden="true">✓</span>
         <span>Support that answers faster when you’re stuck — so you’re never blocked mid-session.</span>
       </li>
     </ul>
   </section>
 </div>
 
-<div
+<!-- <div
   class="pointer-events-none fixed bottom-[68px] md:bottom-0 left-0 right-0 z-[50] flex justify-center px-3 pb-4 md:pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 md:left-[var(--sb-width-expanded)]"
   role="region"
   aria-label="Upgrade subscription"
 >
   <div
-    class="subscription-bottom-bar pointer-events-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border-2 border-[color-mix(in_srgb,var(--accent-cta-pink)_55%,var(--sh-exam-card-border))] px-4 py-3 shadow-[0_-4px_28px_rgba(0,0,0,0.1)] backdrop-blur-sm sm:px-5"
+    class="subscription-bottom-bar pointer-events-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border-2 border-[color-mix(in_srgb,var(--page-link)_55%,var(--sh-exam-card-border))] px-4 py-3 shadow-[0_-4px_28px_rgba(0,0,0,0.1)] backdrop-blur-sm sm:px-5"
   >
     <div class="min-w-0 flex-1">
       <p class="text-sm font-semibold text-[var(--sh-section-title)] sm:text-base">
@@ -859,13 +886,13 @@
     </div>
     <button
       type="button"
-      class="shrink-0 cursor-pointer rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--accent-cta-pink)_40%,var(--sh-exam-card-hover-border))] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--accent-cta-pink))] active:scale-[0.99] sm:px-5"
-      onclick={goToPlans}
+      class="shrink-0 cursor-pointer rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--sh-exam-card-title)] ring-1 ring-[color-mix(in_srgb,var(--page-link)_40%,var(--sh-exam-card-hover-border))] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_78%,var(--page-link))] active:scale-[0.99] sm:px-5"
+      onclick={() => document.getElementById('sub-plans-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
     >
-      Upgrade
+      Upgrade here
     </button>
   </div>
-</div>
+</div> -->
 
 <style>
   .subscription-bottom-bar {

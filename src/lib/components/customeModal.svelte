@@ -152,7 +152,7 @@
     padding: 0 1.25rem 2rem;
     background: var(--sh-exam-card-bg, var(--pc-card-bg, #ffffff));
     border: 1px solid
-      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+      color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
     border-bottom: none;
     box-shadow: var(--pc-card-shadow, 0 -8px 48px rgba(15, 23, 42, 0.08));
     animation: ctm-slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
@@ -165,7 +165,7 @@
     .ctm-sheet {
       border-radius: 1.5rem;
       border-bottom: 1px solid
-        color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+        color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
       margin-bottom: 0;
     }
     .ctm-handle { display: none; }
@@ -213,22 +213,22 @@
     height: 2rem;
     border-radius: 9999px;
     border: 1px solid
-      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+      color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
     background: var(--sh-exam-card-bg, #ffffff);
-    color: var(--accent-cta-pink, #ec4899);
+    color: var(--page-link, #4f7eff);
     cursor: pointer;
     transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
     margin-top: 0.1rem;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   }
   .ctm-close:hover {
-    border-color: var(--accent-cta-pink, #ec4899);
+    border-color: var(--page-link, #4f7eff);
     background: color-mix(
       in srgb,
       var(--sh-exam-card-border, #e2e8f0) 18%,
       var(--sh-exam-card-bg, #ffffff)
     );
-    color: var(--accent-cta-pink, #ec4899);
+    color: var(--page-link, #4f7eff);
     box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.15);
   }
 
@@ -240,7 +240,7 @@
     padding: 0.4rem 0.75rem 0.4rem 0.45rem;
     border-radius: 9999px;
     border: 1px solid
-      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+      color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
     background: var(--sh-exam-card-bg, #ffffff);
     color: var(--sh-exam-card-title, var(--pc-heading, #1a1f36));
     font-size: 0.8125rem;
@@ -251,7 +251,7 @@
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   }
   .ctm-back:hover {
-    border-color: var(--accent-cta-pink, #ec4899);
+    border-color: var(--page-link, #4f7eff);
     background: color-mix(
       in srgb,
       var(--sh-exam-card-border, #e2e8f0) 18%,
@@ -262,7 +262,7 @@
   }
   .ctm-back__icon {
     flex-shrink: 0;
-    color: var(--accent-cta-pink, #ec4899);
+    color: var(--page-link, #4f7eff);
   }
 
   /* ── Cards grid ── */
@@ -281,7 +281,7 @@
     padding: 1.125rem 1.125rem;
     border-radius: 1rem;
     border: 1.5px solid
-      color-mix(in srgb, var(--accent-cta-pink, #ec4899) 26%, var(--sh-exam-card-border, #e2e8f0));
+      color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
     background: var(--sh-exam-card-bg, #ffffff);
     cursor: pointer;
     text-align: left;
@@ -289,7 +289,7 @@
     transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s, background 0.2s;
   }
   .ctm-card:hover {
-    border-color: var(--accent-cta-pink, #ec4899);
+    border-color: var(--page-link, #4f7eff);
     background: color-mix(
       in srgb,
       var(--sh-exam-card-border, #e2e8f0) 18%,
@@ -313,7 +313,7 @@
     border-radius: 0.875rem;
     border: 1px solid var(--sh-exam-card-border, #e2e8f0);
     background: var(--sh-exam-card-arrow-bg, #f1f5f9);
-    color: var(--accent-cta-pink, #ec4899);
+    color: var(--page-link, #4f7eff);
     transition: background 0.2s, border-color 0.2s;
   }
   .ctm-card:hover .ctm-card__icon {
@@ -351,13 +351,13 @@
     border-radius: 9999px;
     border: 1px solid var(--sh-exam-card-border, #e2e8f0);
     background: var(--sh-exam-card-arrow-bg, #f1f5f9);
-    color: var(--accent-cta-pink, #ec4899);
+    color: var(--page-link, #4f7eff);
     transition: border-color 0.2s, background 0.2s;
   }
   .ctm-card:hover .ctm-card__arrow {
     border-color: var(--sh-exam-card-border, #e2e8f0);
     background: var(--sh-exam-card-arrow-bg, #f1f5f9);
-    color: var(--accent-cta-pink, #ec4899);
+    color: var(--page-link, #4f7eff);
   }
 
   /* ── Animations ── */
