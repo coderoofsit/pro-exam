@@ -1,6 +1,5 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
 
   type Props = {
     label: string;
@@ -28,30 +27,16 @@
       return;
     }
 
-    if (!href) return;
     if (!browser) return;
 
     e.preventDefault();
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-    void goto(href);
+    window.history.back();
   }
 </script>
 
-{#if href}
-  <a href={href} onclick={handleClick} class={`exam-route-back-btn ${toneClass} ${className}`}>
-    <svg class="exam-route-back-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-    <span>{label}</span>
-  </a>
-{:else}
-  <button type={type} onclick={handleClick} class={`exam-route-back-btn ${toneClass} ${className}`}>
-    <svg class="exam-route-back-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-    <span>{label}</span>
-  </button>
-{/if}
+<button type={type} onclick={handleClick} class={`exam-route-back-btn ${toneClass} ${className}`}>
+  <svg class="exam-route-back-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+  <span>{label}</span>
+</button>
