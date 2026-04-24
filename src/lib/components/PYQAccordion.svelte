@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import BackButton from '$lib/components/BackButton.svelte';
@@ -189,17 +190,34 @@ async function viewPaper(paper: PaperItem) {
     visible.reduce((sum, g) => sum + g.papers.length, 0)
   );
 
+  function yearToId(year: number): number | null {
+    const idx = sortedAll.findIndex((g) => g.year === year);
+    return idx >= 0 ? idx + 1 : null;
+  }
+
+  function setOpenIdParam(id: number | null) {
+    if (!browser) return;
+    const url = new URL(window.location.href);
+    if (id && Number.isFinite(id) && id > 0) {
+      url.searchParams.set('id', String(id));
+    } else {
+      url.searchParams.delete('id');
+    }
+    window.history.replaceState(window.history.state, '', url.toString());
+  }
+
   function openFirstVisibleYear() {
     const firstYear = visible[0]?.year;
     openYears = new Set(typeof firstYear === 'number' ? [firstYear] : []);
+    setOpenIdParam(typeof firstYear === 'number' ? yearToId(firstYear) : null);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function toggleAccordion(year: number) {
-    const next = new Set(openYears);
-    if (next.has(year)) next.delete(year);
-    else next.add(year);
+    const next = new Set<number>();
+    if (!openYears.has(year)) next.add(year);
     openYears = next;
+    setOpenIdParam(next.has(year) ? yearToId(year) : null);
   }
 
   function toggleSort() {
@@ -210,8 +228,12 @@ async function viewPaper(paper: PaperItem) {
   function selectYear(year: number | 'all') {
     selectedYear = year;
     filterDropOpen = false;
-    if (year !== 'all') openYears = new Set([year]);
-    else openFirstVisibleYear();
+    if (year !== 'all') {
+      openYears = new Set([year]);
+      setOpenIdParam(yearToId(year));
+    } else {
+      openFirstVisibleYear();
+    }
   }
 
   function examTitle() {
@@ -227,6 +249,18 @@ async function viewPaper(paper: PaperItem) {
   }
 
   onMount(() => {
+    if (!browser) {
+      openFirstVisibleYear();
+      return;
+    }
+    const rawId = Number(new URL(window.location.href).searchParams.get('id'));
+    const index = Number.isInteger(rawId) ? rawId - 1 : -1;
+    const targetYear = index >= 0 ? sortedAll[index]?.year : undefined;
+    if (typeof targetYear === 'number') {
+      openYears = new Set([targetYear]);
+      setOpenIdParam(rawId);
+      return;
+    }
     openFirstVisibleYear();
   });
 </script>
@@ -246,7 +280,7 @@ async function viewPaper(paper: PaperItem) {
 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
   <div class="flex flex-wrap items-center gap-3">
     {#if backHref}
-      <BackButton label="Back" tone="pyq" href={backHref} />
+      <BackButton label="Back" tone="pyq" />
     {/if}
     <p class="text-sm font-semibold text-[var(--pyq-header-count)]">
       PYQ Mock available {visiblePapers}{selectedYear !== 'all' ? ` of ${totalPapers}` : ''}

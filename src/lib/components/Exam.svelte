@@ -34,7 +34,7 @@ let {
 
 <div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	<div class="mt-3 mb-3 flex items-center gap-3">
-		<BackButton href="/student/dashboard" label="Back" />
+		<BackButton label="Back" />
 		<p class="text-sm text-[var(--page-text-muted)]">
 			{exams.length} exam{exams.length !== 1 ? 's' : ''} available
 		</p>

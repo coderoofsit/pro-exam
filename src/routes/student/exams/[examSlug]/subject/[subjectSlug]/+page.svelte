@@ -89,7 +89,7 @@
 	<aside
 		class="sticky top-0 z-[1] flex max-h-[calc(100dvh-7rem)] w-64 shrink-0 flex-col overflow-y-auto overscroll-contain border-r border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-4"
 	>
-		<BackButton href="/student/exams/{examSlug}/subject" label="Back" className="mb-4" />
+		<BackButton label="Back" className="mb-4" />
 		<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--page-text-muted)]">Subjects</h2>
 		{#if data.hierarchy?.subjects}
 			<nav class="space-y-0.5">

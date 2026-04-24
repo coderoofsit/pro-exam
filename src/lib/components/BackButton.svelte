@@ -3,7 +3,6 @@
 
   type Props = {
     label: string;
-    href?: string;
     onClick?: (e: MouseEvent) => void;
     className?: string;
     tone?: 'default' | 'pyq';
@@ -12,7 +11,6 @@
 
   let {
     label,
-    href,
     onClick,
     className = '',
     tone = 'default',

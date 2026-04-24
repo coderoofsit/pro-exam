@@ -111,7 +111,7 @@
     role="alert"
   >
     <p class="max-w-md text-sm text-[var(--pc-error-text)]">{prelaunchError}</p>
-    <BackButton label="Back to tests" href="/student/tests" />
+    <BackButton label="Back to tests" />
   </div>
 {:else if isPrelaunch && !showAttempt}
   <div

@@ -174,14 +174,13 @@
 </svelte:head>
 
 <div class="pyq-papers-page min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-6xl px-4 py-8">
-    <div class="mb-4 flex justify-start">
-      <BackButton label="Back" tone="pyq" href={`/student/tests/pyq/${encodeURIComponent(examSlug)}`} />
+  <div class="mx-auto max-w-6xl px-4 pt-3 pb-8">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <BackButton label="Back" tone="pyq" />
+      <h1 class="text-xl font-bold text-[var(--pyq-accordion-title)]">
+        {examName} Paper Questions
+      </h1>
     </div>
-
-    <h1 class="mb-5 text-xl font-bold text-[var(--pyq-accordion-title)]">
-      {examName} Paper Questions
-    </h1>
 
     {#if error}
       <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]">

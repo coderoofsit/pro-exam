@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
   import { browser } from '$app/environment';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
 
   type Props = {
@@ -68,10 +69,43 @@
 
   $effect(() => {
     if (!groupedSubjects.length) return;
-    const defaultSubject = groupedSubjects[0]?.subject?.slug || '';
-    openSubjectSlug = defaultSubject;
-    const firstUnitId = firstUnitIdForSubject(defaultSubject);
-    openUnitIds = new Set(firstUnitId ? [firstUnitId] : []);
+    const validSubjectSlugs = new Set(groupedSubjects.map((g) => g.subject.slug));
+    const subjectFromQuery = page.url.searchParams.get('subject') ?? '';
+    const selectedSubject = validSubjectSlugs.has(subjectFromQuery)
+      ? subjectFromQuery
+      : (validSubjectSlugs.has(openSubjectSlug) ? openSubjectSlug : groupedSubjects[0]?.subject?.slug || '');
+
+    openSubjectSlug = selectedSubject;
+
+    const allowedUnitIds = new Set(
+      (groupedSubjects.find((g) => g.subject.slug === selectedSubject)?.data ?? []).map((u) =>
+        String(u.chapterGroup._id)
+      )
+    );
+    const unitIdsFromQuery = (page.url.searchParams.get('units') ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((id) => allowedUnitIds.has(id));
+
+    if (unitIdsFromQuery.length) {
+      openUnitIds = new Set(unitIdsFromQuery);
+    } else {
+      const firstUnitId = firstUnitIdForSubject(selectedSubject);
+      openUnitIds = new Set(firstUnitId ? [firstUnitId] : []);
+    }
+  });
+
+  $effect(() => {
+    if (!browser || !openSubjectSlug) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('subject', openSubjectSlug);
+    if (openUnitIds.size > 0) {
+      url.searchParams.set('units', Array.from(openUnitIds).join(','));
+    } else {
+      url.searchParams.delete('units');
+    }
+    window.history.replaceState(window.history.state, '', url.toString());
   });
 
 
@@ -111,7 +145,8 @@
 }
 
   function chapterHref(chSlug: string) {
-    const q = new URLSearchParams({ mode: 'manual', examId, boardId });
+    const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
+    if (openUnitIds.size > 0) q.set('units', Array.from(openUnitIds).join(','));
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
   }
 

@@ -40,7 +40,7 @@
 
 <div class="min-h-screen bg-[var(--page-bg)] text-[var(--page-text)]">
 	<div class="mx-auto max-w-7xl px-4 py-10">
-		<BackButton href="/student/dashboard" label="Back to Dashboard" className="mb-6" />
+		<BackButton label="Back to Dashboard" className="mb-6" />
 		<div class="mb-8">
 			<h1 class="text-3xl font-bold md:text-4xl">{data.exam ? getExamTitleEn(data.exam, data.examSlug) : data.examSlug}</h1>
 			<p class="mt-2 text-base text-[var(--page-text-muted)]">Select a subject, then a chapter to view questions</p>

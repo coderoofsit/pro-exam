@@ -215,7 +215,7 @@
 <div class="own-test-page own-test-chapter-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
     <div class="mb-4 flex justify-start">
-      <BackButton label="Back" href={`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`} />
+      <BackButton label="Back" />
     </div>
     <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">

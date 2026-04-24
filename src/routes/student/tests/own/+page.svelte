@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ExamPaper from '$lib/components/ExamPaper.svelte';
+  import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
   import CustomeModal from '$lib/components/customeModal.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
   import { goto } from '$app/navigation';
@@ -49,7 +49,7 @@
 </svelte:head>
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-6xl px-4 py-8 ">
+  <div class="mx-auto max-w-7xl px-4 pt-0 pb-8">
     <CustomeModal
       open={showChoiceModal}
       dismissible={false}
@@ -59,8 +59,8 @@
     />
 
     {#if !showChoiceModal}
-      <div class="mb-4 flex justify-start">
-        <BackButton label="Back" href="/student/tests" />
+      <div class="mb-4 mt-2 flex justify-start">
+        <BackButton label="Back" />
       </div>
 
       {#if error}
@@ -109,13 +109,12 @@
           <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">Check back later to create a test</p>
         </div>
       {:else}
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
           {#each exams as item (item._id)}
-            <ExamPaper
+            <ExamBoxCard
               id={item._id}
               name={item?.name?.en ?? 'Unnamed'}
               image={item?.image ?? null}
-              slug={item?.slug ?? ''}
               variant="dashboard"
               loading={openingExamId === item._id}
               onNavigate={(e) => void openExam(item, e)}

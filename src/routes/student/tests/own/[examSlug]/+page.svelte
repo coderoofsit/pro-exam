@@ -513,7 +513,7 @@
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
     <div class="mb-4 flex justify-start">
-      <BackButton label="Back" href="/student/tests/own" />
+      <BackButton label="Back" />
     </div>
     {#if error}
       <div
