@@ -294,6 +294,55 @@ import BackButton from "$lib/components/BackButton.svelte";
 			: data.paginationMeta;
 	});
 
+	async function ensureQuestionsPageCached(targetPage: number): Promise<Question[] | null> {
+		if (!browser || !storeChapterKey || !displayPaginationMeta) return null;
+		if (targetPage < 1 || targetPage > displayPaginationMeta.lastPage) return null;
+
+		const cached = questionStore.getQuestionsForPage(
+			storeChapterKey,
+			targetPage,
+			activeFilterKey,
+		);
+		if (cached?.length) return cached;
+
+		try {
+			const url = new URL(
+				`${chapterBaseUrl(data.chapterParam)}/api`,
+				window.location.origin,
+			);
+			url.searchParams.set("page", String(targetPage));
+			url.searchParams.set(
+				"limit",
+				String(displayPaginationMeta?.limit ?? data.paginationMeta?.limit ?? 25),
+			);
+			const res = await fetch(url.toString(), {
+				headers: { accept: "application/json" },
+			});
+			if (!res.ok) return null;
+			const payload = await res.json();
+			const pageQuestions = Array.isArray(payload?.questions)
+				? (payload.questions as Question[])
+				: [];
+			const pageMeta = payload?.paginationMeta;
+
+			if (pageQuestions.length > 0) {
+				questionStore.setQuestionsPage(
+					storeChapterKey,
+					targetPage,
+					pageQuestions,
+					pageMeta ?? displayPaginationMeta ?? undefined,
+					activeFilterKey,
+				);
+				for (const q of pageQuestions) {
+					if (q?._id) questionStore.setCachedById(q._id, q);
+				}
+			}
+			return pageQuestions.length ? pageQuestions : null;
+		} catch {
+			return null;
+		}
+	}
+
 	$effect(() => {
 		if (!browser || !detailQuestion || !effectiveQuestionId) return;
 		const idx = displayQuestions.findIndex((q: Question) => q._id === detailQuestion!._id);
@@ -306,6 +355,25 @@ import BackButton from "$lib/components/BackButton.svelte";
 		const run = () => {
 			if (idx > 0) prefetch(displayQuestions[idx - 1]?._id);
 			if (idx >= 0 && idx < displayQuestions.length - 1) prefetch(displayQuestions[idx + 1]?._id);
+			if (
+				idx >= 0 &&
+				idx <= 1 &&
+				data.safePage > 1 &&
+				storeChapterKey &&
+				!data.approveStatus
+			) {
+				void ensureQuestionsPageCached(data.safePage - 1);
+			}
+			if (
+				idx >= 0 &&
+				idx >= displayQuestions.length - 2 &&
+				displayPaginationMeta &&
+				data.safePage < displayPaginationMeta.lastPage &&
+				storeChapterKey &&
+				!data.approveStatus
+			) {
+				void ensureQuestionsPageCached(data.safePage + 1);
+			}
 		};
 		let idleId: ReturnType<typeof requestIdleCallback> | ReturnType<typeof setTimeout> | undefined;
 		if (typeof requestIdleCallback !== 'undefined') {
@@ -522,9 +590,22 @@ import BackButton from "$lib/components/BackButton.svelte";
 			);
 			effectiveQuestionId = prevQ._id;
 		} else if (data.safePage > 1) {
-			void goto(
-				chapterHref(data.chapterParam, { page: data.safePage - 1 }),
-			);
+			const targetPage = data.safePage - 1;
+			const goToPreviousPage = async () => {
+				const prevPageQuestions = await ensureQuestionsPageCached(targetPage);
+				const prevPageQuestionId = prevPageQuestions?.[prevPageQuestions.length - 1]?._id;
+				if (prevPageQuestionId) {
+					void goto(
+						chapterHref(data.chapterParam, {
+							page: targetPage,
+							questionId: prevPageQuestionId,
+						}),
+					);
+					return;
+				}
+				void goto(chapterHref(data.chapterParam, { page: targetPage }));
+			};
+			void goToPreviousPage();
 		}
 	}
 
@@ -548,9 +629,22 @@ import BackButton from "$lib/components/BackButton.svelte";
 			displayPaginationMeta &&
 			data.safePage < displayPaginationMeta.lastPage
 		) {
-			void goto(
-				chapterHref(data.chapterParam, { page: data.safePage + 1 }),
-			);
+			const targetPage = data.safePage + 1;
+			const goToNextPage = async () => {
+				const nextPageQuestions = await ensureQuestionsPageCached(targetPage);
+				const nextPageQuestionId = nextPageQuestions?.[0]?._id;
+				if (nextPageQuestionId) {
+					void goto(
+						chapterHref(data.chapterParam, {
+							page: targetPage,
+							questionId: nextPageQuestionId,
+						}),
+					);
+					return;
+				}
+				void goto(chapterHref(data.chapterParam, { page: targetPage }));
+			};
+			void goToNextPage();
 		}
 	}
 

@@ -3246,7 +3246,7 @@ a.student-batch-card:hover {
   color-scheme: dark;
   background: #11162a;
   color: #e5e7eb;
-  border-color: rgba(236, 72, 153, 0.35);
+  border-color: color-mix(in srgb, var(--page-link) 48%, rgba(255, 255, 255, 0.16));
 }
 
 [data-theme="dark"] .tests-filter-select option {
