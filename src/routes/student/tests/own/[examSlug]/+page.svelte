@@ -100,13 +100,10 @@
     for (const [i, row] of groupedSubjects.entries()) {
       let hit = false;
       for (const unit of row.data ?? []) {
-        for (const ch of unit.data ?? []) {
-          if (manualSelectedChapterIds.has(String(ch._id))) {
-            hit = true;
-            break;
-          }
+        if (manualSelectedChapterIds.has(String(unit.chapterGroup._id))) {
+          hit = true;
+          break;
         }
-        if (hit) break;
       }
       if (!hit) continue;
       out.push({
@@ -284,23 +281,31 @@
     const selectedChapterIds = new Set(
       manualSelectedRows.map((r) => String(r.chapterId || '').trim()).filter(Boolean)
     );
-    const out: { subjectName: string; units: { unitName: string; chapterNames: string[] }[] }[] = [];
+    const out: { subjectName: string; chapters: { chapterName: string; topicNames: string[] }[] }[] = [];
     for (const row of groupedSubjects) {
       const subjectName = row.subject.name?.en ?? row.subject.slug;
-      const unitsOut: { unitName: string; chapterNames: string[] }[] = [];
+      const chaptersOut: { chapterName: string; topicNames: string[] }[] = [];
       for (const unit of row.data ?? []) {
-        const unitName = unit.chapterGroup.name?.en ?? unit.chapterGroup.slug;
-        const chapterNames: string[] = [];
+        const chapterName = unit.chapterGroup.name?.en ?? unit.chapterGroup.slug;
+        const topicNames: string[] = [];
         for (const ch of unit.data ?? []) {
-          if (selectedChapterIds.has(String(ch._id))) {
-            chapterNames.push(ch.name?.en ?? ch.slug);
+          // Note: In manual mode, chapterId stored in row is actually the Chapter ID,
+          // but we are selecting topics. Wait, the chapter page stores the Chapter ID.
+          // So selecting any topic in a chapter will highlight that chapter.
+          if (selectedChapterIds.has(String(unit.chapterGroup._id))) {
+             // Wait, if I select a question, it stores the chapterId.
+             // I need to check if the question belongs to this topic.
+             // But our manualSelectedRows only has {id, chapterId}.
+             // So we can only reliably show selection at the Chapter level.
+             // Actually, the current logic shows chapterNames.
+             topicNames.push(ch.name?.en ?? ch.slug);
           }
         }
-        if (chapterNames.length === 0) continue;
-        unitsOut.push({ unitName, chapterNames });
+        if (topicNames.length === 0) continue;
+        chaptersOut.push({ chapterName, topicNames });
       }
-      if (unitsOut.length === 0) continue;
-      out.push({ subjectName, units: unitsOut });
+      if (chaptersOut.length === 0) continue;
+      out.push({ subjectName, chapters: chaptersOut });
     }
     return out;
   });
@@ -632,15 +637,15 @@
               {subj.subjectName}
             </h3>
             <div class="space-y-2.5">
-              {#each subj.units as u (u.unitName + subj.subjectName)}
+              {#each subj.chapters as c (c.chapterName + subj.subjectName)}
                 <div
                   class="rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 shadow-sm"
                 >
                   <p class="text-xs font-semibold uppercase tracking-wide text-[var(--page-text-muted)]">
-                    {u.unitName}
+                    {c.chapterName}
                   </p>
                   <p class="mt-2 text-sm leading-relaxed text-[var(--page-text)]">
-                    {u.chapterNames.join(', ')}
+                    {c.topicNames.join(', ')}
                   </p>
                 </div>
               {/each}

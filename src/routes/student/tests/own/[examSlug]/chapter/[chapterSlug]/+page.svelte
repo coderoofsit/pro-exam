@@ -9,7 +9,7 @@
 
   let { data }: { data: PageData } = $props();
 
-  let topicOptions = $state<TopicRow[]>([]);
+  let topicOptions = $state<TopicRow[]>(data.topics ?? []);
   let topicsLoading = $state(false);
   let selectedTopicSlug = $state<string[]>([]);
   let selectedKind = $state<string[]>([]);
@@ -19,55 +19,13 @@
   let pendingTopic = $state<string[]>([]);
   let pendingKind = $state<string[]>([]);
   let pendingDifficulty = $state<string[]>([]);
-  let topicsLoadedForSlug = $state<string | null>(null);
-  let topicsAbort: AbortController | null = null;
 
   $effect(() => {
     if (!browser) return;
-    const slug = data.chapterSlug;
-    if (!slug) return;
-    if (topicsLoadedForSlug === slug) return;
-
-    // sync filters from URL
     const params = new URLSearchParams(window.location.search);
     selectedTopicSlug = params.get("topic") ? params.get("topic")!.split(",") : [];
     selectedKind = params.get("kind") ? params.get("kind")!.split(",") : [];
     selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
-
-    topicsLoadedForSlug = slug;
-    // selectedTopicSlug = []; // FIXED: Don't reset selected topics from URL
-    topicOptions = [];
-    topicsAbort?.abort();
-    topicsAbort = new AbortController();
-    const signal = topicsAbort.signal;
-    topicsLoading = true;
-
-    void fetchTopicsByChapterSlug(slug, fetch, { signal })
-      .then((r) => {
-        if (signal.aborted) return;
-        if (topicsLoadedForSlug !== slug) return;
-        if (r.success && r.data) {
-  const unique = new Map<string, TopicRow>();
-
-  for (const t of r.data) {
-    // use slug (better) or fallback to _id
-    const key = t.slug || t._id;
-    if (!unique.has(key)) {
-      unique.set(key, t);
-    }
-  }
-
-  topicOptions = Array.from(unique.values());
-}
-      })
-      .catch((e) => {
-        if (signal.aborted) return;
-        console.error("[own-test chapter topics]", e);
-      })
-      .finally(() => {
-        if (signal.aborted) return;
-        if (topicsLoadedForSlug === slug) topicsLoading = false;
-      });
   });
 
   type Question = (typeof data.questions)[number];

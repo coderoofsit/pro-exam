@@ -19,50 +19,54 @@ export const load: PageServerLoad = async ({ params, fetch, cookies }) => {
 	const { examSlug } = params;
 	const token = getAuthTokenFromCookies(cookies) ?? null;
 
-	const [chaptersResponse, topicsResponse, examResult] = await Promise.all([
-		fetchGroupedChaptersByExamSlug(examSlug, fetch, token),
-		fetchTopicsByExamSlug(examSlug, fetch, token),
-		fetchExamBySlug(examSlug, token, fetch).catch(() => null)
-	]);
+	const topicsResponse = await fetchTopicsByExamSlug(examSlug, fetch, token);
 
-	if (!chaptersResponse.success) {
+	if (!topicsResponse.success) {
 		return {
 			examSlug,
 			groupedSubjects: [] as GroupedSubjectRow[],
-			groupedTopicSubjects: topicsResponse.success
-				? ((topicsResponse.data?.data ?? []) as TopicsByExamSubjectRow[])
-				: ([] as TopicsByExamSubjectRow[]),
-			error: chaptersResponse.message || 'Failed to fetch chapters',
-			topicsError: topicsResponse.success ? null : topicsResponse.message || 'Failed to fetch topics',
+			groupedTopicSubjects: [] as TopicsByExamSubjectRow[],
+			error: topicsResponse.message || 'Failed to fetch topics',
+			topicsError: topicsResponse.message || 'Failed to fetch topics',
 			examId: '',
 			boardId: ''
 		};
 	}
 
-	const body = chaptersResponse.data;
-	let groupedSubjects: GroupedSubjectRow[] = body.data ?? [];
-	const groupedTopicSubjects: TopicsByExamSubjectRow[] = topicsResponse.success
-		? topicsResponse.data?.data ?? []
-		: [];
+	const groupedTopicSubjects: TopicsByExamSubjectRow[] = topicsResponse.data?.data ?? [];
+	const examIdFallback = (groupedTopicSubjects[0]?.subject?.examId ?? '').trim();
+	const boardIdFallback = (groupedTopicSubjects[0]?.subject?.boardId ?? '').trim();
 
-	const examIdFallback = (examResult?._id ?? '').trim();
-	const boardIdFallback = boardIdFromExam(examResult);
-
-	// Grouped chapters API may omit examId/boardId; test creation requires both.
-	if (examIdFallback || boardIdFallback) {
-		groupedSubjects = groupedSubjects.map((row) => ({
-			...row,
-			examId: (row.examId ?? '').trim() || examIdFallback,
-			boardId: (row.boardId ?? '').trim() || boardIdFallback
-		}));
-	}
+	// Transform Topics hierarchy into GroupedChapters hierarchy for Manual Mode UI
+	// Hierarchy: Subject -> Chapter (as Unit) -> Topic (as ChapterItem)
+	const groupedSubjects: GroupedSubjectRow[] = groupedTopicSubjects.map((row) => ({
+		examId: (row.subject.examId ?? '').trim() || examIdFallback,
+		boardId: (row.subject.boardId ?? '').trim() || boardIdFallback,
+		subject: {
+			_id: row.subject._id,
+			slug: row.subject.slug,
+			name: row.subject.name || { en: row.subject.slug }
+		},
+		data: row.data.map((chRow) => ({
+			chapterGroup: {
+				_id: chRow.chapter._id,
+				slug: chRow.chapter.slug,
+				name: chRow.chapter.name || { en: chRow.chapter.slug }
+			},
+			data: chRow.data.map((topicRow) => ({
+				_id: topicRow._id,
+				slug: topicRow.topicSlug,
+				name: topicRow.topic || { en: topicRow.topicSlug }
+			}))
+		}))
+	}));
 
 	return {
 		examSlug,
 		groupedSubjects,
 		groupedTopicSubjects,
 		error: null as string | null,
-		topicsError: topicsResponse.success ? null : topicsResponse.message || 'Failed to fetch topics',
+		topicsError: null as string | null,
 		examId: examIdFallback,
 		boardId: boardIdFallback
 	};

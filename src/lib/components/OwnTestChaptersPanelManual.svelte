@@ -144,17 +144,18 @@
   openUnitIds = next;
 }
 
-  function chapterHref(chSlug: string) {
+  function chapterHref(chSlug: string, topicSlug?: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
     if (openUnitIds.size > 0) q.set('units', Array.from(openUnitIds).join(','));
+    if (topicSlug) q.set('topic', topicSlug);
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
   }
 
-  async function openChapter(chSlug: string, chapterId: string) {
+  async function openChapter(chSlug: string, topicSlug: string, topicId: string) {
     if (openingChapterId) return;
-    openingChapterId = chapterId;
+    openingChapterId = topicId;
     try {
-      await goto(chapterHref(chSlug));
+      await goto(chapterHref(chSlug, topicSlug));
     } finally {
       openingChapterId = null;
     }
@@ -196,7 +197,7 @@
           <div class="min-w-0 flex-1">
             <p class="own-subject-card__title">{row.subject.name?.en ?? row.subject.slug}</p>
             <p class="own-subject-card__meta">
-              {n} unit{n === 1 ? '' : 's'}
+              {n} chapter{n === 1 ? '' : 's'}
             </p>
           </div>
         </div>
@@ -206,7 +207,7 @@
 
   <div class="min-w-0 flex-1 lg:min-h-[min(60vh,480px)]">
     <div class="mb-4 lg:hidden">
-      <h2 class="own-section-label">Units &amp; chapters</h2>
+      <h2 class="own-section-label">Chapters &amp; topics</h2>
     </div>
 
     {#if openSubject}
@@ -228,8 +229,11 @@
                   {unit.chapterGroup.name?.en ?? unit.chapterGroup.slug}
                 </span>
 
-                <span class="own-unit__count">
-                  {totalCh} ch.
+                <span class="own-unit__count flex flex-col items-end">
+                  <span>{totalCh} topics</span>
+                  {#if (questionCountByChapterId.get(uid) ?? 0) > 0}
+                    <span class="text-[10px] text-[var(--own-muted)]">{questionCountByChapterId.get(uid)} selected</span>
+                  {/if}
                 </span>
 
                 <span class="own-unit__chev" aria-hidden="true">
@@ -250,19 +254,15 @@
               <div class="own-unit__body">
                 <ul class="mt-3 flex flex-col gap-2">
                   {#each unit.data as ch (ch._id)}
-                    {@const qCount = questionCountByChapterId.get(ch._id) || 0}
                     <li>
                       <button
                         type="button"
                         class="own-chapter-row own-chapter-row--manual w-full cursor-pointer text-left"
                         disabled={openingChapterId !== null}
                         aria-busy={openingChapterId === ch._id}
-                        onclick={() => void openChapter(ch.slug, ch._id)}
+                        onclick={() => void openChapter(unit.chapterGroup.slug, ch.slug, ch._id)}
                       >
                         <span class="own-chapter__label">{ch.name?.en ?? ch.slug}</span>
-                        {#if qCount > 0}
-                          <span class="text-xs text-[var(--own-muted)] mr-2">{qCount} q.</span>
-                        {/if}
                         <span class="own-chapter__next" aria-hidden="true">
                           {#if openingChapterId === ch._id}
                             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
