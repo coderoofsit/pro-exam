@@ -16,7 +16,15 @@
   let openSubjectSlug = $state<string>('');
   let openUnitIds = $state<Set<string>>(new Set());
   let subjectRailOpen = $state(true);
-  let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
+  type ManualSelectedRow = {
+    id: string;
+    subjectId: string;
+    chapterId: string;
+    chapterGroupId: string;
+    questionText?: string;
+  };
+  let manualSelectedRows = $state<ManualSelectedRow[]>([]);
+  let openSelectedQuestionsForChapter = $state<Set<string>>(new Set());
   let openingChapterId = $state<string | null>(null);
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
@@ -36,12 +44,23 @@
 
       if (parsed.every((x) => typeof x === 'string')) {
         const ids = (parsed as string[]).filter(Boolean);
-        manualSelectedRows = ids.map((id) => ({ id, chapterId: '' }));
+        manualSelectedRows = ids.map((id) => ({
+          id,
+          subjectId: '',
+          chapterId: '',
+          chapterGroupId: ''
+        }));
         return;
       }
 
       const rows = (parsed as any[])
-        .map((r) => ({ id: String(r?.id ?? ''), chapterId: String(r?.chapterId ?? '') }))
+        .map((r) => ({
+          id: String(r?.id ?? ''),
+          subjectId: String(r?.subjectId ?? '').trim(),
+          chapterId: String(r?.chapterId ?? ''),
+          chapterGroupId: String(r?.chapterGroupId ?? '').trim(),
+          questionText: String(r?.questionText ?? '').trim()
+        }))
         .filter((r) => r.id);
       manualSelectedRows = rows;
     } catch {
@@ -57,6 +76,21 @@
       }
     }
     return counts;
+  });
+
+  const selectedQuestionsByChapterId = $derived.by(() => {
+    const byChapter = new Map<string, Array<{ id: string; questionText: string }>>();
+    for (const row of manualSelectedRows) {
+      const chapter = String(row.chapterId ?? '').trim();
+      if (!chapter) continue;
+      const list = byChapter.get(chapter) ?? [];
+      list.push({
+        id: row.id,
+        questionText: String(row.questionText ?? '').trim() || 'Selected question'
+      });
+      byChapter.set(chapter, list);
+    }
+    return byChapter;
   });
 
   
@@ -143,6 +177,26 @@
   else next.add(unitId);
   openUnitIds = next;
 }
+
+  function toggleChapterSelectedQuestions(chapterId: string, e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = new Set(openSelectedQuestionsForChapter);
+    if (next.has(chapterId)) next.delete(chapterId);
+    else next.add(chapterId);
+    openSelectedQuestionsForChapter = next;
+  }
+
+  function removeSelectedQuestion(questionId: string, e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    manualSelectedRows = manualSelectedRows.filter((r) => r.id !== questionId);
+    try {
+      sessionStorage.setItem(manualSelectionKey, JSON.stringify(manualSelectedRows));
+    } catch {
+      // ignore storage failures; UI state is still updated
+    }
+  }
 
   function chapterHref(chSlug: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
@@ -251,26 +305,69 @@
                 <ul class="mt-3 flex flex-col gap-2">
                   {#each unit.data as ch (ch._id)}
                     {@const qCount = questionCountByChapterId.get(ch._id) || 0}
+                    {@const selectedQuestions = selectedQuestionsByChapterId.get(ch._id) ?? []}
+                    {@const questionsOpen = openSelectedQuestionsForChapter.has(ch._id)}
                     <li>
-                      <button
-                        type="button"
-                        class="own-chapter-row own-chapter-row--manual w-full cursor-pointer text-left"
-                        disabled={openingChapterId !== null}
-                        aria-busy={openingChapterId === ch._id}
-                        onclick={() => void openChapter(ch.slug, ch._id)}
-                      >
-                        <span class="own-chapter__label">{ch.name?.en ?? ch.slug}</span>
+                      <div class="own-chapter-row own-chapter-row--manual flex w-full items-center gap-2 border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_10%,var(--sh-exam-card-bg))] transition-colors hover:border-[var(--page-link)]/55 hover:bg-[color-mix(in_srgb,var(--page-link)_16%,var(--sh-exam-card-bg))]">
+                        <button
+                          type="button"
+                          class="flex min-w-0 flex-1 items-center gap-2 text-left"
+                          disabled={openingChapterId !== null}
+                          aria-busy={openingChapterId === ch._id}
+                          onclick={() => void openChapter(ch.slug, ch._id)}
+                        >
+                          <span class="own-chapter__label">{ch.name?.en ?? ch.slug}</span>
+                        </button>
                         {#if qCount > 0}
-                          <span class="text-xs text-[var(--own-muted)] mr-2">{qCount} q.</span>
+                          <button
+                            type="button"
+                            class="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-[color-mix(in_srgb,var(--page-link)_24%,var(--sh-exam-card-border))] bg-[var(--page-card-bg)] px-2 text-xs leading-none text-[var(--page-text-muted)] hover:border-[var(--page-link)] hover:text-[var(--page-link)]"
+                            aria-expanded={questionsOpen}
+                            onclick={(e) => toggleChapterSelectedQuestions(ch._id, e)}
+                          >
+                            {qCount} q.
+                            <span class={`inline-flex items-center transition-transform ${questionsOpen ? 'rotate-180' : ''}`}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                              </svg>
+                            </span>
+                          </button>
                         {/if}
-                        <span class="own-chapter__next" aria-hidden="true">
+                        <button
+                          type="button"
+                          class="own-chapter__next shrink-0"
+                          disabled={openingChapterId !== null}
+                          aria-busy={openingChapterId === ch._id}
+                          aria-label={`Open ${ch.name?.en ?? ch.slug}`}
+                          onclick={() => void openChapter(ch.slug, ch._id)}
+                        >
                           {#if openingChapterId === ch._id}
                             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
                           {:else}
                             <span aria-hidden="true">→</span>
                           {/if}
-                        </span>
-                      </button>
+                        </button>
+                      </div>
+                      {#if questionsOpen && selectedQuestions.length > 0}
+                        <div class="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--page-link)_35%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_10%,var(--sh-exam-card-bg))] p-2">
+                          <ul class="space-y-1.5">
+                            {#each selectedQuestions as selected, idx (selected.id)}
+                              <li class="flex items-center gap-2 rounded-md border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_8%,var(--sh-exam-card-bg))] px-2 py-1.5 transition-colors hover:border-[var(--page-link)]/50 hover:bg-[color-mix(in_srgb,var(--page-link)_14%,var(--sh-exam-card-bg))]">
+                                <p class="min-w-0 flex-1 break-words text-xs text-[var(--page-text)]">
+                                  <span class="mr-1.5 text-[var(--page-text-muted)]">{idx + 1}.</span>{selected.questionText}
+                                </p>
+                                <button
+                                  type="button"
+                                  class="shrink-0 rounded-md border border-[var(--page-link)]/45 px-2 py-0.5 text-[11px] text-[var(--page-link)] hover:bg-[var(--page-link)]/10"
+                                  onclick={(e) => removeSelectedQuestion(selected.id, e)}
+                                >
+                                  Remove
+                                </button>
+                              </li>
+                            {/each}
+                          </ul>
+                        </div>
+                      {/if}
                     </li>
                   {/each}
                 </ul>

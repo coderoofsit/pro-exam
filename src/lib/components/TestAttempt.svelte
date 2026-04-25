@@ -1123,6 +1123,7 @@ function clearCurrentAnswer() {
     aria-label="Enlarged image"
     tabindex="-1"
     onclick={(e) => e.target === e.currentTarget && closeImageLightbox()}
+    onkeydown={(e) => e.key === "Escape" && closeImageLightbox()}
   >
     <button
       type="button"

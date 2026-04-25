@@ -464,7 +464,7 @@
     </div>
     <button
       type="button"
-      class="btn-cta-subscription btn-cta-subscription--sm ml-auto shrink-0"
+      class="ml-auto h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50"
       disabled={selectedTopicCount === 0}
       onclick={handleNextClick}
     >
