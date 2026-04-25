@@ -124,10 +124,10 @@
       type: "standard",
       theme: "outline",
       size: "large",
-      text: "continue_with",
-      shape: "rectangular",
+      text: "signin_with",
+      shape: "pill",
       logo_alignment: "left",
-      width: 380,
+      width: 320,
     });
 
     isGoogleReady = true;
@@ -176,9 +176,8 @@
 </script>
 
 {#if selected}
-  <div class="space-y-3">
-    <div class="flex justify-center">
-      <div bind:this={googleButtonEl}></div>
+    <div class="flex justify-center min-h-[44px]">
+      <div bind:this={googleButtonEl} class="overflow-hidden rounded-full"></div>
     </div>
 
     {#if !isGoogleReady}
@@ -200,5 +199,4 @@
         {errorMessage}
       </div>
     {/if}
-  </div>
 {/if}

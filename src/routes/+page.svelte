@@ -10,7 +10,6 @@
   const NAV_LINKS = [
     { label: "App Screenshots", href: "#screenshots" },
     { label: "For Students", href: "#students" },
-    { label: "For Teachers", href: "#teachers" },
     { label: "How It Works", href: "#how-it-works" },
   ];
 
@@ -41,7 +40,7 @@
 </script>
 
 <svelte:head>
-  <title>QuizNova — India's Most Advanced Exam Platform</title>
+  <title>ExamAbhyas — India's Most Advanced Exam Platform</title>
   <meta name="description" content="AI-powered practice tests, smart analytics, and instant question paper generation for JEE, NEET, UPSC & more."/>
 </svelte:head>
 
@@ -49,7 +48,7 @@
   
   <!-- NAVBAR -->
   <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.05] bg-background/70 backdrop-blur-2xl">
-    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-10 h-16 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2.5 shrink-0">
         <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-primary-foreground">
@@ -57,7 +56,7 @@
           </svg>
         </div>
         <span class="text-lg font-black tracking-tight">
-          Quiz<span class="text-primary">Nova</span>
+          Exam<span class="text-primary">Abhyas</span>
         </span>
       </a>
 
@@ -111,30 +110,27 @@
       <div class="absolute top-0 right-0 w-2/3 h-full bg-[radial-gradient(ellipse_at_top_right,oklch(0.62_0.26_293_/_0.18)_0%,transparent_65%)] pointer-events-none"></div>
       <div class="absolute bottom-0 left-0 w-1/2 h-1/2 bg-[radial-gradient(ellipse_at_bottom_left,oklch(0.62_0.26_293_/_0.07)_0%,transparent_60%)] pointer-events-none"></div>
       
-      <div class="max-w-7xl mx-auto px-6 py-24 lg:py-32 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
+      <div class="max-w-6xl mx-auto px-10 py-24 lg:py-32 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
         <div in:fly={{ y: 28, duration: 550, delay: 100 }}>
           <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 bg-primary/10 text-sm font-semibold mb-8">
             <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             <span class="text-primary">India's Most Advanced Exam Platform</span>
           </div>
-          <h1 class="text-5xl lg:text-[4.2rem] font-black tracking-tight leading-[1.06] mb-8">
+          <h1 class="text-4xl lg:text-[3.5rem] font-black tracking-tight leading-[1.06] mb-8">
             Crack Every<br />
-            <span class="bg-gradient-to-r from-primary via-[oklch(0.7_0.2_310)] to-[oklch(0.75_0.17_78)] bg-clip-text text-transparent">Competitive</span><br />
+            <span class="bg-gradient-to-r from-white via-[oklch(0.75_0.2_310)] to-[oklch(0.8_0.2_100)] bg-clip-text text-transparent">Competitive</span><br />
             Exam. Period.
           </h1>
-          <p class="text-muted-foreground text-lg leading-relaxed max-w-md mb-8">AI-powered practice tests, smart analytics, and instant question paper generation — built for students aiming at JEE, NEET, UPSC & more.</p>
+          <p class="text-muted-foreground text-base leading-relaxed max-w-md mb-8">AI-powered practice tests, smart analytics, and instant question paper generation — built for students aiming at JEE, NEET, UPSC & more.</p>
           
           <div class="flex flex-wrap gap-4 mb-12">
             <button onclick={handleLogin} class="h-12 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2 rounded-xl px-7 text-sm font-bold shadow-lg shadow-primary/20 transition-all cursor-pointer">
-              Student Dashboard <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.ArrowRight}</svg>
-            </button>
-            <button onclick={handleLogin} class="h-12 border border-white/10 flex items-center gap-2 rounded-xl px-7 text-sm font-bold hover:bg-secondary transition-all cursor-pointer">
-              Teacher Dashboard <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.ArrowRight}</svg>
+              Get Started <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.ArrowRight}</svg>
             </button>
           </div>
 
           <div class="flex items-center gap-8 pt-4 border-t border-white/10">
-            {#each [{ value: "50k+", label: "Students" }, { value: "2k+", label: "Teachers" }, { value: "100k+", label: "Papers" }] as stat, i}
+            {#each [{ value: "50k+", label: "Students" }, { value: "100k+", label: "Papers" }] as stat, i}
               <div class="flex items-center gap-8">
                 {#if i > 0}<div class="w-px h-8 bg-white/10"></div>{/if}
                 <div>
@@ -220,11 +216,11 @@
     <!-- STATS BAR -->
     <section class="py-0">
       <div class="bg-secondary/60 border-y border-white/5">
-        <div class="max-w-7xl mx-auto px-6">
+        <div class="max-w-6xl mx-auto px-10">
           <div class="grid grid-cols-2 md:grid-cols-4">
-            {#each [{ value: "50k+", label: "Active Students", color: "text-primary" }, { value: "2k+", label: "Expert Teachers", color: "text-[oklch(0.75_0.17_78)]" }, { value: "100k+", label: "Papers Generated", color: "text-primary" }, { value: "25k+", label: "Daily Exams Taken", color: "text-[oklch(0.75_0.17_78)]" }] as stat, i}
+            {#each [{ value: "50k+", label: "Active Students", color: "text-primary" }, { value: "100k+", label: "Papers Generated", color: "text-primary" }, { value: "25k+", label: "Daily Exams Taken", color: "text-[oklch(0.75_0.17_78)]" }] as stat, i}
               <div class="py-10 px-6 text-center relative border-white/5 {i > 0 ? 'md:border-l' : ''} {i % 2 !== 0 ? 'border-l md:border-l-0' : ''}">
-                <div class="text-4xl lg:text-5xl font-black mb-2 {stat.color}">{stat.value}</div>
+                <div class="text-3xl lg:text-4xl font-black mb-2 {stat.color}">{stat.value}</div>
                 <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{stat.label}</div>
               </div>
             {/each}
@@ -235,11 +231,11 @@
 
     <!-- APP SCREENSHOTS -->
     <section id="screenshots" class="py-24 scroll-mt-16 overflow-hidden">
-      <div class="max-w-7xl mx-auto px-6">
+      <div class="max-w-6xl mx-auto px-10">
         <div class="text-center mb-20" in:fade>
           <p class="text-sm font-bold text-primary uppercase tracking-[0.15em] mb-3">See It In Action</p>
-          <h2 class="text-4xl lg:text-5xl font-black tracking-tight mb-4">Beautifully Designed.<br /><span class="bg-gradient-to-r from-primary to-[oklch(0.75_0.17_78)] bg-clip-text text-transparent">Ridiculously Powerful.</span></h2>
-          <p class="text-muted-foreground text-lg max-w-md mx-auto">Every screen crafted to make exam preparation effortless for students and paper creation instant for teachers.</p>
+          <h2 class="text-3xl lg:text-4xl font-black tracking-tight mb-4">Beautifully Designed.<br /><span class="bg-gradient-to-r from-white to-[oklch(0.8_0.2_100)] bg-clip-text text-transparent">Ridiculously Powerful.</span></h2>
+          <p class="text-muted-foreground text-base max-w-md mx-auto">Every screen crafted to make exam preparation effortless and rank prediction accurate.</p>
         </div>
         
         <div class="flex items-end justify-center gap-6 lg:gap-12 pb-12">
@@ -292,22 +288,7 @@
             <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest">Analytics</span>
           </div>
 
-          <!-- Phone 3: Paper Builder -->
-          <div class="hidden sm:flex flex-col items-center gap-4" style="transform: rotate(7deg) scale(0.88); transform-origin: center bottom;">
-            <div class="relative w-[235px] h-[490px] bg-[oklch(0.1_0.025_265)] rounded-[44px] border-[5px] border-[oklch(0.22_0.03_265)] shadow-2xl shadow-black/60 overflow-hidden">
-              <div class="absolute top-3.5 left-1/2 -translate-x-1/2 w-[88px] h-[22px] bg-[oklch(0.07_0.02_265)] rounded-full z-20"></div>
-              <div class="absolute inset-0 bg-background overflow-hidden pt-11 pb-4 px-4 py-3">
-                <div class="mb-3"><p class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Teacher Tools</p><h3 class="text-base font-black">Paper Builder</h3></div>
-                <div class="p-3 bg-secondary/50 rounded-2xl mb-3 border border-white/5"><p class="text-[11px] font-bold mb-0.5">Physics — JEE Advanced</p><div class="flex gap-3 text-[10px] text-muted-foreground"><span>45 Qs</span><span>90 Min</span></div></div>
-                <div class="space-y-1.5">
-                    {#each ['Mechanics', 'Optics', 'Electrostatics'] as ch}
-                        <div class="flex items-center justify-between px-3 py-2 bg-secondary/30 rounded-xl border border-white/5"><span class="text-[10px] font-semibold">{ch}</span><span class="text-[10px] font-black text-primary">12 Q</span></div>
-                    {/each}
-                </div>
-              </div>
-            </div>
-            <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest">Paper Builder</span>
-          </div>
+
         </div>
         <div class="flex justify-center mt-8 cursor-default"><div class="w-[600px] h-16 bg-primary/20 blur-3xl rounded-full"></div></div>
       </div>
@@ -315,12 +296,12 @@
 
     <!-- STUDENT BENEFITS -->
     <section id="students" class="py-24 scroll-mt-16">
-      <div class="max-w-7xl mx-auto px-6">
+      <div class="max-w-6xl mx-auto px-10">
         <div class="mb-12">
             <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-bold mb-5">For Students</span>
             <div class="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-                <h2 class="text-4xl lg:text-5xl font-black tracking-tight leading-tight">Every Tool You Need<br /><span class="bg-gradient-to-r from-primary to-[oklch(0.75_0.17_78)] bg-clip-text text-transparent">to Rank in the Top 1%</span></h2>
-                <p class="text-muted-foreground text-base max-w-xs lg:text-right">From personalized practice to rank prediction — QuizNova gives you the edge that toppers rely on.</p>
+                <h2 class="text-3xl lg:text-4xl font-black tracking-tight leading-tight">Every Tool You Need<br /><span class="bg-gradient-to-r from-white to-[oklch(0.8_0.2_100)] bg-clip-text text-transparent">to Rank in the Top 1%</span></h2>
+                <p class="text-muted-foreground text-sm max-w-xs lg:text-right">From personalized practice to rank prediction — ExamAbhyas gives you the edge that toppers rely on.</p>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -355,58 +336,20 @@
       </div>
     </section>
 
-    <!-- TEACHER BENEFITS -->
-    <section id="teachers" class="py-24 scroll-mt-16 bg-secondary/15">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="mb-12">
-            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[oklch(0.75_0.17_78_/_0.15)] border border-[oklch(0.75_0.17_78_/_0.35)] text-[oklch(0.75_0.17_78)] text-sm font-bold mb-5">For Teachers</span>
-            <div class="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-                <h2 class="text-4xl lg:text-5xl font-black tracking-tight leading-tight">Create. Share. Analyze.<br /><span class="bg-gradient-to-r from-[oklch(0.75_0.17_78)] to-[oklch(0.7_0.22_30)] bg-clip-text text-transparent">All from One Place.</span></h2>
-                <p class="text-muted-foreground text-base max-w-xs lg:text-right">Spend less time building papers. More time inspiring the next generation of toppers.</p>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="md:col-span-2 bg-card border border-white/10 rounded-3xl p-8 relative overflow-hidden group hover:border-[oklch(0.75_0.17_78_/_0.4)] transition-colors duration-300">
-                <div class="absolute inset-0 bg-gradient-to-bl from-[oklch(0.75_0.17_78_/_0.12)] via-transparent to-transparent pointer-events-none"></div>
-                <div class="relative z-10">
-                    <div class="flex items-start gap-4 mb-2"><div class="w-12 h-12 rounded-2xl bg-[oklch(0.75_0.17_78_/_0.2)] flex items-center justify-center shrink-0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.FileText}</svg></div><div><h3 class="text-xl font-black">Smart Paper Builder</h3><p class="text-muted-foreground text-sm mt-1 leading-relaxed">Generate complete question papers in under 2 minutes. Choose chapters, set difficulty, and export instantly.</p></div></div>
-                    <div class="bg-background/80 border border-white/5 rounded-2xl p-4 mt-5">
-                        <div class="flex items-center justify-between mb-3"><div><p class="text-[11px] font-black">Physics — JEE 2024</p><p class="text-[10px] text-muted-foreground">45 Qs · 90 min</p></div><span class="text-[9px] px-2 py-1 rounded-full bg-primary/15 text-primary font-bold border border-primary/25">Draft</span></div>
-                        <div class="space-y-1.5 mb-3">
-                            {#each ["Mechanics", "Thermodynamics"] as ch}
-                                <div class="flex items-center justify-between px-3 py-2 bg-secondary/40 rounded-lg border border-white/5"><span class="text-[10px] font-semibold">{ch}</span><span class="text-[10px] font-black text-primary">12 Q</span></div>
-                            {/each}
-                        </div>
-                        <button class="w-full py-2 rounded-xl bg-primary text-[11px] font-black text-primary-foreground">Generate PDF Paper</button>
-                    </div>
-                </div>
-            </div>
-            {#each [
-                { icon: Icons.Database, title: "500k+ Question Bank", desc: "Massive, well-categorized question bank across all subjects.", iconBg: "bg-[oklch(0.75_0.17_78_/_0.2)] text-[oklch(0.75_0.17_78)]" },
-                { icon: Icons.CheckSquare, title: "Auto Grading", desc: "Automated evaluation with per-student breakdowns.", iconBg: "bg-green-500/20 text-green-400" }
-            ] as card}
-                <div class="bg-card border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors duration-300">
-                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 {card.iconBg}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html card.icon}</svg></div>
-                    <h3 class="text-base font-black mb-2">{card.title}</h3>
-                    <p class="text-muted-foreground text-sm leading-relaxed">{card.desc}</p>
-                </div>
-            {/each}
-        </div>
-      </div>
-    </section>
+
 
     <!-- HOW IT WORKS -->
     <section id="how-it-works" class="py-24 scroll-mt-16 bg-secondary/30">
-        <div class="max-w-7xl mx-auto px-6">
+        <div class="max-w-6xl mx-auto px-10">
             <div class="text-center mb-16" in:fade>
                 <p class="text-sm font-bold text-primary uppercase tracking-[0.15em] mb-3">Get Started</p>
-                <h2 class="text-4xl lg:text-5xl font-black tracking-tight mb-4">Up and Running in <span class="bg-gradient-to-r from-primary to-[oklch(0.75_0.17_78)] bg-clip-text text-transparent">3 Steps</span></h2>
+                <h2 class="text-3xl lg:text-4xl font-black tracking-tight mb-4">Up and Running in <span class="bg-gradient-to-r from-white to-[oklch(0.8_0.2_100)] bg-clip-text text-transparent">3 Steps</span></h2>
             </div>
             <div class="relative grid md:grid-cols-3 gap-8">
                 <div class="absolute top-16 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-primary/40 via-[oklch(0.75_0.17_78_/_0.4)] to-green-400/40 hidden md:block"></div>
                 {#each [
-                    { number: "01", icon: Icons.UserPlus, title: "Create Your Account", desc: "Sign up as a student or teacher in under 60 seconds.", color: "text-primary border-primary/40 bg-primary/10" },
-                    { number: "02", icon: Icons.Target, title: "Choose Your Goal", desc: "Students pick their target exam; teachers connect their institute.", color: "text-[oklch(0.75_0.17_78)] border-[oklch(0.75_0.17_78_/_0.4)] bg-[oklch(0.75_0.17_78_/_0.1)]" },
+                    { number: "01", icon: Icons.UserPlus, title: "Create Your Account", desc: "Sign up as a student in under 60 seconds.", color: "text-primary border-primary/40 bg-primary/10" },
+                    { number: "02", icon: Icons.Target, title: "Choose Your Goal", desc: "Select your target exam like JEE, NEET, or UPSC.", color: "text-[oklch(0.75_0.17_78)] border-[oklch(0.75_0.17_78_/_0.4)] bg-[oklch(0.75_0.17_78_/_0.1)]" },
                     { number: "03", icon: Icons.TrendingUp, title: "Practice & Dominate", desc: "Take AI-powered tests, track your rank, and watch performance skyrocket.", color: "text-green-400 border-green-400/40 bg-green-400/10" }
                 ] as step, i}
                     <div class="relative flex flex-col items-center text-center" in:fly={{ y: 24, duration: 500, delay: i * 100 }}>
@@ -424,7 +367,7 @@
 
     <!-- TRUSTED BY (MARQUEE) -->
     <section class="py-20 bg-secondary/20 overflow-hidden border-y border-white/5">
-        <div class="max-w-7xl mx-auto px-6 mb-12 text-center">
+        <div class="max-w-6xl mx-auto px-10 mb-12 text-center">
             <p class="text-sm font-bold text-muted-foreground uppercase tracking-[0.15em]">Trusted by 100+ Training Institutes Across India</p>
         </div>
         <div class="flex gap-4 w-max animate-marquee">
@@ -440,63 +383,53 @@
 
     <!-- TRIPLE CTA SECTION -->
     <section class="py-24 bg-secondary/20">
-      <div class="max-w-7xl mx-auto px-6">
+      <div class="max-w-6xl mx-auto px-10">
         <div class="text-center mb-14" in:fade>
-          <h2 class="text-4xl lg:text-5xl font-black tracking-tight mb-4 text-foreground">Choose Your Path</h2>
+          <h2 class="text-3xl lg:text-4xl font-black tracking-tight mb-4 text-foreground">Choose Your Path</h2>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {#each [
-            { id: "student", badge: "For Students", icon: Icons.GraduationCap, headline: "Ace every exam with AI-powered precision", features: ["Full-length AI mock tests", "500k+ practice questions", "Real-time analytics"], cta: "Join as Student", btnClass: "bg-primary text-primary-foreground", iconBg: "bg-primary/20 text-primary" },
-            { id: "teacher", badge: "For Teachers", icon: Icons.BookOpen, headline: "Build exam papers in minutes, not hours", features: ["Smart paper builder", "Automated grading", "Custom branding"], cta: "Join as Teacher", btnClass: "bg-[oklch(0.75_0.17_78)] text-[oklch(0.1_0_0)]", iconBg: "bg-[oklch(0.75_0.17_78_/_0.2)] text-[oklch(0.75_0.17_78)]" },
-            { id: "institute", badge: "For Institutes", icon: Icons.Building2, headline: "Scale to 10,000+ students effortlessly", features: ["Multi-batch management", "Full white-label branding", "Fee tracking"], cta: "Join as Institute", btnClass: "bg-green-500 text-black", iconBg: "bg-green-500/20 text-green-400" }
-          ] as p, i}
-            <div 
-              in:fly={{ y: 24, duration: 500, delay: i * 100 }}
-              class="bg-card border-2 border-white/5 hover:border-primary/40 rounded-3xl p-8 flex flex-col group transition-all"
-            >
-              <div class="flex items-center justify-between mb-6">
-                <span class="px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-white/5 text-foreground border border-white/5">{p.badge}</span>
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center {p.iconBg}">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html p.icon}</svg>
-                </div>
-              </div>
-              <h3 class="text-2xl font-black mb-6 leading-tight flex-1">{p.headline}</h3>
-              <ul class="space-y-3 mb-8">
-                {#each p.features as f}
-                  <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3">{@html Icons.Check}</svg>
-                    {f}
-                  </li>
-                {/each}
-              </ul>
-              <button onclick={handleLogin} class="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-black transition-all cursor-pointer {p.btnClass}">
-                {p.cta} <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.ArrowRight}</svg>
-              </button>
+        <div class="max-w-3xl mx-auto">
+          <div 
+            in:fly={{ y: 24, duration: 500 }}
+            class="bg-card border-2 border-white/5 hover:border-primary/40 rounded-3xl p-10 flex flex-col group transition-all text-center items-center"
+          >
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center bg-primary/20 text-primary mb-8">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.GraduationCap}</svg>
             </div>
-          {/each}
+            <h3 class="text-3xl font-black mb-6 leading-tight">Ace every exam with AI-powered precision</h3>
+            <ul class="space-y-4 mb-10 text-left">
+              {#each ["Full-length AI mock tests", "500k+ practice questions", "Real-time analytics", "All India Rank Predictor"] as f}
+                <li class="flex items-center gap-3 text-base text-muted-foreground">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3">{@html Icons.Check}</svg>
+                  {f}
+                </li>
+              {/each}
+            </ul>
+            <button onclick={handleLogin} class="w-full max-w-sm rounded-2xl py-4 flex items-center justify-center gap-2 font-black bg-primary text-primary-foreground transition-all cursor-pointer">
+              Join Now <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{@html Icons.ArrowRight}</svg>
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- FOOTER -->
     <footer class="bg-secondary/40 border-t border-white/5 py-14">
-      <div class="max-w-7xl mx-auto px-6">
+      <div class="max-w-6xl mx-auto px-10">
         <div class="flex flex-col md:flex-row justify-between items-start gap-10">
           <div class="space-y-4">
             <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-primary-foreground">{@html Icons.Zap}</svg>
               </div>
-              <span class="text-lg font-black tracking-tight">Quiz<span class="text-primary">Nova</span></span>
+              <span class="text-lg font-black tracking-tight">Exam<span class="text-primary">Abhyas</span></span>
             </div>
-            <p class="text-sm text-muted-foreground max-w-xs">Making exam preparation smarter for students and paper creation effortless for teachers.</p>
+            <p class="text-sm text-muted-foreground max-w-xs">Making exam preparation smarter and success more predictable for every student.</p>
           </div>
           <div class="grid grid-cols-2 gap-12">
             <div>
               <h4 class="font-black text-xs uppercase tracking-wider mb-4 opacity-50">Content</h4>
               <ul class="space-y-2 text-sm text-muted-foreground">
                 <li><a href="#students" class="hover:text-primary transition-colors">Students</a></li>
-                <li><a href="#teachers" class="hover:text-primary transition-colors">Teachers</a></li>
                 <li><a href="#how-it-works" class="hover:text-primary transition-colors">How it works</a></li>
               </ul>
             </div>
@@ -510,7 +443,7 @@
           </div>
         </div>
         <div class="pt-8 mt-12 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} QuizNova. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ExamAbhyas. All rights reserved.</p>
         </div>
       </div>
     </footer>
