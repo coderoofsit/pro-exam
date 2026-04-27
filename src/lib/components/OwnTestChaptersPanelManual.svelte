@@ -1,4 +1,5 @@
 <script lang="ts">
+  import MathText from '$lib/components/MathText.svelte';
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
   import { browser } from '$app/environment';
   import { page } from '$app/state';
@@ -66,7 +67,10 @@
     subjectId: string;
     chapterId: string;
     chapterGroupId: string;
+    topicId?: string;
+    topicSlug?: string;
     questionText?: string;
+    questionContent?: string;
   };
   let manualSelectedRows = $state<ManualSelectedRow[]>([]);
   let openSelectedQuestionsForChapter = $state<Set<string>>(new Set());
@@ -102,9 +106,12 @@
         .map((r) => ({
           id: String(r?.id ?? ''),
           subjectId: String(r?.subjectId ?? '').trim(),
-          chapterId: String(r?.chapterId ?? ''),
+          chapterId: String(r?.chapterId ?? '').trim() || String(r?.chapterGroupId ?? '').trim(),
           chapterGroupId: String(r?.chapterGroupId ?? '').trim(),
-          questionText: String(r?.questionText ?? '').trim()
+          topicId: String(r?.topicId ?? '').trim(),
+          topicSlug: String(r?.topicSlug ?? '').trim(),
+          questionText: String(r?.questionText ?? '').trim(),
+          questionContent: String(r?.questionContent ?? r?.questionText ?? '').trim()
         }))
         .filter((r) => r.id);
       manualSelectedRows = rows;
@@ -123,19 +130,22 @@
     return counts;
   });
 
-  const selectedQuestionsByChapterId = $derived.by(() => {
-    const byChapter = new Map<string, Array<{ id: string; questionText: string }>>();
+  const selectedQuestionsByTopicKey = $derived.by(() => {
+    const byTopic = new Map<string, Array<{ id: string; questionText: string; questionContent: string }>>();
     for (const row of manualSelectedRows) {
-      const chapter = String(row.chapterId ?? '').trim();
-      if (!chapter) continue;
-      const list = byChapter.get(chapter) ?? [];
+      const chapterGroupId = String(row.chapterGroupId ?? row.chapterId ?? '').trim();
+      const topicKeyPart = String(row.topicSlug ?? row.topicId ?? '').trim();
+      if (!chapterGroupId || !topicKeyPart) continue;
+      const topicKey = `${chapterGroupId}::${topicKeyPart}`;
+      const list = byTopic.get(topicKey) ?? [];
       list.push({
         id: row.id,
-        questionText: String(row.questionText ?? '').trim() || 'Selected question'
+        questionText: String(row.questionText ?? '').trim() || 'Selected question',
+        questionContent: String(row.questionContent ?? row.questionText ?? '').trim()
       });
-      byChapter.set(chapter, list);
+      byTopic.set(topicKey, list);
     }
-    return byChapter;
+    return byTopic;
   });
 
   
@@ -354,9 +364,10 @@
               <div class="own-unit__body">
                 <ul class="mt-3 flex flex-col gap-2">
                   {#each unit.data as ch (ch._id)}
-                    {@const qCount = questionCountByChapterId.get(ch._id) || 0}
-                    {@const selectedQuestions = selectedQuestionsByChapterId.get(ch._id) ?? []}
-                    {@const questionsOpen = openSelectedQuestionsForChapter.has(ch._id)}
+                    {@const topicDisplayKey = `${String(uid)}::${String(ch.slug ?? ch._id ?? '')}`}
+                    {@const qCount = (selectedQuestionsByTopicKey.get(topicDisplayKey) ?? []).length}
+                    {@const selectedQuestions = selectedQuestionsByTopicKey.get(topicDisplayKey) ?? []}
+                    {@const questionsOpen = openSelectedQuestionsForChapter.has(topicDisplayKey)}
                     <li>
                       <div class="own-chapter-row own-chapter-row--manual flex w-full items-center gap-2 border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_10%,var(--sh-exam-card-bg))] transition-colors hover:border-[var(--page-link)]/55 hover:bg-[color-mix(in_srgb,var(--page-link)_16%,var(--sh-exam-card-bg))]">
                         <button
@@ -373,7 +384,7 @@
                             type="button"
                             class="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-[color-mix(in_srgb,var(--page-link)_24%,var(--sh-exam-card-border))] bg-[var(--page-card-bg)] px-2 text-xs leading-none text-[var(--page-text-muted)] hover:border-[var(--page-link)] hover:text-[var(--page-link)]"
                             aria-expanded={questionsOpen}
-                            onclick={(e) => toggleChapterSelectedQuestions(ch._id, e)}
+                            onclick={(e) => toggleChapterSelectedQuestions(topicDisplayKey, e)}
                           >
                             {qCount} q.
                             <span class={`inline-flex items-center transition-transform ${questionsOpen ? 'rotate-180' : ''}`}>
@@ -403,9 +414,10 @@
                           <ul class="space-y-1.5">
                             {#each selectedQuestions as selected, idx (selected.id)}
                               <li class="flex items-center gap-2 rounded-md border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_8%,var(--sh-exam-card-bg))] px-2 py-1.5 transition-colors hover:border-[var(--page-link)]/50 hover:bg-[color-mix(in_srgb,var(--page-link)_14%,var(--sh-exam-card-bg))]">
-                                <p class="min-w-0 flex-1 break-words text-xs text-[var(--page-text)]">
-                                  <span class="mr-1.5 text-[var(--page-text-muted)]">{idx + 1}.</span>{selected.questionText}
-                                </p>
+                                <div class="min-w-0 flex-1 break-words text-xs text-[var(--page-text)]">
+                                  <span class="mr-1.5 text-[var(--page-text-muted)]">{idx + 1}.</span>
+                                  <MathText content={selected.questionContent || selected.questionText} />
+                                </div>
                                 <button
                                   type="button"
                                   class="shrink-0 rounded-md border border-[var(--page-link)]/45 px-2 py-0.5 text-[11px] text-[var(--page-link)] hover:bg-[var(--page-link)]/10"

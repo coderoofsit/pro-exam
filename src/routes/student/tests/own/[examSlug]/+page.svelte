@@ -155,17 +155,40 @@
   const manualSelectedChapterIds = $derived.by(() => {
     const out = new Set<string>();
     for (const r of manualSelectedRows) {
-      if (r.chapterId) out.add(r.chapterId);
+      const id = String(r.chapterId || r.chapterGroupId || '').trim();
+      if (id) out.add(id);
     }
     return out;
   });
 
   const manualSelectedSubjectsForBar = $derived.by(() => {
     const out: { id: string; name: string; accent: number }[] = [];
-    if (manualSelectedChapterIds.size === 0) return out;
+    if (manualSelectedRows.length === 0) return out;
 
     for (const [i, row] of groupedSubjects.entries()) {
       let hit = false;
+      const rowSubjectId = String(row.subject._id ?? '').trim();
+      const rowSubjectSlug = String(row.subject.slug ?? '').trim();
+
+      // Prefer direct subject mapping from session storage when available.
+      if (
+        manualSelectedRows.some((r) => {
+          const selectedSubject = String(r.subjectId ?? '').trim();
+          return selectedSubject && (selectedSubject === rowSubjectId || selectedSubject === rowSubjectSlug);
+        })
+      ) {
+        hit = true;
+      }
+
+      if (hit) {
+        out.push({
+          id: row.subject._id,
+          name: row.subject.name?.en ?? row.subject.slug,
+          accent: i % 4
+        });
+        continue;
+      }
+
       for (const unit of row.data ?? []) {
         if (manualSelectedChapterIds.has(String(unit.chapterGroup._id))) {
           hit = true;
@@ -215,7 +238,7 @@
         .map((r) => ({
           id: String(r?.id ?? ''),
           subjectId: String(r?.subjectId ?? '').trim(),
-          chapterId: String(r?.chapterId ?? '').trim(),
+          chapterId: String(r?.chapterId ?? '').trim() || String(r?.chapterGroupId ?? '').trim(),
           chapterGroupId: String(r?.chapterGroupId ?? '').trim(),
           questionText: String(r?.questionText ?? '').trim()
         }))
@@ -237,7 +260,7 @@
 
   function buildManualSnapshot(): OwnTestSelectionSnapshot | null {
     const selectedChapterIds = new Set(
-      manualSelectedRows.map((r) => String(r.chapterId || '').trim()).filter(Boolean)
+      manualSelectedRows.map((r) => String(r.chapterId || r.chapterGroupId || '').trim()).filter(Boolean)
     );
     if (selectedChapterIds.size === 0) return null;
 
@@ -247,13 +270,11 @@
       const units: OwnTestUnitSelection[] = [];
 
       for (const unit of row.data ?? []) {
-        const chapterIds = (unit.data ?? [])
-          .filter((ch) => selectedChapterIds.has(String(ch._id)))
-          .map((ch) => String(ch._id));
-
-        if (chapterIds.length === 0) continue;
+        const unitId = String(unit.chapterGroup._id);
+        if (!selectedChapterIds.has(unitId)) continue;
+        const chapterIds = [unitId];
         units.push({
-          unitId: String(unit.chapterGroup._id),
+          unitId,
           unitName: unit.chapterGroup.name?.en ?? unit.chapterGroup.slug,
           chapterIds
         });
@@ -295,10 +316,8 @@
     for (const row of groupedSubjects) {
       const subjectName = row.subject.name?.en ?? row.subject.slug;
       for (const unit of row.data ?? []) {
-        for (const ch of unit.data ?? []) {
-          if (String(ch._id) === cid) {
-            return generateSlug(subjectName);
-          }
+        if (String(unit.chapterGroup._id) === cid) {
+          return generateSlug(subjectName);
         }
       }
     }
@@ -390,7 +409,7 @@
 
   const manualConfirmHierarchy = $derived.by(() => {
     const selectedChapterIds = new Set(
-      manualSelectedRows.map((r) => String(r.chapterId || '').trim()).filter(Boolean)
+      manualSelectedRows.map((r) => String(r.chapterId || r.chapterGroupId || '').trim()).filter(Boolean)
     );
     const out: { subjectName: string; chapters: { chapterName: string; topicNames: string[] }[] }[] = [];
     for (const row of groupedSubjects) {

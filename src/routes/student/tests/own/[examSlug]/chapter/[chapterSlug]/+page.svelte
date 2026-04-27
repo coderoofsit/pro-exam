@@ -53,7 +53,12 @@
   $effect(() => {
     if (!browser) return;
     const params = new URLSearchParams(window.location.search);
-    selectedTopicSlug = params.get("topic") ? params.get("topic")!.split(",") : [];
+    // Keep chapter-open URL topic from pre-selecting the filter UI.
+    const shouldIgnoreInitialTopic =
+      params.has("topic") && !params.has("page") && !params.has("kind") && !params.has("difficulty");
+    selectedTopicSlug = shouldIgnoreInitialTopic
+      ? []
+      : (params.get("topic") ? params.get("topic")!.split(",") : []);
     selectedKind = params.get("kind") ? params.get("kind")!.split(",") : [];
     selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
   });
@@ -73,7 +78,10 @@
     subjectId: string;
     chapterId: string;
     chapterGroupId: string;
+    topicId?: string;
+    topicSlug?: string;
     questionText?: string;
+    questionContent?: string;
   };
   let selectedRows = $state<ManualSelectedRow[]>([]);
   let selectedIds = $state<Set<string>>(new Set());
@@ -102,9 +110,12 @@
         .map((r) => ({
           id: String(r?.id ?? ""),
           subjectId: String(r?.subjectId ?? "").trim(),
-          chapterId: String(r?.chapterId ?? ""),
+          chapterId: String(r?.chapterId ?? "").trim() || String(r?.chapterGroupId ?? "").trim(),
           chapterGroupId: String(r?.chapterGroupId ?? "").trim(),
-          questionText: String(r?.questionText ?? "").trim()
+          topicId: String(r?.topicId ?? "").trim(),
+          topicSlug: String(r?.topicSlug ?? "").trim(),
+          questionText: String(r?.questionText ?? "").trim(),
+          questionContent: String(r?.questionContent ?? r?.questionText ?? "").trim()
         }))
         .filter((r) => r.id);
       selectedRows = rows;
@@ -148,6 +159,14 @@
     const resolvedChapterGroupId =
       String((q as any)?.chapterGroupId?._id ?? (q as any)?.chapterGroupId ?? "").trim() ||
       String(unitsParam[0] ?? "").trim();
+    const topicParam = String(params.get("topic") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const resolvedTopicSlug =
+      String((q as any)?.topicSlug ?? "").trim() ||
+      String(topicParam[0] ?? "").trim();
+    const resolvedTopicId = String((q as any)?.topicId?._id ?? (q as any)?.topicId ?? "").trim();
     selectedRows = [
       ...selectedRows,
       {
@@ -155,7 +174,10 @@
         subjectId: resolvedSubjectId,
         chapterId: resolvedChapterId,
         chapterGroupId: resolvedChapterGroupId,
-        questionText: questionPreview(q)
+        topicId: resolvedTopicId,
+        topicSlug: resolvedTopicSlug,
+        questionText: questionPreview(q),
+        questionContent: String(questionPromptEnContent(q) ?? "").trim()
       }
     ];
     selectedIds = new Set(selectedRows.map((r) => r.id));
@@ -240,6 +262,17 @@
     return Array.isArray(images) ? images : [];
   }
 
+  function resumeTestCreationUrl(): string {
+    if (!browser) return `/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`;
+    const params = new URLSearchParams(window.location.search);
+    const q = new URLSearchParams({ mode: "manual" });
+    const subject = String(params.get("subject") ?? "").trim();
+    const units = String(params.get("units") ?? "").trim();
+    if (subject) q.set("subject", subject);
+    if (units) q.set("units", units);
+    return `/student/tests/own/${encodeURIComponent(data.examSlug)}?${q.toString()}`;
+  }
+
 </script>
 
 <svelte:head>
@@ -282,7 +315,7 @@
           class="rounded-lg border border-[var(--page-link)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:text-[var(--page-link)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--page-link)_40%,transparent)]"
           onclick={() => {
             if (!browser) return;
-            window.history.back();
+            void goto(resumeTestCreationUrl());
           }}
         >
           ← Resume test creation
@@ -397,11 +430,13 @@
               </span>
 
               <div class="min-w-0 flex-1">
-                <div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
-                  <span class="mr-2 inline font-medium text-[var(--page-text-muted)]">
+                <div class="flex items-start gap-2 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
+                  <span class="shrink-0 font-medium text-[var(--page-text-muted)]">
                     {(data.safePage - 1) * (paginationMeta?.limit ?? 25) + index + 1}.
                   </span>
-                  <MathText content={questionPromptEnContent(q)} />
+                  <div class="min-w-0 flex-1">
+                    <MathText content={questionPromptEnContent(q)} />
+                  </div>
                 </div>
                 {#if promptImages(q).length > 0}
                   <div class="mt-3 grid grid-cols-2 gap-2">
