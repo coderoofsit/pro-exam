@@ -607,11 +607,12 @@
     class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
     onclick={(e) => e.target === e.currentTarget && closePendingStartModal()}
+    onkeydown={(e) => e.key === "Escape" && closePendingStartModal()}
   >
     <div
       class="w-full max-w-md rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-xl"
-      onclick={(e) => e.stopPropagation()}
     >
       <h2 class="text-lg font-bold text-[var(--sh-section-title)]">
         Test not started yet

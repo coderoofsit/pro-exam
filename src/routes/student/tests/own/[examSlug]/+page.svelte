@@ -130,8 +130,15 @@
   let createdTestId = $state<string | null>(null);
   let startingOwnSuccessTest = $state(false);
   let successStartError = $state<string | null>(null);
+  type ManualSelectedRow = {
+    id: string;
+    subjectId: string;
+    chapterId: string;
+    chapterGroupId: string;
+    questionText?: string;
+  };
   let manualSelectedIds = $state<Set<string>>(new Set());
-  let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
+  let manualSelectedRows = $state<ManualSelectedRow[]>([]);
   let manualConfirmModalOpen = $state(false);
   /** Background create started from Next; OK stays loading until resolved. */
   let manualBgCreatePending = $state(false);
@@ -141,6 +148,9 @@
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
   const manualSelectedCount = $derived(manualSelectedIds.size);
+  const manualValidSelectedCount = $derived(
+    manualSelectedRows.filter((r) => String(r.chapterId ?? '').trim().length > 0).length
+  );
 
   const manualSelectedChapterIds = $derived.by(() => {
     const out = new Set<string>();
@@ -191,13 +201,24 @@
       // Back-compat: old format string[]
       if (parsed.every((x) => typeof x === 'string')) {
         const ids = (parsed as string[]).filter(Boolean);
-        manualSelectedRows = ids.map((id) => ({ id, chapterId: '' }));
+        manualSelectedRows = ids.map((id) => ({
+          id,
+          subjectId: '',
+          chapterId: '',
+          chapterGroupId: ''
+        }));
         manualSelectedIds = new Set(ids);
         return;
       }
 
       const rows = (parsed as any[])
-        .map((r) => ({ id: String(r?.id ?? ''), chapterId: String(r?.chapterId ?? '') }))
+        .map((r) => ({
+          id: String(r?.id ?? ''),
+          subjectId: String(r?.subjectId ?? '').trim(),
+          chapterId: String(r?.chapterId ?? '').trim(),
+          chapterGroupId: String(r?.chapterGroupId ?? '').trim(),
+          questionText: String(r?.questionText ?? '').trim()
+        }))
         .filter((r) => r.id);
       manualSelectedRows = rows;
       manualSelectedIds = new Set(rows.map((r) => r.id));
@@ -260,9 +281,17 @@
   }
 
   /** Section slug is derived from the **subject** name (not unit). */
-  function findSubjectSectionSlugForChapter(chapterId: string): string | null {
+  function findSubjectSectionSlugForChapter(chapterId: string, subjectId?: string): string | null {
     const cid = String(chapterId).trim();
+    const sid = String(subjectId ?? '').trim();
     if (!cid) return null;
+    if (sid) {
+      const matched = groupedSubjects.find((g) => String(g.subject._id) === sid);
+      if (matched) {
+        const subjectName = matched.subject.name?.en ?? matched.subject.slug;
+        return generateSlug(subjectName);
+      }
+    }
     for (const row of groupedSubjects) {
       const subjectName = row.subject.name?.en ?? row.subject.slug;
       for (const unit of row.data ?? []) {
@@ -276,56 +305,81 @@
     return null;
   }
 
-  function buildManualCreatePayload(): CreateManualCustomTestBody | null {
-    const snapshot = buildManualSnapshot();
-    if (!snapshot) return null;
+  function fallbackManualSectionInfo(): { slug: string; title: string } {
+    const fromQuery = String(page.url.searchParams.get('subject') ?? '').trim();
+    const bySlug = groupedSubjects.find((g) => g.subject.slug === fromQuery);
+    if (bySlug) {
+      const title = bySlug.subject.name?.en ?? bySlug.subject.slug;
+      return { slug: generateSlug(title), title };
+    }
+    const first = groupedSubjects[0];
+    if (first) {
+      const title = first.subject.name?.en ?? first.subject.slug;
+      return { slug: generateSlug(title), title };
+    }
+    return { slug: 'selected-questions', title: 'Selected Questions' };
+  }
 
+  function buildManualCreatePayload(): CreateManualCustomTestBody | null {
     const istDate = formatIstDateDdMmYyyy();
-    const boardId = snapshot.boardId?.trim() || boardIdFromPage;
-    const examId = snapshot.examId?.trim() || examIdFromPage;
+    const boardId = String(boardIdFromPage ?? '').trim();
+    const examId = String(examIdFromPage ?? '').trim();
     if (!boardId || !examId) return null;
 
     const rows = manualSelectedRows.length
       ? manualSelectedRows
-      : Array.from(manualSelectedIds).map((id) => ({ id, chapterId: '' }));
+      : Array.from(manualSelectedIds).map((id) => ({
+          id,
+          subjectId: '',
+          chapterId: '',
+          chapterGroupId: ''
+        }));
+    if (rows.length === 0) return null;
 
     const manualQuestionCount = rows.length;
     const durationMinutes = durationMinutesForQuestionCount(manualQuestionCount);
 
-    const sections: CreateManualCustomTestBody['sections'] = [];
-    let sectionOrder = 0;
-    for (const g of groupedSubjects) {
-      const subjectName = g.subject.name?.en ?? g.subject.slug;
-      const chapterIdsInSubject = new Set<string>();
-      for (const unit of g.data ?? []) {
-        for (const ch of unit.data ?? []) {
-          chapterIdsInSubject.add(String(ch._id));
-        }
-      }
-      let n = 0;
-      for (const r of rows) {
-        if (chapterIdsInSubject.has(String(r.chapterId))) n++;
-      }
-      if (n === 0) continue;
-      sectionOrder++;
-      sections.push({
-        title: subjectName,
-        slug: generateSlug(subjectName),
-        numberOfQuestions: n,
-        order: sectionOrder
-      });
-    }
+    const fallbackSection = fallbackManualSectionInfo();
+    const sectionCounts = new Map<string, { title: string; numberOfQuestions: number }>();
 
-    const questions = rows.map((r, idx) => ({
+    const questions = rows.map((r, idx) => {
+      const sectionSlug =
+        findSubjectSectionSlugForChapter(
+          String(r.chapterId).trim(),
+          String(r.subjectId ?? '').trim()
+        ) ?? fallbackSection.slug;
+      const title =
+        groupedSubjects
+          .map((g) => {
+            const name = g.subject.name?.en ?? g.subject.slug;
+            return { slug: generateSlug(name), title: name };
+          })
+          .find((s) => s.slug === sectionSlug)?.title ?? fallbackSection.title;
+      const prev = sectionCounts.get(sectionSlug);
+      sectionCounts.set(sectionSlug, {
+        title,
+        numberOfQuestions: (prev?.numberOfQuestions ?? 0) + 1
+      });
+      return {
       questionId: r.id,
       order: idx,
-      sectionSlug: findSubjectSectionSlugForChapter(String(r.chapterId).trim()) ?? ''
-    }));
+      sectionSlug
+      };
+    });
+
+    const sections: CreateManualCustomTestBody['sections'] = Array.from(sectionCounts.entries()).map(
+      ([slug, info], idx) => ({
+        title: info.title,
+        slug,
+        numberOfQuestions: info.numberOfQuestions,
+        order: idx + 1
+      })
+    );
 
     return {
       boardId,
       examId,
-      examSlug:"vector-algebra",
+      examSlug,
       name: { en: `Custom Test ${examName} ${istDate}` },
       kind: 'CUSTOM',
       settings: { durationMinutes },
@@ -387,7 +441,10 @@
     createTestError = null;
     manualBgCreatedTestId = null;
     const payload = buildManualCreatePayload();
-    if (!payload) return;
+    if (!payload) {
+      createTestError = 'Please select at least one question before continuing.';
+      return;
+    }
 
     manualConfirmModalOpen = true;
     manualBgCreatePending = true;
@@ -575,7 +632,7 @@
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
     <div class="mb-4 flex justify-start">
-      <BackButton label="Back" />
+      <BackButton label="Back" className="ml-2" onClick={() => void goto('/student/tests/own?mode=manual')} />
     </div>
     {#if isLoading}
       <OwnTestSyllabusSkeleton />
@@ -622,7 +679,7 @@
         examId={examIdFromPage}
         boardId={boardIdFromPage}
       />
-      <footer class="own-bottom-bar mt-5" aria-label="Selection summary">
+      <footer class="own-bottom-bar" aria-label="Selection summary">
         {#if createTestError}
           <div class="mb-3 rounded-lg border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-2 text-sm text-[var(--pc-error-text)]">
             {createTestError}
@@ -644,7 +701,7 @@
         </div>
         <button
           type="button"
-          class="btn-cta-subscription btn-cta-subscription--sm ml-auto shrink-0"
+          class="ml-auto h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50"
           disabled={manualSelectedCount === 0 || manualConfirmModalOpen}
           onclick={handleManualNext}
         >

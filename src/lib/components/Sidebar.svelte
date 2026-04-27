@@ -560,7 +560,7 @@
   async function loadUsersIfMissing() {
     if (isLoadingUsers) return;
 
-    const token = $authStore.token;
+    const token:any = $authStore.token;
     if (!token) return;
 
     if (usersHaveMembershipShape($authStore.users)) return;
@@ -587,7 +587,7 @@
   }
 
   async function reloadMembershipFromServer() {
-    const token = $authStore.token;
+    const token:any = $authStore.token;
     if (!token) return;
 
     isLoadingUsers = true;
@@ -732,7 +732,7 @@
     border-r border-[var(--sb-border-color)]
     bg-[linear-gradient(160deg,var(--sb-bg-from)_0%,var(--sb-bg-to)_100%)]
     shadow-[var(--sb-shadow)]
-    transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+    transition-[width] duration-[var(--sb-aside-transition-duration)] ease-[var(--sb-aside-transition-easing)]
     hidden md:flex
     {isCollapsed
       ? 'w-[var(--sb-width-collapsed)]'
@@ -974,7 +974,7 @@
     </nav>
 
     <div
-      class="px-2.5 py-2.5 border-t border-[var(--sb-divider)] flex-shrink-0"
+      class="flex min-h-[var(--app-bottom-ribbon-min-height)] flex-shrink-0 flex-col justify-center border-t border-[var(--sb-divider)] px-2.5 pt-[var(--app-sidebar-footer-padding-block)] pb-[max(var(--app-sidebar-footer-padding-block),env(safe-area-inset-bottom,0px))]"
     >
       <button
         type="button"
@@ -982,7 +982,7 @@
         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         aria-expanded={!isCollapsed}
         class="
-          w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+          w-full flex items-center gap-3 rounded-xl px-3 py-3
           border-none bg-transparent cursor-pointer
           text-[length:var(--sb-font-size-collapse)] font-medium tracking-[0.08em] uppercase
           text-[var(--sb-collapse-text)]
@@ -1048,9 +1048,9 @@
       backdrop-blur-md
     "
     >
-      <div class="flex flex-1 items-center justify-between gap-4">
-        <div></div>
-        <div class="flex items-center gap-2.5 flex-shrink-0">
+      <div class="flex flex-1 items-center justify-end gap-2 sm:justify-between sm:gap-4">
+        <div class="hidden sm:block"></div>
+        <div class="ml-auto flex flex-shrink-0 items-center gap-1.5 sm:gap-2.5">
           <button
             type="button"
             onclick={onToggleTheme}
@@ -1061,7 +1061,7 @@
               ? "Switch to light mode"
               : "Switch to dark mode"}
             class="
-              relative flex h-11 w-11 items-center justify-center rounded-xl
+              relative flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11
               bg-[var(--topbar-icon-btn-bg)]
               border border-[var(--topbar-icon-btn-border)]
               text-[var(--topbar-icon-btn-color)]
@@ -1116,7 +1116,7 @@
             title="Settings"
             aria-label="Settings"
             class="
-              relative flex h-11 w-11 items-center justify-center rounded-xl
+              relative flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11
               bg-[var(--topbar-icon-btn-bg)]
               border border-[var(--topbar-icon-btn-border)]
               text-[var(--topbar-icon-btn-color)]
@@ -1136,7 +1136,7 @@
             title="Notifications"
             onclick={openNotificationSidebar}
             class="
-              relative flex h-11 w-11 items-center justify-center rounded-xl
+              relative flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11
               bg-[var(--topbar-icon-btn-bg)]
               border border-[var(--topbar-icon-btn-border)]
               text-[var(--topbar-icon-btn-color)]
@@ -1175,7 +1175,7 @@
               onclick={toggleProfileDropdown}
               disabled={selectingMembershipDefault}
               class="
-                flex w-[160px] items-center gap-2.5 rounded-xl px-3 py-2
+                flex w-auto items-center gap-1 rounded-xl px-1.5 py-2 sm:w-[160px] sm:gap-2.5 sm:px-3
                 bg-[var(--topbar-profile-bg)]
                 border border-[var(--topbar-profile-border)]
                 transition-[border] duration-150
@@ -1219,7 +1219,7 @@
                   ? 'rotate-180'
                   : ''}"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sm:h-4 sm:w-4">
                   <path
                     d="M6 9l6 6 6-6"
                     stroke="currentColor"

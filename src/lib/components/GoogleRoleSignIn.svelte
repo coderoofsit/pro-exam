@@ -17,7 +17,7 @@
     onSuccess?: (result: unknown) => void;
   } = $props();
 
-  let googleButtonEl: HTMLDivElement | null = null;
+  let googleButtonEl = $state<HTMLDivElement | null>(null);
   let isGoogleReady = $state(false);
   let isLoading = $state(false);
   let errorMessage = $state("");

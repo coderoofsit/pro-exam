@@ -433,6 +433,12 @@
 	/* modal */
 	.m-overlay{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;cursor:pointer}
 	.m-panel{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);z-index:201;background:var(--analysis-page-bg,#0b0f19);display:flex;flex-direction:column;overflow:hidden;color:var(--page-text,#f8fafc);font-family:'Inter', sans-serif}
+	@media (max-width: 767px) {
+		.m-overlay,
+		.m-panel {
+			left: 0;
+		}
+	}
 	
 	/* dark header with blue bar */
 	.m-header{background:#1e3a8a;flex-shrink:0;z-index:10}
@@ -605,4 +611,127 @@
 	.pf.prev{background:#f1f5f9;color:#475569}
 	.pf.next{background:#22c55e;color:#fff}
 	.pf:disabled{opacity:.35;cursor:not-allowed}
+
+	/* Dark-mode polish: keep copy white and use bluish surfaces in analysis modals. */
+	:global([data-theme="dark"]) .aa-card b,
+	:global([data-theme="dark"]) .aa-card p,
+	:global([data-theme="dark"]) .mh-d-text span,
+	:global([data-theme="dark"]) .sd-item,
+	:global([data-theme="dark"]) .mh-kpi-lbl,
+	:global([data-theme="dark"]) .cc-kpi-lbl,
+	:global([data-theme="dark"]) .pf-count,
+	:global([data-theme="dark"]) .pv-times {
+		color: #e2e8f0;
+	}
+	:global([data-theme="dark"]) .m-panel {
+		background: linear-gradient(180deg, #0b1022 0%, #0a122a 100%);
+	}
+	:global([data-theme="dark"]) .m-header {
+		background: color-mix(
+			in srgb,
+			var(--analysis-tab-active, var(--page-link)) 52%,
+			#0f172a
+		);
+		border-bottom: 1px solid
+			color-mix(
+				in srgb,
+				var(--analysis-tab-active, var(--page-link)) 36%,
+				transparent
+			);
+	}
+	:global([data-theme="dark"]) .m-nav-bar {
+		background: rgba(15, 23, 42, 0.95);
+		border-bottom-color: color-mix(
+			in srgb,
+			var(--analysis-tab-active, var(--page-link)) 28%,
+			transparent
+		);
+	}
+	:global([data-theme="dark"]) .mh-kpi,
+	:global([data-theme="dark"]) .ch-card {
+		background: #18243a;
+		border-color: rgba(96, 165, 250, 0.2);
+	}
+	:global([data-theme="dark"]) .cc-title,
+	:global([data-theme="dark"]) .cc-kpi b {
+		color: #f8fafc;
+	}
+	:global([data-theme="dark"]) .pv-panel {
+		background: linear-gradient(180deg, #0b1022 0%, #0a122a 100%);
+	}
+	:global([data-theme="dark"]) .pv-nav {
+		background: color-mix(in srgb, var(--color-brand-primary, #4f7eff) 50%, #0f172a);
+		border-bottom-color: color-mix(
+			in srgb,
+			var(--color-brand-primary, #4f7eff) 36%,
+			transparent
+		);
+	}
+	:global([data-theme="dark"]) .pv-num {
+		background: rgba(255, 255, 255, 0.14);
+		border-color: color-mix(
+			in srgb,
+			var(--color-brand-primary, #4f7eff) 34%,
+			rgba(255, 255, 255, 0.28)
+		);
+		color: #f8fafc;
+	}
+	:global([data-theme="dark"]) .pv-num.active {
+		background: var(--color-brand-primary, #4f7eff);
+		border-color: var(--color-brand-primary, #4f7eff);
+		color: #fff;
+	}
+	:global([data-theme="dark"]) .pv-badge {
+		background: color-mix(
+			in srgb,
+			var(--analysis-tab-active, var(--page-link)) 22%,
+			transparent
+		);
+		border: 1px solid
+			color-mix(
+				in srgb,
+				var(--analysis-tab-active, var(--page-link)) 46%,
+				transparent
+			);
+		color: color-mix(in srgb, var(--analysis-tab-active, var(--page-link)) 62%, #ffffff);
+	}
+	:global([data-theme="dark"]) .pv-qtext {
+		background: #1a2740;
+		border-color: color-mix(
+			in srgb,
+			var(--analysis-tab-active, var(--page-link)) 30%,
+			transparent
+		);
+		color: #f8fafc;
+	}
+	:global([data-theme="dark"]) .pv-opt {
+		background: #18243a;
+		border-color: color-mix(
+			in srgb,
+			var(--analysis-tab-active, var(--page-link)) 30%,
+			transparent
+		);
+		color: #f8fafc;
+	}
+	:global([data-theme="dark"]) .pv-opt.opt-correct {
+		background: rgba(22, 163, 74, 0.18);
+		border-color: rgba(34, 197, 94, 0.5);
+		color: #ecfdf5;
+	}
+	:global([data-theme="dark"]) .pv-opt.opt-wrong {
+		background: rgba(220, 38, 38, 0.18);
+		border-color: rgba(248, 113, 113, 0.5);
+		color: #fef2f2;
+	}
+	:global([data-theme="dark"]) .pv-footer {
+		border-top-color: color-mix(
+			in srgb,
+			var(--analysis-tab-active, var(--page-link)) 30%,
+			transparent
+		);
+	}
+	:global([data-theme="dark"]) .pf.prev {
+		background: rgba(148, 163, 184, 0.22);
+		color: #f8fafc;
+	}
 </style>

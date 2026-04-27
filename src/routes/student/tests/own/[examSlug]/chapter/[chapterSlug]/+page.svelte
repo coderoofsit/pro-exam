@@ -2,9 +2,9 @@
   import MathText from "$lib/components/MathText.svelte";
   import { questionPromptEnContent } from "$lib/api/questions";
   import { fetchTopicsByChapterSlug, type TopicRow } from "$lib/api/topics";
+  import Pagination from "$lib/components/Pagination.svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import BackButton from "$lib/components/BackButton.svelte";
   import { browser } from "$app/environment";
 
   let { data }: { data: PageData } = $props();
@@ -60,7 +60,13 @@
   const chapterId = $derived((data as any).chapterId ?? "");
 
   const selectionKey = $derived(`own-manual-selected::${examSlug}`);
-  type ManualSelectedRow = { id: string; chapterId: string };
+  type ManualSelectedRow = {
+    id: string;
+    subjectId: string;
+    chapterId: string;
+    chapterGroupId: string;
+    questionText?: string;
+  };
   let selectedRows = $state<ManualSelectedRow[]>([]);
   let selectedIds = $state<Set<string>>(new Set());
 
@@ -74,13 +80,24 @@
 
       if (parsed.every((x) => typeof x === "string")) {
         const ids = (parsed as string[]).filter(Boolean);
-        selectedRows = ids.map((id) => ({ id, chapterId: "" }));
+        selectedRows = ids.map((id) => ({
+          id,
+          subjectId: "",
+          chapterId: "",
+          chapterGroupId: ""
+        }));
         selectedIds = new Set(ids);
         return;
       }
 
       const rows = (parsed as any[])
-        .map((r) => ({ id: String(r?.id ?? ""), chapterId: String(r?.chapterId ?? "") }))
+        .map((r) => ({
+          id: String(r?.id ?? ""),
+          subjectId: String(r?.subjectId ?? "").trim(),
+          chapterId: String(r?.chapterId ?? ""),
+          chapterGroupId: String(r?.chapterGroupId ?? "").trim(),
+          questionText: String(r?.questionText ?? "").trim()
+        }))
         .filter((r) => r.id);
       selectedRows = rows;
       selectedIds = new Set(rows.map((r) => r.id));
@@ -94,7 +111,14 @@
     } catch {}
   });
 
-  function toggleQuestion(id: string) {
+  function questionPreview(q: Question): string {
+    const raw = questionPromptEnContent(q);
+    return String(raw ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  function toggleQuestion(q: Question) {
+    const id = String(q?._id ?? '');
+    if (!id) return;
     const exists = selectedIds.has(id);
     if (exists) {
       selectedRows = selectedRows.filter((r) => r.id !== id);
@@ -103,7 +127,29 @@
     }
 
     const resolvedChapterId = String(chapterId ?? "").trim() || String(data.chapter?._id ?? "");
-    selectedRows = [...selectedRows, { id, chapterId: resolvedChapterId }];
+    const params = browser ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    const subjectParam = String(params.get("subject") ?? "").trim();
+    const unitsParam = String(params.get("units") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const resolvedSubjectId =
+      String((q as any)?.subjectId?._id ?? (q as any)?.subjectId ?? "").trim() ||
+      subjectParam;
+    const resolvedChapterGroupId =
+      String((q as any)?.chapterGroupId?._id ?? (q as any)?.chapterGroupId ?? "").trim() ||
+      String(unitsParam[0] ?? "").trim();
+    selectedRows = [
+      ...selectedRows,
+      {
+        id,
+        subjectId: resolvedSubjectId,
+        chapterId: resolvedChapterId,
+        chapterGroupId: resolvedChapterGroupId,
+        questionText: questionPreview(q)
+      }
+    ];
     selectedIds = new Set(selectedRows.map((r) => r.id));
   }
 
@@ -194,9 +240,6 @@
 
 <div class="own-test-page own-test-chapter-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
-    <div class="mb-4 flex justify-start">
-      <BackButton label="Back" />
-    </div>
     <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">
         {#if paginationMeta}
@@ -209,20 +252,13 @@
         </p>
       </div>
 
-      {#if paginationMeta && paginationMeta.lastPage > 1}
-        <div class="flex flex-wrap items-center justify-center gap-2 lg:px-3">
-          {#if data.safePage > 1}
-            <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
-            <a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
-          {/if}
-          <span class="text-xs text-[var(--page-text-muted)]">
-            Page {data.safePage} / {paginationMeta.lastPage}
-          </span>
-          {#if data.safePage < paginationMeta.lastPage}
-            <a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
-            <a class="pagination-btn" href={questionsPageUrl(paginationMeta.lastPage)}>Last →</a>
-          {/if}
-        </div>
+      {#if data.paginationMeta && data.paginationMeta.lastPage > 1}
+        <Pagination
+          currentPage={data.safePage}
+          totalPages={data.paginationMeta.lastPage}
+          getHref={questionsPageUrl}
+          keyPrefix="top-own-chapter"
+        />
       {/if}
 
       <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -236,7 +272,10 @@
         <button
           type="button"
           class="rounded-lg border border-[var(--page-link)]/45 bg-[var(--page-card-bg)] px-3 py-2 text-sm text-[var(--page-text-muted)] shadow-[var(--shadow-item)] transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:text-[var(--page-link)] hover:shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--page-link)_40%,transparent)]"
-          onclick={() => goto(`/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`)}
+          onclick={() => {
+            if (!browser) return;
+            window.history.back();
+          }}
         >
           ← Resume test creation
         </button>
@@ -333,7 +372,7 @@
           <button
             type="button"
             class="rounded-xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--page-link)]/70"
-            onclick={() => toggleQuestion(q._id)}
+            onclick={() => toggleQuestion(q)}
           >
             <div class="flex gap-3">
               <!-- Center 18px checkbox in the first line box: line-height 1.8 × 1.02rem -->
@@ -342,7 +381,7 @@
                   <input
                     type="checkbox"
                     checked={selectedIds.has(q._id)}
-                    onchange={() => toggleQuestion(q._id)}
+                    onchange={() => toggleQuestion(q)}
                     aria-label="Select question"
                   />
                   <span class="own-check__visual" data-own-accent="0"></span>
@@ -377,20 +416,14 @@
         {/each}
       </div>
 
-      {#if paginationMeta && paginationMeta.lastPage > 1}
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
-          {#if data.safePage > 1}
-            <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
-            <a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
-          {/if}
-          <span class="text-xs text-[var(--page-text-muted)]">
-            Page {data.safePage} / {paginationMeta.lastPage}
-          </span>
-          {#if data.safePage < paginationMeta.lastPage}
-            <a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
-            <a class="pagination-btn" href={questionsPageUrl(paginationMeta.lastPage)}>Last →</a>
-          {/if}
-        </div>
+      {#if data.paginationMeta && data.paginationMeta.lastPage > 1}
+        <Pagination
+          currentPage={data.safePage}
+          totalPages={data.paginationMeta.lastPage}
+          getHref={questionsPageUrl}
+          keyPrefix="bottom-own-chapter"
+          className="mt-6"
+        />
       {/if}
 
     {/if}
