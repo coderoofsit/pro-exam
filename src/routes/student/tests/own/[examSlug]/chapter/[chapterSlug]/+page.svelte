@@ -9,7 +9,7 @@
 
   let { data }: { data: PageData } = $props();
 
-  let topicOptions = $state<TopicRow[]>([]);
+  let topicOptions = $state<TopicRow[]>(data.topics ?? []);
   let topicsLoading = $state(false);
   let selectedTopicSlug = $state<string[]>([]);
   let selectedKind = $state<string[]>([]);
@@ -19,58 +19,38 @@
   let pendingTopic = $state<string[]>([]);
   let pendingKind = $state<string[]>([]);
   let pendingDifficulty = $state<string[]>([]);
-  let topicsLoadedForSlug = $state<string | null>(null);
-  let topicsAbort: AbortController | null = null;
+
+  let questions = $state<any[]>([]);
+  let paginationMeta = $state<any>(null);
+  let isLoading = $state(true);
+  let errorMessage = $state<string | null>(null);
+
+  $effect(() => {
+    isLoading = true;
+    errorMessage = data.message;
+    void data.streamed.questionsRes.then((res) => {
+      if (res) {
+         questions = res.data ?? [];
+         paginationMeta = { total: res.total, lastPage: res.lastPage, limit: res.limit };
+      } else {
+         errorMessage = 'Failed to load questions';
+      }
+      isLoading = false;
+    }).catch((err) => {
+      errorMessage = err.message || 'Failed to load questions';
+      isLoading = false;
+    });
+  });
 
   $effect(() => {
     if (!browser) return;
-    const slug = data.chapterSlug;
-    if (!slug) return;
-    if (topicsLoadedForSlug === slug) return;
-
-    // sync filters from URL
     const params = new URLSearchParams(window.location.search);
     selectedTopicSlug = params.get("topic") ? params.get("topic")!.split(",") : [];
     selectedKind = params.get("kind") ? params.get("kind")!.split(",") : [];
     selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
-
-    topicsLoadedForSlug = slug;
-    // selectedTopicSlug = []; // FIXED: Don't reset selected topics from URL
-    topicOptions = [];
-    topicsAbort?.abort();
-    topicsAbort = new AbortController();
-    const signal = topicsAbort.signal;
-    topicsLoading = true;
-
-    void fetchTopicsByChapterSlug(slug, fetch, { signal })
-      .then((r) => {
-        if (signal.aborted) return;
-        if (topicsLoadedForSlug !== slug) return;
-        if (r.success && r.data) {
-  const unique = new Map<string, TopicRow>();
-
-  for (const t of r.data) {
-    // use slug (better) or fallback to _id
-    const key = t.slug || t._id;
-    if (!unique.has(key)) {
-      unique.set(key, t);
-    }
-  }
-
-  topicOptions = Array.from(unique.values());
-}
-      })
-      .catch((e) => {
-        if (signal.aborted) return;
-        console.error("[own-test chapter topics]", e);
-      })
-      .finally(() => {
-        if (signal.aborted) return;
-        if (topicsLoadedForSlug === slug) topicsLoading = false;
-      });
   });
 
-  type Question = (typeof data.questions)[number];
+  type Question = any;
   type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: string };
 
   const title = $derived(data.chapter?.name?.en ?? data.chapterSlug);
@@ -262,9 +242,9 @@
   <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
     <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">
-        {#if data.paginationMeta}
+        {#if paginationMeta}
           <p class="text-sm text-[var(--own-muted)]">
-            {data.paginationMeta.total} questions • Page {data.safePage} of {data.paginationMeta.lastPage}
+            {paginationMeta.total} questions • Page {data.safePage} of {paginationMeta.lastPage}
           </p>
         {/if}
         <p class="mt-1 text-xs text-[var(--page-text-muted)]">
@@ -373,17 +353,22 @@
       {/if}
     </div>
 
-    {#if data.message}
-      <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-5 py-4 text-sm text-[var(--pc-error-text)]">
-        {data.message}
+    {#if isLoading}
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="h-12 w-12 animate-spin rounded-full border-4 border-[var(--pc-brand)] border-r-transparent"></div>
+        <p class="mt-4 text-sm text-[var(--page-text-muted)]">Loading questions...</p>
       </div>
-    {:else if data.questions.length === 0}
+    {:else if errorMessage}
+      <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-5 py-4 text-sm text-[var(--pc-error-text)]">
+        {errorMessage}
+      </div>
+    {:else if questions.length === 0}
       <div class="rounded-2xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
         No questions found.
       </div>
     {:else}
       <div class="flex flex-col gap-3 pb-24">
-        {#each data.questions as q, index (q._id)}
+        {#each questions as q, index (q._id)}
           <button
             type="button"
             class="rounded-xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--page-link)]/70"
@@ -406,7 +391,7 @@
               <div class="min-w-0 flex-1">
                 <div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
                   <span class="mr-2 inline font-medium text-[var(--page-text-muted)]">
-                    {(data.safePage - 1) * (data.paginationMeta?.limit ?? 25) + index + 1}.
+                    {(data.safePage - 1) * (paginationMeta?.limit ?? 25) + index + 1}.
                   </span>
                   <MathText content={questionPromptEnContent(q)} />
                 </div>
@@ -444,3 +429,14 @@
     {/if}
   </div>
 </div>
+
+<style>
+  :global(.skeleton-pulse) {
+    animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes skeletonPulse {
+    0%, 100% { opacity: 0.8; }
+    50%       { opacity: 0.3; }
+  }
+</style>

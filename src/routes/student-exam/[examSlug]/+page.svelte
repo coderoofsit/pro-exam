@@ -67,6 +67,21 @@
 		if (!browser) return;
 		const slug = examSlug;
 		if (!slug) return;
+
+		// Check store first to prevent redundant API calls on back navigation
+		if (chaptersStore.hasGroupedChapters(slug)) {
+			const groupedList = chaptersStore.getGroupedChapters(slug);
+			if (groupedList && groupedList.length > 0) {
+				rawGrouped = groupedList;
+				const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
+				const subs = buildSubjectsFromGrouped(groupedList, bySubject);
+				chaptersBySubjectSlug = bySubject;
+				subjects = subs;
+				chaptersLoading = false;
+				return;
+			}
+		}
+
 		const seq = ++clientLoadSeq;
 		chaptersLoading = true;
 		chaptersError = null;

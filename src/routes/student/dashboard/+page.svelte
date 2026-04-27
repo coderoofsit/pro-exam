@@ -11,24 +11,29 @@
 
 	const FEATURED_EXAMS_COUNT = 7;
 
-	// preload for "Create Your Own Test"
-	let ownTestsPreloaded = false;
-	let ownTestsPreloadPromise: Promise<void> | null = null;
+	// preload quick-action routes on hover/focus
+	const warmedRoutes = new Set<string>();
+	const warmingRoutes = new Map<string, Promise<void>>();
 
-	function warmOwnTests() {
-		if (ownTestsPreloaded || ownTestsPreloadPromise) return;
+	function warmRoute(route: string) {
+		if (warmedRoutes.has(route) || warmingRoutes.has(route)) return;
 
-		ownTestsPreloadPromise = preloadData('/student/tests/own')
+		const preloadPromise = preloadData(route)
 			.then(() => {
-				ownTestsPreloaded = true;
+				warmedRoutes.add(route);
 			})
 			.catch(() => {
 				// allow retry on failure
 			})
 			.finally(() => {
-				if (!ownTestsPreloaded) ownTestsPreloadPromise = null;
+				if (!warmedRoutes.has(route)) warmingRoutes.delete(route);
 			});
+
+		warmingRoutes.set(route, preloadPromise);
 	}
+
+	const warmOwnTests = () => warmRoute('/student/tests/own');
+	const warmPyqTests = () => warmRoute('/student/tests/pyq');
 
 	function getExamSlug(exam: Exam): string {
 		return (exam as any).slug ?? exam._id;
@@ -138,6 +143,8 @@
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<a
 					href="/student/tests/pyq"
+					onmouseenter={warmPyqTests}
+					onfocus={warmPyqTests}
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
 				>
 					<span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-pink)]" aria-hidden="true">

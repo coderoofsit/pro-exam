@@ -160,7 +160,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 		topicsLoadedFor = cp;
 		topicsLoading = true;
 		void fetchTopicsByChapterSlug(cp, fetch)
-			.then((r) => { if (r.success && r.data) topicOptions = r.data; })
+			.then((r) => { if (r.success && r.data) topicOptions = r.data.topics; })
 			.catch(() => {})
 			.finally(() => { topicsLoading = false; });
 	});

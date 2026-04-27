@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, invalidateAll, preloadData } from "$app/navigation";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
@@ -50,6 +50,8 @@
   let membershipSwitchRequestId = $state(0);
   let fcmTokenFetchInFlight: Promise<string> | null = null;
   let unreadCountRequestInFlight: Promise<void> | null = null;
+  const warmedSidebarRoutes = new Set<string>();
+  const warmingSidebarRoutes = new Map<string, Promise<void>>();
   /** Prevents repeated GET /membership (effect re-runs, dev double-mount, failed attempts). */
   let membershipFetchCompleted = $state(false);
   /** Tracks route transitions so we auto-collapse nav once when entering “create own test” exam flow. */
@@ -103,6 +105,23 @@
   function closeProfileDropdown() {
     profileDropdownOpen = false;
   }
+
+  // Handle click outside to close dropdowns
+  $effect(() => {
+    if (!browser) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Close profile dropdown if clicking outside
+      if (profileDropdownOpen && !target.closest('.profile-dropdown-container')) {
+        profileDropdownOpen = false;
+      }
+    };
+
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  });
 
   function openNotificationSidebar() {
     notificationSidebarOpen = true;
@@ -375,6 +394,9 @@
     const clickedUser = $authStore.users[index];
     if (!clickedUser) return;
 
+    // Immediately close dropdown
+    profileDropdownOpen = false;
+
     // Immediately update local store for instant visual feedback:
     // 1. Mark clicked user as default
     // 2. Sort users so default is at top
@@ -624,11 +646,13 @@
 
     void listenForegroundMessages((payload) => {
       console.log(
-        "[Sidebar][Dot] Foreground push notification received in app (independent of system toast settings).",
+        "[Sidebar][Dot] Foreground push notification received in app.",
         payload,
       );
-      void refreshUnreadNotificationCount();
-      console.log("[Sidebar][Dot] Refreshing unread count from backend.");
+      if (page.url.pathname.endsWith("/dashboard")) {
+        void refreshUnreadNotificationCount();
+        console.log("[Sidebar][Dot] Dashboard active, refreshing unread count.");
+      }
     }).then((off) => {
       if (disposed) {
         console.log(
@@ -655,20 +679,47 @@
 
   $effect(() => {
     if (!browser || !$authStore.token) return;
-    void refreshUnreadNotificationCount();
-  });
-
-  $effect(() => {
-    if (!browser || !$authStore.token) return;
-    if (page.url.pathname !== "/student/dashboard") return;
-    console.log(
-      "[Sidebar][UnreadCount] Dashboard loaded, refreshing unread count in background.",
-    );
+    
+    // Only run on dashboard pages to reduce latency elsewhere
+    if (!page.url.pathname.endsWith("/dashboard")) return;
+    
     void refreshUnreadNotificationCount();
   });
 
   function onToggleTheme() {
     themeStore.toggle();
+  }
+
+  function warmSidebarRoute(route: string) {
+    if (!route.startsWith("/")) return;
+    if (warmedSidebarRoutes.has(route) || warmingSidebarRoutes.has(route)) return;
+
+    const preloadPromise = preloadData(route)
+      .then(() => {
+        warmedSidebarRoutes.add(route);
+      })
+      .catch(() => {
+        // allow retry on failure
+      })
+      .finally(() => {
+        if (!warmedSidebarRoutes.has(route)) warmingSidebarRoutes.delete(route);
+      });
+
+    warmingSidebarRoutes.set(route, preloadPromise);
+  }
+
+  async function handleSidebarNavClick(event: MouseEvent, route: string) {
+    if (!route.startsWith("/")) return;
+    const inFlight = warmingSidebarRoutes.get(route);
+    if (!inFlight) return;
+
+    event.preventDefault();
+    try {
+      await inFlight;
+    } catch {
+      // if preload fails, normal navigation still works via goto
+    }
+    await goto(route);
   }
 </script>
 
@@ -749,6 +800,9 @@
         <a
           id={navItem.id}
           href={navItem.href}
+          onmouseenter={() => warmSidebarRoute(navItem.href)}
+          onfocus={() => warmSidebarRoute(navItem.href)}
+          onclick={(event) => void handleSidebarNavClick(event, navItem.href)}
           title={isCollapsed ? navItem.label : undefined}
           aria-current={active ? "page" : undefined}
           class="
@@ -1115,7 +1169,7 @@
             {/if}
           </button>
 
-          <div class="relative">
+          <div class="relative profile-dropdown-container">
             <button
               type="button"
               onclick={toggleProfileDropdown}
@@ -1456,6 +1510,9 @@
     {@const active = isActive(navItem.href)}
     <a
       href={navItem.href}
+      onmouseenter={() => warmSidebarRoute(navItem.href)}
+      onfocus={() => warmSidebarRoute(navItem.href)}
+      onclick={(event) => void handleSidebarNavClick(event, navItem.href)}
       class="
         relative flex flex-col items-center justify-center gap-1 min-w-[64px]
         transition-colors duration-200

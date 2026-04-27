@@ -2,7 +2,20 @@
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
   import { browser } from '$app/environment';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
+  import { goto, afterNavigate } from '$app/navigation';
+
+  afterNavigate(({ type }) => {
+    if (!browser) return;
+    // After navigating back/forward, scroll the open unit into view
+    if (type === 'popstate' || type === 'leave') {
+      const openUnitId = Array.from(openUnitIds)[0];
+      if (!openUnitId) return;
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-unit-id="${openUnitId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  });
 
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
@@ -13,8 +26,40 @@
 
   let { groupedSubjects, examSlug, examId, boardId }: Props = $props();
 
-  let openSubjectSlug = $state<string>('');
-  let openUnitIds = $state<Set<string>>(new Set());
+  function getInitialState() {
+    if (!groupedSubjects || !groupedSubjects.length) return { subject: '', units: new Set<string>() };
+    const validSubjectSlugs = new Set(groupedSubjects.map((g) => g.subject.slug));
+    const subjectFromQuery = page.url.searchParams.get('subject') ?? '';
+    const selectedSubject = validSubjectSlugs.has(subjectFromQuery)
+      ? subjectFromQuery
+      : groupedSubjects[0]?.subject?.slug || '';
+
+    const allowedUnitIds = new Set(
+      (groupedSubjects.find((g) => g.subject.slug === selectedSubject)?.data ?? []).map((u) =>
+        String(u.chapterGroup._id)
+      )
+    );
+    const unitIdsFromQuery = (page.url.searchParams.get('units') ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((id) => allowedUnitIds.has(id));
+
+    let units = new Set<string>();
+    if (unitIdsFromQuery.length) {
+      units = new Set([unitIdsFromQuery[0]]);
+    } else {
+      const row = groupedSubjects.find((g) => g.subject.slug === selectedSubject);
+      const firstUnit = row?.data?.[0];
+      const firstUnitId = firstUnit ? String(firstUnit.chapterGroup._id) : null;
+      units = new Set(firstUnitId ? [firstUnitId] : []);
+    }
+    return { subject: selectedSubject, units };
+  }
+
+  const initialState = getInitialState();
+  let openSubjectSlug = $state<string>(initialState.subject);
+  let openUnitIds = $state<Set<string>>(initialState.units);
   let subjectRailOpen = $state(true);
   type ManualSelectedRow = {
     id: string;
@@ -123,7 +168,7 @@
       .filter((id) => allowedUnitIds.has(id));
 
     if (unitIdsFromQuery.length) {
-      openUnitIds = new Set(unitIdsFromQuery);
+      openUnitIds = new Set([unitIdsFromQuery[0]]);
     } else {
       const firstUnitId = firstUnitIdForSubject(selectedSubject);
       openUnitIds = new Set(firstUnitId ? [firstUnitId] : []);
@@ -172,11 +217,12 @@
   }
 
   function toggleUnitOpen(unitId: string) {
-  const next = new Set(openUnitIds);
-  if (next.has(unitId)) next.delete(unitId);
-  else next.add(unitId);
-  openUnitIds = next;
-}
+    if (openUnitIds.has(unitId)) {
+      openUnitIds = new Set();
+    } else {
+      openUnitIds = new Set([unitId]);
+    }
+  }
 
   function toggleChapterSelectedQuestions(chapterId: string, e: MouseEvent) {
     e.preventDefault();
@@ -198,17 +244,18 @@
     }
   }
 
-  function chapterHref(chSlug: string) {
+  function chapterHref(chSlug: string, topicSlug?: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
     if (openUnitIds.size > 0) q.set('units', Array.from(openUnitIds).join(','));
+    if (topicSlug) q.set('topic', topicSlug);
     return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
   }
 
-  async function openChapter(chSlug: string, chapterId: string) {
+  async function openChapter(chSlug: string, topicSlug: string, topicId: string) {
     if (openingChapterId) return;
-    openingChapterId = chapterId;
+    openingChapterId = topicId;
     try {
-      await goto(chapterHref(chSlug));
+      await goto(chapterHref(chSlug, topicSlug));
     } finally {
       openingChapterId = null;
     }
@@ -250,7 +297,7 @@
           <div class="min-w-0 flex-1">
             <p class="own-subject-card__title">{row.subject.name?.en ?? row.subject.slug}</p>
             <p class="own-subject-card__meta">
-              {n} unit{n === 1 ? '' : 's'}
+              {n} chapter{n === 1 ? '' : 's'}
             </p>
           </div>
         </div>
@@ -260,7 +307,7 @@
 
   <div class="min-w-0 flex-1 lg:min-h-[min(60vh,480px)]">
     <div class="mb-4 lg:hidden">
-      <h2 class="own-section-label">Units &amp; chapters</h2>
+      <h2 class="own-section-label">Chapters &amp; topics</h2>
     </div>
 
     {#if openSubject}
@@ -270,7 +317,7 @@
           {@const isOpen = openUnitIds.has(uid)}
           {@const totalCh = unit.data.length}
 
-          <div class="own-unit" class:own-unit--open={isOpen}>
+          <div class="own-unit" class:own-unit--open={isOpen} data-unit-id={uid}>
             <div class="own-unit__head own-unit__head--manual">
               <button
                 type="button"
@@ -282,8 +329,11 @@
                   {unit.chapterGroup.name?.en ?? unit.chapterGroup.slug}
                 </span>
 
-                <span class="own-unit__count">
-                  {totalCh} ch.
+                <span class="own-unit__count flex flex-col items-end">
+                  <span>{totalCh} topics</span>
+                  {#if (questionCountByChapterId.get(uid) ?? 0) > 0}
+                    <span class="text-[10px] text-[var(--own-muted)]">{questionCountByChapterId.get(uid)} selected</span>
+                  {/if}
                 </span>
 
                 <span class="own-unit__chev" aria-hidden="true">
