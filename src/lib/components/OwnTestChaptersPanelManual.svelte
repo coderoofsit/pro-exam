@@ -2,7 +2,20 @@
   import type { GroupedSubjectRow, GroupedChapterGroupRow } from '$lib/api/chapters';
   import { browser } from '$app/environment';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
+  import { goto, afterNavigate } from '$app/navigation';
+
+  afterNavigate(({ type }) => {
+    if (!browser) return;
+    // After navigating back/forward, scroll the open unit into view
+    if (type === 'popstate' || type === 'leave') {
+      const openUnitId = Array.from(openUnitIds)[0];
+      if (!openUnitId) return;
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-unit-id="${openUnitId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  });
 
   type Props = {
     groupedSubjects: GroupedSubjectRow[];
@@ -13,8 +26,40 @@
 
   let { groupedSubjects, examSlug, examId, boardId }: Props = $props();
 
-  let openSubjectSlug = $state<string>('');
-  let openUnitIds = $state<Set<string>>(new Set());
+  function getInitialState() {
+    if (!groupedSubjects || !groupedSubjects.length) return { subject: '', units: new Set<string>() };
+    const validSubjectSlugs = new Set(groupedSubjects.map((g) => g.subject.slug));
+    const subjectFromQuery = page.url.searchParams.get('subject') ?? '';
+    const selectedSubject = validSubjectSlugs.has(subjectFromQuery)
+      ? subjectFromQuery
+      : groupedSubjects[0]?.subject?.slug || '';
+
+    const allowedUnitIds = new Set(
+      (groupedSubjects.find((g) => g.subject.slug === selectedSubject)?.data ?? []).map((u) =>
+        String(u.chapterGroup._id)
+      )
+    );
+    const unitIdsFromQuery = (page.url.searchParams.get('units') ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((id) => allowedUnitIds.has(id));
+
+    let units = new Set<string>();
+    if (unitIdsFromQuery.length) {
+      units = new Set([unitIdsFromQuery[0]]);
+    } else {
+      const row = groupedSubjects.find((g) => g.subject.slug === selectedSubject);
+      const firstUnit = row?.data?.[0];
+      const firstUnitId = firstUnit ? String(firstUnit.chapterGroup._id) : null;
+      units = new Set(firstUnitId ? [firstUnitId] : []);
+    }
+    return { subject: selectedSubject, units };
+  }
+
+  const initialState = getInitialState();
+  let openSubjectSlug = $state<string>(initialState.subject);
+  let openUnitIds = $state<Set<string>>(initialState.units);
   let subjectRailOpen = $state(true);
   let manualSelectedRows = $state<Array<{ id: string; chapterId: string }>>([]);
   let openingChapterId = $state<string | null>(null);
@@ -89,7 +134,7 @@
       .filter((id) => allowedUnitIds.has(id));
 
     if (unitIdsFromQuery.length) {
-      openUnitIds = new Set(unitIdsFromQuery);
+      openUnitIds = new Set([unitIdsFromQuery[0]]);
     } else {
       const firstUnitId = firstUnitIdForSubject(selectedSubject);
       openUnitIds = new Set(firstUnitId ? [firstUnitId] : []);
@@ -138,11 +183,12 @@
   }
 
   function toggleUnitOpen(unitId: string) {
-  const next = new Set(openUnitIds);
-  if (next.has(unitId)) next.delete(unitId);
-  else next.add(unitId);
-  openUnitIds = next;
-}
+    if (openUnitIds.has(unitId)) {
+      openUnitIds = new Set();
+    } else {
+      openUnitIds = new Set([unitId]);
+    }
+  }
 
   function chapterHref(chSlug: string, topicSlug?: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
@@ -217,7 +263,7 @@
           {@const isOpen = openUnitIds.has(uid)}
           {@const totalCh = unit.data.length}
 
-          <div class="own-unit" class:own-unit--open={isOpen}>
+          <div class="own-unit" class:own-unit--open={isOpen} data-unit-id={uid}>
             <div class="own-unit__head own-unit__head--manual">
               <button
                 type="button"

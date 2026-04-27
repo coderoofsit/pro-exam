@@ -20,6 +20,28 @@
   let pendingKind = $state<string[]>([]);
   let pendingDifficulty = $state<string[]>([]);
 
+  let questions = $state<any[]>([]);
+  let paginationMeta = $state<any>(null);
+  let isLoading = $state(true);
+  let errorMessage = $state<string | null>(null);
+
+  $effect(() => {
+    isLoading = true;
+    errorMessage = data.message;
+    void data.streamed.questionsRes.then((res) => {
+      if (res) {
+         questions = res.data ?? [];
+         paginationMeta = { total: res.total, lastPage: res.lastPage, limit: res.limit };
+      } else {
+         errorMessage = 'Failed to load questions';
+      }
+      isLoading = false;
+    }).catch((err) => {
+      errorMessage = err.message || 'Failed to load questions';
+      isLoading = false;
+    });
+  });
+
   $effect(() => {
     if (!browser) return;
     const params = new URLSearchParams(window.location.search);
@@ -28,7 +50,7 @@
     selectedDifficulty = params.get("difficulty") ? params.get("difficulty")!.split(",") : [];
   });
 
-  type Question = (typeof data.questions)[number];
+  type Question = any;
   type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: string };
 
   const title = $derived(data.chapter?.name?.en ?? data.chapterSlug);
@@ -177,9 +199,9 @@
     </div>
     <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">
-        {#if data.paginationMeta}
+        {#if paginationMeta}
           <p class="text-sm text-[var(--own-muted)]">
-            {data.paginationMeta.total} questions • Page {data.safePage} of {data.paginationMeta.lastPage}
+            {paginationMeta.total} questions • Page {data.safePage} of {paginationMeta.lastPage}
           </p>
         {/if}
         <p class="mt-1 text-xs text-[var(--page-text-muted)]">
@@ -187,18 +209,18 @@
         </p>
       </div>
 
-      {#if data.paginationMeta && data.paginationMeta.lastPage > 1}
+      {#if paginationMeta && paginationMeta.lastPage > 1}
         <div class="flex flex-wrap items-center justify-center gap-2 lg:px-3">
           {#if data.safePage > 1}
             <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
             <a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
           {/if}
           <span class="text-xs text-[var(--page-text-muted)]">
-            Page {data.safePage} / {data.paginationMeta.lastPage}
+            Page {data.safePage} / {paginationMeta.lastPage}
           </span>
-          {#if data.safePage < data.paginationMeta.lastPage}
+          {#if data.safePage < paginationMeta.lastPage}
             <a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
-            <a class="pagination-btn" href={questionsPageUrl(data.paginationMeta.lastPage)}>Last →</a>
+            <a class="pagination-btn" href={questionsPageUrl(paginationMeta.lastPage)}>Last →</a>
           {/if}
         </div>
       {/if}
@@ -292,17 +314,22 @@
       {/if}
     </div>
 
-    {#if data.message}
-      <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-5 py-4 text-sm text-[var(--pc-error-text)]">
-        {data.message}
+    {#if isLoading}
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="h-12 w-12 animate-spin rounded-full border-4 border-[var(--pc-brand)] border-r-transparent"></div>
+        <p class="mt-4 text-sm text-[var(--page-text-muted)]">Loading questions...</p>
       </div>
-    {:else if data.questions.length === 0}
+    {:else if errorMessage}
+      <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-5 py-4 text-sm text-[var(--pc-error-text)]">
+        {errorMessage}
+      </div>
+    {:else if questions.length === 0}
       <div class="rounded-2xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] p-10 text-center text-[var(--page-text-muted)]">
         No questions found.
       </div>
     {:else}
       <div class="flex flex-col gap-3 pb-24">
-        {#each data.questions as q, index (q._id)}
+        {#each questions as q, index (q._id)}
           <button
             type="button"
             class="rounded-xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--page-link)]/70"
@@ -325,7 +352,7 @@
               <div class="min-w-0 flex-1">
                 <div class="text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
                   <span class="mr-2 inline font-medium text-[var(--page-text-muted)]">
-                    {(data.safePage - 1) * (data.paginationMeta?.limit ?? 25) + index + 1}.
+                    {(data.safePage - 1) * (paginationMeta?.limit ?? 25) + index + 1}.
                   </span>
                   <MathText content={questionPromptEnContent(q)} />
                 </div>
@@ -350,18 +377,18 @@
         {/each}
       </div>
 
-      {#if data.paginationMeta && data.paginationMeta.lastPage > 1}
+      {#if paginationMeta && paginationMeta.lastPage > 1}
         <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
           {#if data.safePage > 1}
             <a class="pagination-btn" href={questionsPageUrl(1)}>← First</a>
             <a class="pagination-btn" href={questionsPageUrl(data.safePage - 1)}>Prev</a>
           {/if}
           <span class="text-xs text-[var(--page-text-muted)]">
-            Page {data.safePage} / {data.paginationMeta.lastPage}
+            Page {data.safePage} / {paginationMeta.lastPage}
           </span>
-          {#if data.safePage < data.paginationMeta.lastPage}
+          {#if data.safePage < paginationMeta.lastPage}
             <a class="pagination-btn" href={questionsPageUrl(data.safePage + 1)}>Next</a>
-            <a class="pagination-btn" href={questionsPageUrl(data.paginationMeta.lastPage)}>Last →</a>
+            <a class="pagination-btn" href={questionsPageUrl(paginationMeta.lastPage)}>Last →</a>
           {/if}
         </div>
       {/if}

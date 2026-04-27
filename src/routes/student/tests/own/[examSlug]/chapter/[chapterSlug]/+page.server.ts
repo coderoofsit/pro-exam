@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ params, url, cookies, fetch }) => {
 		const chapterId = chapter?._id ?? null;
 		if (!chapterId) throw new Error('Chapter not found');
 
-		const questionsRes = await fetchQuestionsByChapter(
+		const questionsPromise = fetchQuestionsByChapter(
 			chapterId,
 			safePage,
 			QUESTIONS_PAGE_LIMIT,
@@ -50,10 +50,9 @@ export const load: PageServerLoad = async ({ params, url, cookies, fetch }) => {
 			chapter,
 			chapterId,
 			topics,
-			questions: questionsRes?.data ?? [],
-			paginationMeta: questionsRes
-				? { total: questionsRes.total, lastPage: questionsRes.lastPage, limit: questionsRes.limit }
-				: null,
+			streamed: {
+				questionsRes: questionsPromise
+			},
 			message: null as string | null
 		};
 	} catch (e) {
