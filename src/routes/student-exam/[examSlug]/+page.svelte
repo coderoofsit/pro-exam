@@ -191,7 +191,7 @@
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<div class="mb-4 flex items-center gap-4">
-					<BackButton label="Back" className="self-center mt-1" />
+					<BackButton label="Back" className="self-center mt-1" onClick={() => void goto("/student/exams")} />
 					<h1 class="text-2xl font-bold leading-none md:text-3xl">
 						{examTitle}
 					</h1>

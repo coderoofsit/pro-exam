@@ -244,18 +244,18 @@
     }
   }
 
-  function chapterHref(chSlug: string, topicSlug?: string) {
+  function chapterHref(chapterSlug: string, topicSlug?: string) {
     const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
     if (openUnitIds.size > 0) q.set('units', Array.from(openUnitIds).join(','));
     if (topicSlug) q.set('topic', topicSlug);
-    return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chSlug)}?${q}`;
+    return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chapterSlug)}?${q}`;
   }
 
-  async function openChapter(chSlug: string, topicSlug: string, topicId: string) {
+  async function openChapter(chapterSlug: string, topicSlug: string, topicId: string) {
     if (openingChapterId) return;
     openingChapterId = topicId;
     try {
-      await goto(chapterHref(chSlug, topicSlug));
+      await goto(chapterHref(chapterSlug, topicSlug));
     } finally {
       openingChapterId = null;
     }
@@ -364,7 +364,7 @@
                           class="flex min-w-0 flex-1 items-center gap-2 text-left"
                           disabled={openingChapterId !== null}
                           aria-busy={openingChapterId === ch._id}
-                          onclick={() => void openChapter(ch.slug, ch._id)}
+                          onclick={() => void openChapter(unit.chapterGroup.slug, ch.slug, ch._id)}
                         >
                           <span class="own-chapter__label">{ch.name?.en ?? ch.slug}</span>
                         </button>
@@ -389,7 +389,7 @@
                           disabled={openingChapterId !== null}
                           aria-busy={openingChapterId === ch._id}
                           aria-label={`Open ${ch.name?.en ?? ch.slug}`}
-                          onclick={() => void openChapter(ch.slug, ch._id)}
+                          onclick={() => void openChapter(unit.chapterGroup.slug, ch.slug, ch._id)}
                         >
                           {#if openingChapterId === ch._id}
                             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>

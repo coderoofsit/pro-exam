@@ -28,7 +28,15 @@
   $effect(() => {
     isLoading = true;
     errorMessage = data.message;
-    void data.streamed.questionsRes.then((res) => {
+    const questionsPromise = data.streamed?.questionsRes;
+    if (!questionsPromise) {
+      isLoading = false;
+      if (!errorMessage) errorMessage = "Failed to load questions";
+      questions = [];
+      paginationMeta = null;
+      return;
+    }
+    void questionsPromise.then((res) => {
       if (res) {
          questions = res.data ?? [];
          paginationMeta = { total: res.total, lastPage: res.lastPage, limit: res.limit };
