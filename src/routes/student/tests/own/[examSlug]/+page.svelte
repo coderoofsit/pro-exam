@@ -45,13 +45,69 @@
 
   let { data }: { data: PageData } = $props();
 
-  const groupedSubjects = $derived(data.groupedSubjects ?? []);
-  const groupedTopicSubjects = $derived(data.groupedTopicSubjects ?? []);
-  const error = $derived(data.error ?? null);
-  const topicsError = $derived(data.topicsError ?? null);
+  // Handle streamed data
+  let topicsResponse = $state<any>(null);
+  let isLoading = $state(true);
+
+  $effect(() => {
+    void data.streamed.topicsResponse.then((res) => {
+      topicsResponse = res;
+      isLoading = false;
+    });
+  });
+
+  const rawSubjects = $derived(topicsResponse?.data?.data ?? []);
+  const examIdFallback = $derived((rawSubjects[0]?.subject?.examId ?? '').trim());
+  const boardIdFallback = $derived((rawSubjects[0]?.subject?.boardId ?? '').trim());
+
+  const groupedSubjects = $derived.by(() => {
+    return rawSubjects.map((row) => ({
+      examId: (row.subject.examId ?? '').trim() || examIdFallback,
+      boardId: (row.subject.boardId ?? '').trim() || boardIdFallback,
+      subject: {
+        _id: row.subject._id,
+        slug: row.subject.slug,
+        name: row.subject.name || { en: row.subject.slug }
+      },
+      data: (row.data ?? []).map((chRow) => ({
+        chapterGroup: {
+          _id: chRow.chapter._id,
+          slug: chRow.chapter.slug,
+          name: chRow.chapter.name || { en: chRow.chapter.slug },
+          order: chRow.chapter.order
+        },
+        data: (chRow.data ?? []).map((topicRow) => ({
+          _id: topicRow._id,
+          slug: topicRow.topicSlug,
+          name: topicRow.topic || { en: topicRow.topicSlug },
+          numberOfQuestions: topicRow.numberOfQuestions,
+          order: topicRow.order
+        }))
+      }))
+    }));
+  });
+
+  const randomModeData = $derived.by(() => {
+    return groupedSubjects.map((s) => ({
+      subject: s.subject,
+      data: (s.data ?? []).map((u) => ({
+        chapter: u.chapterGroup,
+        data: (u.data ?? []).map((t) => ({
+          _id: t._id,
+          topicSlug: t.slug,
+          topic: t.name,
+          numberOfQuestions: t.numberOfQuestions || 0,
+          order: t.order
+        }))
+      }))
+    })) as any[];
+  });
+
+  const error = $derived(topicsResponse?.success === false ? topicsResponse.message : null);
+  const topicsError = $derived(topicsResponse?.success === false ? topicsResponse.message : null);
   const examSlug = $derived(data.examSlug ?? '');
-  const examIdFromPage = $derived(data.examId ?? '');
-  const boardIdFromPage = $derived(data.boardId ?? '');
+  const examIdFromPage = $derived(examIdFallback || '');
+  const boardIdFromPage = $derived(boardIdFallback || '');
 
   const mode = $derived(page.url.searchParams.get('mode'));
   const isManual = $derived(mode === 'manual');
@@ -520,7 +576,12 @@
     <div class="mb-4 flex justify-start">
       <BackButton label="Back" />
     </div>
-    {#if error}
+    {#if isLoading}
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="h-12 w-12 animate-spin rounded-full border-4 border-[var(--pc-brand)] border-r-transparent"></div>
+        <p class="mt-4 text-sm text-[var(--page-text-muted)]">Loading syllabus...</p>
+      </div>
+    {:else if error}
       <div
         class="
         flex items-center gap-3 rounded-2xl px-5 py-4 text-sm
@@ -535,7 +596,7 @@
         </svg>
         {error}
       </div>
-    {:else if (isManual ? groupedSubjects.length === 0 : groupedTopicSubjects.length === 0)}
+    {:else if (isManual ? groupedSubjects.length === 0 : randomModeData.length === 0)}
       <div class="own-empty-panel">
         <span class="own-empty-panel__icon" aria-hidden="true">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -594,7 +655,7 @@
       </footer>
     {:else}
       <OwnTestChaptersPanelRandom
-        groupedSubjects={groupedTopicSubjects}
+        groupedSubjects={randomModeData}
         {examSlug}
         examId={examIdFromPage}
         boardId={boardIdFromPage}
