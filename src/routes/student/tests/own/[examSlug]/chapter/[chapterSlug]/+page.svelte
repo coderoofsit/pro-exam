@@ -396,3 +396,14 @@
     {/if}
   </div>
 </div>
+
+<style>
+  :global(.skeleton-pulse) {
+    animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes skeletonPulse {
+    0%, 100% { opacity: 0.8; }
+    50%       { opacity: 0.3; }
+  }
+</style>
