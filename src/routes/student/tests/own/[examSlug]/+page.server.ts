@@ -1,21 +1,11 @@
-import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
-import { type GroupedSubjectRow } from '$lib/api/chapters';
-import { fetchTopicsByExamSlug, type TopicsByExamSubjectRow } from '$lib/api/topics';
 import type { PageServerLoad } from './$types';
 
-
-export const load: PageServerLoad = async ({ params, fetch, cookies }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const { examSlug } = params;
-	const token = getAuthTokenFromCookies(cookies) ?? null;
 
-	// Stream the topics response to avoid blocking the page render
-	const topicsPromise = fetchTopicsByExamSlug(examSlug, fetch, token);
-
+	// Data is now fetched in the parent +layout.server.ts
+	// SvelteKit automatically merges layout data into the page data.
 	return {
-		examSlug,
-		// We return the raw promise here for SvelteKit to stream it
-		streamed: {
-			topicsResponse: topicsPromise
-		}
+		examSlug
 	};
 };

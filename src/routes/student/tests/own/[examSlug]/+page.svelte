@@ -4,6 +4,7 @@
   import OwnTestChaptersPanelManual from '$lib/components/OwnTestChaptersPanelManual.svelte';
   import OwnTestCreatedSuccessModal from '$lib/components/OwnTestCreatedSuccessModal.svelte';
   import OwnTestQuestionDistributionModalRandom from '$lib/components/OwnTestQuestionDistributionModalRandom.svelte';
+  import OwnTestSyllabusSkeleton from '$lib/components/OwnTestSyllabusSkeleton.svelte';
   import {
     createManualCustomTest,
     createRandomCustomTest,
@@ -577,10 +578,7 @@
       <BackButton label="Back" />
     </div>
     {#if isLoading}
-      <div class="flex flex-col items-center justify-center py-20">
-        <div class="h-12 w-12 animate-spin rounded-full border-4 border-[var(--pc-brand)] border-r-transparent"></div>
-        <p class="mt-4 text-sm text-[var(--page-text-muted)]">Loading syllabus...</p>
-      </div>
+      <OwnTestSyllabusSkeleton />
     {:else if error}
       <div
         class="
