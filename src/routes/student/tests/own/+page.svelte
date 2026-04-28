@@ -6,13 +6,16 @@
   import { page } from '$app/state';
   import type { PageData } from './$types';
 
-  let { data }: { data: PageData } = $props();
+  let {
+    data,
+    basePath = '/student'
+  }: { data: PageData; basePath?: string } = $props();
 
   const exams = $derived(data.exams ?? []);
   const error = $derived(data.error ?? null);
   let openingExamId = $state<string | null>(null);
 
-  /** `?mode=manual|random` — no persistence; back to bare /student/tests/own shows the modal again */
+  /** `?mode=manual|random` — no persistence; back to bare role tests/own shows the modal again */
   const creationMode = $derived.by(() => {
     const m = page.url.searchParams.get('mode');
     return m === 'manual' || m === 'random' ? m : null;
@@ -21,11 +24,11 @@
   const showChoiceModal = $derived(Boolean(!error && creationMode === null));
 
   function onSelect(mode: 'manual' | 'random') {
-    goto(`/student/tests/own?mode=${mode}`, { noScroll: true });
+    goto(`${basePath}/tests/own?mode=${mode}`, { noScroll: true });
   }
 
   function onBack() {
-    goto('/student/tests');
+    goto(`${basePath}/tests`);
   }
 
   async function openExam(item: (typeof exams)[number], e: MouseEvent) {
@@ -33,7 +36,7 @@
     if (openingExamId) return;
     openingExamId = item._id;
     const href =
-      '/student/tests/own/' +
+      `${basePath}/tests/own/` +
       (item?.slug ?? '') +
       (creationMode ? `?mode=${creationMode}` : '');
     try {

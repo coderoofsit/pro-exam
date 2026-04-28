@@ -3,9 +3,10 @@
 
   type Props = {
     batch: StudentBatchItem;
+    basePath?: string;
   };
 
-  let { batch }: Props = $props();
+  let { batch, basePath = '/student/batch' }: Props = $props();
 
   function initials(name: string) {
     return name
@@ -24,7 +25,7 @@
   const statusKey = $derived(batch.status?.toLowerCase() ?? '');
 
   const detailHref = $derived(
-    `/student/batch/${encodeURIComponent(batch.slug?.trim() || batch._id)}`
+    `${basePath}/${encodeURIComponent(batch.slug?.trim() || batch._id)}`
   );
 </script>
 

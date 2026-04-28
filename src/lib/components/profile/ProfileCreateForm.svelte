@@ -2,12 +2,21 @@
   import { createEventDispatcher } from 'svelte';
   import type { Exam } from '$lib/api/exams';
 
+  const teacherSubjects = [
+    { label: 'Mathematics', value: 'mathematics' },
+    { label: 'Chemistry', value: 'chemistry' },
+    { label: 'Physics', value: 'physics' },
+    { label: 'Biology', value: 'biology' }
+  ] as const;
+
   export type ProfileCreateSubmitPayload = {
     firstName: string;
     lastName: string;
     imageFile: File | null;
-    preferredExamIds: string[];
-  };
+  } & (
+    | { preferredExamIds: string[]; preferredSubjectIds?: never }
+    | { preferredExamIds?: never; preferredSubjectIds: string[] }
+  );
 
   let {
     exams = [],
@@ -35,9 +44,20 @@
   let examSearch = $state('');
   let dropdownOpen = $state(false);
   let fileInputEl = $state<HTMLInputElement | null>(null);
+  let dropdownTriggerEl = $state<HTMLButtonElement | null>(null);
+  let dropdownPanelEl = $state<HTMLDivElement | null>(null);
+  let dropdownOpenUpward = $state(false);
+
+  const isTeacherRole = $derived(role === 'teacher');
 
   const filteredExams = $derived(
     exams.filter((e) => e.name.en.toLowerCase().includes(examSearch.toLowerCase()))
+  );
+
+  const filteredTeacherSubjects = $derived(
+    teacherSubjects.filter((subject) =>
+      subject.label.toLowerCase().includes(examSearch.toLowerCase())
+    )
   );
 
   const isFormValid = $derived(
@@ -82,9 +102,47 @@
     return exams.find((e) => e._id === id)?.name.en ?? id;
   }
 
+  function getPreferenceName(id: string) {
+    if (isTeacherRole) {
+      return teacherSubjects.find((subject) => subject.value === id)?.label ?? id;
+    }
+    return getExamName(id);
+  }
+
   function closeDropdown() {
     dropdownOpen = false;
   }
+
+  function updateDropdownDirection() {
+    if (typeof window === 'undefined' || !dropdownTriggerEl || !dropdownPanelEl) return;
+
+    const triggerRect = dropdownTriggerEl.getBoundingClientRect();
+    const panelHeight = dropdownPanelEl.offsetHeight || 300;
+    const gap = 8;
+    const viewportPadding = 16;
+    const spaceBelow = window.innerHeight - triggerRect.bottom - viewportPadding;
+    const spaceAbove = triggerRect.top - viewportPadding;
+
+    dropdownOpenUpward = spaceBelow < panelHeight + gap && spaceAbove > spaceBelow;
+  }
+
+  $effect(() => {
+    if (!dropdownOpen || typeof window === 'undefined') return;
+
+    const frame = window.requestAnimationFrame(() => {
+      updateDropdownDirection();
+    });
+
+    const handleViewportChange = () => updateDropdownDirection();
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  });
 
   function handleSubmit() {
     if (!isFormValid || loading) return;
@@ -93,7 +151,9 @@
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       imageFile,
-      preferredExamIds: selectedExams
+      ...(isTeacherRole
+        ? { preferredSubjectIds: selectedExams }
+        : { preferredExamIds: selectedExams })
     });
   }
 </script>
@@ -176,19 +236,20 @@
 
         <div class="flex flex-col gap-1.5">
           <label class="text-xs font-medium text-[var(--pc-label)]">
-            Preferred exams <span class="text-[var(--pc-label-required)]">*</span>
+            {isTeacherRole ? 'Preferred subjects' : 'Preferred exams'} <span class="text-[var(--pc-label-required)]">*</span>
           </label>
 
           <div class="relative">
             <button
+              bind:this={dropdownTriggerEl}
               type="button"
               onclick={() => { dropdownOpen = !dropdownOpen; examSearch = ''; }}
               class="flex w-full items-center justify-between gap-2 h-11 px-4 rounded-xl text-sm text-left bg-[var(--pc-input-bg)] border border-[var(--pc-input-border)] text-[var(--pc-input-placeholder)] transition-[border] duration-150 hover:border-[var(--pc-input-border-focus)]"
             >
               <span>
                 {selectedExams.length > 0
-                  ? `${selectedExams.length} exam${selectedExams.length > 1 ? 's' : ''} selected`
-                  : 'Select exams…'}
+                  ? `${selectedExams.length} ${isTeacherRole ? `subject${selectedExams.length > 1 ? 's' : ''}` : `exam${selectedExams.length > 1 ? 's' : ''}`} selected`
+                  : `Select ${isTeacherRole ? 'subjects' : 'exams'}…`}
               </span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="flex-shrink-0 transition-transform duration-200 {dropdownOpen ? 'rotate-180' : ''}">
                 <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
@@ -202,7 +263,10 @@
                 onclick={closeDropdown}
               ></button>
 
-              <div class="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-xl bg-[var(--pc-select-bg)] border border-[var(--pc-select-border)] shadow-[var(--pc-select-shadow)]">
+              <div
+                bind:this={dropdownPanelEl}
+                class="absolute left-0 right-0 z-20 overflow-hidden rounded-xl bg-[var(--pc-select-bg)] border border-[var(--pc-select-border)] shadow-[var(--pc-select-shadow)] {dropdownOpenUpward ? 'bottom-full mb-2' : 'top-full mt-2'}"
+              >
                 <div class="p-2 border-b border-[var(--pc-divider)]">
                   <div class="relative">
                     <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--pc-input-placeholder)]">
@@ -214,14 +278,45 @@
                     <input
                       bind:value={examSearch}
                       type="text"
-                      placeholder="Search exams…"
+                      placeholder={isTeacherRole ? 'Search subjects…' : 'Search exams…'}
                       class="h-9 w-full rounded-lg pl-9 pr-3 text-xs outline-none bg-[var(--pc-select-search-bg)] border border-[var(--pc-select-search-border)] text-[var(--pc-input-text)] placeholder:text-[var(--pc-input-placeholder)] focus:border-[var(--pc-input-border-focus)]"
                     />
                   </div>
                 </div>
 
                 <ul class="max-h-[220px] overflow-y-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {#if filteredExams.length > 0}
+                  {#if isTeacherRole}
+                    {#if filteredTeacherSubjects.length > 0}
+                      {#each filteredTeacherSubjects as subject}
+                        {@const picked = selectedExams.includes(subject.value)}
+                        <li>
+                          <button
+                            type="button"
+                            onclick={() => toggleExam(subject.value)}
+                            class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors duration-100 {picked ? 'bg-[var(--pc-select-item-selected-bg)]' : 'hover:bg-[var(--pc-select-item-hover-bg)]'}"
+                          >
+                            <span class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors duration-100 {picked ? 'bg-[var(--pc-select-check)] border-[var(--pc-select-check)]' : 'border-[var(--pc-input-border)] bg-transparent'}">
+                              {#if picked}
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" class="text-white">
+                                  <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                              {/if}
+                            </span>
+
+                            <div class="min-w-0 flex-1">
+                              <p class="truncate text-sm font-medium text-[var(--pc-select-item-text)] {picked ? 'text-[var(--pc-select-item-selected-text)]' : ''}">
+                                {subject.label}
+                              </p>
+                            </div>
+                          </button>
+                        </li>
+                      {/each}
+                    {:else}
+                      <li class="px-4 py-6 text-center text-sm text-[var(--pc-select-empty)]">
+                        No subjects found
+                      </li>
+                    {/if}
+                  {:else if filteredExams.length > 0}
                     {#each filteredExams as exam}
                       {@const picked = selectedExams.includes(exam._id)}
                       <li>
@@ -250,7 +345,9 @@
                       </li>
                     {/each}
                   {:else}
-                    <li class="px-4 py-6 text-center text-sm text-[var(--pc-select-empty)]">No exams found</li>
+                    <li class="px-4 py-6 text-center text-sm text-[var(--pc-select-empty)]">
+                      No exams found
+                    </li>
                   {/if}
                 </ul>
               </div>
@@ -261,7 +358,7 @@
             <div class="mt-2 flex flex-wrap gap-2">
               {#each selectedExams as id}
                 <span class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium bg-[var(--pc-tag-bg)] border border-[var(--pc-tag-border)] text-[var(--pc-tag-text)]">
-                  {getExamName(id)}
+                  {getPreferenceName(id)}
                   <button
                     type="button"
                     onclick={() => removeExam(id)}

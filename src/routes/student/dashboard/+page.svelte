@@ -3,11 +3,18 @@
 	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
+	import type { UserDashboardData } from '$lib/api/userDashboard';
 
 	interface StreamedData {
 		exams: Promise<Exam[]>;
 	}
-	let { data } = $props<{ data: { streamed: StreamedData } }>();
+	let {
+		data,
+		basePath = '/student',
+		dashboard = null
+	} = $props<{ data: { streamed: StreamedData }; basePath?: string; dashboard?: UserDashboardData | Promise<UserDashboardData | null> | null }>();
+
+	const dashboardPromise = $derived(Promise.resolve(dashboard ?? null));
 
 	const FEATURED_EXAMS_COUNT = 7;
 
@@ -32,8 +39,22 @@
 		warmingRoutes.set(route, preloadPromise);
 	}
 
-	const warmOwnTests = () => warmRoute('/student/tests/own');
-	const warmPyqTests = () => warmRoute('/student/tests/pyq');
+	const warmOwnTests = () => warmRoute(`${basePath}/tests/own`);
+	const warmPyqTests = () => warmRoute(`${basePath}/tests/pyq`);
+
+	function fullName(d: UserDashboardData | null) {
+		const f = d?.firstName?.trim() ?? '';
+		const l = d?.lastName?.trim() ?? '';
+		return [f, l].filter(Boolean).join(' ').trim() || '—';
+	}
+
+	function subscriptionLabel(d: UserDashboardData | null) {
+		const s = d?.subscription;
+		if (!s) return '—';
+		if (s.isSubscribed) return 'Subscribed';
+		if (s.isTrial) return 'Trial';
+		return 'Not subscribed';
+	}
 
 	function getExamSlug(exam: Exam): string {
 		return (exam as any).slug ?? exam._id;
@@ -65,7 +86,7 @@
 				Chapter wise PYQ
 			</h2>
 			<a
-				href="/student/exams?pyq=true"
+				href="{basePath}/exams?pyq=true"
 				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
 			>
 				View All
@@ -105,7 +126,7 @@
 				Questions by Chapter
 			</h2>
 			<a
-				href="/student/exams"
+				href="{basePath}/exams"
 				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
 			>
 				View All
@@ -142,7 +163,7 @@
 		<section class="mt-6 min-w-0" aria-label="Quick actions">
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<a
-					href="/student/tests/pyq"
+					href="{basePath}/tests/pyq"
 					onmouseenter={warmPyqTests}
 					onfocus={warmPyqTests}
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
@@ -168,7 +189,7 @@
 				</a>
 
 				<a
-					href="/student/tests/own"
+					href="{basePath}/tests/own"
 					onmouseenter={warmOwnTests}
 					onfocus={warmOwnTests}
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"

@@ -3,7 +3,10 @@
   import type { Exam as ExamApi } from '$lib/api/exams';
   import type { PageData } from './$types';
 
-  let { data }: { data: PageData } = $props();
+  let {
+    data,
+    basePath = '/student/tests/pyq'
+  }: { data: PageData; basePath?: string } = $props();
 
   const exams = $derived((data.exams ?? []) as ExamApi[]);
   const error = $derived(data.error ?? null);
@@ -59,7 +62,7 @@
         boardName="All"
         pyq={true}
         hideBoardTitle={true}
-        basePath="/student/tests/pyq"
+        {basePath}
       />
     {/if}
 

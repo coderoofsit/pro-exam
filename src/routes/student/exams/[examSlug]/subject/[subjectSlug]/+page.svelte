@@ -5,7 +5,10 @@
 	import { chapterStore } from '$lib/stores/chapter';
 	import BackButton from '$lib/components/BackButton.svelte';
 
-	let { data } = $props<{
+let {
+	data,
+	basePath = '/student/exams'
+} = $props<{
 		data: {
 			examSlug: string;
 			subjectSlug: string;
@@ -13,7 +16,8 @@
 			hierarchy: ChaptersHierarchyResponse | null;
 			chapterGroupsChapters: Record<string, Chapter[]>;
 			message: string | null;
-		};
+	};
+	basePath?: string;
 	}>();
 
 	const examSlug = $derived(data.examSlug);
@@ -107,7 +111,7 @@
 									{#if data.chapterGroupsChapters[cg._id]?.length}
 										{#each data.chapterGroupsChapters[cg._id] as ch (ch._id)}
 											<a
-												href={chapterQuestionsPath(examSlug, subjectSlug, ch)}
+												href={chapterQuestionsPath(examSlug, subjectSlug, ch, basePath)}
 												class="mb-1 block truncate rounded px-2 py-1 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
 											>
 												{ch.order}. {ch.name?.en ?? ch.slug}
@@ -119,7 +123,7 @@
 						{/if}
 					{:else}
 						<a
-							href="/student/exams/{examSlug}/subject/{s.slug}"
+							href="{basePath}/{examSlug}/subject/{s.slug}"
 							class="block rounded-lg px-3 py-2 text-sm text-[var(--page-text-muted)] transition hover:bg-[var(--page-bg)] hover:text-[var(--page-text)]"
 						>
 							{s.name?.en ?? s.slug}

@@ -4,13 +4,17 @@
 	import { chapterStore } from '$lib/stores/chapter';
 	import BackButton from '$lib/components/BackButton.svelte';
 
-	let { data } = $props<{
+let {
+	data,
+	basePath = '/student/exams'
+} = $props<{
 		data: {
 			examSlug: string;
 			exam: any | null;
 			hierarchy: ChaptersHierarchyResponse | null;
 			message: string | null;
-		};
+	};
+	basePath?: string;
 	}>();
 
 	function getExamTitleEn(exam: any, fallback: string) {
@@ -53,7 +57,7 @@
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each data.hierarchy.subjects as subject, i (subject._id)}
 					<a
-						href="/student/exams/{data.examSlug}/subject/{subject.slug}"
+						href="{basePath}/{data.examSlug}/subject/{subject.slug}"
 						class="group flex min-h-[120px] items-start gap-4 rounded-2xl border-2 bg-[var(--page-card-bg)] p-5 text-left text-[var(--page-card-heading)] shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md subject-picker-card--{i % 4}"
 					>
 						<div class="flex min-w-0 flex-1 flex-col">

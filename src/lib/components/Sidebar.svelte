@@ -168,25 +168,31 @@
       {
         id: "sidebar-dashboard",
         label: "Home",
-        href: "/tutor/dashboard",
+        href: "/teacher/dashboard",
         icon: "dashboard",
+      },
+      {
+        id: "sidebar-exams",
+        label: "Exams",
+        href: "/teacher/exams",
+        icon: "exams",
       },
       {
         id: "sidebar-tests",
         label: "Tests",
-        href: "/tutor/tests",
+        href: "/teacher/tests",
         icon: "tests",
       },
       {
         id: "sidebar-batch",
         label: "Batch",
-        href: "/tutor/batch",
+        href: "/teacher/batch",
         icon: "batch",
       },
       {
         id: "sidebar-subscription",
-        label: "Subscription",
-        href: "/tutor/subscription",
+        label: "Subscriptions",
+        href: "/teacher/subscription",
         icon: "subscription",
       },
     ],
@@ -202,6 +208,12 @@
         label: "Exams",
         href: "/institute/exams",
         icon: "exams",
+      },
+      {
+        id: "sidebar-tests",
+        label: "Tests",
+        href: "/institute/tests",
+        icon: "tests",
       },
       {
         id: "sidebar-batch",
@@ -504,7 +516,7 @@
 
     const profileCreatePathByRole: Record<Role, string> = {
       student: "/student/profile/create",
-      tutor: "/tutor/profile/create",
+      tutor: "/teacher/profile/create",
       institute: "/institute/profile/create",
     };
 
@@ -1041,7 +1053,7 @@
     <header
       class="
       fixed top-0 right-0 left-0 md:left-[var(--sb-left-offset)] z-40
-      h-[68px] flex items-center px-6
+      h-[72px] flex items-center px-6
       bg-[var(--topbar-bg)]
       border-b border-[var(--topbar-border)]
       shadow-[var(--topbar-shadow)]
@@ -1431,7 +1443,7 @@
     />
     <main
       id="layout-main-scroll"
-      class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-[68px] {isTestAttemptRoute
+      class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-[72px] {isTestAttemptRoute
         ? 'flex flex-col px-0 pb-0'
         : 'px-4 pb-24 md:px-6 md:pb-6'}"
     >

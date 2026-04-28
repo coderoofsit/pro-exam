@@ -259,7 +259,8 @@ export async function createMembershipProfile(params: {
   role: 'student' | 'teacher' | 'institute';
   firstName: string;
   lastName: string;
-  preferredExamIds: string[];
+  preferredExamIds?: string[];
+  preferredSubjectIds?: string[];
   imageFile?: File | null;
   token?: string | null;
 }) {
@@ -269,8 +270,12 @@ export async function createMembershipProfile(params: {
   formData.append('firstName', params.firstName);
   formData.append('lastName', params.lastName);
 
-  params.preferredExamIds.forEach((id) => {
+  params.preferredExamIds?.forEach((id) => {
     formData.append('preferredExamIds[]', id);
+  });
+
+  params.preferredSubjectIds?.forEach((id) => {
+    formData.append('preferredSubjectIds[]', id);
   });
 
   if (params.imageFile) {

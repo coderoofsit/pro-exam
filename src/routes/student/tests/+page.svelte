@@ -12,7 +12,10 @@
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
-  let { data }: { data: PageData } = $props();
+  let {
+    data,
+    basePath = "/student",
+  }: { data: PageData; basePath?: string } = $props();
 
   let ownTestsPreloaded = false;
   let ownTestsPreloadPromise: Promise<void> | null = null;
@@ -20,7 +23,7 @@
   function warmOwnTests() {
     if (ownTestsPreloaded || ownTestsPreloadPromise) return;
 
-    ownTestsPreloadPromise = preloadData("/student/tests/own")
+    ownTestsPreloadPromise = preloadData(`${basePath}/tests/own`)
       .then(() => {
         ownTestsPreloaded = true;
       })
@@ -106,7 +109,7 @@
 
   function resetAll() {
     searchDraft = "";
-    void goto("/student/tests", { replaceState: true });
+    void goto(`${basePath}/tests`, { replaceState: true });
   }
 
   const hasActiveFilters = $derived(
@@ -172,7 +175,7 @@
   function analysisHref(item: GetTestUserItem) {
     const aid = item.attemptId?.trim();
     if (!aid) return "#";
-    return `/student/tests/analysis/${aid}?testName=${encodeURIComponent(testName(item))}`;
+    return `${basePath}/tests/analysis/${aid}?testName=${encodeURIComponent(testName(item))}`;
   }
 
   function getAttemptId(item: GetTestUserItem) {
@@ -217,7 +220,7 @@
     startTestError = null;
     startingTestId = item._id;
 
-    const target = `/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}&prelaunch=1&testName=${encodeURIComponent(name)}`;
+    const target = `${basePath}/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}&prelaunch=1&testName=${encodeURIComponent(name)}`;
 
     void (async () => {
       try {
@@ -301,7 +304,7 @@
     <section class="mt-1 min-w-0" aria-label="Quick actions">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <a
-          href="/student/tests/pyq"
+          href={`${basePath}/tests/pyq`}
           class="group flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"
         >
           <span
@@ -338,7 +341,7 @@
         </a>
 
         <a
-          href="/student/tests/own"
+          href={`${basePath}/tests/own`}
           onmouseenter={warmOwnTests}
           onfocus={warmOwnTests}
           class="group flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"

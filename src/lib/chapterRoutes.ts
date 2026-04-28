@@ -15,8 +15,9 @@ export function chapterQuestionsSegment(ch: { _id: string; slug?: string }): str
 export function chapterQuestionsPath(
 	examSlug: string,
 	subjectSlug: string,
-	chapter: { _id: string; slug?: string }
+	chapter: { _id: string; slug?: string },
+	basePath = '/student/exams'
 ): string {
 	const seg = chapterQuestionsSegment(chapter);
-	return `/student/exams/${examSlug}/subject/${subjectSlug}/questions/${seg}`;
+	return `${basePath}/${examSlug}/subject/${subjectSlug}/questions/${seg}`;
 }
