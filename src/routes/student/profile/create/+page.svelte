@@ -73,7 +73,7 @@
         const sessionRes = await fetch("/auth/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token })
+          body: JSON.stringify({ token, role: "student" })
         });
         if (!sessionRes.ok) {
           submitError = "Could not activate login session. Please login again.";

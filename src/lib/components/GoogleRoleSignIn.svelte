@@ -74,7 +74,7 @@
         const sessionRes = await fetch("/auth/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token })
+          body: JSON.stringify({ token, role: selected })
         });
         if (!sessionRes.ok) {
           errorMessage = "Could not create login session.";

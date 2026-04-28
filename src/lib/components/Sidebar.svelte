@@ -296,12 +296,16 @@
     }
   }
 
-  async function syncAuthSessionCookies(token: string, fcmToken?: string | null) {
+  async function syncAuthSessionCookies(
+    token: string,
+    role: Role | null,
+    fcmToken?: string | null,
+  ) {
     try {
       const response = await fetch("/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, fcmToken: fcmToken ?? "" }),
+        body: JSON.stringify({ token, role: role ?? "", fcmToken: fcmToken ?? "" }),
       });
       return response.ok;
     } catch (error) {
@@ -466,6 +470,7 @@
 
         const sessionSynced = await syncAuthSessionCookies(
           root.data.token,
+          $authStore.role ?? role,
           finalFcmToken,
         );
         if (!sessionSynced) {
