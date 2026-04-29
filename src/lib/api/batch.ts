@@ -40,6 +40,22 @@ export type FetchStudentBatchesParams = {
 	search: string;
 };
 
+export type CreateBatchBody = {
+	name: string;
+	startDate: string;
+	startTime: string;
+	endDate: string;
+	endTime: string;
+	maxCapacity: number;
+};
+
+export type CreateBatchResponse = {
+	success: true;
+	statusCode: number;
+	message: string;
+	data: string;
+};
+
 export async function fetchStudentBatches(
 	params: FetchStudentBatchesParams,
 	fetchFn?: typeof fetch,
@@ -61,6 +77,141 @@ export async function fetchStudentBatches(
 		method: 'GET',
 		fetch: fetchFn,
 		...(options?.token ? { token: options.token } : {})
+	});
+}
+
+export async function createBatch(
+	body: CreateBatchBody,
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	return apiRequest<CreateBatchResponse>({
+		endpoint: '/api/v1/batch',
+		method: 'POST',
+		data: body,
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+export type BatchListApiItem = {
+	_id: string;
+	createdByUserId?: {
+		_id: string;
+		firstName?: string;
+		lastName?: string;
+	};
+	name: string;
+	slug: string;
+	maxCapacity?: number;
+	numberOfStudents?: number;
+	numberOfTeachers?: number;
+	numberOfTests?: number;
+	startDate: string;
+	startTime: string;
+	endDate: string;
+	endTime: string;
+	status: string;
+};
+
+export type BatchListApiResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: BatchListApiItem[];
+};
+
+/** GET /api/v1/batch — teacher/institute batch listing */
+export async function fetchBatches(
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	return apiRequest<BatchListApiResponse>({
+		endpoint: '/api/v1/batch',
+		method: 'GET',
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+export type BatchTestItem = {
+	_id: string;
+	name?: { en?: string; hi?: string } | string;
+	settings?: {
+		startsAt?: string | null;
+		endsAt?: string | null;
+	};
+	slug?: string;
+	kind?: string;
+	status?: string;
+	questionCount?: number;
+	totalMarks?: number;
+};
+
+export type BatchTestsResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: BatchTestItem[] | {
+		currentPage?: number;
+		lastPage?: number;
+		total?: number;
+		data?: BatchTestItem[];
+		items?: BatchTestItem[];
+	};
+};
+
+/** GET /api/v1/batch/tests — tests available for assigning into a batch */
+export async function fetchBatchTests(
+	params: { page?: number; limit?: number; search?: string },
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	const q = new URLSearchParams();
+	if (params.page != null) q.set('page', String(Math.max(1, params.page)));
+	if (params.limit != null) q.set('limit', String(Math.min(100, Math.max(1, params.limit))));
+	const s = params.search?.trim();
+	if (s) q.set('search', s);
+
+	const endpoint = q.size > 0 ? `/api/v1/batch/tests?${q.toString()}` : '/api/v1/batch/tests';
+	return apiRequest<BatchTestsResponse>({
+		endpoint,
+		method: 'GET',
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+export type UpdateBatchAssignmentsBody = {
+	addStudents: string[];
+	addTests: Array<{
+		id: string;
+		startAt: string | null;
+		endAt: string | null;
+		status: string;
+	}>;
+};
+
+export type UpdateBatchAssignmentsResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data?: unknown;
+};
+
+/** PATCH /api/v1/batch/:batchId — add students/tests into a batch */
+export async function updateBatchAssignments(
+	batchId: string,
+	body: UpdateBatchAssignmentsBody,
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	return apiRequest<UpdateBatchAssignmentsResponse>({
+		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}`,
+		method: 'PATCH',
+		data: body,
+		fetch: fetchFn,
+		token: options?.token ?? null
 	});
 }
 

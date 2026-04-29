@@ -215,7 +215,7 @@
 					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
 				</a>
 
-				<!-- <a
+				<a
 					href="/student/batch"
 					data-sveltekit-preload-data="hover"
 					class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
@@ -239,7 +239,7 @@
 						Updated
 					</span>
 					<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
-				</a> -->
+				</a>
 			</div>
 		</section>
 

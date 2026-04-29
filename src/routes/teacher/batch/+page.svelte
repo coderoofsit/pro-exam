@@ -7,8 +7,14 @@
   import StudentBatchCard from '$lib/components/StudentBatchCard.svelte';
   import { debounce } from '$lib/utils/debounce';
   import type { PageData } from './$types';
-  import { fetchGetTestUser, type GetTestUserItem } from '$lib/api/tests';
-  import type { AuthUser } from '$lib/stores/auth';
+  import { fetchBatchStudents, type BatchStudentItem } from '$lib/api/teacher';
+  import {
+    createBatch,
+    fetchBatchTests,
+    type BatchTestItem,
+    type StudentBatchItem,
+    updateBatchAssignments
+  } from '$lib/api/batch';
 
   let { data }: { data: PageData } = $props();
 
@@ -16,6 +22,8 @@
 	let createBatchModalOpen = $state(false);
 	let createBatchStep = $state<1 | 2>(1);
 	let step2Tab = $state<'tests' | 'students'>('tests');
+	let createdBatchId = $state<string | null>(null);
+	let editingBatchId = $state<string | null>(null);
 	let batchName = $state('');
 	let startDate = $state('');
 	let startTime = $state('');
@@ -30,6 +38,12 @@
 	function getParsedMaxCapacity(): number | null {
 		const n = Number(maxCapacity);
 		return Number.isFinite(n) && n > 0 ? n : null;
+	}
+
+	function formatDateForBatchApi(value: string): string {
+		const [year, month, day] = value.split('-');
+		if (!year || !month || !day) return value;
+		return `${day}/${month}/${year}`;
 	}
 
 	function isCreateBatchReady(): boolean {
@@ -51,18 +65,30 @@
   let step2TestsLoading = $state(false);
   let step2TestsLoaded = $state(false);
   let step2TestsError = $state<string | null>(null);
-  let step2Tests = $state<GetTestUserItem[]>([]);
+  let step2Tests = $state<BatchTestItem[]>([]);
   let selectedTestIds = $state<string[]>([]);
 
   let step2StudentsLoading = $state(false);
-  let step2Students = $state<AuthUser[]>([]);
+  let step2Students = $state<BatchStudentItem[]>([]);
   let selectedStudentIds = $state<string[]>([]);
+  let step2PrefetchStarted = $state(false);
 
-  function studentLabel(u: AuthUser) {
+  function studentLabel(u: BatchStudentItem) {
     const f = u.firstName ?? '';
     const l = u.lastName ?? '';
     const name = `${f} ${l}`.trim();
-    return name || u.profileEmail || u.profilePhone || 'Student';
+    const email = u.userProfileId?.email ?? undefined;
+    const phone = u.userProfileId?.phone ?? undefined;
+    return name || email || phone || 'Student';
+  }
+
+  function testLabel(t: BatchTestItem): string {
+    if (typeof t.name === 'string') return t.name;
+    return t.name?.en || t.name?.hi || 'Untitled test';
+  }
+
+  function testStatusLabel(t?: BatchTestItem): string {
+    return (t?.status ?? 'PENDING').toUpperCase();
   }
 
   function isTestSelected(testId: string) {
@@ -99,20 +125,23 @@
   }
 
   async function loadStep2Data() {
-    // Reset selections each time step2 is opened.
-    selectedTestIds = [];
-    selectedStudentIds = [];
-    step2TestsError = null;
-
     if (!step2TestsLoaded) {
       step2TestsLoading = true;
       try {
-        const res = await fetchGetTestUser(
-          { page: 1, limit: 50, search: '' },
+        const res = await fetchBatchTests(
+          { search: '', page: 1, limit: 50 },
           fetch,
           { token: $authStore.token }
         );
-        step2Tests = res.success && res.data?.items ? res.data.items : [];
+        if (res.success) {
+          const payload = res.data?.data;
+          step2Tests = Array.isArray(payload)
+            ? payload
+            : payload?.data ?? payload?.items ?? [];
+        } else {
+          step2Tests = [];
+          step2TestsError = res.message || 'Failed to load tests.';
+        }
         step2TestsLoaded = true;
       } catch {
         step2TestsError = 'Failed to load tests.';
@@ -124,11 +153,50 @@
 
     step2StudentsLoading = true;
     try {
-      // Placeholder until there is a dedicated "institute students" API for batch creation.
-      step2Students = $authStore.users ?? [];
+      const res = await fetchBatchStudents(
+        { page: 1, limit: 20 },
+        fetch,
+        { token: $authStore.token }
+      );
+      step2Students = res.success && res.data?.data?.data ? res.data.data.data : [];
     } finally {
       step2StudentsLoading = false;
     }
+  }
+
+  function prefetchStep2Data() {
+    if (step2PrefetchStarted) return;
+    step2PrefetchStarted = true;
+    void loadStep2Data();
+  }
+
+  function toInputDate(value: string): string {
+    const [d, m, y] = value.split('/');
+    if (!d || !m || !y) return '';
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  function openEditBatchModal(batch: StudentBatchItem) {
+    createBatchModalOpen = true;
+    createBatchStep = 1;
+    step2Tab = 'tests';
+    editingBatchId = batch._id;
+    createdBatchId = batch._id;
+
+    batchName = batch.name ?? '';
+    startDate = toInputDate(batch.startDate ?? '');
+    startTime = batch.startTime ?? '';
+    endDate = toInputDate(batch.endDate ?? '');
+    endTime = batch.endTime ?? '';
+    maxCapacity = '';
+
+    createBatchError = null;
+    createBatchSuccess = null;
+    createBatchSubmitting = false;
+    selectedTestIds = [];
+    selectedStudentIds = [];
+
+    prefetchStep2Data();
   }
 
   onMount(() => {
@@ -167,6 +235,8 @@
 		// Reset on open so users always start fresh.
 		createBatchStep = 1;
 		step2Tab = 'tests';
+		createdBatchId = null;
+		editingBatchId = null;
 		batchName = '';
 		startDate = '';
 		startTime = '';
@@ -178,14 +248,20 @@
 		createBatchSubmitting = false;
 		selectedTestIds = [];
 		selectedStudentIds = [];
+		step2PrefetchStarted = false;
 		step2TestsLoaded = false;
 		step2Tests = [];
 		step2TestsError = null;
 		step2Students = [];
 		createBatchModalOpen = true;
+		prefetchStep2Data();
 	}
 
-	function onFinishCreateBatch() {
+	async function onFinishCreateBatch() {
+		if (!createdBatchId) {
+			createBatchError = 'Batch id is missing. Please save details again.';
+			return;
+		}
 		if (selectedTestIds.length === 0) {
 			createBatchError = 'Select at least one test.';
 			return;
@@ -196,25 +272,47 @@
 		}
 
 		createBatchError = null;
-		createBatchSuccess = 'Batch created in UI draft. Wire final create/assign API when ready.';
-		console.log('[Teacher][CreateBatch][Finish] draft:', {
-			batchMeta: {
-				name: batchName.trim(),
-				startDate,
-				startTime,
-				endDate,
-				endTime,
-				maxCapacity: getParsedMaxCapacity()
-			},
-			selectedTests: selectedTestIds,
-			selectedStudents: selectedStudentIds
-		});
+		createBatchSuccess = null;
+		createBatchSubmitting = true;
+		try {
+			const res = await updateBatchAssignments(
+				createdBatchId,
+				{
+					addStudents: selectedStudentIds,
+					addTests: selectedTestIds.map((id) => {
+            const t = step2Tests.find((x) => x._id === id);
+            return {
+              id,
+              startAt: t?.settings?.startsAt ?? null,
+              endAt: t?.settings?.endsAt ?? null,
+              status: testStatusLabel(t)
+            };
+          })
+				},
+				fetch,
+				{ token: $authStore.token }
+			);
+
+			if (!res.success) {
+				createBatchError = res.message || 'Failed to update batch.';
+				return;
+			}
+
+			createBatchSuccess = res.data?.message || 'Batch updated successfully.';
+			await invalidateAll();
+		} catch {
+			createBatchError = 'Failed to update batch.';
+		} finally {
+			createBatchSubmitting = false;
+		}
 	}
 
 	function closeCreateBatchModal() {
 		createBatchModalOpen = false;
 		createBatchStep = 1;
 		step2Tab = 'tests';
+		createdBatchId = null;
+		editingBatchId = null;
 	}
 
 	async function onCreateBatchClick() {
@@ -227,10 +325,44 @@
 		createBatchSuccess = null;
 		createBatchSubmitting = true;
 		try {
-			// Step 1: collect batch meta, then move to Step 2 UI (assign tests/students).
+			if (editingBatchId) {
+				createdBatchId = editingBatchId;
+				createBatchStep = 2;
+				step2Tab = 'tests';
+				createBatchSuccess = 'Batch details loaded for editing.';
+				prefetchStep2Data();
+				return;
+			}
+
+			const parsedCapacity = getParsedMaxCapacity();
+			if (parsedCapacity == null) {
+				createBatchError = 'Maximum capacity is invalid.';
+				return;
+			}
+
+			const res = await createBatch(
+				{
+					name: batchName.trim(),
+					startDate: formatDateForBatchApi(startDate),
+					startTime,
+					endDate: formatDateForBatchApi(endDate),
+					endTime,
+					maxCapacity: parsedCapacity
+				},
+				fetch,
+				{ token: $authStore.token }
+			);
+
+			if (!res.success) {
+				createBatchError = res.message || 'Could not create batch.';
+				return;
+			}
+
+			createdBatchId = res.data?.data ?? null;
 			createBatchStep = 2;
 			step2Tab = 'tests';
-			await loadStep2Data();
+			createBatchSuccess = res.data?.message || 'Batch created successfully.';
+			prefetchStep2Data();
 		} catch {
 			createBatchError = 'Could not save batch details. Please try again.';
 		} finally {
@@ -324,8 +456,23 @@
       {:else}
         <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" role="list">
           {#each batches as batch (batch._id)}
-            <li>
+            <li class="relative">
               <StudentBatchCard {batch} basePath="/teacher/batch" />
+              <button
+                type="button"
+                class="absolute right-12 top-3 z-30 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-arrow-color)] transition hover:border-[var(--sh-exam-card-hover-border)]"
+                aria-label={`Edit ${batch.name}`}
+                title="Edit batch"
+                onclick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openEditBatchModal(batch);
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
             </li>
           {/each}
         </ul>
@@ -399,7 +546,7 @@
       class="w-full max-w-lg rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-2xl"
       onclick={(e) => e.stopPropagation()}
     >
-      <h2 class="text-lg font-bold text-[var(--sh-section-title)]">Create Batch</h2>
+      <h2 class="text-lg font-bold text-[var(--sh-section-title)]">{editingBatchId ? 'Edit Batch' : 'Create Batch'}</h2>
 
       {#if createBatchStep === 1}
         <form
@@ -508,7 +655,7 @@
             class="rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={!isCreateBatchReady() || createBatchSubmitting}
           >
-            {createBatchSubmitting ? 'Saving…' : 'Save details'}
+            {createBatchSubmitting ? 'Saving…' : (editingBatchId ? 'Edit details' : 'Save details')}
           </button>
         </div>
         </form>
@@ -573,7 +720,10 @@
                           >
                             <div class="flex items-center justify-between gap-3">
                               <span class="min-w-0 flex-1 truncate font-semibold text-[var(--page-text)]">
-                                {t.name?.en ?? 'Untitled test'}
+                                {testLabel(t)}
+                              </span>
+                              <span class="rounded-full border border-[var(--sh-exam-card-border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--sh-ai-sub)]">
+                                {testStatusLabel(t)}
                               </span>
                               <span
                                 class="shrink-0 inline-flex h-5 w-10 items-center justify-center rounded-full text-xs font-bold
@@ -640,7 +790,7 @@
                         </li>
                       {/each}
                       {#if step2Students.length === 0}
-                        <li class="text-xs text-[var(--sh-ai-sub)]">No student list available yet (API not wired).</li>
+                        <li class="text-xs text-[var(--sh-ai-sub)]">No students found.</li>
                       {/if}
                     </ul>
                   {/if}
