@@ -1,6 +1,7 @@
 <script lang="ts">
   import Skeleton from "$lib/components/Skeleton.svelte";
   import GeneralActionButton from "$lib/components/GeneralActionButton.svelte";
+  import Pagination from "$lib/components/Pagination.svelte";
   import { goto, invalidateAll, preloadData } from "$app/navigation";
   import { page } from "$app/state";
   import { authStore, AUTH_STORAGE_KEY } from "$lib/stores/auth";
@@ -582,21 +583,13 @@
             </ul>
 
             {#if showPagination}
-              <nav class="mt-8 flex items-center justify-center gap-4">
-                <GeneralActionButton
-                  text="Prev"
-                  onClick={() => void goToPage(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className={currentPage <= 1 ? "opacity-40" : ""}
-                />
-                <span class="text-sm font-medium">{currentPage} / {totalPages}</span>
-                <GeneralActionButton
-                  text="Next"
-                  onClick={() => void goToPage(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  className={currentPage >= totalPages ? "opacity-40" : ""}
-                />
-              </nav>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                getHref={hrefForPage}
+                keyPrefix="student-tests-list"
+                className="mt-8"
+              />
             {/if}
           {/if}
         {/if}
