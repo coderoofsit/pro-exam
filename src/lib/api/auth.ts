@@ -262,7 +262,7 @@ export async function importInstituteUsers(params: {
   formData.append('file', params.file);
 
   return apiRequest<{ success?: boolean; statusCode?: number; message?: string; data?: unknown }>({
-    endpoint: '/api/v1/institute/import-users',
+    endpoint: '/api/v1/teacher/import-students',
     method: 'POST',
     data: formData,
     token: params.token

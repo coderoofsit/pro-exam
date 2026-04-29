@@ -108,9 +108,9 @@
   <button
     type="button"
     onclick={openModal}
-    class="group flex min-w-0 w-full items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
+    class="group flex min-w-0 w-full items-center gap-3 rounded-xl border border-[color-mix(in_srgb,var(--whatsapp-brand)_25%,var(--sh-exam-card-border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--dash-cta-bg)_96%,transparent),color-mix(in_srgb,var(--whatsapp-brand)_3%,var(--dash-cta-bg)))] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[0_8px_28px_color-mix(in_srgb,var(--whatsapp-brand)_10%,transparent)] transition-all hover:-translate-y-[1px] hover:border-[color-mix(in_srgb,var(--whatsapp-brand)_45%,var(--sh-exam-card-border))] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]"
   >
-    <span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-cyan)]" aria-hidden="true">
+    <span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--whatsapp-brand)]" aria-hidden="true">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
         <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
       </svg>
@@ -143,7 +143,7 @@
 
       <button
         type="button"
-        class="mt-4 w-full rounded-xl border border-[var(--cta-cyan-border)] px-4 py-7 text-left transition-colors duration-150 {dragActive ? 'bg-[var(--dash-cta-hover-bg)]' : 'bg-[color-mix(in_srgb,var(--dash-cta-bg)_85%,transparent)]'}"
+        class="mt-4 w-full rounded-xl border border-[color-mix(in_srgb,var(--whatsapp-brand)_25%,var(--sh-exam-card-border))] px-4 py-7 text-left transition-colors duration-150 {dragActive ? 'bg-[var(--dash-cta-hover-bg)]' : 'bg-[color-mix(in_srgb,var(--dash-cta-bg)_85%,transparent)]'}"
         ondragenter={(e) => {
           e.preventDefault();
           dragActive = true;

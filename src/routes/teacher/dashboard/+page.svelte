@@ -74,23 +74,23 @@
 <div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	{#await dashboardPromise}
 		<section
-			class="mb-6 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
+			class="mb-6 mt-6 rounded-2xl border border-[color-mix(in_srgb,var(--accent-cta-cyan)_20%,var(--sh-exam-card-border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--sh-exam-card-bg)_94%,transparent),color-mix(in_srgb,var(--accent-cta-cyan)_6%,var(--sh-exam-card-bg)))] p-5 shadow-[0_10px_30px_color-mix(in_srgb,var(--accent-cta-cyan)_10%,transparent)]"
 			aria-label="Dashboard summary loading"
 		>
 			<div class="flex flex-wrap items-start justify-between gap-4">
 				<div class="min-w-0 flex-1">
-					<Skeleton width="w-16" height="h-3" />
+					<Skeleton width="w-16" height="h-3" className="bg-[color-mix(in_srgb,var(--accent-cta-cyan)_30%,var(--page-card-border))] opacity-30" />
 					<div class="mt-2">
-						<Skeleton width="w-48 sm:w-64" height="h-7" />
+						<Skeleton width="w-48 sm:w-64" height="h-7" className="bg-[color-mix(in_srgb,var(--accent-cta-pink)_28%,var(--page-card-border))] opacity-30" />
 					</div>
 					<div class="mt-2">
-						<Skeleton width="w-44 sm:w-56" height="h-4" />
+						<Skeleton width="w-44 sm:w-56" height="h-4" className="bg-[color-mix(in_srgb,var(--whatsapp-brand)_24%,var(--page-card-border))] opacity-30" />
 					</div>
 				</div>
 				<div class="flex flex-wrap gap-2">
-					{#each Array(4) as _}
-						<div class="rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_22%,transparent)] px-3 py-1.5">
-							<Skeleton width="w-20" height="h-3" />
+					{#each ['pink', 'cyan', 'green', 'amber'] as tone}
+						<div class="rounded-full px-3 py-1.5 {tone === 'pink' ? 'border border-[color-mix(in_srgb,var(--accent-cta-pink)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_10%,transparent)]' : ''} {tone === 'cyan' ? 'border border-[color-mix(in_srgb,var(--accent-cta-cyan)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-cyan)_10%,transparent)]' : ''} {tone === 'green' ? 'border border-[color-mix(in_srgb,var(--whatsapp-brand)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_10%,transparent)]' : ''} {tone === 'amber' ? 'border border-[color-mix(in_srgb,var(--badge-new-bg)_38%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--badge-new-bg)_14%,transparent)]' : ''}">
+							<Skeleton width="w-20" height="h-3" className="opacity-30" />
 						</div>
 					{/each}
 				</div>
@@ -99,7 +99,7 @@
 	{:then dashboardData}
 		{#if dashboardData}
 			<section
-				class="mb-6 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
+				class="mb-6 mt-6 rounded-2xl border border-[color-mix(in_srgb,var(--accent-cta-cyan)_20%,var(--sh-exam-card-border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--sh-exam-card-bg)_94%,transparent),color-mix(in_srgb,var(--accent-cta-cyan)_6%,var(--sh-exam-card-bg)))] p-5 shadow-[0_10px_30px_color-mix(in_srgb,var(--accent-cta-cyan)_10%,transparent)]"
 				aria-label="Dashboard summary"
 			>
 				<div class="flex flex-wrap items-start justify-between gap-4">
@@ -112,10 +112,10 @@
 						</p>
 					</div>
 					<div class="flex flex-wrap gap-2">
-						<span class="inline-flex items-center rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Teachers: {dashboardData.stats?.teachersCount ?? 0}</span>
-						<span class="inline-flex items-center rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Students: {dashboardData.stats?.studentsCount ?? 0}</span>
-						<span class="inline-flex items-center rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Batches: {dashboardData.stats?.batchesCount ?? 0}</span>
-						<span class="inline-flex items-center rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_28%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Tests: {dashboardData.stats?.testsCount ?? 0}</span>
+						<span class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--accent-cta-pink)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Teachers: {dashboardData.stats?.teachersCount ?? 0}</span>
+						<span class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--accent-cta-cyan)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-cyan)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Students: {dashboardData.stats?.studentsCount ?? 0}</span>
+						<span class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp-brand)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_10%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Batches: {dashboardData.stats?.batchesCount ?? 0}</span>
+						<span class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--badge-new-bg)_38%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--badge-new-bg)_14%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text)]">Tests: {dashboardData.stats?.testsCount ?? 0}</span>
 					</div>
 				</div>
 			</section>
