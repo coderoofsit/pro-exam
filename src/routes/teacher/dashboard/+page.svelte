@@ -72,7 +72,31 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
-	{#await dashboardPromise then dashboardData}
+	{#await dashboardPromise}
+		<section
+			class="mb-6 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
+			aria-label="Dashboard summary loading"
+		>
+			<div class="flex flex-wrap items-start justify-between gap-4">
+				<div class="min-w-0 flex-1">
+					<Skeleton width="w-16" height="h-3" />
+					<div class="mt-2">
+						<Skeleton width="w-48 sm:w-64" height="h-7" />
+					</div>
+					<div class="mt-2">
+						<Skeleton width="w-44 sm:w-56" height="h-4" />
+					</div>
+				</div>
+				<div class="flex flex-wrap gap-2">
+					{#each Array(4) as _}
+						<div class="rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_22%,transparent)] px-3 py-1.5">
+							<Skeleton width="w-20" height="h-3" />
+						</div>
+					{/each}
+				</div>
+			</div>
+		</section>
+	{:then dashboardData}
 		{#if dashboardData}
 			<section
 				class="mb-6 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
@@ -96,6 +120,13 @@
 				</div>
 			</section>
 		{/if}
+	{:catch}
+		<section
+			class="mb-6 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
+			aria-label="Dashboard summary unavailable"
+		>
+			<p class="text-sm text-[var(--page-text-muted)]">Dashboard summary is unavailable right now.</p>
+		</section>
 	{/await}
 
 	<!-- <section class="min-w-0" aria-labelledby="pyq-heading">
@@ -150,7 +181,7 @@
 
 	<section class="mt-6 min-w-0" aria-label="Quick actions">
 		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-			<a href="{basePath}/tests/pyq" onmouseenter={warmPyqTests} onfocus={warmPyqTests} class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-pink-glow)] transition hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]">
+			<a href="{basePath}/tests/pyq" onmouseenter={warmPyqTests} onfocus={warmPyqTests} class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-pink-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--dash-cta-bg)_90%,transparent),color-mix(in_srgb,var(--dash-cta-bg)_75%,transparent))] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[0_8px_28px_color-mix(in_srgb,var(--accent-cta-pink)_18%,transparent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--cta-pink-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]">
 				<span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-pink)]" aria-hidden="true">
 					<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M8 4h8a2 2 0 0 1 2 2v14l-6-3-6 3V6a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 9h6M9 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
 				</span>
@@ -158,7 +189,7 @@
 				<span class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]">New</span>
 				<span class="text-[var(--dash-cta-chevron)] transition group-hover:translate-x-0.5" aria-hidden="true">›</span>
 			</a>
-			<a href="{basePath}/tests/own" onmouseenter={warmOwnTests} onfocus={warmOwnTests} class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]">
+			<a href="{basePath}/tests/own" onmouseenter={warmOwnTests} onfocus={warmOwnTests} class="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--cta-cyan-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--dash-cta-bg)_90%,transparent),color-mix(in_srgb,var(--dash-cta-bg)_75%,transparent))] px-4 py-4 text-left text-[var(--dash-cta-text)] shadow-[0_8px_28px_color-mix(in_srgb,var(--accent-cta-cyan)_18%,transparent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)] sm:min-h-[72px]">
 				<span class="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--accent-cta-cyan)]" aria-hidden="true">
 					<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
 				</span>

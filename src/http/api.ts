@@ -53,8 +53,10 @@ export async function apiRequest<T>({
 		const finalHeaders: Record<string, string> = {
 			...headers
 		};
+		const isFormData =
+			typeof FormData !== 'undefined' && data instanceof FormData;
 
-		if (data !== undefined) {
+		if (data !== undefined && !isFormData) {
 			finalHeaders['Content-Type'] = 'application/json';
 		}
 
@@ -67,7 +69,12 @@ export async function apiRequest<T>({
 		const response = await customFetch(`${PUBLIC_API_BASE_URL}${endpoint}`, {
 			method,
 			headers: finalHeaders,
-			body: data !== undefined ? JSON.stringify(data) : undefined,
+			body:
+				data === undefined
+					? undefined
+					: isFormData
+						? data
+						: JSON.stringify(data),
 			signal
 		});
 

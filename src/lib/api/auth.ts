@@ -254,6 +254,21 @@ export async function updateFcmToken(params: {
   });
 }
 
+export async function importInstituteUsers(params: {
+  file: File;
+  token?: string | null;
+}) {
+  const formData = new FormData();
+  formData.append('file', params.file);
+
+  return apiRequest<{ success?: boolean; statusCode?: number; message?: string; data?: unknown }>({
+    endpoint: '/api/v1/institute/import-users',
+    method: 'POST',
+    data: formData,
+    token: params.token
+  });
+}
+
 export async function createMembershipProfile(params: {
   userId: string;
   role: 'student' | 'teacher' | 'institute';

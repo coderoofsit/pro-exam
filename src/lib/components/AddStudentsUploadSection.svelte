@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { importInstituteUsers } from '$lib/api/auth';
 
   const ACCEPT = '.xlsx,.xls,.csv,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json';
   const allowedExtensions = ['xlsx', 'xls', 'csv', 'json'];
@@ -13,6 +14,8 @@
   let dragActive = $state(false);
   let selectedFile = $state<File | null>(null);
   let errorMessage = $state('');
+  let successMessage = $state('');
+  let submitting = $state(false);
   let modalOpen = $state(false);
 
   function isValidFile(file: File): boolean {
@@ -53,30 +56,51 @@
   function clearSelectedFile() {
     selectedFile = null;
     errorMessage = '';
+    successMessage = '';
     if (fileInputEl) fileInputEl.value = '';
   }
 
   function openModal() {
     modalOpen = true;
     errorMessage = '';
+    successMessage = '';
   }
 
   function closeModal() {
     modalOpen = false;
     dragActive = false;
     errorMessage = '';
+    successMessage = '';
     clearSelectedFile();
     dispatch('cancel');
   }
 
-  function onCreate() {
+  async function onCreate() {
     if (!selectedFile) {
       errorMessage = 'Please select a file before creating.';
       return;
     }
-    dispatch('create', { file: selectedFile });
-    modalOpen = false;
-    dragActive = false;
+
+    errorMessage = '';
+    successMessage = '';
+    submitting = true;
+    try {
+      const response = await importInstituteUsers({ file: selectedFile });
+      if (!response.success) {
+        errorMessage = response.message || 'Failed to import users.';
+        return;
+      }
+
+      successMessage = 'Users imported successfully.';
+      dispatch('create', { file: selectedFile });
+      modalOpen = false;
+      dragActive = false;
+      clearSelectedFile();
+    } catch {
+      errorMessage = 'Unable to upload file. Please try again.';
+    } finally {
+      submitting = false;
+    }
   }
 </script>
 
@@ -155,6 +179,7 @@
             type="button"
             class="text-xs font-medium text-[var(--page-link)] hover:underline"
             onclick={clearSelectedFile}
+          disabled={submitting}
           >
             Remove
           </button>
@@ -164,22 +189,26 @@
       {#if errorMessage}
         <p class="mt-3 text-xs text-[var(--pc-error-text)]">{errorMessage}</p>
       {/if}
+      {#if successMessage}
+        <p class="mt-3 text-xs text-emerald-500">{successMessage}</p>
+      {/if}
 
       <div class="mt-5 flex items-center justify-end gap-2">
         <button
           type="button"
           class="rounded-lg border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-medium text-[var(--page-text)] hover:bg-[color-mix(in_srgb,var(--dash-cta-hover-bg)_45%,transparent)]"
           onclick={closeModal}
+          disabled={submitting}
         >
           Cancel
         </button>
         <button
           type="button"
           class="rounded-lg bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={!selectedFile}
-          onclick={onCreate}
+          disabled={!selectedFile || submitting}
+          onclick={() => void onCreate()}
         >
-          Create
+          {submitting ? 'Creating...' : 'Create'}
         </button>
       </div>
     </div>
