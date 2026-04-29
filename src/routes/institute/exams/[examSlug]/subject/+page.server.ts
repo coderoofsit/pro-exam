@@ -1,1 +1,1 @@
-export { load } from '../../../../../student/exams/[examSlug]/subject/+page.server';
+export { load } from '../../../../student/exams/[examSlug]/subject/+page.server';

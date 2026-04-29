@@ -1,1 +1,1 @@
-export { load } from '../../../../../student/tests/pyq/[examSlug]/+page.server';
+export { load } from '../../../../student/tests/pyq/[examSlug]/+page.server';

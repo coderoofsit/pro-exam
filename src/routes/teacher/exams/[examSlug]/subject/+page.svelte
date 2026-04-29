@@ -1,5 +1,5 @@
 <script lang="ts">
-  import StudentExamSubjectPage from '../../../../../student/exams/[examSlug]/subject/+page.svelte';
+  import StudentExamSubjectPage from '../../../../student/exams/[examSlug]/subject/+page.svelte';
 
   let { data } = $props();
 </script>
