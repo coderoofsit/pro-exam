@@ -200,7 +200,7 @@
 													return async ({ result }: any) => {
 														actionLoadingForId = null;
 														if (result.type === "success") {
-															updateStudentActive(id, false);
+															updateStudentActive(id, true);
 															return;
 														}
 														errorMessage = result?.data?.message || "Unblock failed.";
@@ -230,7 +230,7 @@
 													return async ({ result }: any) => {
 														actionLoadingForId = null;
 														if (result.type === "success") {
-															updateStudentActive(id, true);
+															updateStudentActive(id, false);
 															return;
 														}
 														errorMessage = result?.data?.message || "Block failed.";
