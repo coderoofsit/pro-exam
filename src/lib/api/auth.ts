@@ -8,6 +8,8 @@ export type LinkedProfile = {
   _id: string;
   firstName?: string;
   lastName?: string;
+  email?: string | null;
+  phone?: string | null;
 };
 
 export type LoginUser = {

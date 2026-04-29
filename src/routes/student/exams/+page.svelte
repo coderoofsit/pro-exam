@@ -30,6 +30,7 @@ let {
 
 	const currentPage = $derived(data.currentPage);
 	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
+	const examBasePath = $derived(basePath === '/student/exams' ? undefined : basePath);
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -45,7 +46,7 @@ let {
 
 	$effect(() => {
 		if (!browser) return;
-		data.streamed.examsData.then((examsData) => {
+		data.streamed.examsData.then((examsData: ExamsData) => {
 			if (!examsData?.data.length) return;
 			if (hasCurrentPage) return;
 			examStore.setExamsPage(currentPage, examsData.data, {
@@ -82,7 +83,7 @@ let {
 	{@const visiblePages = Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i)}
 
 
-	<Exam exams={displayExams} boardName="All" pyq={isPyq} hideBoardTitle={true} basePath={basePath} />
+	<Exam exams={displayExams} boardName="All" pyq={isPyq} hideBoardTitle={true} basePath={examBasePath} />
 
 	{#if effectiveLastPage > 1}
 		<div class="mx-auto max-w-7xl px-4 pb-10">

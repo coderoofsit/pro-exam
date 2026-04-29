@@ -1459,6 +1459,7 @@ html[data-theme='dark'] .question-card:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   border-radius: 0.5rem;
   border: 1px solid var(--pagination-btn-border);
   background: var(--pagination-btn-bg);
@@ -1474,8 +1475,8 @@ html[data-theme='dark'] .question-card:hover {
 }
 
 .pagination-btn:hover {
-  border-color: var(--pagination-btn-hover-border);
-  color: var(--pagination-btn-hover-text);
+  border-color: var(--pagination-active-from);
+  color: var(--pagination-active-text);
 }
 
 .pagination-btn.page-link-active:hover {
