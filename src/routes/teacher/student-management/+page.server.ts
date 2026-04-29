@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   const token = getAuthTokenFromCookies(cookies) ?? null;
   const pageNum = Math.max(parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1);
   const limit = Math.min(
-    Math.max(parseInt(url.searchParams.get("limit") ?? "10", 10) || 10, 1),
+    Math.max(parseInt(url.searchParams.get("limit") ?? "20", 10) || 20, 1),
     20,
   );
   const search = (url.searchParams.get("search") ?? "").trim();
