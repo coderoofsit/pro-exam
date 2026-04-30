@@ -163,17 +163,7 @@
 					Student Management
 				</h1> -->
 			</div>
-			<div class="flex justify-center sm:justify-self-center">
-				{#if !loading && totalPages > 1}
-					<Pagination
-						{currentPage}
-						{totalPages}
-						getHref={hrefForPage}
-						windowSize={2}
-						keyPrefix="teacher-student-management-top"
-					/>
-				{/if}
-			</div>
+			<div class="flex justify-center sm:justify-self-center"></div>
 			<div
 				class="flex items-center justify-end gap-3 sm:justify-self-end"
 			>
@@ -196,82 +186,96 @@
 			</div>
 		{/if}
 
-		<div class="mb-4 flex flex-wrap items-center gap-3">
-			<form
-				class="flex w-full max-w-[520px] items-center gap-2"
-				onsubmit={(e) => {
-					e.preventDefault();
-					void applySearch();
-				}}
-			>
-				<input
-					type="search"
-					placeholder="Search by name"
-					class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)]"
-					bind:value={searchInput}
-				/>
-			</form>
-
-			{#if selectedStudentIds.length > 0 || actionLoadingForId === "remove:selected"}
+		<div class="mb-4 flex flex-col gap-3">
+			<div class="flex flex-wrap items-center gap-3">
 				<form
-					method="POST"
-					action="?/remove"
-					class="ml-auto"
-					bind:this={removeSelectedFormEl}
-					use:enhance={() => {
-						const ids = [...selectedStudentIds];
-						return async ({ result }: any) => {
-							actionLoadingForId = null;
-							if (result.type === "success") {
-								removeStudentsFromList(ids);
-								selectedStudentIds = selectedStudentIds.filter(
-									(id) => !ids.includes(id),
-								);
-								bulkRemoveConfirmOpen = false;
-								return;
-							}
-							errorMessage =
-								result?.data?.message || "Remove failed.";
-						};
-					}}
+					class="flex w-full max-w-[260px] items-center gap-2"
 					onsubmit={(e) => {
-						if (!allowBulkRemoveSubmit) {
-							e.preventDefault();
-							return;
-						}
-						allowBulkRemoveSubmit = false;
-						actionLoadingForId = "remove:selected";
-						errorMessage = null;
+						e.preventDefault();
+						void applySearch();
 					}}
 				>
-					{#each selectedStudentIds as id (id)}
-						<input type="hidden" name="students" value={id} />
-					{/each}
-					<button
-						type="button"
-						disabled={!canRemove() ||
-							!selectedStudentIds.length ||
-							actionLoadingForId === "remove:selected"}
-						class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer"
-						onclick={() => {
-							if (!canRemove()) {
+					<input
+						type="search"
+						placeholder="Search by name"
+						class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)]"
+						bind:value={searchInput}
+					/>
+				</form>
+
+				{#if selectedStudentIds.length > 0 || actionLoadingForId === "remove:selected"}
+					<form
+						method="POST"
+						action="?/remove"
+						class="ml-auto"
+						bind:this={removeSelectedFormEl}
+						use:enhance={() => {
+							const ids = [...selectedStudentIds];
+							return async ({ result }: any) => {
+								actionLoadingForId = null;
+								if (result.type === "success") {
+									removeStudentsFromList(ids);
+									selectedStudentIds = selectedStudentIds.filter(
+										(id) => !ids.includes(id),
+									);
+									bulkRemoveConfirmOpen = false;
+									return;
+								}
 								errorMessage =
-									"Remove is available only for independent teachers.";
+									result?.data?.message || "Remove failed.";
+							};
+						}}
+						onsubmit={(e) => {
+							if (!allowBulkRemoveSubmit) {
+								e.preventDefault();
 								return;
 							}
-							if (!selectedStudentIds.length) {
-								errorMessage = "Select at least one student.";
-								return;
-							}
+							allowBulkRemoveSubmit = false;
+							actionLoadingForId = "remove:selected";
 							errorMessage = null;
-							bulkRemoveConfirmOpen = true;
 						}}
 					>
-						{actionLoadingForId === "remove:selected"
-							? "Removing…"
-							: `Remove selected (${selectedStudentIds.length})`}
-					</button>
-				</form>
+						{#each selectedStudentIds as id (id)}
+							<input type="hidden" name="students" value={id} />
+						{/each}
+						<button
+							type="button"
+							disabled={!canRemove() ||
+								!selectedStudentIds.length ||
+								actionLoadingForId === "remove:selected"}
+							class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer"
+							onclick={() => {
+								if (!canRemove()) {
+									errorMessage =
+										"Remove is available only for independent teachers.";
+									return;
+								}
+								if (!selectedStudentIds.length) {
+									errorMessage = "Select at least one student.";
+									return;
+								}
+								errorMessage = null;
+								bulkRemoveConfirmOpen = true;
+							}}
+						>
+							{actionLoadingForId === "remove:selected"
+								? "Removing…"
+								: `Remove selected (${selectedStudentIds.length})`}
+						</button>
+					</form>
+				{/if}
+			</div>
+
+			{#if !loading && totalPages > 1}
+				<div class="flex justify-center">
+					<Pagination
+						{currentPage}
+						{totalPages}
+						getHref={hrefForPage}
+						windowSize={2}
+						keyPrefix="teacher-student-management-top"
+					/>
+				</div>
 			{/if}
 		</div>
 
