@@ -16,7 +16,7 @@
 	let selectedStudentIds = $state<string[]>([]);
 	let bulkRemoveConfirmOpen = $state(false);
 	let allowBulkRemoveSubmit = $state(false);
-	let removeSelectedFormEl: HTMLFormElement | null = null;
+	let removeSelectedFormEl = $state<HTMLFormElement | null>(null);
 
 	let mode = $state<string | null>(null);
 	let studentsData = $state<TeacherStudentsRow[]>([]);
@@ -159,9 +159,9 @@
 			class="mb-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
 		>
 			<div class="min-w-0 sm:justify-self-start">
-				<h1 class="text-2xl font-bold text-[var(--page-text)]">
+				<!-- <h1 class="text-2xl font-bold text-[var(--page-text)]">
 					Student Management
-				</h1>
+				</h1> -->
 			</div>
 			<div class="flex justify-center sm:justify-self-center">
 				{#if !loading && totalPages > 1}
@@ -177,14 +177,14 @@
 			<div
 				class="flex items-center justify-end gap-3 sm:justify-self-end"
 			>
-				<button
+				<!-- <button
 					type="button"
 					class="inline-flex cursor-pointer items-center rounded-xl border px-4 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
 					disabled={loading}
 					onclick={() => void invalidateAll()}
 				>
 					{loading ? "Refreshing…" : "Refresh"}
-				</button>
+				</button> -->
 			</div>
 		</header>
 
@@ -198,7 +198,7 @@
 
 		<div class="mb-4 flex flex-wrap items-center gap-3">
 			<form
-				class="ml-auto flex min-w-[260px] items-center gap-2"
+				class="flex w-full max-w-[520px] items-center gap-2"
 				onsubmit={(e) => {
 					e.preventDefault();
 					void applySearch();
@@ -206,70 +206,73 @@
 			>
 				<input
 					type="search"
-					placeholder="Search by name or email"
+					placeholder="Search by name"
 					class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)]"
 					bind:value={searchInput}
 				/>
 			</form>
 
-			<form
-				method="POST"
-				action="?/remove"
-				bind:this={removeSelectedFormEl}
-				use:enhance={() => {
-					const ids = [...selectedStudentIds];
-					return async ({ result }: any) => {
-						actionLoadingForId = null;
-						if (result.type === "success") {
-							removeStudentsFromList(ids);
-							selectedStudentIds = selectedStudentIds.filter(
-								(id) => !ids.includes(id),
-							);
-							bulkRemoveConfirmOpen = false;
-							return;
-						}
-						errorMessage =
-							result?.data?.message || "Remove failed.";
-					};
-				}}
-				onsubmit={(e) => {
-					if (!allowBulkRemoveSubmit) {
-						e.preventDefault();
-						return;
-					}
-					allowBulkRemoveSubmit = false;
-					actionLoadingForId = "remove:selected";
-					errorMessage = null;
-				}}
-			>
-				{#each selectedStudentIds as id (id)}
-					<input type="hidden" name="students" value={id} />
-				{/each}
-				<button
-					type="button"
-					disabled={!canRemove() ||
-						!selectedStudentIds.length ||
-						actionLoadingForId === "remove:selected"}
-					class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer"
-					onclick={() => {
-						if (!canRemove()) {
+			{#if selectedStudentIds.length > 0 || actionLoadingForId === "remove:selected"}
+				<form
+					method="POST"
+					action="?/remove"
+					class="ml-auto"
+					bind:this={removeSelectedFormEl}
+					use:enhance={() => {
+						const ids = [...selectedStudentIds];
+						return async ({ result }: any) => {
+							actionLoadingForId = null;
+							if (result.type === "success") {
+								removeStudentsFromList(ids);
+								selectedStudentIds = selectedStudentIds.filter(
+									(id) => !ids.includes(id),
+								);
+								bulkRemoveConfirmOpen = false;
+								return;
+							}
 							errorMessage =
-								"Remove is available only for independent teachers.";
+								result?.data?.message || "Remove failed.";
+						};
+					}}
+					onsubmit={(e) => {
+						if (!allowBulkRemoveSubmit) {
+							e.preventDefault();
 							return;
 						}
-						if (!selectedStudentIds.length) {
-							errorMessage = "Select at least one student.";
-							return;
-						}
+						allowBulkRemoveSubmit = false;
+						actionLoadingForId = "remove:selected";
 						errorMessage = null;
-						bulkRemoveConfirmOpen = true;
 					}}
 				>
-					{actionLoadingForId === "remove:selected"
-						? "Removing…"
-						: `Remove selected (${selectedStudentIds.length})`}
-				</button>
-			</form>
+					{#each selectedStudentIds as id (id)}
+						<input type="hidden" name="students" value={id} />
+					{/each}
+					<button
+						type="button"
+						disabled={!canRemove() ||
+							!selectedStudentIds.length ||
+							actionLoadingForId === "remove:selected"}
+						class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer"
+						onclick={() => {
+							if (!canRemove()) {
+								errorMessage =
+									"Remove is available only for independent teachers.";
+								return;
+							}
+							if (!selectedStudentIds.length) {
+								errorMessage = "Select at least one student.";
+								return;
+							}
+							errorMessage = null;
+							bulkRemoveConfirmOpen = true;
+						}}
+					>
+						{actionLoadingForId === "remove:selected"
+							? "Removing…"
+							: `Remove selected (${selectedStudentIds.length})`}
+					</button>
+				</form>
+			{/if}
 		</div>
 
 		{#if loading}
@@ -311,7 +314,6 @@
 						<tr>
 							<th>
 								<div class="flex items-center gap-2">
-									<span>STUDENT</span>
 									<input
 										id="select-all-visible"
 										type="checkbox"
@@ -323,10 +325,12 @@
 												).checked,
 											)}
 									/>
+									<span>STUDENT</span>
 								</div>
 							</th>
 							<th>Contact</th>
 							<th>Status</th>
+							<th>Action</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -377,6 +381,14 @@
 											>Active</span
 										>
 									{/if}
+								</td>
+								<td>
+									<button
+										type="button"
+										class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer"
+									>
+										View details
+									</button>
 								</td>
 							</tr>
 						{/each}

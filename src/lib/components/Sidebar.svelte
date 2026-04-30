@@ -184,15 +184,15 @@
         icon: "tests",
       },
       {
-        id: "sidebar-student-management",
-        label: "Student Management",
-        href: "/teacher/student-management",
-        icon: "batch",
-      },
-      {
         id: "sidebar-batch",
         label: "Batch",
         href: "/teacher/batch",
+        icon: "batch",
+      },
+      {
+        id: "sidebar-student-management",
+        label: "Student Management",
+        href: "/teacher/student-management",
         icon: "batch",
       },
       {
