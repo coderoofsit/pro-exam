@@ -152,7 +152,7 @@
 </svelte:head>
 
 <div
-	class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300"
+	class="min-h-full bg-[var(--page-bg)] text-[var(--page-text)] font-sans transition-colors duration-300"
 >
 	<div class="mx-auto max-w-6xl px-4 py-6">
 		<header
@@ -362,7 +362,9 @@
 									</div>
 								</td>
 								<td>
-									<div>{s.email ? s.email : "—"}</div>
+									<div class="text-[var(--page-text)] transition-colors hover:text-[var(--page-link)]">
+										{s.email ? s.email : "—"}
+									</div>
 									<div
 										class="mt-1 text-xs text-[var(--page-text-muted)]"
 									>
