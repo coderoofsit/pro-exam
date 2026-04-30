@@ -190,6 +190,9 @@ export type UpdateBatchAssignmentsBody = {
 		endAt: string | null;
 		status: string;
 	}>;
+	removeStudents?: string[];
+	removeTeachers?: string[];
+	removeTests?: string[];
 };
 
 export type UpdateBatchAssignmentsResponse = {
@@ -197,6 +200,100 @@ export type UpdateBatchAssignmentsResponse = {
 	statusCode: number;
 	message: string;
 	data?: unknown;
+};
+
+export type BatchTeacherItem = {
+	userId: string;
+	joinedAt: string;
+	isActive: boolean;
+	firstName?: string;
+	lastName?: string;
+	name?: string;
+	email?: string;
+	phone?: string;
+	profileImage?: string;
+	role?: string;
+};
+
+export type BatchStudentItem = BatchTeacherItem;
+
+export type BatchTestListItem = {
+	testId: string;
+	assignedAt: string;
+	isActive: boolean;
+	name?: { en?: string; hi?: string } | string;
+	slug?: string;
+	settings?: {
+		startDate?: string | null;
+		startTime?: string | null;
+		endDate?: string | null;
+		endTime?: string | null;
+	};
+};
+
+export type BatchItemsPagination = {
+	page: number;
+	limit: number;
+	totalItems: number;
+	totalPages: number;
+	hasNextPage: boolean;
+	hasPrevPage: boolean;
+};
+
+export type BatchTeachersItemsPayload = {
+	type: 'teacher';
+	search?: string;
+	items: BatchTeacherItem[];
+	pagination: BatchItemsPagination;
+	batchDetails?: {
+		batchId: string;
+		name: string;
+		slug: string;
+		startDate?: string;
+		endDate?: string;
+		startTime?: string;
+		endTime?: string;
+		maxCapacity?: number;
+		numberOfStudents?: number;
+		numberOfTeachers?: number;
+		numberOfTests?: number;
+		status?: string;
+	};
+};
+
+export type BatchTeachersItemsResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: BatchTeachersItemsPayload;
+};
+
+export type BatchStudentsItemsPayload = {
+	type: 'student';
+	search?: string;
+	items: BatchStudentItem[];
+	pagination: BatchItemsPagination;
+};
+
+export type BatchStudentsItemsResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: BatchStudentsItemsPayload;
+};
+
+export type BatchTestsItemsPayload = {
+	type: 'test';
+	search?: string;
+	items: BatchTestListItem[];
+	pagination: BatchItemsPagination;
+};
+
+export type BatchTestsItemsResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: BatchTestsItemsPayload;
 };
 
 /** PATCH /api/v1/batch/:batchId — add students/tests into a batch */
@@ -210,6 +307,102 @@ export async function updateBatchAssignments(
 		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}`,
 		method: 'PATCH',
 		data: body,
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+export type RemoveBatchItemsBody = {
+	removeStudents?: string[];
+	removeTeachers?: string[];
+	removeTests?: string[];
+};
+
+export async function removeBatchItems(
+	batchId: string,
+	body: RemoveBatchItemsBody,
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	return apiRequest<UpdateBatchAssignmentsResponse>({
+		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}`,
+		method: 'PATCH',
+		data: body,
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+/** GET /api/v1/batch/:batchId/items?type=teacher */
+export async function fetchBatchTeachersItems(
+	batchId: string,
+	params?: { page?: number; limit?: number; search?: string },
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	const page = Math.max(1, params?.page ?? 1);
+	const limit = Math.min(100, Math.max(1, params?.limit ?? 20));
+	const q = new URLSearchParams({
+		page: String(page),
+		limit: String(limit),
+		type: 'teacher'
+	});
+	const s = params?.search?.trim();
+	if (s) q.set('search', s);
+
+	return apiRequest<BatchTeachersItemsResponse>({
+		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}/items?${q.toString()}`,
+		method: 'GET',
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+/** GET /api/v1/batch/:batchId/items?type=student */
+export async function fetchBatchStudentsItems(
+	batchId: string,
+	params?: { page?: number; limit?: number; search?: string },
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	const page = Math.max(1, params?.page ?? 1);
+	const limit = Math.min(100, Math.max(1, params?.limit ?? 20));
+	const q = new URLSearchParams({
+		page: String(page),
+		limit: String(limit),
+		type: 'student'
+	});
+	const s = params?.search?.trim();
+	if (s) q.set('search', s);
+
+	return apiRequest<BatchStudentsItemsResponse>({
+		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}/items?${q.toString()}`,
+		method: 'GET',
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+/** GET /api/v1/batch/:batchId/items?type=test */
+export async function fetchBatchTestsItems(
+	batchId: string,
+	params?: { page?: number; limit?: number; search?: string },
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	const page = Math.max(1, params?.page ?? 1);
+	const limit = Math.min(100, Math.max(1, params?.limit ?? 20));
+	const q = new URLSearchParams({
+		page: String(page),
+		limit: String(limit),
+		type: 'test'
+	});
+	const s = params?.search?.trim();
+	if (s) q.set('search', s);
+
+	return apiRequest<BatchTestsItemsResponse>({
+		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}/items?${q.toString()}`,
+		method: 'GET',
 		fetch: fetchFn,
 		token: options?.token ?? null
 	});
