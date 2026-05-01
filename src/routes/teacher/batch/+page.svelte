@@ -5,6 +5,7 @@
   import { authStore, AUTH_STORAGE_KEY } from '$lib/stores/auth';
   import { onMount } from 'svelte';
   import StudentBatchCard from '$lib/components/StudentBatchCard.svelte';
+  import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
   import { debounce } from '$lib/utils/debounce';
   import type { PageData } from './$types';
   import { fetchBatchStudents, type BatchStudentItem } from '$lib/api/teacher';
@@ -12,7 +13,9 @@
     createBatch,
     fetchBatchTests,
     type BatchTestItem,
+    type CreateBatchBody,
     type StudentBatchItem,
+    updateBatchDetails,
     updateBatchAssignments
   } from '$lib/api/batch';
 
@@ -34,6 +37,14 @@
 	let createBatchError = $state<string | null>(null);
 	let createBatchSuccess = $state<string | null>(null);
 	let createBatchSubmitting = $state(false);
+	let editingBatchOriginal = $state<{
+		name: string;
+		startDate: string;
+		startTime: string;
+		endDate: string;
+		endTime: string;
+		maxCapacity: number | null;
+	} | null>(null);
 
 	function getParsedMaxCapacity(): number | null {
 		const n = Number(maxCapacity);
@@ -52,8 +63,7 @@
 			startDate.trim().length > 0 &&
 			startTime.trim().length > 0 &&
 			endDate.trim().length > 0 &&
-			endTime.trim().length > 0 &&
-			getParsedMaxCapacity() != null
+			endTime.trim().length > 0
 		);
 	}
 
@@ -63,13 +73,19 @@
 
   // Step 2 selection state
   let step2TestsLoading = $state(false);
+  let step2TestsLoadingMore = $state(false);
   let step2TestsLoaded = $state(false);
   let step2TestsError = $state<string | null>(null);
   let step2Tests = $state<BatchTestItem[]>([]);
+  let step2TestsPage = $state(1);
+  let step2TestsLastPage = $state(1);
   let selectedTestIds = $state<string[]>([]);
 
   let step2StudentsLoading = $state(false);
+  let step2StudentsLoadingMore = $state(false);
   let step2Students = $state<BatchStudentItem[]>([]);
+  let step2StudentsPage = $state(1);
+  let step2StudentsLastPage = $state(1);
   let selectedStudentIds = $state<string[]>([]);
   let step2PrefetchStarted = $state(false);
 
@@ -100,6 +116,12 @@
       ? selectedTestIds.filter((id) => id !== testId)
       : [...selectedTestIds, testId];
   }
+  function toggleAllTests(checked: boolean) {
+    const visibleIds = step2Tests.map((t) => t._id);
+    selectedTestIds = checked
+      ? Array.from(new Set([...selectedTestIds, ...visibleIds]))
+      : selectedTestIds.filter((id) => !visibleIds.includes(id));
+  }
 
   function isStudentSelected(userId: string) {
     return selectedStudentIds.includes(userId);
@@ -113,15 +135,17 @@
       return;
     }
 
-    // UI enforce max capacity (backend will still validate).
-    const parsed = getParsedMaxCapacity();
-    if (parsed != null && selectedStudentIds.length >= parsed) {
-      createBatchError = `You can select up to ${parsed} students.`;
-      return;
-    }
-
     selectedStudentIds = [...selectedStudentIds, userId];
     createBatchError = null;
+  }
+  function toggleAllStudents(checked: boolean) {
+    const visibleIds = step2Students.map((u) => u._id);
+    if (checked) {
+      const merged = Array.from(new Set([...selectedStudentIds, ...visibleIds]));
+      selectedStudentIds = merged;
+      return;
+    }
+    selectedStudentIds = selectedStudentIds.filter((id) => !visibleIds.includes(id));
   }
 
   async function loadStep2Data() {
@@ -129,15 +153,16 @@
       step2TestsLoading = true;
       try {
         const res = await fetchBatchTests(
-          { search: '', page: 1, limit: 50 },
+          { search: '', page: 1, limit: 20 },
           fetch,
           { token: $authStore.token }
         );
         if (res.success) {
           const payload = res.data?.data;
-          step2Tests = Array.isArray(payload)
-            ? payload
-            : payload?.data ?? payload?.items ?? [];
+          const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
+          step2Tests = items;
+          step2TestsPage = Array.isArray(payload) ? 1 : (payload?.currentPage ?? 1);
+          step2TestsLastPage = Array.isArray(payload) ? 1 : (payload?.lastPage ?? 1);
         } else {
           step2Tests = [];
           step2TestsError = res.message || 'Failed to load tests.';
@@ -158,9 +183,52 @@
         fetch,
         { token: $authStore.token }
       );
-      step2Students = res.success && res.data?.data?.data ? res.data.data.data : [];
+      if (res.success && res.data?.data?.data) {
+        step2Students = res.data.data.data;
+        step2StudentsPage = res.data.data.currentPage ?? 1;
+        step2StudentsLastPage = res.data.data.lastPage ?? 1;
+      } else {
+        step2Students = [];
+        step2StudentsPage = 1;
+        step2StudentsLastPage = 1;
+      }
     } finally {
       step2StudentsLoading = false;
+    }
+  }
+
+  async function loadMoreStep2Tests() {
+    if (step2TestsLoading || step2TestsLoadingMore || step2TestsPage >= step2TestsLastPage) return;
+    step2TestsLoadingMore = true;
+    try {
+      const nextPage = step2TestsPage + 1;
+      const res = await fetchBatchTests({ search: '', page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
+      if (!res.success) return;
+      const payload = res.data?.data;
+      const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
+      const mergedTests = [...step2Tests, ...items];
+      step2Tests = [...mergedTests];
+      step2TestsPage = Array.isArray(payload) ? nextPage : (payload?.currentPage ?? nextPage);
+      step2TestsLastPage = Array.isArray(payload) ? nextPage : (payload?.lastPage ?? nextPage);
+    } finally {
+      step2TestsLoadingMore = false;
+    }
+  }
+
+  async function loadMoreStep2Students() {
+    if (step2StudentsLoading || step2StudentsLoadingMore || step2StudentsPage >= step2StudentsLastPage) return;
+    step2StudentsLoadingMore = true;
+    try {
+      const nextPage = step2StudentsPage + 1;
+      const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
+      if (!res.success || !res.data?.data?.data) return;
+      const nextStudents = Array.isArray(res.data.data.data) ? res.data.data.data : [];
+      const mergedStudents = [...step2Students, ...nextStudents];
+step2Students = [...mergedStudents];
+      step2StudentsPage = res.data.data.currentPage ?? nextPage;
+      step2StudentsLastPage = res.data.data.lastPage ?? nextPage;
+    } finally {
+      step2StudentsLoadingMore = false;
     }
   }
 
@@ -188,7 +256,15 @@
     startTime = batch.startTime ?? '';
     endDate = toInputDate(batch.endDate ?? '');
     endTime = batch.endTime ?? '';
-    maxCapacity = '';
+    maxCapacity = String(batch.maxCapacity ?? '');
+    editingBatchOriginal = {
+      name: batch.name ?? '',
+      startDate: batch.startDate ?? '',
+      startTime: batch.startTime ?? '',
+      endDate: batch.endDate ?? '',
+      endTime: batch.endTime ?? '',
+      maxCapacity: batch.maxCapacity ?? null
+    };
 
     createBatchError = null;
     createBatchSuccess = null;
@@ -243,6 +319,7 @@
 		endDate = '';
 		endTime = '';
 		maxCapacity = '';
+		editingBatchOriginal = null;
 		createBatchError = null;
 		createBatchSuccess = null;
 		createBatchSubmitting = false;
@@ -251,8 +328,12 @@
 		step2PrefetchStarted = false;
 		step2TestsLoaded = false;
 		step2Tests = [];
+		step2TestsPage = 1;
+		step2TestsLastPage = 1;
 		step2TestsError = null;
 		step2Students = [];
+		step2StudentsPage = 1;
+		step2StudentsLastPage = 1;
 		createBatchModalOpen = true;
 		prefetchStep2Data();
 	}
@@ -300,6 +381,7 @@
 
 			createBatchSuccess = res.data?.message || 'Batch updated successfully.';
 			await invalidateAll();
+			closeCreateBatchModal();
 		} catch {
 			createBatchError = 'Failed to update batch.';
 		} finally {
@@ -313,6 +395,7 @@
 		step2Tab = 'tests';
 		createdBatchId = null;
 		editingBatchId = null;
+		editingBatchOriginal = null;
 	}
 
 	async function onCreateBatchClick() {
@@ -326,29 +409,54 @@
 		createBatchSubmitting = true;
 		try {
 			if (editingBatchId) {
+				const currentName = batchName.trim();
+				const currentStartDate = formatDateForBatchApi(startDate);
+				const currentEndDate = formatDateForBatchApi(endDate);
+				const parsedCapacity = getParsedMaxCapacity();
+				const original = editingBatchOriginal;
+				const patch: Partial<CreateBatchBody> = {};
+				if (original && currentName !== original.name) patch.name = currentName;
+				if (original && currentStartDate !== original.startDate) patch.startDate = currentStartDate;
+				if (original && startTime !== original.startTime) patch.startTime = startTime;
+				if (original && currentEndDate !== original.endDate) patch.endDate = currentEndDate;
+				if (original && endTime !== original.endTime) patch.endTime = endTime;
+				if (parsedCapacity != null && parsedCapacity !== (original?.maxCapacity ?? null)) {
+					patch.maxCapacity = parsedCapacity;
+				}
+				if (Object.keys(patch).length > 0) {
+					const updateRes = await updateBatchDetails(
+						editingBatchId,
+						patch,
+						fetch,
+						{ token: $authStore.token }
+					);
+					if (!updateRes.success) {
+						createBatchError = updateRes.message || 'Could not update batch details.';
+						return;
+					}
+				}
 				createdBatchId = editingBatchId;
 				createBatchStep = 2;
 				step2Tab = 'tests';
-				createBatchSuccess = 'Batch details loaded for editing.';
 				prefetchStep2Data();
 				return;
 			}
 
 			const parsedCapacity = getParsedMaxCapacity();
-			if (parsedCapacity == null) {
-				createBatchError = 'Maximum capacity is invalid.';
-				return;
-			}
+			const basePayload = {
+				name: batchName.trim(),
+				startDate: formatDateForBatchApi(startDate),
+				startTime,
+				endDate: formatDateForBatchApi(endDate),
+				endTime
+			};
+			const payload: CreateBatchBody =
+				parsedCapacity != null
+					? { ...basePayload, maxCapacity: parsedCapacity }
+					: ({ ...basePayload } as CreateBatchBody);
 
 			const res = await createBatch(
-				{
-					name: batchName.trim(),
-					startDate: formatDateForBatchApi(startDate),
-					startTime,
-					endDate: formatDateForBatchApi(endDate),
-					endTime,
-					maxCapacity: parsedCapacity
-				},
+				payload,
 				fetch,
 				{ token: $authStore.token }
 			);
@@ -375,7 +483,10 @@
   <title>Batches — Exam Abhyas</title>
 </svelte:head>
 
-<div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
+<div
+  class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300"
+  style="font-family: 'Segoe UI', Inter, Poppins, system-ui, -apple-system, sans-serif;"
+>
   <div class="mx-auto max-w-6xl px-4 py-8 ">
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <label class="w-full max-w-sm sm:max-w-xs">
@@ -534,309 +645,50 @@
   </div>
 </div>
 
-{#if createBatchModalOpen}
-  <div
-    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Create batch"
-    onclick={(e) => e.target === e.currentTarget && closeCreateBatchModal()}
-  >
-    <div
-      class="w-full max-w-lg rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-2xl"
-      onclick={(e) => e.stopPropagation()}
-    >
-      <h2 class="text-lg font-bold text-[var(--sh-section-title)]">{editingBatchId ? 'Edit Batch' : 'Create Batch'}</h2>
-
-      {#if createBatchStep === 1}
-        <form
-          class="mt-4 grid grid-cols-1 gap-3"
-          onsubmit={(e) => {
-            e.preventDefault();
-            void onCreateBatchClick();
-          }}
-        >
-        <label class="block">
-          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-            Batch name
-          </span>
-          <input
-            type="text"
-            autocomplete="off"
-            placeholder="e.g. Batch A"
-            class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
-            bind:value={batchName}
-          />
-        </label>
-
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-              Start date
-            </span>
-            <input
-              type="date"
-              class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
-              bind:value={startDate}
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-              Start time
-            </span>
-            <input
-              type="time"
-              class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
-              bind:value={startTime}
-            />
-          </label>
-        </div>
-
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-              End date
-            </span>
-            <input
-              type="date"
-              class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
-              bind:value={endDate}
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-              End time
-            </span>
-            <input
-              type="time"
-              class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
-              bind:value={endTime}
-            />
-          </label>
-        </div>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-            Maximum capacity (students)
-          </span>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            inputmode="numeric"
-            placeholder="e.g. 100"
-            class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
-            bind:value={maxCapacity}
-          />
-        </label>
-
-        {#if createBatchError}
-          <p class="mt-1 rounded-lg bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">
-            {createBatchError}
-          </p>
-        {/if}
-
-        {#if createBatchSuccess}
-          <p class="mt-1 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
-            {createBatchSuccess}
-          </p>
-        {/if}
-
-        <div class="mt-2 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            class="rounded-xl border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-semibold text-[var(--page-text)] hover:bg-[color-mix(in_srgb,var(--dash-cta-hover-bg)_35%,transparent)]"
-            onclick={closeCreateBatchModal}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            class="rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!isCreateBatchReady() || createBatchSubmitting}
-          >
-            {createBatchSubmitting ? 'Saving…' : (editingBatchId ? 'Edit details' : 'Save details')}
-          </button>
-        </div>
-        </form>
-      {:else}
-        <div class="mt-4">
-          <div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Step 2: Assign tests & students</p>
-            <p class="mt-1 text-sm font-bold text-[var(--page-text)]">{batchName || '—'}</p>
-            <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">
-              Capacity: <span class="font-bold text-[var(--page-text)]">{getParsedMaxCapacity() ?? '—'}</span> students
-            </p>
-          </div>
-
-          <div class="mt-4">
-            <div class="flex gap-2">
-              <button
-                type="button"
-                class={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition
-                  ${step2Tab === 'tests' ? 'border-[var(--cta-pink-border-hover)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,var(--sh-exam-card-bg))] text-[var(--page-text)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] hover:border-[var(--sh-exam-card-hover-border)]'}`}
-                onclick={() => (step2Tab = 'tests')}
-              >
-                Tests
-              </button>
-              <button
-                type="button"
-                class={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition
-                  ${step2Tab === 'students' ? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_60%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_12%,var(--sh-exam-card-bg))] text-[var(--page-text)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] hover:border-[var(--sh-exam-card-hover-border)]'}`}
-                onclick={() => (step2Tab = 'students')}
-              >
-                Students
-              </button>
-            </div>
-
-            <div class="mt-4">
-              {#if step2Tab === 'tests'}
-                <section class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select tests">
-                  <h3 class="text-sm font-bold text-[var(--page-text)]">Tests</h3>
-                  <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">Select tests to include in this batch</p>
-
-                  {#if step2TestsLoading}
-                    <div class="mt-3 space-y-2">
-                      {#each Array(6) as _}
-                        <div class="flex items-center gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-2">
-                          <div class="h-5 w-10 rounded-full bg-[var(--page-card-border)] opacity-20" />
-                          <Skeleton width="w-28" height="h-3" />
-                        </div>
-                      {/each}
-                    </div>
-                  {:else if step2TestsError}
-                    <p class="mt-3 text-xs text-semantic-error">{step2TestsError}</p>
-                  {:else}
-                    <ul class="mt-3 max-h-48 space-y-2 overflow-auto pr-1" role="list">
-                      {#each step2Tests.slice(0, 20) as t (t._id)}
-                        <li>
-                          <button
-                            type="button"
-                            class="w-full rounded-xl border px-3 py-2 text-sm transition-colors
-                              border-[var(--sh-exam-card-border)]
-                              bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_90%,transparent)]
-                              hover:border-[var(--sh-exam-card-hover-border)]"
-                            onclick={() => toggleTest(t._id)}
-                          >
-                            <div class="flex items-center justify-between gap-3">
-                              <span class="min-w-0 flex-1 truncate font-semibold text-[var(--page-text)]">
-                                {testLabel(t)}
-                              </span>
-                              <span class="rounded-full border border-[var(--sh-exam-card-border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--sh-ai-sub)]">
-                                {testStatusLabel(t)}
-                              </span>
-                              <span
-                                class="shrink-0 inline-flex h-5 w-10 items-center justify-center rounded-full text-xs font-bold
-                                  {isTestSelected(t._id) ? 'bg-[var(--accent-cta-cyan)] text-white' : 'bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] border border-[var(--sh-exam-card-border)]'}"
-                                aria-hidden="true"
-                              >
-                                {isTestSelected(t._id) ? 'ON' : 'OFF'}
-                              </span>
-                            </div>
-                          </button>
-                        </li>
-                      {/each}
-                      {#if step2Tests.length === 0}
-                        <li class="text-xs text-[var(--sh-ai-sub)]">No tests loaded.</li>
-                      {/if}
-                    </ul>
-                  {/if}
-
-                  <p class="mt-3 text-xs text-[var(--sh-ai-sub)]">
-                    Selected tests: <span class="font-bold text-[var(--page-text)]">{selectedTestIds.length}</span>
-                  </p>
-                </section>
-              {:else}
-                <section class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select students">
-                  <h3 class="text-sm font-bold text-[var(--page-text)]">Students</h3>
-                  <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">
-                    Select up to {getParsedMaxCapacity() ?? '—'}
-                  </p>
-
-                  {#if step2StudentsLoading}
-                    <div class="mt-3 space-y-2">
-                      {#each Array(7) as _}
-                        <div class="flex items-center gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-2">
-                          <div class="h-5 w-10 rounded-full bg-[var(--page-card-border)] opacity-20" />
-                          <Skeleton width="w-28" height="h-3" />
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <ul class="mt-3 max-h-48 space-y-2 overflow-auto pr-1" role="list">
-                      {#each step2Students as u (u._id)}
-                        <li>
-                          <button
-                            type="button"
-                            class="w-full rounded-xl border px-3 py-2 text-sm transition-colors
-                              border-[var(--sh-exam-card-border)]
-                              bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_90%,transparent)]
-                              hover:border-[var(--sh-exam-card-hover-border)]"
-                            onclick={() => toggleStudent(u._id)}
-                          >
-                            <div class="flex items-center justify-between gap-3">
-                              <span class="min-w-0 flex-1 truncate font-semibold text-[var(--page-text)]">
-                                {studentLabel(u)}
-                              </span>
-                              <span
-                                class="shrink-0 inline-flex h-5 w-10 items-center justify-center rounded-full text-xs font-bold
-                                  {isStudentSelected(u._id) ? 'bg-[var(--whatsapp-brand)] text-white' : 'bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] border border-[var(--sh-exam-card-border)]'}"
-                                aria-hidden="true"
-                              >
-                                {isStudentSelected(u._id) ? 'ON' : 'OFF'}
-                              </span>
-                            </div>
-                          </button>
-                        </li>
-                      {/each}
-                      {#if step2Students.length === 0}
-                        <li class="text-xs text-[var(--sh-ai-sub)]">No students found.</li>
-                      {/if}
-                    </ul>
-                  {/if}
-
-                  <p class="mt-3 text-xs text-[var(--sh-ai-sub)]">
-                    Selected students: <span class="font-bold text-[var(--page-text)]">{selectedStudentIds.length}</span>
-                  </p>
-                </section>
-              {/if}
-            </div>
-          </div>
-
-          {#if createBatchError}
-            <p class="mt-3 rounded-lg bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">
-              {createBatchError}
-            </p>
-          {/if}
-
-          {#if createBatchSuccess}
-            <p class="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
-              {createBatchSuccess}
-            </p>
-          {/if}
-
-          <div class="mt-5 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              class="rounded-xl border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-semibold text-[var(--page-text)] hover:bg-[color-mix(in_srgb,var(--dash-cta-hover-bg)_35%,transparent)]"
-              onclick={() => {
-                createBatchStep = 1;
-                createBatchError = null;
-              }}
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              class="rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={selectedTestIds.length === 0 || selectedStudentIds.length === 0}
-              onclick={onFinishCreateBatch}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      {/if}
-    </div>
-  </div>
-{/if}
+<BatchSetupModal
+  open={createBatchModalOpen}
+  modeLabel={editingBatchId ? 'Edit' : 'Create'}
+  step={createBatchStep}
+  tab={step2Tab}
+  bind:batchName
+  bind:startDate
+  bind:startTime
+  bind:endDate
+  bind:endTime
+  bind:maxCapacity
+  parsedCapacity={getParsedMaxCapacity()}
+  error={createBatchError}
+  success={createBatchSuccess}
+  submitting={createBatchSubmitting}
+  testsLoading={step2TestsLoading}
+  testsLoadingMore={step2TestsLoadingMore}
+  testsHasMore={step2TestsPage < step2TestsLastPage}
+  testsError={step2TestsError}
+  tests={step2Tests}
+  selectedTestIds={selectedTestIds}
+  studentsLoading={step2StudentsLoading}
+  studentsLoadingMore={step2StudentsLoadingMore}
+  studentsHasMore={step2StudentsPage < step2StudentsLastPage}
+  students={step2Students}
+  selectedStudentIds={selectedStudentIds}
+  onClose={closeCreateBatchModal}
+  onSubmitStep1={() => void onCreateBatchClick()}
+  onBack={() => {
+    createBatchStep = 1;
+    createBatchError = null;
+  }}
+  onContinue={() => void onFinishCreateBatch()}
+  onSwitchTab={(tab) => (step2Tab = tab)}
+  onToggleTest={toggleTest}
+  onToggleStudent={toggleStudent}
+  onToggleAllTests={toggleAllTests}
+  onToggleAllStudents={toggleAllStudents}
+  onLoadMoreTests={() => void loadMoreStep2Tests()}
+  onLoadMoreStudents={() => void loadMoreStep2Students()}
+  isReady={isCreateBatchReady}
+  {testLabel}
+  {testStatusLabel}
+  {studentLabel}
+  isTestSelected={isTestSelected}
+  isStudentSelected={isStudentSelected}
+/>

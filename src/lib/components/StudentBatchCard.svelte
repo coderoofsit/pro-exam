@@ -102,6 +102,12 @@
 
   <dl class="mt-3 space-y-1.5 text-xs">
     <div class="flex justify-between gap-2">
+      <dt class="text-[var(--sh-ai-sub)] shrink-0">Capacity</dt>
+      <dd class="text-[var(--sh-exam-card-title)] font-medium tabular-nums text-right">
+        {batch.maxCapacity ?? 0}
+      </dd>
+    </div>
+    <div class="flex justify-between gap-2">
       <dt class="text-[var(--sh-ai-sub)] shrink-0">Tests</dt>
       <dd class="text-[var(--sh-exam-card-title)] font-medium tabular-nums text-right">
         {batch.numberOfTests}

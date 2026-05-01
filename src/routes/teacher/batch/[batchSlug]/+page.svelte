@@ -5,11 +5,14 @@
 	import { fetchBatchStudents, type BatchStudentItem } from '$lib/api/teacher';
 	import {
 		fetchBatchTests,
+	type CreateBatchBody,
+	updateBatchDetails,
 		updateBatchAssignments,
 		type BatchTestItem
 	} from '$lib/api/batch';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
+import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -49,13 +52,27 @@
 	let editBatchError = $state<string | null>(null);
 	let editBatchSuccess = $state<string | null>(null);
 	let editSubmitting = $state(false);
+	let editBatchOriginal = $state<{
+		name: string;
+		startDate: string;
+		startTime: string;
+		endDate: string;
+		endTime: string;
+		maxCapacity: number | null;
+	} | null>(null);
 	let editTestsLoading = $state(false);
+	let editTestsLoadingMore = $state(false);
 	let editTestsLoaded = $state(false);
 	let editTestsError = $state<string | null>(null);
 	let editTests = $state<BatchTestItem[]>([]);
+	let editTestsPage = $state(1);
+	let editTestsLastPage = $state(1);
 	let editSelectedTestIds = $state<string[]>([]);
 	let editStudentsLoading = $state(false);
+	let editStudentsLoadingMore = $state(false);
 	let editStudents = $state<BatchStudentItem[]>([]);
+	let editStudentsPage = $state(1);
+	let editStudentsLastPage = $state(1);
 	let editSelectedStudentIds = $state<string[]>([]);
 	let editPrefetchStarted = $state(false);
 
@@ -276,6 +293,10 @@
 	const selectedTestsList = $derived(
 		testsData.filter((t) => selectedTestIds.includes(String(t.testId ?? '')))
 	);
+	const wouldRemoveAllTeachers = $derived(
+		(batchInfo?.numberOfTeachers ?? 0) > 0 &&
+			selectedTeacherIds.length >= (batchInfo?.numberOfTeachers ?? 0)
+	);
 
 	function itemDisplayName(item: any) {
 		return (item?.name ?? `${item?.firstName ?? ''} ${item?.lastName ?? ''}`.trim()) || '—';
@@ -298,6 +319,12 @@
 		const [d, m, y] = value.split('/');
 		if (!d || !m || !y) return '';
 		return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+	}
+
+	function formatDateForBatchApi(value: string): string {
+		const [year, month, day] = value.split('-');
+		if (!year || !month || !day) return value;
+		return `${day}/${month}/${year}`;
 	}
 
 	function getParsedEditCapacity(): number | null {
@@ -332,6 +359,12 @@
 			? editSelectedTestIds.filter((id) => id !== testId)
 			: [...editSelectedTestIds, testId];
 	}
+	function toggleAllEditTests(checked: boolean) {
+		const visibleIds = editTests.map((t) => t._id);
+		editSelectedTestIds = checked
+			? Array.from(new Set([...editSelectedTestIds, ...visibleIds]))
+			: editSelectedTestIds.filter((id) => !visibleIds.includes(id));
+	}
 
 	function isEditStudentSelected(userId: string) {
 		return editSelectedStudentIds.includes(userId);
@@ -344,25 +377,30 @@
 			editBatchError = null;
 			return;
 		}
-		const parsed = getParsedEditCapacity();
-		if (parsed != null && editSelectedStudentIds.length >= parsed) {
-			editBatchError = `You can select up to ${parsed} students.`;
-			return;
-		}
 		editSelectedStudentIds = [...editSelectedStudentIds, userId];
 		editBatchError = null;
+	}
+	function toggleAllEditStudents(checked: boolean) {
+		const visibleIds = editStudents.map((u) => u._id);
+		if (checked) {
+			const merged = Array.from(new Set([...editSelectedStudentIds, ...visibleIds]));
+			editSelectedStudentIds = merged;
+			return;
+		}
+		editSelectedStudentIds = editSelectedStudentIds.filter((id) => !visibleIds.includes(id));
 	}
 
 	async function loadEditStep2Data() {
 		if (!editTestsLoaded) {
 			editTestsLoading = true;
 			try {
-				const res = await fetchBatchTests({ search: '', page: 1, limit: 50 }, fetch);
+				const res = await fetchBatchTests({ search: '', page: 1, limit: 20 }, fetch);
 				if (res.success) {
 					const payload = res.data?.data;
-					editTests = Array.isArray(payload)
-						? payload
-						: payload?.data ?? payload?.items ?? [];
+					const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
+					editTests = items;
+					editTestsPage = Array.isArray(payload) ? 1 : (payload?.currentPage ?? 1);
+					editTestsLastPage = Array.isArray(payload) ? 1 : (payload?.lastPage ?? 1);
 				} else {
 					editTests = [];
 					editTestsError = res.message || 'Failed to load tests.';
@@ -379,9 +417,52 @@
 		editStudentsLoading = true;
 		try {
 			const res = await fetchBatchStudents({ page: 1, limit: 20 }, fetch);
-			editStudents = res.success && res.data?.data?.data ? res.data.data.data : [];
+			if (res.success && res.data?.data?.data) {
+				editStudents = res.data.data.data;
+				editStudentsPage = res.data.data.currentPage ?? 1;
+				editStudentsLastPage = res.data.data.lastPage ?? 1;
+			} else {
+				editStudents = [];
+				editStudentsPage = 1;
+				editStudentsLastPage = 1;
+			}
 		} finally {
 			editStudentsLoading = false;
+		}
+	}
+
+	async function loadMoreEditTests() {
+		if (editTestsLoading || editTestsLoadingMore || editTestsPage >= editTestsLastPage) return;
+		editTestsLoadingMore = true;
+		try {
+			const nextPage = editTestsPage + 1;
+			const res = await fetchBatchTests({ search: '', page: nextPage, limit: 20 }, fetch);
+			if (!res.success) return;
+			const payload = res.data?.data;
+			const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
+			const mergedTests = [...editTests, ...items];
+			editTests = [...mergedTests];
+			editTestsPage = Array.isArray(payload) ? nextPage : (payload?.currentPage ?? nextPage);
+			editTestsLastPage = Array.isArray(payload) ? nextPage : (payload?.lastPage ?? nextPage);
+		} finally {
+			editTestsLoadingMore = false;
+		}
+	}
+
+	async function loadMoreEditStudents() {
+		if (editStudentsLoading || editStudentsLoadingMore || editStudentsPage >= editStudentsLastPage) return;
+		editStudentsLoadingMore = true;
+		try {
+			const nextPage = editStudentsPage + 1;
+			const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch);
+			if (!res.success || !res.data?.data?.data) return;
+			const nextStudents = Array.isArray(res.data.data.data) ? res.data.data.data : [];
+			const mergedStudents = [...editStudents, ...nextStudents];
+			editStudents = [...mergedStudents];
+			editStudentsPage = res.data.data.currentPage ?? nextPage;
+			editStudentsLastPage = res.data.data.lastPage ?? nextPage;
+		} finally {
+			editStudentsLoadingMore = false;
 		}
 	}
 
@@ -404,13 +485,25 @@
 		editBatchError = null;
 		editBatchSuccess = null;
 		editSubmitting = false;
+		editBatchOriginal = {
+			name: batchInfo?.name ?? batchName ?? '',
+			startDate: batchInfo?.startDate ?? '',
+			startTime: batchInfo?.startTime ?? '',
+			endDate: batchInfo?.endDate ?? '',
+			endTime: batchInfo?.endTime ?? '',
+			maxCapacity: batchInfo?.maxCapacity ?? null
+		};
 		editSelectedTestIds = [];
 		editSelectedStudentIds = [];
 		editPrefetchStarted = false;
 		editTestsLoaded = false;
 		editTests = [];
+		editTestsPage = 1;
+		editTestsLastPage = 1;
 		editTestsError = null;
 		editStudents = [];
+		editStudentsPage = 1;
+		editStudentsLastPage = 1;
 		prefetchEditStep2Data();
 	}
 
@@ -426,8 +519,7 @@
 			editStartDate.trim().length > 0 &&
 			editStartTime.trim().length > 0 &&
 			editEndDate.trim().length > 0 &&
-			editEndTime.trim().length > 0 &&
-			getParsedEditCapacity() != null
+			editEndTime.trim().length > 0
 		);
 	}
 
@@ -437,7 +529,27 @@
 			return;
 		}
 		editBatchError = null;
-		editBatchSuccess = 'Batch details are ready.';
+		const currentName = editBatchName.trim();
+		const currentStartDate = editStartDate ? formatDateForBatchApi(editStartDate) : '';
+		const currentEndDate = editEndDate ? formatDateForBatchApi(editEndDate) : '';
+		const parsedCapacity = getParsedEditCapacity();
+		const original = editBatchOriginal;
+		const patch: Partial<CreateBatchBody> = {};
+		if (original && currentName !== original.name) patch.name = currentName;
+		if (original && currentStartDate !== original.startDate) patch.startDate = currentStartDate;
+		if (original && editStartTime !== original.startTime) patch.startTime = editStartTime;
+		if (original && currentEndDate !== original.endDate) patch.endDate = currentEndDate;
+		if (original && editEndTime !== original.endTime) patch.endTime = editEndTime;
+		if (parsedCapacity != null && parsedCapacity !== (original?.maxCapacity ?? null)) {
+			patch.maxCapacity = parsedCapacity;
+		}
+		if (batchId && Object.keys(patch).length > 0) {
+			const updateRes = await updateBatchDetails(batchId, patch, fetch);
+			if (!updateRes.success) {
+				editBatchError = updateRes.message || 'Could not update batch details.';
+				return;
+			}
+		}
 		editBatchStep = 2;
 		editStep2Tab = 'tests';
 		prefetchEditStep2Data();
@@ -498,27 +610,39 @@
 	<title>{batchName ? `${batchName} — Batch Items` : 'Batch Items'} — Exam Abhyas</title>
 </svelte:head>
 
-<div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
+<div
+	class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300"
+	style="font-family: 'Segoe UI', Inter, Poppins, system-ui, -apple-system, sans-serif;"
+>
 	<div class="mx-auto max-w-6xl px-4 py-6">
-		<header class="mb-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+		<header class="mb-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
 			<div class="min-w-0 sm:justify-self-start">
-				<div class="flex items-center justify-between gap-3">
-					<h1 class="text-2xl font-bold text-[var(--page-text)]">
-						{batchName || 'Batch'} Details
-					</h1>
-					<button
-						type="button"
-						class="inline-flex items-center gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm font-semibold text-[var(--page-text)] transition-colors hover:border-[var(--sh-exam-card-hover-border)]"
-						onclick={openEditBatchModal}
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						Edit
-					</button>
-				</div>
+				<span
+					class={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+						(batchInfo?.status ?? '').toUpperCase() === 'ACTIVE'
+							? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_16%,transparent)] text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]'
+							: (batchInfo?.status ?? '').toUpperCase() === 'UPCOMING'
+								? 'border-[color-mix(in_srgb,var(--accent-cta-cyan)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-cyan)_15%,transparent)] text-[var(--accent-cta-cyan)]'
+								: 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text-muted)]'
+					}`}
+				>
+					{batchInfo?.status || 'UNKNOWN'}
+				</span>
+				<h1 class="mt-2 text-2xl font-bold text-[var(--page-text)]">
+					{batchName || 'Batch'} Details
+				</h1>
 			</div>
-			<div class="flex justify-center sm:justify-self-center">
+			<div class="flex flex-col items-end gap-2 sm:justify-self-end">
+				<button
+					type="button"
+					class="inline-flex items-center gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm font-semibold text-[var(--page-text)] transition-colors hover:border-[var(--sh-exam-card-hover-border)]"
+					onclick={openEditBatchModal}
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					Edit
+				</button>
 				{#if !loading && totalPages > 1}
 					<Pagination
 						{currentPage}
@@ -540,32 +664,29 @@
 		{/if}
 
 		{#if batchInfo}
-			<div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-				<div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-					<div class="text-xs text-[var(--page-text-muted)]">Status</div>
-					<div class="mt-1 text-sm font-semibold text-[var(--page-text)]">
-						{batchInfo.status || '—'}
+			<div class="mb-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
+				<div class="grid grid-cols-1 gap-2 lg:grid-cols-[1.4fr_1fr]">
+					<div class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-3 py-2">
+						<p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--page-text-muted)]">Schedule</p>
+						<p class="mt-1 text-xs text-[var(--page-text)]">
+							<span class="font-semibold">Start:</span> {batchInfo.startDate || '—'} {batchInfo.startTime || ''}
+							<span class="mx-1 text-[var(--page-text-muted)]">|</span>
+							<span class="font-semibold">End:</span> {batchInfo.endDate || '—'} {batchInfo.endTime || ''}
+						</p>
 					</div>
-				</div>
-				<div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-					<div class="text-xs text-[var(--page-text-muted)]">Schedule</div>
-					<div class="mt-1 text-sm font-semibold text-[var(--page-text)]">
-						{batchInfo.startDate || '—'} {batchInfo.startTime || ''}
-					</div>
-					<div class="text-xs text-[var(--page-text-muted)]">
-						to {batchInfo.endDate || '—'} {batchInfo.endTime || ''}
-					</div>
-				</div>
-				<div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-					<div class="text-xs text-[var(--page-text-muted)]">Capacity</div>
-					<div class="mt-1 text-sm font-semibold text-[var(--page-text)]">
-						{batchInfo.maxCapacity ?? 0}
-					</div>
-				</div>
-				<div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-					<div class="text-xs text-[var(--page-text-muted)]">Counts</div>
-					<div class="mt-1 text-sm font-semibold text-[var(--page-text)]">
-						S: {batchInfo.numberOfStudents ?? 0} · T: {batchInfo.numberOfTeachers ?? 0} · X: {batchInfo.numberOfTests ?? 0}
+					<div class="grid grid-cols-3 gap-2">
+						<div class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-2 py-2 text-center">
+							<p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--page-text-muted)]">Students</p>
+							<p class="mt-0.5 text-base font-bold tabular-nums text-[var(--page-text)]">{batchInfo.numberOfStudents ?? 0}</p>
+						</div>
+						<div class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-2 py-2 text-center">
+							<p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--page-text-muted)]">Teachers</p>
+							<p class="mt-0.5 text-base font-bold tabular-nums text-[var(--page-text)]">{batchInfo.numberOfTeachers ?? 0}</p>
+						</div>
+						<div class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-2 py-2 text-center">
+							<p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--page-text-muted)]">Tests</p>
+							<p class="mt-0.5 text-base font-bold tabular-nums text-[var(--page-text)]">{batchInfo.numberOfTests ?? 0}</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -671,7 +792,7 @@
 					{/each}
 					<button
 						type="button"
-						disabled={removeLoading}
+						disabled={removeLoading || wouldRemoveAllTeachers}
 						class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
 						onclick={() => {
 							removeConfirmOpen = true;
@@ -717,7 +838,6 @@
 							{#if activeTab === 'test'}
 								<th>
 									<div class="flex items-center gap-2">
-										<span>Test</span>
 										<input
 											type="checkbox"
 											checked={allVisibleTestsSelected}
@@ -727,6 +847,7 @@
 													(e.currentTarget as HTMLInputElement).checked
 												)}
 										/>
+										<span>Test</span>
 									</div>
 								</th>
 								<th>Schedule</th>
@@ -734,7 +855,6 @@
 							{:else}
 								<th>
 									<div class="flex items-center gap-2">
-										<span>{activeTab === 'teacher' ? 'Teacher' : 'Student'}</span>
 										<input
 											type="checkbox"
 											checked={activeTab === 'teacher'
@@ -746,10 +866,14 @@
 													(e.currentTarget as HTMLInputElement).checked
 												)}
 										/>
+										<span>{activeTab === 'teacher' ? 'Teacher' : 'Student'}</span>
 									</div>
 								</th>
 								<th>Contact</th>
 								<th>Status</th>
+								{#if activeTab === 'student'}
+									<th>Action</th>
+								{/if}
 							{/if}
 						</tr>
 					</thead>
@@ -823,7 +947,7 @@
 										</div>
 									</td>
 									<td>
-										<div>{t.email ? t.email : '—'}</div>
+										<div class="text-[var(--page-text)]">{t.email ? t.email : '—'}</div>
 										<div class="mt-1 text-xs text-[var(--page-text-muted)]">
 											{t.phone ? t.phone : '—'}
 										</div>
@@ -841,12 +965,27 @@
 											>
 										{/if}
 									</td>
+									{#if activeTab === 'student'}
+										<td>
+											<button
+												type="button"
+												class="rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--page-text)] transition-colors hover:border-[var(--sh-exam-card-hover-border)]"
+											>
+												View Details
+											</button>
+										</td>
+									{/if}
 								</tr>
 							{/each}
 						{/if}
 					</tbody>
 				</table>
 			</div>
+			{#if activeTab === 'teacher' && wouldRemoveAllTeachers}
+				<p class="mt-2 text-xs text-semantic-error">
+					At least one teacher must remain in this batch.
+				</p>
+			{/if}
 
 			{#if totalPages > 1}
 				<div class="mt-4">
@@ -978,145 +1117,50 @@
 	</div>
 {/if}
 
-{#if editBatchModalOpen}
-	<div
-		class="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
-		role="dialog"
-		aria-modal="true"
-		aria-label="Edit batch"
-		onclick={(e) => e.target === e.currentTarget && closeEditBatchModal()}
-	>
-		<div
-			class="w-full max-w-lg rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-2xl"
-			onclick={(e) => e.stopPropagation()}
-		>
-			<h2 class="text-lg font-bold text-[var(--sh-section-title)]">Edit Batch</h2>
-			{#if editBatchStep === 1}
-				<form
-					class="mt-4 grid grid-cols-1 gap-3"
-					onsubmit={(e) => {
-						e.preventDefault();
-						void onEditBatchStep1Continue();
-					}}
-				>
-					<label class="block">
-						<span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-							Batch name
-						</span>
-						<input type="text" class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]" bind:value={editBatchName} />
-					</label>
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<label class="block">
-							<span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Start date</span>
-							<input type="date" class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]" bind:value={editStartDate} />
-						</label>
-						<label class="block">
-							<span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Start time</span>
-							<input type="time" class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]" bind:value={editStartTime} />
-						</label>
-					</div>
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<label class="block">
-							<span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">End date</span>
-							<input type="date" class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]" bind:value={editEndDate} />
-						</label>
-						<label class="block">
-							<span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">End time</span>
-							<input type="time" class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]" bind:value={editEndTime} />
-						</label>
-					</div>
-					<label class="block">
-						<span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Maximum capacity (students)</span>
-						<input type="number" min="1" step="1" inputmode="numeric" class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-4 py-2.5 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]" bind:value={editMaxCapacity} />
-					</label>
-					{#if editBatchError}
-						<p class="mt-1 rounded-lg bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">{editBatchError}</p>
-					{/if}
-					{#if editBatchSuccess}
-						<p class="mt-1 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">{editBatchSuccess}</p>
-					{/if}
-					<div class="mt-2 flex items-center justify-end gap-2">
-						<button type="button" class="rounded-xl border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-semibold text-[var(--page-text)] hover:bg-[color-mix(in_srgb,var(--dash-cta-hover-bg)_35%,transparent)]" onclick={closeEditBatchModal}>Cancel</button>
-						<button type="submit" class="rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isEditBatchReady() || editSubmitting}>
-							{editSubmitting ? 'Saving…' : 'Edit details'}
-						</button>
-					</div>
-				</form>
-			{:else}
-				<div class="mt-4">
-					<div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-						<p class="text-xs font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Step 2: Assign tests & students</p>
-						<p class="mt-1 text-sm font-bold text-[var(--page-text)]">{editBatchName || '—'}</p>
-						<p class="mt-1 text-xs text-[var(--sh-ai-sub)]">
-							Capacity: <span class="font-bold text-[var(--page-text)]">{getParsedEditCapacity() ?? '—'}</span> students
-						</p>
-					</div>
-					<div class="mt-4">
-						<div class="flex gap-2">
-							<button type="button" class={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition ${editStep2Tab === 'tests' ? 'border-[var(--cta-pink-border-hover)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_14%,var(--sh-exam-card-bg))] text-[var(--page-text)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] hover:border-[var(--sh-exam-card-hover-border)]'}`} onclick={() => (editStep2Tab = 'tests')}>Tests</button>
-							<button type="button" class={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition ${editStep2Tab === 'students' ? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_60%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_12%,var(--sh-exam-card-bg))] text-[var(--page-text)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] hover:border-[var(--sh-exam-card-hover-border)]'}`} onclick={() => (editStep2Tab = 'students')}>Students</button>
-						</div>
-						<div class="mt-4">
-							{#if editStep2Tab === 'tests'}
-								<section class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-									<h3 class="text-sm font-bold text-[var(--page-text)]">Tests</h3>
-									{#if editTestsLoading}
-										<div class="mt-3 space-y-2">{#each Array(4) as _}<div class="h-8 rounded-xl border border-[var(--sh-exam-card-border)]"></div>{/each}</div>
-									{:else}
-										<ul class="mt-3 max-h-48 space-y-2 overflow-auto pr-1">
-											{#each editTests.slice(0, 20) as t (t._id)}
-												<li>
-													<button type="button" class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_90%,transparent)] hover:border-[var(--sh-exam-card-hover-border)]" onclick={() => toggleEditTest(t._id)}>
-														<div class="flex items-center justify-between gap-3">
-															<span class="min-w-0 flex-1 truncate font-semibold text-[var(--page-text)]">{testLabel(t)}</span>
-															<span class="rounded-full border border-[var(--sh-exam-card-border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--sh-ai-sub)]">{testStatusLabel(t)}</span>
-															<span class="shrink-0 inline-flex h-5 w-10 items-center justify-center rounded-full text-xs font-bold {isEditTestSelected(t._id) ? 'bg-[var(--accent-cta-cyan)] text-white' : 'bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] border border-[var(--sh-exam-card-border)]'}">{isEditTestSelected(t._id) ? 'ON' : 'OFF'}</span>
-														</div>
-													</button>
-												</li>
-											{/each}
-										</ul>
-									{/if}
-								</section>
-							{:else}
-								<section class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3">
-									<h3 class="text-sm font-bold text-[var(--page-text)]">Students</h3>
-									{#if editStudentsLoading}
-										<div class="mt-3 space-y-2">{#each Array(4) as _}<div class="h-8 rounded-xl border border-[var(--sh-exam-card-border)]"></div>{/each}</div>
-									{:else}
-										<ul class="mt-3 max-h-48 space-y-2 overflow-auto pr-1">
-											{#each editStudents as u (u._id)}
-												<li>
-													<button type="button" class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_90%,transparent)] hover:border-[var(--sh-exam-card-hover-border)]" onclick={() => toggleEditStudent(u._id)}>
-														<div class="flex items-center justify-between gap-3">
-															<span class="min-w-0 flex-1 truncate font-semibold text-[var(--page-text)]">{studentLabel(u)}</span>
-															<span class="shrink-0 inline-flex h-5 w-10 items-center justify-center rounded-full text-xs font-bold {isEditStudentSelected(u._id) ? 'bg-[var(--whatsapp-brand)] text-white' : 'bg-[var(--sh-exam-card-bg)] text-[var(--sh-ai-sub)] border border-[var(--sh-exam-card-border)]'}">{isEditStudentSelected(u._id) ? 'ON' : 'OFF'}</span>
-														</div>
-													</button>
-												</li>
-											{/each}
-										</ul>
-									{/if}
-								</section>
-							{/if}
-						</div>
-					</div>
-					{#if editBatchError}
-						<p class="mt-3 rounded-lg bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">{editBatchError}</p>
-					{/if}
-					{#if editBatchSuccess}
-						<p class="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">{editBatchSuccess}</p>
-					{/if}
-					<div class="mt-5 flex items-center justify-between gap-2">
-						<button type="button" class="rounded-xl border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-semibold text-[var(--page-text)] hover:bg-[color-mix(in_srgb,var(--dash-cta-hover-bg)_35%,transparent)]" onclick={() => { editBatchStep = 1; editBatchError = null; }}>
-							Back
-						</button>
-						<button type="button" class="rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60" disabled={editSelectedTestIds.length === 0 || editSelectedStudentIds.length === 0 || editSubmitting} onclick={onFinishEditBatch}>
-							{editSubmitting ? 'Saving…' : 'Continue'}
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
-{/if}
+<BatchSetupModal
+	open={editBatchModalOpen}
+	modeLabel="Edit"
+	step={editBatchStep}
+	tab={editStep2Tab}
+	bind:batchName={editBatchName}
+	bind:startDate={editStartDate}
+	bind:startTime={editStartTime}
+	bind:endDate={editEndDate}
+	bind:endTime={editEndTime}
+	bind:maxCapacity={editMaxCapacity}
+	parsedCapacity={getParsedEditCapacity()}
+	error={editBatchError}
+	success={editBatchSuccess}
+	submitting={editSubmitting}
+	testsLoading={editTestsLoading}
+	testsLoadingMore={editTestsLoadingMore}
+	testsHasMore={editTestsPage < editTestsLastPage}
+	testsError={editTestsError}
+	tests={editTests}
+	selectedTestIds={editSelectedTestIds}
+	studentsLoading={editStudentsLoading}
+	studentsLoadingMore={editStudentsLoadingMore}
+	studentsHasMore={editStudentsPage < editStudentsLastPage}
+	students={editStudents}
+	selectedStudentIds={editSelectedStudentIds}
+	onClose={closeEditBatchModal}
+	onSubmitStep1={() => void onEditBatchStep1Continue()}
+	onBack={() => {
+		editBatchStep = 1;
+		editBatchError = null;
+	}}
+	onContinue={() => void onFinishEditBatch()}
+	onSwitchTab={(tab) => (editStep2Tab = tab)}
+	onToggleTest={toggleEditTest}
+	onToggleStudent={toggleEditStudent}
+	onToggleAllTests={toggleAllEditTests}
+	onToggleAllStudents={toggleAllEditStudents}
+	onLoadMoreTests={() => void loadMoreEditTests()}
+	onLoadMoreStudents={() => void loadMoreEditStudents()}
+	isReady={isEditBatchReady}
+	{testLabel}
+	{testStatusLabel}
+	{studentLabel}
+	isTestSelected={isEditTestSelected}
+	isStudentSelected={isEditStudentSelected}
+/>

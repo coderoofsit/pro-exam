@@ -11,6 +11,7 @@ export type StudentBatchItem = {
 	name: string;
 	/** Human-readable slug — used in `/student/batch/[slug]` URLs; detail API still uses `_id`. */
 	slug: string;
+	maxCapacity?: number;
 	numberOfStudents: number;
 	numberOfTeachers: number;
 	numberOfTests: number;
@@ -46,7 +47,7 @@ export type CreateBatchBody = {
 	startTime: string;
 	endDate: string;
 	endTime: string;
-	maxCapacity: number;
+	maxCapacity?: number;
 };
 
 export type CreateBatchResponse = {
@@ -168,6 +169,8 @@ export async function fetchBatchTests(
 	options?: { token?: string | null }
 ) {
 	const q = new URLSearchParams();
+	// Avoid 304 responses on infinite-scroll requests so callers always receive a JSON body.
+	q.set('_ts', String(Date.now()));
 	if (params.page != null) q.set('page', String(Math.max(1, params.page)));
 	if (params.limit != null) q.set('limit', String(Math.min(100, Math.max(1, params.limit))));
 	const s = params.search?.trim();
@@ -201,6 +204,8 @@ export type UpdateBatchAssignmentsResponse = {
 	message: string;
 	data?: unknown;
 };
+
+export type UpdateBatchDetailsBody = Partial<CreateBatchBody>;
 
 export type BatchTeacherItem = {
 	userId: string;
@@ -300,6 +305,22 @@ export type BatchTestsItemsResponse = {
 export async function updateBatchAssignments(
 	batchId: string,
 	body: UpdateBatchAssignmentsBody,
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	return apiRequest<UpdateBatchAssignmentsResponse>({
+		endpoint: `/api/v1/batch/${encodeURIComponent(batchId)}`,
+		method: 'PATCH',
+		data: body,
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}
+
+/** PATCH /api/v1/batch/:batchId — update batch details */
+export async function updateBatchDetails(
+	batchId: string,
+	body: UpdateBatchDetailsBody,
 	fetchFn?: typeof fetch,
 	options?: { token?: string | null }
 ) {
