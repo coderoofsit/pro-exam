@@ -154,7 +154,7 @@
 <div
 	class="min-h-full bg-[var(--page-bg)] text-[var(--page-text)] font-sans transition-colors duration-300"
 >
-	<div class="mx-auto max-w-6xl px-4 py-6">
+	<div class="mx-auto max-w-6xl px-4 py-2">
 		<header
 			class="mb-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
 		>

@@ -447,26 +447,26 @@
 
   /* ── SIDEBAR ─────────────────────────────────────────────────────────── */
   --sb-bg-from: #05070D;
-  --sb-bg-to: #1A1235;
-  --sb-border-color: rgba(139, 92, 246, 0.18);
-  --sb-logo-glow: 0 0 18px rgba(139, 92, 246, 0.55);
+  --sb-bg-to: #0B1430;
+  --sb-border-color: rgba(62, 115, 247, 0.22);
+  --sb-logo-glow: 0 0 18px rgba(62, 115, 247, 0.55);
   --sb-brand-name-color: #ffffff;
   --sb-shadow: 4px 0 32px rgba(5, 7, 13, 0.6);
   --sb-brand-role-color: #A1A1AA;
   --sb-nav-text: #A1A1AA;
   --sb-nav-icon: #A1A1AA;
-  --sb-nav-hover-bg: rgba(139, 92, 246, 0.10);
+  --sb-nav-hover-bg: rgba(62, 115, 247, 0.14);
   --sb-nav-hover-text: #ffffff;
-  --sb-nav-hover-icon: #C4B5FD;
-  --sb-nav-active-bg: rgba(139, 92, 246, 0.18);
+  --sb-nav-hover-icon: #3E73F7;
+  --sb-nav-active-bg: rgba(62, 115, 247, 0.2);
   --sb-nav-active-text: #ffffff;
-  --sb-nav-active-icon: #A78BFA;
-  --sb-nav-active-indicator: #8B5CF6;
-  --sb-nav-active-glow: 0 0 12px rgba(139, 92, 246, 0.35);
+  --sb-nav-active-icon: #3E73F7;
+  --sb-nav-active-indicator: #3E73F7;
+  --sb-nav-active-glow: 0 0 12px rgba(62, 115, 247, 0.4);
   --sb-collapse-text: #71717A;
-  --sb-collapse-hover-bg: rgba(139, 92, 246, 0.10);
+  --sb-collapse-hover-bg: rgba(62, 115, 247, 0.14);
   --sb-collapse-hover-text: #A1A1AA;
-  --sb-divider: rgba(139, 92, 246, 0.15);
+  --sb-divider: rgba(62, 115, 247, 0.18);
 
   /* ── TOPBAR ──────────────────────────────────────────────────────────── */
   --topbar-page-bg: #0C0E1A;
@@ -603,23 +603,23 @@
   /* ── STUDENT HOME ─────────────────────────────────────────────────────── */
   --sh-page-bg: #0C0E1A;
   --sh-section-title: #ffffff;
-  --sh-section-link: #A78BFA;
+  --sh-section-link: #93c5fd;
   --sh-section-link-hover: #ffffff;
   --sh-exam-card-bg: rgba(255, 255, 255, 0.03);
-  --sh-exam-card-border: rgba(139, 92, 246, 0.18);
-  --sh-exam-card-hover-border: rgba(139, 92, 246, 0.50);
-  --sh-exam-card-hover-shadow: 0 4px 24px rgba(139, 92, 246, 0.18);
+  --sh-exam-card-border: rgba(79, 126, 255, 0.18);
+  --sh-exam-card-hover-border: rgba(79, 126, 255, 0.5);
+  --sh-exam-card-hover-shadow: 0 4px 24px rgba(79, 126, 255, 0.2);
   --sh-exam-card-title: #ffffff;
-  --sh-exam-card-arrow-bg: rgba(139, 92, 246, 0.12);
-  --sh-exam-card-arrow-color: #A78BFA;
-  --sh-exam-card-arrow-hover-bg: rgba(139, 92, 246, 0.28);
-  --dash-exam-card-border: rgba(139, 92, 246, 0.28);
-  --dash-exam-card-hover-border: #A78BFA;
-  --dash-exam-card-hover-bg: rgba(139, 92, 246, 0.10);
-  --dash-exam-card-hover-shadow: 0 8px 24px -10px rgba(139, 92, 246, 0.45);
-  --dash-exam-card-icon-bg: rgba(139, 92, 246, 0.18);
-  --dash-exam-card-icon-ring: rgba(139, 92, 246, 0.35);
-  --dash-exam-card-title-hover: #C4B5FD;
+  --sh-exam-card-arrow-bg: rgba(79, 126, 255, 0.12);
+  --sh-exam-card-arrow-color: #93c5fd;
+  --sh-exam-card-arrow-hover-bg: rgba(79, 126, 255, 0.28);
+  --dash-exam-card-border: rgba(79, 126, 255, 0.28);
+  --dash-exam-card-hover-border: #93c5fd;
+  --dash-exam-card-hover-bg: rgba(79, 126, 255, 0.1);
+  --dash-exam-card-hover-shadow: 0 8px 24px -10px rgba(79, 126, 255, 0.45);
+  --dash-exam-card-icon-bg: rgba(79, 126, 255, 0.18);
+  --dash-exam-card-icon-ring: rgba(79, 126, 255, 0.35);
+  --dash-exam-card-title-hover: #bfdbfe;
   --sh-toolbox-label: #8B5CF6;
   --sh-toolbox-sub: #71717A;
   --sh-tool-card-bg: rgba(255, 255, 255, 0.03);
@@ -983,10 +983,10 @@
   --semantic-error-box-text: #fecaca;
 
   /* Sidebar logo tile gradient (brand mark) */
-  --sb-logo-gradient-from: #8b5cf6;
-  --sb-logo-gradient-to: #6d28d9;
+  --sb-logo-gradient-from: #3E73F7;
+  --sb-logo-gradient-to: #3E73F7;
   /* Sidebar top edge highlight (decorative line) */
-  --sb-edge-glow: rgb(139 92 246 / 0.5);
+  --sb-edge-glow: rgb(62 115 247 / 0.55);
 
   /* Subject grid cards — rotating border accents */
   --subject-picker-accent-0: #3b82f6;
@@ -1558,24 +1558,24 @@ html[data-theme='dark'] .question-card:hover {
 
   --sh-page-bg: #0C0E1A;
   --sh-section-title: #ffffff;
-  --sh-section-link: #A78BFA;
+  --sh-section-link: #93c5fd;
   --sh-section-link-hover: #ffffff;
 
   --sh-exam-card-bg: rgba(255, 255, 255, 0.03);
-  --sh-exam-card-border: rgba(139, 92, 246, 0.18);
-  --sh-exam-card-hover-border: rgba(139, 92, 246, 0.50);
-  --sh-exam-card-hover-shadow: 0 4px 24px rgba(139, 92, 246, 0.18);
+  --sh-exam-card-border: rgba(79, 126, 255, 0.18);
+  --sh-exam-card-hover-border: rgba(79, 126, 255, 0.5);
+  --sh-exam-card-hover-shadow: 0 4px 24px rgba(79, 126, 255, 0.2);
   --sh-exam-card-title: #ffffff;
-  --sh-exam-card-arrow-bg: rgba(139, 92, 246, 0.12);
-  --sh-exam-card-arrow-color: #A78BFA;
-  --sh-exam-card-arrow-hover-bg: rgba(139, 92, 246, 0.28);
-  --dash-exam-card-border: rgba(139, 92, 246, 0.28);
-  --dash-exam-card-hover-border: #A78BFA;
-  --dash-exam-card-hover-bg: rgba(139, 92, 246, 0.10);
-  --dash-exam-card-hover-shadow: 0 8px 24px -10px rgba(139, 92, 246, 0.45);
-  --dash-exam-card-icon-bg: rgba(139, 92, 246, 0.18);
-  --dash-exam-card-icon-ring: rgba(139, 92, 246, 0.35);
-  --dash-exam-card-title-hover: #C4B5FD;
+  --sh-exam-card-arrow-bg: rgba(79, 126, 255, 0.12);
+  --sh-exam-card-arrow-color: #93c5fd;
+  --sh-exam-card-arrow-hover-bg: rgba(79, 126, 255, 0.28);
+  --dash-exam-card-border: rgba(79, 126, 255, 0.28);
+  --dash-exam-card-hover-border: #93c5fd;
+  --dash-exam-card-hover-bg: rgba(79, 126, 255, 0.1);
+  --dash-exam-card-hover-shadow: 0 8px 24px -10px rgba(79, 126, 255, 0.45);
+  --dash-exam-card-icon-bg: rgba(79, 126, 255, 0.18);
+  --dash-exam-card-icon-ring: rgba(79, 126, 255, 0.35);
+  --dash-exam-card-title-hover: #bfdbfe;
 
   --sh-toolbox-label: #8B5CF6;
   --sh-toolbox-sub: #71717A;
