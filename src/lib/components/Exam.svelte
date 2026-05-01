@@ -2,14 +2,23 @@
 	import type { Exam as ExamApi } from '$lib/api/exams';
 	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
 	import BackButton from '$lib/components/BackButton.svelte';
+	import { goto } from '$app/navigation';
 
 let {
 	exams,
 	boardName,
 	pyq = false,
 	hideBoardTitle = false,
-	basePath
-}: { exams: ExamApi[]; boardName: string; pyq?: boolean; hideBoardTitle?: boolean; basePath?: string } = $props();
+	basePath,
+	showBackButton = true
+}: {
+	exams: ExamApi[];
+	boardName: string;
+	pyq?: boolean;
+	hideBoardTitle?: boolean;
+	basePath?: string;
+	showBackButton?: boolean;
+} = $props();
 
 	function getExamSlug(exam: any): string {
 		return exam?.slug ?? exam?._id ?? '';
@@ -30,11 +39,23 @@ let {
 		if (n && typeof n === 'object') return typeof n.en === 'string' ? n.en : '';
 		return '';
 	}
+
+	function backFallbackForBasePath() {
+		if (basePath === '/student/exams') return '/student/dashboard';
+		if (basePath === '/teacher/exams') return '/teacher/dashboard';
+		if (basePath === '/institute/exams') return '/institute/dashboard';
+		return '/';
+	}
 </script>
 
 <div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	<div class="mt-3 mb-3 flex items-center gap-3">
-		<BackButton label="Back" />
+		{#if showBackButton}
+			<BackButton
+				label="Back"
+				onClick={() => void goto(backFallbackForBasePath(), { replaceState: true })}
+			/>
+		{/if}
 		<p class="text-sm text-[var(--page-text-muted)]">
 			{exams.length} exam{exams.length !== 1 ? 's' : ''} available
 		</p>

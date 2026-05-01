@@ -38,7 +38,7 @@
         </svg>
       </div>
       <h2 class="text-xl font-black tracking-tight text-[var(--login-heading-color)]">
-        Exam<span class="text-primary">Abhyas</span>
+        Exam<span class="text-[var(--login-heading-color)]">Abhyas</span>
       </h2>
     </div>
 

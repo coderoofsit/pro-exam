@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
 
   type Props = {
     label: string;
@@ -7,6 +8,9 @@
     className?: string;
     tone?: 'default' | 'pyq';
     type?: 'button' | 'submit' | 'reset';
+    fallback?: string;
+    historyDelta?: number;
+    useHistory?: boolean;
   };
 
   let {
@@ -14,27 +18,50 @@
     onClick,
     className = '',
     tone = 'default',
-    type = 'button'
+    type = 'button',
+    fallback = '/',
+    historyDelta = -1,
+    useHistory = true
   }: Props = $props();
 
   const toneClass = $derived(tone === 'pyq' ? 'exam-route-back-btn--pyq' : '');
 
   function handleClick(e: MouseEvent) {
-    if (onClick) {
-      onClick(e);
+    if (!browser) return;
+
+    if (useHistory && window.history.length > 1) {
+      window.history.go(historyDelta);
       return;
     }
 
-    if (!browser) return;
-
-    e.preventDefault();
-    window.history.back();
+    if (onClick) {
+      onClick(e);
+    } else {
+      goto(fallback);
+    }
   }
 </script>
 
-<button type={type} onclick={handleClick} class={`exam-route-back-btn ${toneClass} ${className}`}>
-  <svg class="exam-route-back-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<button
+  type={type}
+  onclick={handleClick}
+  class={`exam-route-back-btn ${toneClass} ${className}`.trim()}
+  aria-label={label}
+>
+  <svg
+    class="exam-route-back-btn__icon"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M15 18l-6-6 6-6"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </svg>
+
   <span>{label}</span>
 </button>

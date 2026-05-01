@@ -191,7 +191,12 @@
 		{#if !showChapters}
 			<div class="flex flex-1 flex-col py-1">
 				<div class="mb-4 flex items-center gap-4">
-					<BackButton label="Back" className="self-center mt-1" onClick={() => void goto("/student/exams")} />
+					<BackButton
+						label="Back"
+						className="self-center mt-1"
+						useHistory={false}
+						onClick={() => void goto("/student/exams", { replaceState: true })}
+					/>
 					<h1 class="text-2xl font-bold leading-none md:text-3xl">
 						{examTitle}
 					</h1>
@@ -262,6 +267,7 @@
 				<div class="flex-1 overflow-y-auto p-2">
 					<BackButton
 						label="Back"
+						useHistory={false}
 						onClick={backToSubjects}
 						className="mb-3 justify-start border-[var(--sb-border-color)] bg-transparent text-[var(--sb-collapse-text)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 					/>

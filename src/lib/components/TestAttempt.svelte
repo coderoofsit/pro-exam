@@ -747,9 +747,13 @@ function clearCurrentAnswer() {
               hover:bg-[var(--ta-nav-btn-hover-bg)]
               hover:border-[var(--ta-nav-btn-hover-border)]
               hover:text-[var(--ta-nav-btn-hover-text)]
-              disabled:cursor-not-allowed disabled:opacity-40
-              disabled:hover:bg-[var(--ta-nav-btn-bg)]
-              disabled:hover:border-[var(--ta-nav-btn-border)] disabled:hover:text-[var(--ta-nav-btn-text)]
+              disabled:cursor-not-allowed
+              disabled:bg-[var(--ta-nav-btn-disabled-bg)]
+              disabled:border-[var(--ta-nav-btn-disabled-border)]
+              disabled:text-[var(--ta-nav-btn-disabled-text)]
+              disabled:hover:bg-[var(--ta-nav-btn-disabled-bg)]
+              disabled:hover:border-[var(--ta-nav-btn-disabled-border)]
+              disabled:hover:text-[var(--ta-nav-btn-disabled-text)]
             "
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -787,8 +791,9 @@ function clearCurrentAnswer() {
             disabled={submitted || submitInFlight}
             class="
               inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold
-              border-amber-500/40 bg-amber-500/10 text-amber-100
-              transition-colors hover:bg-amber-500/20
+              border-[var(--ta-mark-btn-border)] bg-[var(--ta-mark-btn-bg)] text-[var(--ta-mark-btn-text)]
+              transition-colors
+              hover:bg-[var(--ta-mark-btn-hover-bg)] hover:border-[var(--ta-mark-btn-hover-border)] hover:text-[var(--ta-mark-btn-hover-text)]
               disabled:cursor-not-allowed disabled:opacity-40
             "
           >
@@ -807,7 +812,10 @@ function clearCurrentAnswer() {
               shadow-[var(--ta-nav-btn-primary-shadow)]
               transition-shadow duration-150
               hover:shadow-[0_6px_24px_rgba(79,126,255,0.45)]
-              disabled:opacity-50
+              disabled:cursor-not-allowed
+              disabled:bg-[var(--ta-nav-btn-primary-disabled-bg)]
+              disabled:text-[var(--ta-nav-btn-primary-disabled-text)]
+              disabled:shadow-none
             "
           >
             {isLast ? 'Submit' : 'Next'}

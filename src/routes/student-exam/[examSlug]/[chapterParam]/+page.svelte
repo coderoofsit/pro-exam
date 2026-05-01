@@ -605,7 +605,9 @@ import Pagination from "$lib/components/Pagination.svelte";
 	);
 
 	function closeQuestionPreview() {
-		replaceState(`${chapterBaseUrl()}?${activeFiltersQuery({ page: data.safePage })}`, {});
+		const u = new URL(page.url);
+		u.searchParams.delete("questionId");
+		replaceState(`${u.pathname}${u.search}`, {});
 		effectiveQuestionId = null;
 		detailQuestion = null;
 		detailLoading = false;
@@ -668,10 +670,11 @@ import Pagination from "$lib/components/Pagination.svelte";
 						<div class="flex items-center justify-between gap-3">
 							<div class="-ml-1 flex flex-col gap-1.5 text-sm text-[var(--page-text-muted)]">
 								{#if effectiveQuestionId !== null}
-									<BackButton label="Back" onClick={closeQuestionPreview} />
+									<BackButton label="Back" useHistory={false} onClick={closeQuestionPreview} />
 								{:else}
 									<BackButton
 										label="Back"
+										useHistory={false}
 										onClick={() => {
 											void goto(`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`);
 										}}

@@ -1040,9 +1040,20 @@
   --ta-nav-btn-hover-bg: rgba(139, 92, 246, 0.10);
   --ta-nav-btn-hover-border: rgba(139, 92, 246, 0.50);
   --ta-nav-btn-hover-text: #C4B5FD;
+  --ta-nav-btn-disabled-bg: rgba(255, 255, 255, 0.04);
+  --ta-nav-btn-disabled-border: rgba(139, 92, 246, 0.16);
+  --ta-nav-btn-disabled-text: #71717A;
   --ta-nav-btn-primary-bg: linear-gradient(135deg, #8B5CF6 0%, #4f7eff 100%);
   --ta-nav-btn-primary-text: #ffffff;
   --ta-nav-btn-primary-shadow: 0 4px 16px rgba(139, 92, 246, 0.40);
+  --ta-nav-btn-primary-disabled-bg: rgba(139, 92, 246, 0.24);
+  --ta-nav-btn-primary-disabled-text: #c4b5fd;
+  --ta-mark-btn-bg: rgba(245, 158, 11, 0.12);
+  --ta-mark-btn-border: rgba(245, 158, 11, 0.45);
+  --ta-mark-btn-text: #fbbf24;
+  --ta-mark-btn-hover-bg: rgba(245, 158, 11, 0.22);
+  --ta-mark-btn-hover-border: rgba(245, 158, 11, 0.7);
+  --ta-mark-btn-hover-text: #fcd34d;
 
   --ta-palette-bg: rgba(255, 255, 255, 0.02);
   --ta-palette-border: rgba(139, 92, 246, 0.18);
@@ -1170,6 +1181,20 @@ html[data-theme="light"] {
   --topbar-dd-logout-text: #dc2626;
   --topbar-dd-logout-hover-bg: rgba(239, 68, 68, 0.08);
   --topbar-dd-empty-text: #94a3b8;
+
+  /* ── LOGIN PAGE (light mode visibility fix) ─────────────────────────── */
+  /* Keep existing light background; only strengthen text and borders. */
+  --login-heading-color: #0f172a;
+  --login-subtext-color: #0f172a;
+  --login-label-color: #0f172a;
+  --login-desc-color: #0f172a;
+  --login-back-color: #0f172a;
+  --login-back-hover-color: #020617;
+
+  --login-card-border: #cbd5e1;
+  --login-option-border: #94a3b8;
+  --login-option-hover-border: #334155;
+  --login-radio-border: #64748b;
 
   /* Dashboard / marketing panels */
   --dash-glass-border: rgba(15, 23, 42, 0.12);
@@ -1314,10 +1339,21 @@ html[data-theme="light"] {
   --ta-nav-btn-text: #64748b;
   --ta-nav-btn-hover-bg: #eef2ff;
   --ta-nav-btn-hover-border: #4f7eff;
-  --ta-nav-btn-hover-text: #4f7eff;
+  --ta-nav-btn-hover-text: #0f172a;
+  --ta-nav-btn-disabled-bg: #f8fafc;
+  --ta-nav-btn-disabled-border: #e2e8f0;
+  --ta-nav-btn-disabled-text: #0f172a;
   --ta-nav-btn-primary-bg: linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
-  --ta-nav-btn-primary-text: #ffffff;
+  --ta-nav-btn-primary-text: #0f172a;
   --ta-nav-btn-primary-shadow: 0 4px 16px rgba(79, 126, 255, 0.30);
+  --ta-nav-btn-primary-disabled-bg: #e2e8f0;
+  --ta-nav-btn-primary-disabled-text: #0f172a;
+  --ta-mark-btn-bg: #fff7ed;
+  --ta-mark-btn-border: #fdba74;
+  --ta-mark-btn-text: #c2410c;
+  --ta-mark-btn-hover-bg: #ffedd5;
+  --ta-mark-btn-hover-border: #fb923c;
+  --ta-mark-btn-hover-text: #9a3412;
   --ta-palette-bg: #ffffff;
   --ta-palette-border: #e2e8f0;
   --ta-palette-title: #1a1f36;
