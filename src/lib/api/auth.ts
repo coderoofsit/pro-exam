@@ -38,55 +38,70 @@ export type LoginResponse = {
 
 /** Per-profile subscription from GET /api/v1/users/membership */
 export type MembershipSubscription = {
-	isSubscribed: boolean;
-	isTrial: boolean;
-	planId: string | null;
-	expiry: string | null;
-	trialUsed: boolean;
+  isSubscribed: boolean;
+  isTrial: boolean;
+  planId: string | null;
+  expiry: string | null;
+  trialUsed: boolean;
 };
 
 /** GET /membership may return a string id or a populated profile (same id + email/phone for all rows). */
 export type MembershipUserProfileRef =
-	| string
-	| {
-			_id: string;
-			email?: string | null;
-			phone?: string | null;
-	  };
+  | string
+  | {
+    _id: string;
+    email?: string | null;
+    phone?: string | null;
+  };
+
+export async function dismissNotification(params: {
+  type: 'freeTrial' | 'goingToEnd' | 'expired';
+  token?: string | null;
+}) {
+  return apiRequest<{ success: boolean; message: string; data?: any }>({
+    endpoint: '/api/v1/users/dismiss-notification',
+    method: 'PATCH',
+    data: { type: params.type },
+    token: params.token
+  });
+}
 
 export type MembershipUser = {
-	/** Membership row id — use as `membershipId` for select-membership. */
-	_id: string;
-	/** Profile id string or populated `{ _id, email, phone }`. */
-	userProfileId?: MembershipUserProfileRef;
-	firstName?: string;
-	lastName?: string;
-	image?: string;
-	/** When true, this profile is the account default — shown first in the topbar list. */
-	defaultProfile?: boolean;
-	subscription?: MembershipSubscription | null;
+  /** Membership row id — use as `membershipId` for select-membership. */
+  _id: string;
+  /** Profile id string or populated `{ _id, email, phone }`. */
+  userProfileId?: MembershipUserProfileRef;
+  firstName?: string;
+  lastName?: string;
+  image?: string;
+  /** When true, this profile is the account default — shown first in the topbar list. */
+  defaultProfile?: boolean;
+  subscription?: MembershipSubscription | null;
+  freeTrialNotification?: boolean;
+  subscriptionGoingToEnd?: boolean;
+  subscriptionExpired?: boolean;
 };
 
 /** Normalize membership `userProfileId` for API calls and UI (email/phone prefill, sidebar). */
 export function normalizeMembershipProfileRef(
-	ref: MembershipUserProfileRef | undefined | null
+  ref: MembershipUserProfileRef | undefined | null
 ): {
-	userProfileId: string | undefined;
-	email: string | undefined;
-	phone: string | undefined;
+  userProfileId: string | undefined;
+  email: string | undefined;
+  phone: string | undefined;
 } {
-	if (ref == null) {
-		return { userProfileId: undefined, email: undefined, phone: undefined };
-	}
-	if (typeof ref === 'string') {
-		const id = ref.trim();
-		return { userProfileId: id || undefined, email: undefined, phone: undefined };
-	}
-	const id = ref._id?.trim();
-	const email = ref.email?.trim() || undefined;
-	const phone =
-		ref.phone != null && String(ref.phone).trim() ? String(ref.phone).trim() : undefined;
-	return { userProfileId: id || undefined, email, phone };
+  if (ref == null) {
+    return { userProfileId: undefined, email: undefined, phone: undefined };
+  }
+  if (typeof ref === 'string') {
+    const id = ref.trim();
+    return { userProfileId: id || undefined, email: undefined, phone: undefined };
+  }
+  const id = ref._id?.trim();
+  const email = ref.email?.trim() || undefined;
+  const phone =
+    ref.phone != null && String(ref.phone).trim() ? String(ref.phone).trim() : undefined;
+  return { userProfileId: id || undefined, email, phone };
 }
 
 /** GET /api/v1/users/membership — backend may use `success` or legacy `ok`. */

@@ -22,6 +22,7 @@
   } from "$lib/fcm";
   import { fetchUnreadNotificationCount } from "$lib/api/notifications";
   import { themeStore } from "$lib/stores/theme";
+  import SubscriptionReminderModal from "$lib/components/SubscriptionReminderModal.svelte";
 
   type Role = "student" | "tutor" | "institute";
   type SidebarIcon = "dashboard" | "exams" | "tests" | "batch" | "subscription";
@@ -59,6 +60,9 @@
 
   // -- Phone verification modal --
   let phoneModal = $state({ open: false, phone: '', step: 'input' as 'input' | 'otp', otp: '', loading: false, error: '', success: '' });
+
+  // -- Subscription Reminder Modal --
+  let activeReminderType = $state<'freeTrial' | 'goingToEnd' | 'expired' | null>(null);
 
   function normalizePhone(raw: string) {
     const digits = raw.replace(/\D/g, '');
@@ -271,6 +275,19 @@
       null,
   );
 
+  $effect(() => {
+    if (!defaultProfileUser) return;
+    if (activeReminderType) return; // Don't override if already showing
+
+    if (defaultProfileUser.subscriptionExpired) {
+      activeReminderType = 'expired';
+    } else if (defaultProfileUser.subscriptionGoingToEnd) {
+      activeReminderType = 'goingToEnd';
+    } else if (defaultProfileUser.freeTrialNotification) {
+      activeReminderType = 'freeTrial';
+    }
+  });
+
   function isActive(href: string): boolean {
     return (
       page.url.pathname === href || page.url.pathname.startsWith(href + "/")
@@ -416,13 +433,7 @@
     const clickedUser = $authStore.users[index];
     if (!clickedUser) return;
 
-    // Immediately close dropdown
     profileDropdownOpen = false;
-
-    // Immediately update local store for instant visual feedback:
-    // 1. Mark clicked user as default
-    // 2. Sort users so default is at top
-    // 3. This triggers $effect to sync selectedUserIndex to 0
     const locallyUpdatedUsers = $authStore.users.map((u, i) => ({
       ...u,
       defaultProfile: i === index,
@@ -436,7 +447,6 @@
       return;
     }
 
-    /** Membership row `_id` + `userProfileId` from GET /membership (required by API). */
     const membershipId = clickedUser._id;
     const userProfiledId = clickedUser.userProfileId?.trim();
     if (!userProfiledId) {
@@ -458,7 +468,7 @@
         console.error("Failed to set default profile", res.message);
         return;
       }
-
+    console.log("res",res.data);
       const root = res.data as SelectMembershipApiBody;
       if (
         root?.success === true &&
@@ -499,7 +509,7 @@
           phoneModal = { open: true, phone: root.data.phone ?? '', step: 'input', otp: '', loading: false, error: '', success: '' };
         }
 
-        hardReloadCurrentPage();
+       hardReloadCurrentPage();
         return;
       }
 
@@ -509,7 +519,7 @@
       await reloadMembershipFromServer();
       selectedUserIndex = 0;
       profileDropdownOpen = false;
-      hardReloadCurrentPage();
+     hardReloadCurrentPage();
     } finally {
       selectingMembershipDefault = false;
     }
@@ -564,6 +574,9 @@
         lastName: user.lastName,
         image: user.image,
         defaultProfile: user.defaultProfile,
+        freeTrialNotification: !!user.freeTrialNotification,
+        subscriptionGoingToEnd: !!user.subscriptionGoingToEnd,
+        subscriptionExpired: !!user.subscriptionExpired,
         subscription: user.subscription
           ? {
               isSubscribed: !!user.subscription.isSubscribed,
@@ -745,6 +758,17 @@
     await goto(route);
   }
 </script>
+
+{#if activeReminderType}
+  <SubscriptionReminderModal 
+    type={activeReminderType} 
+    onDismiss={async () => {
+      activeReminderType = null;
+      // Refresh user data to get updated flags (false)
+      await reloadMembershipFromServer();
+    }} 
+  />
+{/if}
 
 <div
   class="flex h-dvh min-h-0 items-stretch bg-[var(--page-bg)] font-sans text-[var(--page-text)]"

@@ -41,6 +41,8 @@ export async function fetchBatchStudents(
 		page: String(Math.max(1, params.page)),
 		limit: String(Math.min(100, Math.max(1, params.limit)))
 	});
+	// Avoid 304 responses on infinite-scroll requests so callers always receive a JSON body.
+	q.set('_ts', String(Date.now()));
 
 	return apiRequest<BatchStudentsResponse>({
 		endpoint: `/api/v1/batch/students?${q.toString()}`,

@@ -184,6 +184,22 @@ export const actions: Actions = {
 		if (!removeTeachers.length && !removeStudents.length && !removeTests.length) {
 			return fail(400, { message: 'Select at least one item to remove' });
 		}
+		if (removeTeachers.length > 0) {
+			const teachersRes = await fetchBatchTeachersItems(
+				batchId,
+				{ page: 1, limit: 1 },
+				fetch,
+				{ token }
+			);
+			const totalTeachers = teachersRes.success
+				? (teachersRes.data?.data?.pagination?.totalItems ??
+					teachersRes.data?.data?.items?.length ??
+					0)
+				: 0;
+			if (totalTeachers > 0 && removeTeachers.length >= totalTeachers) {
+				return fail(400, { message: 'At least one teacher must remain in the batch' });
+			}
+		}
 
 		const res = await removeBatchItems(
 			batchId,

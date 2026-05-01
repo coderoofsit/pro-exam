@@ -32,6 +32,7 @@ export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 						_id: row._id,
 						name: row.name,
 						slug: row.slug,
+						maxCapacity: row.maxCapacity ?? 0,
 						numberOfStudents: row.numberOfStudents ?? 0,
 						numberOfTeachers: row.numberOfTeachers ?? 0,
 						numberOfTests: row.numberOfTests ?? 0,
