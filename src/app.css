@@ -3123,7 +3123,7 @@ a.student-batch-card:hover {
   background: linear-gradient(
     110deg,
     transparent 0%,
-    color-mix(in srgb, var(--accent-cta-pink) 24%, #ffffff) 50%,
+    color-mix(in srgb, var(--page-link) 24%, #ffffff) 50%,
     transparent 100%
   );
   transform: skewX(-18deg);
@@ -3134,10 +3134,10 @@ a.student-batch-card:hover {
 @keyframes btnAttentionPulse {
   0%,
   100% {
-    box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--accent-cta-pink) 68%, transparent);
+    box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--page-link) 68%, transparent);
   }
   50% {
-    box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--accent-cta-pink) 85%, transparent);
+    box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--page-link) 85%, transparent);
   }
 }
 

@@ -32,8 +32,8 @@
   <div class="w-full max-w-[400px]">
     <!-- BRANDING LOGO -->
     <div class="flex items-center justify-center gap-3 mb-10">
-      <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-primary-foreground">
+      <div class="w-10 h-10 rounded-xl border border-[var(--login-card-border)] bg-[var(--login-card-bg)] flex items-center justify-center shadow-lg shadow-black/5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-[var(--login-heading-color)]">
           {@html Icons.Zap}
         </svg>
       </div>
@@ -70,13 +70,13 @@
                 type="button"
                 class={`rounded-xl border px-3 py-3 text-left transition-all ${
                   selectedRole === role.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-[var(--login-card-border)] hover:border-primary/50'
+                    ? 'border-[var(--login-option-hover-border)] bg-[var(--login-option-hover-bg)] text-[var(--login-label-color)]'
+                    : 'border-[var(--login-card-border)] hover:border-[var(--login-option-hover-border)] text-[var(--login-label-color)]'
                 }`}
                 on:click={() => (selectedRole = role.value)}
               >
-                <p class="text-sm font-bold">{role.label}</p>
-                <p class="text-[11px] opacity-80">{role.hint}</p>
+                <p class="text-sm font-bold text-[var(--login-label-color)]">{role.label}</p>
+                <p class="text-[11px] text-[var(--login-desc-color)]">{role.hint}</p>
               </button>
             {/each}
           </div>
@@ -84,7 +84,7 @@
 
         <GoogleRoleSignIn selected={selectedRole} />
         
-        <p class="text-[10px] text-center text-[var(--login-subtext-color)] px-4 uppercase tracking-widest font-bold opacity-60">
+        <p class="text-[10px] text-center text-[var(--login-subtext-color)] px-4 uppercase tracking-widest font-bold">
           Continue with Google for selected role
         </p>
       </div>
@@ -92,7 +92,7 @@
       <div class="mt-10 pt-8 border-t border-[var(--login-card-border)] text-center">
         <a
           href="/"
-          class="text-sm font-bold transition-colors text-primary hover:opacity-80 flex items-center justify-center gap-2"
+          class="text-sm font-bold transition-colors text-[var(--login-back-color)] hover:text-[var(--login-back-hover-color)] flex items-center justify-center gap-2"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -102,7 +102,7 @@
       </div>
     </div>
 
-    <p class="mt-8 text-center text-xs text-[var(--login-subtext-color)] opacity-50">
+    <p class="mt-8 text-center text-xs text-[var(--login-subtext-color)]">
       © {new Date().getFullYear()} ExamAbhyas. All rights reserved.
     </p>
   </div>

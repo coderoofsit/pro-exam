@@ -15,7 +15,7 @@
   type="button"
   class={`btn-cta-subscription-outline px-2.5 py-1 text-xs ${
     variant === "highlight"
-      ? "btn-attention border-[var(--accent-cta-pink)] bg-[color-mix(in_srgb,var(--accent-cta-pink)_18%,var(--sh-exam-card-bg))] shadow-[0_8px_22px_-12px_color-mix(in_srgb,var(--accent-cta-pink)_70%,transparent)] hover:bg-[color-mix(in_srgb,var(--accent-cta-pink)_28%,var(--sh-exam-card-bg))] hover:shadow-[0_12px_28px_-12px_color-mix(in_srgb,var(--accent-cta-pink)_80%,transparent)]"
+      ? "btn-attention border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-bg))] shadow-[0_8px_22px_-12px_color-mix(in_srgb,var(--page-link)_70%,transparent)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-bg))] hover:shadow-[0_12px_28px_-12px_color-mix(in_srgb,var(--page-link)_80%,transparent)]"
       : ""
   } ${className}`}
   {disabled}
