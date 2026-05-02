@@ -875,19 +875,17 @@ import Pagination from "$lib/components/Pagination.svelte";
 											class="question-card group rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-4 py-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-md"
 											onclick={() => openQuestionPreview(index)}
 										>
-											<div class="flex items-start gap-2">
+											<div class="flex items-baseline gap-2">
 												<span
-													class="shrink-0 text-sm font-semibold leading-relaxed text-[var(--page-text-muted)] opacity-95"
+													class="q-num shrink-0 text-sm font-semibold text-[var(--page-text-muted)] opacity-95"
 												>
 													{(data.safePage - 1) *
 														(displayPaginationMeta?.limit ?? 10) +
 														index +
 														1}.
 												</span>
-												<div class="flex-1 text-[0.95rem] font-normal leading-relaxed text-[var(--page-text)]">
-													<span class="inline-block align-top">
-														<MathText content={questionPromptEnContent(q)} />
-													</span>
+												<div class="question-snippet min-w-0 flex-1 text-[0.95rem] font-normal leading-relaxed text-[var(--page-text)]">
+													<MathText content={questionPromptEnContent(q)} />
 													{#if promptImagesOnly(q).length}
 														<div
 															class="mt-2.5 grid grid-cols-2 gap-2"
@@ -913,7 +911,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 												</div>
 											</div>
 											{#if (q as any).paperId}
-												<div class="mt-2 pl-0.5">
+												<div class="mt-1.5 pl-0.5">
 													<div
 														class="inline-flex rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--page-link)] leading-tight"
 													>
@@ -1280,19 +1278,21 @@ import Pagination from "$lib/components/Pagination.svelte";
 									</div>
 
 									<div
-										class="mb-5 text-[1.05rem] leading-relaxed text-[var(--page-text)]"
+										class="mb-3 text-[1.05rem] leading-relaxed text-[var(--page-text)]"
 									>
-										<div class="flex items-start gap-2">
+										<div class="flex items-baseline gap-2">
 											{#if currentQuestionNumber !== null}
-												<span class="shrink-0 font-semibold text-[var(--page-text-muted)]">
+												<span class="q-num shrink-0 font-semibold text-[var(--page-text-muted)]">
 													{currentQuestionNumber}.
 												</span>
 											{/if}
-										<MathText
-											content={questionPromptEnContent(
-												detailQuestion,
-											)}
-										/>
+											<div class="question-snippet min-w-0 flex-1">
+												<MathText
+													content={questionPromptEnContent(
+														detailQuestion,
+													)}
+												/>
+											</div>
 										</div>
 										{#if promptImagesOnly(detailQuestion).length}
 											<div
@@ -1332,7 +1332,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 									</div>
 
 									{#if (detailQuestion as any).paperId}
-										<div class="mb-5">
+										<div class="mt-2 mb-4">
 											<div
 												class="inline-flex rounded-md border border-[var(--page-link)]/10 bg-[var(--page-link)]/5 px-2.5 py-1 text-[0.7rem] font-bold uppercase tracking-wider text-[var(--page-link)]"
 											>
@@ -1872,5 +1872,24 @@ import Pagination from "$lib/components/Pagination.svelte";
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
 		background: var(--page-link);
+	}
+
+	/* Keep question number and prompt aligned; compact math (no display-math block gaps). */
+	.q-num {
+		line-height: 1.35;
+	}
+
+	.question-snippet :global(mjx-container),
+	.question-snippet :global(.MathJax) {
+		display: inline !important;
+		vertical-align: baseline;
+	}
+
+	/* MathText uses block + 0.75em margins for display math — kills space before paper badge. */
+	.question-snippet :global(mjx-container[display="true"]) {
+		display: inline-block !important;
+		margin: 0.08em 0.1em !important;
+		vertical-align: middle;
+		text-align: left;
 	}
 </style>

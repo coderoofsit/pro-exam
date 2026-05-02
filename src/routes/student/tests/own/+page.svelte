@@ -63,7 +63,11 @@
 
     {#if !showChoiceModal}
       <div class="mb-4 mt-2 flex justify-start">
-        <BackButton label="Back" onClick={() => void goto('/student/tests/own')} />
+        <BackButton
+          label="Back"
+          useHistory={false}
+          onClick={() => void goto('/student/tests/own')}
+        />
       </div>
 
       {#if error}

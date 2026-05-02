@@ -711,10 +711,20 @@
 				{@const qNum = (q.order ?? previewIndex) + 1}
 				{@const correctIds = q.correct?.identifiers ?? []}
 				{@const selectedIds = q.answer?.identifiers ?? []}
-				{@const opts =
-					q.prompt?.en?.options ??
-					q.prompt?.options ??
-					q.options ??
+				{@const promptEn =
+					q.prompt?.en ??
+					q.question?.prompt?.en ??
+					q.prompt ??
+					{}}
+				{@const opts = promptEn?.options ?? q.options ?? []}
+				{@const questionImages = promptEn?.images ?? []}
+				{@const explanationText =
+					promptEn?.explanation ??
+					q.question?.prompt?.en?.explanation ??
+					""}
+				{@const explanationImages =
+					promptEn?.explanationImages ??
+					q.question?.prompt?.en?.explanationImages ??
 					[]}
 				<div class="preview-body">
 					<!-- meta row -->
@@ -746,7 +756,7 @@
 					<!-- question text -->
 					<div class="preview-qtext math-content">
 						<MathText
-							content={q.prompt?.en?.content ??
+							content={promptEn?.content ??
 								q.prompt?.content ??
 								"Question not available"}
 						/>
@@ -758,9 +768,9 @@
 					</div>
 
 					<!-- question images -->
-					{#if q.prompt?.en?.images?.length}
+					{#if questionImages?.length}
 						<div class="preview-images">
-							{#each q.prompt.en.images as img}
+							{#each questionImages as img}
 								<img
 									src={img.url ?? img}
 									alt="Question figure"
@@ -796,6 +806,17 @@
 									</span>
 									<span class="opt-text math-content">
 										<MathText content={opt.content ?? ""} />
+										{#if opt.images?.length}
+											<div class="preview-option-images">
+												{#each opt.images as optImg}
+													<img
+														src={optImg.url ?? optImg}
+														alt={`Option ${opt.identifier} image`}
+														class="preview-option-img"
+													/>
+												{/each}
+											</div>
+										{/if}
 									</span>
 									{#if isSelected && isCorrect}
 										<span class="opt-tag ot-correct"
@@ -812,6 +833,30 @@
 									{/if}
 								</div>
 							{/each}
+						</div>
+					{/if}
+
+					{#if explanationText || explanationImages?.length}
+						<div class="preview-explanation">
+							<div class="preview-explanation-title">
+								Exam Flow Solution
+							</div>
+							{#if explanationText}
+								<div class="preview-explanation-text math-content">
+									<MathText content={explanationText} />
+								</div>
+							{/if}
+							{#if explanationImages?.length}
+								<div class="preview-explanation-images">
+									{#each explanationImages as exImg}
+										<img
+											src={exImg.url ?? exImg}
+											alt="Explanation figure"
+											class="preview-explanation-img"
+										/>
+									{/each}
+								</div>
+							{/if}
 						</div>
 					{/if}
 

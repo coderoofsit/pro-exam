@@ -138,6 +138,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 70px);
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -161,6 +162,7 @@
   @media (min-width: 540px) {
     .ctm-backdrop {
       align-items: center;
+      padding: 0;
     }
     .ctm-sheet {
       border-radius: 1.5rem;

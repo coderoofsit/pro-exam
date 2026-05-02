@@ -373,7 +373,11 @@
 		{@const globalNum = (q.order ?? previewIndex) + 1}
 		{@const correctIds=q.correct?.identifiers??[]}
 		{@const selectedIds=q.answer?.identifiers??[]}
-		{@const opts=q.prompt?.en?.options??q.prompt?.options??q.options??[]}
+		{@const promptEn=q.prompt?.en??q.question?.prompt?.en??q.prompt??{}}
+		{@const opts=promptEn?.options??q.options??[]}
+		{@const questionImages=promptEn?.images??[]}
+		{@const explanationText=promptEn?.explanation??q.question?.prompt?.en?.explanation??""}
+		{@const explanationImages=promptEn?.explanationImages??q.question?.prompt?.en?.explanationImages??[]}
 		<div class="pv-body">
 			<div class="pv-meta">
 				<span class="pv-qnum">{globalNum}</span>
@@ -385,9 +389,9 @@
 					{:else}<span class="pv-answer-label pv-answer-skip">Not attempted</span>{/if}
 				</div>
 			</div>
-			<div class="pv-qtext math-content"><MathText content={q.prompt?.en?.content??q.prompt?.content??"Question not available"}/></div>
-			{#if q.prompt?.en?.images?.length}
-			<div class="pv-imgs">{#each q.prompt.en.images as img}<img src={img.url??img} alt="figure" class="pv-img"/>{/each}</div>
+			<div class="pv-qtext math-content"><MathText content={promptEn?.content??q.prompt?.content??"Question not available"}/></div>
+			{#if questionImages?.length}
+			<div class="pv-imgs">{#each questionImages as img}<img src={img.url??img} alt="figure" class="pv-img"/>{/each}</div>
 			{/if}
 			{#if opts.length}
 			<div class="pv-opts">
@@ -396,13 +400,37 @@
 				{@const isSelected=selectedIds.includes(opt.identifier)}
 				<div class="pv-opt" class:opt-correct={isCorrect} class:opt-wrong={isSelected&&!isCorrect}>
 					<span class="oc" class:oc-green={isCorrect} class:oc-red={isSelected&&!isCorrect} class:oc-blue={!isCorrect&&!isSelected}>{opt.identifier}</span>
-					<span class="ot math-content"><MathText content={opt.content??""}/></span>
+					<span class="ot math-content">
+						<MathText content={opt.content??""}/>
+						{#if opt.images?.length}
+							<div class="pv-opt-imgs">
+								{#each opt.images as optImg}
+									<img src={optImg.url??optImg} alt={`Option ${opt.identifier} image`} class="pv-opt-img"/>
+								{/each}
+							</div>
+						{/if}
+					</span>
 					{#if isSelected&&isCorrect}<span class="otag correct">Your answer ✓</span>
 					{:else if isCorrect}<span class="otag correct">Correct answer</span>
 					{:else if isSelected}<span class="otag wrong">Your answer</span>{/if}
 				</div>
 				{/each}
 			</div>
+			{/if}
+			{#if explanationText || explanationImages?.length}
+				<div class="pv-expl">
+					<div class="pv-expl-title">Exam Flow Solution</div>
+					{#if explanationText}
+						<div class="pv-expl-text math-content"><MathText content={explanationText} /></div>
+					{/if}
+					{#if explanationImages?.length}
+						<div class="pv-expl-imgs">
+							{#each explanationImages as exImg}
+								<img src={exImg.url??exImg} alt="Explanation figure" class="pv-expl-img"/>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			{/if}
 			<div class="pv-footer">
 				<button class="pf prev" disabled={previewIndex===0} onclick={()=>previewIndex--}>← Previous</button>
@@ -778,7 +806,7 @@
 	.math-content :global(.MathJax){display:inline!important}
 
 	.pv-imgs{display:flex;flex-direction:column;gap:.5rem}
-	.pv-img{max-width:100%;border-radius:8px;border:1px solid #e2e8f0}
+	.pv-img{max-width:100%;max-height:260px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#fff}
 
 	.pv-opts{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
 	@media(max-width:480px){.pv-opts{grid-template-columns:1fr}}
@@ -791,9 +819,16 @@
 	.oc.oc-green{background:#16a34a;color:#fff}
 	.oc.oc-red{background:#dc2626;color:#fff}
 	.ot{flex:1;line-height:1.5;word-break:break-word}
+	.pv-opt-imgs{margin-top:.45rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:.45rem}
+	.pv-opt-img{width:100%;height:88px;border-radius:8px;border:1px solid #dbe2ef;object-fit:contain;background:#fff}
 	.otag{position:absolute;bottom:5px;right:8px;font-size:.6rem;font-weight:700;padding:.15rem .5rem;border-radius:3px}
 	.otag.correct{background:#16a34a;color:#fff}
 	.otag.wrong{background:#dc2626;color:#fff}
+	.pv-expl{border:1px solid #dbe5f2;border-radius:12px;background:#f8fbff;padding:.85rem;display:flex;flex-direction:column;gap:.65rem}
+	.pv-expl-title{font-size:.78rem;font-weight:800;color:#1e3a8a;letter-spacing:.01em}
+	.pv-expl-text{font-size:.88rem;line-height:1.65;color:#1e293b}
+	.pv-expl-imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem}
+	.pv-expl-img{width:100%;max-height:180px;border-radius:10px;border:1px solid #dbe2ef;object-fit:contain;background:#fff}
 
 	.pv-footer{display:flex;align-items:center;justify-content:space-between;padding:1rem 0 0;border-top:1px solid #e2e8f0;margin-top:auto}
 	:global([data-theme="dark"]) .pv-footer{border-color:#334155}
@@ -927,6 +962,18 @@
 		);
 		color: #f8fafc;
 	}
+	:global([data-theme="dark"]) .pv-opt-img,
+	:global([data-theme="dark"]) .pv-img,
+	:global([data-theme="dark"]) .pv-expl-img {
+		background: #0f172a;
+		border-color: rgba(96, 165, 250, 0.28);
+	}
+	:global([data-theme="dark"]) .pv-expl {
+		background: #13233f;
+		border-color: color-mix(in srgb, var(--analysis-tab-active, var(--page-link)) 34%, transparent);
+	}
+	:global([data-theme="dark"]) .pv-expl-title { color: #93c5fd; }
+	:global([data-theme="dark"]) .pv-expl-text { color: #e2e8f0; }
 	:global([data-theme="dark"]) .pv-opt.opt-correct {
 		background: rgba(22, 163, 74, 0.18);
 		border-color: rgba(34, 197, 94, 0.5);
