@@ -736,11 +736,14 @@
   --dash-cta-chevron: rgba(255, 255, 255, 0.7);
   --dash-divider: rgba(148, 163, 184, 0.35);
 
-  /* ── ANALYSIS PAGE (dark) ───────────────────────────────────────────── */
+  /* ── ANALYSIS PAGE (dark) — align with student-exam / --sh-exam-* bluish UI ─ */
+  /* Solid base for nested gradients (e.g. hero-main-card); shell uses --analysis-shell-bg. */
   --analysis-page-bg: #0C0E1A;
+  --analysis-shell-bg: linear-gradient(160deg, #05070D 0%, #0B1430 42%, #0C0E1A 100%);
   --analysis-card-bg: rgba(255, 255, 255, 0.03);
-  --analysis-card-border: rgba(139, 92, 246, 0.18);
-  --analysis-card-shadow: 0 4px 24px rgba(5, 7, 13, 0.5);
+  --analysis-card-border: rgba(79, 126, 255, 0.18);
+  --analysis-card-shadow: 0 4px 24px rgba(15, 23, 42, 0.55),
+    0 0 0 1px rgba(79, 126, 255, 0.08);
   --analysis-text-primary: #ffffff;
   --analysis-text-secondary: #A1A1AA;
   --analysis-metric-blue-bg: rgba(79, 126, 255, 0.1);
@@ -752,8 +755,8 @@
   --analysis-metric-orange-bg: rgba(245, 158, 11, 0.1);
   --analysis-metric-orange-border: rgba(245, 158, 11, 0.2);
   --analysis-metric-orange-text: #fbbf24;
-  --analysis-tab-active: #A78BFA;
-  --analysis-tab-inactive: #52525B;
+  --analysis-tab-active: #93c5fd;
+  --analysis-tab-inactive: #64748b;
 
   /* ─── TOPBAR DARK THEME TOKENS ───────────────────────────────────────────
      All topbar-specific values live here under the --topbar- prefix.
@@ -3384,7 +3387,7 @@ a.student-batch-card:hover {
 	/* ── page shell ── */
 	.ap {
 		min-height: 100vh;
-		background: var(--analysis-page-bg, #f1f5f9);
+		background: var(--analysis-shell-bg, var(--analysis-page-bg, #f1f5f9));
 		font-family: "Inter", "Segoe UI", system-ui, sans-serif;
 	}
 	.ap-loading {
@@ -3449,6 +3452,38 @@ a.student-batch-card:hover {
 		margin: 0;
 		letter-spacing: -0.01em;
 	}
+	@media (max-width: 640px) {
+		.ap-header {
+			padding: 0.75rem 1rem;
+		}
+		.ap-header-inner {
+			gap: 0.5rem;
+		}
+		.header-center {
+			min-width: 0;
+		}
+		.ap-title {
+			font-size: clamp(0.62rem, 2.85vw + 0.35rem, 0.95rem);
+			white-space: nowrap;
+			overflow-x: auto;
+			overflow-y: hidden;
+			max-width: 100%;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+			line-height: 1.25;
+		}
+		.ap-title::-webkit-scrollbar {
+			display: none;
+		}
+		.ap-badge {
+			padding: 0.22rem 0.55rem;
+			font-size: 0.58rem;
+			flex-shrink: 0;
+		}
+		.back-btn {
+			flex-shrink: 0;
+		}
+	}
 	.ap-sub {
 		font-size: 0.72rem;
 		color: #64748b;
@@ -3506,7 +3541,8 @@ a.student-batch-card:hover {
 			var(--analysis-page-bg, #f8fafc) 100%
 		);
 		border: 1px solid var(--analysis-card-border, #e2e8f0);
-		padding: 1.5rem 2.5rem 2.5rem;
+		/* Extra bottom space: .hero-bottom-bar is position:absolute and overlaps content */
+		padding: 1.5rem 2.5rem calc(2.5rem + 28px);
 		border-radius: 28px;
 		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.05);
 		position: relative;
@@ -3517,7 +3553,7 @@ a.student-batch-card:hover {
 			grid-template-columns: 1fr;
 			text-align: center;
 			gap: 2rem;
-			padding: 1.5rem;
+			padding: 1.5rem 1.5rem calc(1.5rem + 30px);
 		}
 	}
 
@@ -3639,7 +3675,10 @@ a.student-batch-card:hover {
 		.hero-breakdown-col {
 			flex-direction: row;
 			justify-content: center;
-			gap: 1rem;
+			align-items: stretch;
+			gap: 0.5rem;
+			width: 100%;
+			max-width: 100%;
 		}
 	}
 	.hb-item {
@@ -3689,6 +3728,30 @@ a.student-batch-card:hover {
 		letter-spacing: 0.05em;
 		margin-left: 1.85rem;
 	}
+	@media (max-width: 900px) {
+		.hb-item {
+			flex: 1;
+			min-width: 0;
+			padding: 0.5rem 0.35rem 0.55rem;
+			align-items: center;
+			overflow: visible;
+		}
+		.hb-top {
+			justify-content: center;
+			gap: 0.35rem;
+		}
+		.hb-lbl {
+			margin-left: 0;
+			text-align: center;
+			line-height: 1.25;
+			font-size: 0.52rem;
+			letter-spacing: 0.04em;
+			white-space: nowrap;
+		}
+		.hero-breakdown-col {
+			margin-bottom: 0.35rem;
+		}
+	}
 
 	/* segment bar */
 	.hero-bottom-bar {
@@ -3696,11 +3759,13 @@ a.student-batch-card:hover {
 		bottom: 0;
 		left: 0;
 		right: 0;
-		height: 22px;
+		min-height: 22px;
 		display: flex;
+		align-items: stretch;
+		z-index: 2;
 	}
 	.bar-fill {
-		height: 100%;
+		min-height: 22px;
 		border-radius: 0;
 		display: flex;
 		align-items: center;
@@ -3712,10 +3777,49 @@ a.student-batch-card:hover {
 		letter-spacing: 0.05em;
 		overflow: hidden;
 		white-space: nowrap;
+		line-height: 1.25;
+		box-sizing: border-box;
+		padding: 2px 0;
 		transition: all 0.3s ease;
 	}
 	.bar-fill span {
 		padding: 0 0.5rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
+		line-height: 1.25;
+	}
+	.bar-lbl-compact {
+		display: none;
+	}
+	@media (max-width: 640px) {
+		.hero-main-card {
+			padding-bottom: calc(1.5rem + 52px);
+		}
+		.hero-bottom-bar {
+			min-height: 36px;
+		}
+		.bar-fill {
+			min-height: 36px;
+			font-size: 0.56rem;
+			letter-spacing: 0.03em;
+			padding: 6px 2px;
+			text-transform: none;
+		}
+		.bar-fill span {
+			padding: 0 0.15rem;
+			text-align: center;
+		}
+		.bar-lbl-full {
+			display: none;
+		}
+		.bar-lbl-compact {
+			display: inline;
+			overflow: visible;
+			text-overflow: clip;
+			white-space: nowrap;
+			font-weight: 800;
+		}
 	}
 	.bar-fill.correct {
 		background: #10b981;
@@ -4110,10 +4214,6 @@ a.student-batch-card:hover {
 		box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
 		overflow: hidden;
 	}
-	[data-theme="dark"] .preview-panel {
-		background: #1e293b;
-	}
-
 	/* preview nav */
 	.preview-nav {
 		background: color-mix(in srgb, var(--color-brand-primary, #4f7eff) 56%, #1f2a44);
@@ -4193,7 +4293,7 @@ a.student-batch-card:hover {
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;
-		background: #ef4444;
+		background: #64748b;
 		color: #fff;
 		font-size: 0.875rem;
 		font-weight: 700;
@@ -4224,18 +4324,21 @@ a.student-batch-card:hover {
 		margin-left: auto;
 		display: flex;
 		gap: 0.4rem;
+		align-items: center;
 	}
-	.pm-dot {
-		font-size: 1.25rem;
-		line-height: 1;
+	.pm-answer-label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		white-space: nowrap;
 	}
-	.pm-dot.green {
+	.pm-answer-correct {
 		color: #22c55e;
 	}
-	.pm-dot.red {
+	.pm-answer-wrong {
 		color: #ef4444;
 	}
-	.pm-dot.gray {
+	.pm-answer-skip {
 		color: #94a3b8;
 	}
 
@@ -4410,15 +4513,36 @@ a.student-batch-card:hover {
 	[data-theme="dark"] .section-label,
 	[data-theme="dark"] .hero-over-label,
 	[data-theme="dark"] .hero-chart-overlay span,
-	[data-theme="dark"] .hb-lbl,
 	[data-theme="dark"] .km-lbl,
-	[data-theme="dark"] .perf-table th,
 	[data-theme="dark"] .time-card p,
 	[data-theme="dark"] .pm-times,
 	[data-theme="dark"] .pf-count {
 		color: #e2e8f0;
 		opacity: 1;
 	}
+	[data-theme="dark"] .hb-num,
+	[data-theme="dark"] .hb-lbl {
+		color: #ffffff;
+		opacity: 1;
+	}
+	[data-theme="dark"] .perf-table th {
+		color: #ffffff;
+		opacity: 1;
+	}
+	[data-theme="dark"] .perf-table td {
+		color: #ffffff;
+		opacity: 1;
+	}
+	[data-theme="dark"] .perf-table td.green {
+		color: #34d399;
+	}
+	[data-theme="dark"] .perf-table td.red {
+		color: #f87171;
+	}
+	[data-theme="dark"] .perf-table tbody tr:hover {
+		background: rgba(255, 255, 255, 0.06);
+	}
+	[data-theme="dark"] .hero-score-val .num,
 	[data-theme="dark"] .hero-score-val .total,
 	[data-theme="dark"] .hero-score-val .slash,
 	[data-theme="dark"] .time-card b,
@@ -4432,6 +4556,23 @@ a.student-batch-card:hover {
 	[data-theme="dark"] .ap-sub {
 		color: #ffffff;
 		opacity: 1;
+	}
+	[data-theme="dark"] .ap-badge {
+		background: rgba(79, 126, 255, 0.12);
+		color: #93c5fd;
+	}
+	[data-theme="dark"] .aa-icon {
+		background: rgba(79, 126, 255, 0.12);
+		color: #93c5fd;
+	}
+	[data-theme="dark"] .aa-link {
+		color: #93c5fd;
+	}
+	[data-theme="dark"] .section-card {
+		box-shadow: var(--analysis-card-shadow, 0 1px 4px rgba(0, 0, 0, 0.2));
+	}
+	[data-theme="dark"] .hero-main-card {
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(79, 126, 255, 0.1);
 	}
 	[data-theme="dark"] .hb-item.gray .hb-icon-small {
 		color: #e2e8f0;
@@ -4448,8 +4589,11 @@ a.student-batch-card:hover {
 		border-color: rgba(79, 126, 255, 0.4);
 	}
 
+	/* Lighter slate than analysis shell so the drawer reads as a separate layer (not same navy). */
 	[data-theme="dark"] .preview-panel {
-		background: linear-gradient(180deg, #0b1022 0%, #0a122a 100%);
+		background: #1e293b;
+		border-left: 1px solid rgba(148, 163, 184, 0.28);
+		box-shadow: -16px 0 48px rgba(0, 0, 0, 0.55), -1px 0 0 rgba(79, 126, 255, 0.22);
 	}
 	[data-theme="dark"] .preview-nav {
 		background: color-mix(in srgb, var(--color-brand-primary, #4f7eff) 50%, #0f172a);
@@ -4518,14 +4662,11 @@ a.student-batch-card:hover {
 		color: #f8fafc;
 	}
 
-	/* Mobile dark-mode readability: remove gray text on analysis header/hero. */
+	/* Mobile dark-mode readability: analysis header/hero text */
 	@media (max-width: 768px) {
 		[data-theme="dark"] .ap-title,
 		[data-theme="dark"] .ap-sub,
-		[data-theme="dark"] .hero-over-label,
-		[data-theme="dark"] .hero-score-val .num,
-		[data-theme="dark"] .hero-score-val .slash,
-		[data-theme="dark"] .hero-score-val .total {
+		[data-theme="dark"] .hero-over-label {
 			color: #ffffff;
 			opacity: 1;
 		}

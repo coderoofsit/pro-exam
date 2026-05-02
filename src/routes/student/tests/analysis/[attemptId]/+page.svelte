@@ -286,8 +286,14 @@
 									summary.correctCount,
 									questions.length,
 								)}%"
+								aria-label="{summary.correctCount} correct"
 							>
-								<span>{summary.correctCount} CORRECT</span>
+								<span class="bar-lbl-full"
+									>{summary.correctCount} CORRECT</span
+								>
+								<span class="bar-lbl-compact" aria-hidden="true"
+									>✓ {summary.correctCount}</span
+								>
 							</div>
 						{/if}
 						{#if summary.incorrectCount > 0}
@@ -297,8 +303,14 @@
 									summary.incorrectCount,
 									questions.length,
 								)}%"
+								aria-label="{summary.incorrectCount} wrong"
 							>
-								<span>{summary.incorrectCount} WRONG</span>
+								<span class="bar-lbl-full"
+									>{summary.incorrectCount} WRONG</span
+								>
+								<span class="bar-lbl-compact" aria-hidden="true"
+									>✕ {summary.incorrectCount}</span
+								>
 							</div>
 						{/if}
 						{#if summary.unattemptedCount > 0}
@@ -308,8 +320,14 @@
 									summary.unattemptedCount,
 									questions.length,
 								)}%"
+								aria-label="{summary.unattemptedCount} skipped"
 							>
-								<span>{summary.unattemptedCount} SKIPPED</span>
+								<span class="bar-lbl-full"
+									>{summary.unattemptedCount} SKIPPED</span
+								>
+								<span class="bar-lbl-compact" aria-hidden="true"
+									>− {summary.unattemptedCount}</span
+								>
 							</div>
 						{/if}
 					</div>
@@ -710,14 +728,16 @@
 						<span class="pm-badge">{q.questionKind ?? "MCQ"}</span>
 						<div class="pm-status-icons">
 							{#if q.isCorrect === true}
-								<span class="pm-dot green" title="Correct"
-									>●</span
+								<span class="pm-answer-label pm-answer-correct"
+									>Correct Answer</span
 								>
 							{:else if q.isAttempted}
-								<span class="pm-dot red" title="Wrong">●</span>
+								<span class="pm-answer-label pm-answer-wrong"
+									>Wrong</span
+								>
 							{:else}
-								<span class="pm-dot gray" title="Skipped"
-									>●</span
+								<span class="pm-answer-label pm-answer-skip"
+									>Not attempted</span
 								>
 							{/if}
 						</div>
