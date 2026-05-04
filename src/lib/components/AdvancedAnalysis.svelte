@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from "svelte";
 	import MathText from "$lib/components/MathText.svelte";
+import BackButton from "$lib/components/BackButton.svelte";
 
 	let {
 		questions = [], bySubject = [], byChapter = [], byKind = [],
@@ -163,9 +164,7 @@
 	<div class="m-head-stack">
 	<header class="m-header">
 		<div class="m-header-bar">
-			<button class="m-back" onclick={closeModal} aria-label="Back">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-			</button>
+			<BackButton label="Back" useHistory={false} onClick={closeModal} />
 			<div class="mh-title-box">
 				<h2 class="m-title">{modalTitles[openModal] ?? "Analysis"}</h2>
 				<p class="m-sub">Detailed performance breakdown</p>
@@ -462,7 +461,7 @@
 
 	/* modal */
 	.m-overlay{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;cursor:pointer}
-	.m-panel{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);z-index:201;background:var(--analysis-shell-bg,var(--analysis-page-bg,#0b0f19));display:flex;flex-direction:column;overflow:hidden;color:var(--page-text,#f8fafc);font-family:"Inter","Segoe UI",system-ui,sans-serif}
+	.m-panel{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);z-index:201;background:var(--analysis-shell-bg,var(--analysis-page-bg,#0b0f19));display:flex;flex-direction:column;overflow:hidden;color:var(--page-text,#f8fafc);font-family:var(--font-sans)}
 	@media (max-width: 767px) {
 		.m-overlay,
 		.m-panel {

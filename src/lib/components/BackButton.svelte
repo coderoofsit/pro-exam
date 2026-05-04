@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
+  import Button from '$lib/components/Button.svelte';
 
   type Props = {
     label: string;
@@ -42,11 +43,12 @@
   }
 </script>
 
-<button
-  type={type}
-  onclick={handleClick}
-  class={`exam-route-back-btn ${toneClass} ${className}`.trim()}
-  aria-label={label}
+<Button
+  {type}
+  {tone}
+  {className}
+  ariaLabel={label}
+  onClick={handleClick}
 >
   <svg
     class="exam-route-back-btn__icon"
@@ -64,4 +66,4 @@
   </svg>
 
   <span class="!hidden sm:!inline-flex">{label}</span>
-</button>
+</Button>

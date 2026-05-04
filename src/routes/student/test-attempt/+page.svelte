@@ -122,7 +122,7 @@
     {#if !countdownDone}
       <p class="text-sm font-medium text-[var(--ta-header-sub)]">Test Start in</p>
       <p
-        class="tabular-nums text-7xl font-black tracking-tighter text-[var(--ta-nav-btn-primary-bg)] sm:text-8xl"
+        class="tabular-nums text-7xl font-black tracking-tighter text-[var(--ta-prelaunch-counter-text)] sm:text-8xl"
       >
         {prelaunchCountdown}
       </p>

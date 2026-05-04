@@ -440,6 +440,11 @@
   --analysis-tab-inactive: #94a3b8;
 }
 
+html,
+body {
+  font-family: var(--font-sans);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    DARK THEME OVERRIDES — only values that differ from light
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -1010,6 +1015,7 @@
   --ta-header-shadow: 0 1px 24px rgba(5, 7, 13, 0.5);
   --ta-header-title: #ffffff;
   --ta-header-sub: #A1A1AA;
+  --ta-prelaunch-counter-text: #ffffff;
   --ta-timer-bg: rgba(234, 88, 12, 0.12);
   --ta-timer-border: rgba(234, 88, 12, 0.30);
   --ta-timer-text: #fb923c;
@@ -1046,11 +1052,14 @@
   --ta-nav-btn-disabled-bg: rgba(255, 255, 255, 0.04);
   --ta-nav-btn-disabled-border: rgba(139, 92, 246, 0.16);
   --ta-nav-btn-disabled-text: #71717A;
-  --ta-nav-btn-primary-bg: linear-gradient(135deg, #8B5CF6 0%, #4f7eff 100%);
+  --ta-nav-btn-primary-bg: #0f1730;
   --ta-nav-btn-primary-text: #ffffff;
-  --ta-nav-btn-primary-shadow: 0 4px 16px rgba(139, 92, 246, 0.40);
-  --ta-nav-btn-primary-disabled-bg: rgba(139, 92, 246, 0.24);
-  --ta-nav-btn-primary-disabled-text: #c4b5fd;
+  --ta-nav-btn-primary-border: rgba(99, 102, 241, 0.34);
+  --ta-nav-btn-primary-shadow: 0 0 18px rgba(99, 102, 241, 0.45);
+  --ta-nav-btn-primary-hover-shadow: 0 0 24px rgba(99, 102, 241, 0.58);
+  --ta-nav-btn-primary-disabled-bg: #0f1730;
+  --ta-nav-btn-primary-disabled-text: rgba(255, 255, 255, 0.45);
+  --ta-nav-btn-primary-disabled-border: rgba(99, 102, 241, 0.22);
   --ta-mark-btn-bg: rgba(245, 158, 11, 0.12);
   --ta-mark-btn-border: rgba(245, 158, 11, 0.45);
   --ta-mark-btn-text: #fbbf24;
@@ -1075,10 +1084,10 @@
 
   --ta-legend-text: #71717A;
 
-  --ta-submit-bg: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --ta-submit-bg: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   --ta-submit-text: #ffffff;
-  --ta-submit-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
-  --ta-submit-hover-shadow: 0 6px 24px rgba(34, 197, 94, 0.50);
+  --ta-submit-shadow: 0 4px 16px rgba(220, 38, 38, 0.35);
+  --ta-submit-hover-shadow: 0 6px 24px rgba(220, 38, 38, 0.5);
 
   --ta-divider: rgba(139, 92, 246, 0.12);
 }
@@ -1313,6 +1322,7 @@ html[data-theme="light"] {
   --ta-header-shadow: 0 1px 0 #e2e8f0;
   --ta-header-title: #1a1f36;
   --ta-header-sub: #64748b;
+  --ta-prelaunch-counter-text: #000000;
   --ta-timer-bg: #fff7ed;
   --ta-timer-border: #fed7aa;
   --ta-timer-text: #ea580c;
@@ -1346,11 +1356,14 @@ html[data-theme="light"] {
   --ta-nav-btn-disabled-bg: #f8fafc;
   --ta-nav-btn-disabled-border: #e2e8f0;
   --ta-nav-btn-disabled-text: #0f172a;
-  --ta-nav-btn-primary-bg: linear-gradient(135deg, #4f7eff 0%, #7C3AED 100%);
-  --ta-nav-btn-primary-text: #0f172a;
-  --ta-nav-btn-primary-shadow: 0 4px 16px rgba(79, 126, 255, 0.30);
-  --ta-nav-btn-primary-disabled-bg: #e2e8f0;
-  --ta-nav-btn-primary-disabled-text: #0f172a;
+  --ta-nav-btn-primary-bg: #ffffff;
+  --ta-nav-btn-primary-text: #1e293b;
+  --ta-nav-btn-primary-border: #dbe5ff;
+  --ta-nav-btn-primary-shadow: 0 0 10px rgba(79, 126, 255, 0.18);
+  --ta-nav-btn-primary-hover-shadow: 0 0 16px rgba(79, 126, 255, 0.28);
+  --ta-nav-btn-primary-disabled-bg: #f8fafc;
+  --ta-nav-btn-primary-disabled-text: #94a3b8;
+  --ta-nav-btn-primary-disabled-border: #e2e8f0;
   --ta-mark-btn-bg: #fff7ed;
   --ta-mark-btn-border: #fdba74;
   --ta-mark-btn-text: #c2410c;
@@ -1371,10 +1384,10 @@ html[data-theme="light"] {
   --ta-pill-current-text: #ffffff;
   --ta-pill-current-shadow: 0 0 0 3px rgba(79, 126, 255, 0.25);
   --ta-legend-text: #64748b;
-  --ta-submit-bg: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --ta-submit-bg: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   --ta-submit-text: #ffffff;
-  --ta-submit-shadow: 0 4px 16px rgba(34, 197, 94, 0.30);
-  --ta-submit-hover-shadow: 0 6px 24px rgba(34, 197, 94, 0.45);
+  --ta-submit-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+  --ta-submit-hover-shadow: 0 6px 24px rgba(220, 38, 38, 0.45);
   --ta-divider: #e2e8f0;
 }
 
@@ -3348,6 +3361,68 @@ a.student-batch-card:hover {
   box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--page-link) 40%, transparent);
 }
 
+.exam-btn--ta-nav {
+  background: var(--ta-nav-btn-bg);
+  border-color: var(--ta-nav-btn-border);
+  color: var(--ta-nav-btn-text);
+}
+.exam-btn--ta-nav:hover {
+  background: var(--ta-nav-btn-hover-bg);
+  border-color: var(--ta-nav-btn-hover-border);
+  color: var(--ta-nav-btn-hover-text);
+}
+.exam-btn--ta-nav:disabled,
+.exam-btn--ta-nav:disabled:hover {
+  background: var(--ta-nav-btn-disabled-bg);
+  border-color: var(--ta-nav-btn-disabled-border);
+  color: var(--ta-nav-btn-disabled-text);
+  box-shadow: none;
+}
+
+.exam-btn--ta-mark {
+  background: var(--ta-mark-btn-bg);
+  border-color: var(--ta-mark-btn-border);
+  color: var(--ta-mark-btn-text);
+}
+.exam-btn--ta-mark:hover {
+  background: var(--ta-mark-btn-hover-bg);
+  border-color: var(--ta-mark-btn-hover-border);
+  color: var(--ta-mark-btn-hover-text);
+}
+
+.exam-btn--ta-primary {
+  border-color: var(--ta-nav-btn-primary-border, transparent);
+  background: var(--ta-nav-btn-primary-bg);
+  color: var(--ta-nav-btn-primary-text);
+  box-shadow: var(--ta-nav-btn-primary-shadow);
+}
+.exam-btn--ta-primary:hover {
+  box-shadow: var(--ta-nav-btn-primary-hover-shadow, 0 6px 24px rgba(79, 126, 255, 0.45));
+}
+.exam-btn--ta-primary:disabled,
+.exam-btn--ta-primary:disabled:hover {
+  border-color: var(--ta-nav-btn-primary-disabled-border, transparent);
+  background: var(--ta-nav-btn-primary-disabled-bg);
+  color: var(--ta-nav-btn-primary-disabled-text);
+  box-shadow: var(--ta-nav-btn-primary-shadow);
+  opacity: 0.58;
+}
+
+.exam-btn--ta-submit {
+  border-color: transparent;
+  background: var(--ta-submit-bg);
+  color: var(--ta-submit-text);
+  box-shadow: var(--ta-submit-shadow);
+}
+.exam-btn--ta-submit:hover {
+  box-shadow: var(--ta-submit-hover-shadow);
+}
+.exam-btn--ta-submit:disabled,
+.exam-btn--ta-submit:disabled:hover {
+  opacity: 0.7;
+  box-shadow: none;
+}
+
 /* Subject/chapter list cards on /student-exam routes use exam-box theme. */
 .exam-route-card {
   border: 1px solid var(--dash-exam-card-border);
@@ -3389,14 +3464,14 @@ a.student-batch-card:hover {
 .ap {
   min-height: 100vh;
   background: var(--analysis-shell-bg, var(--analysis-page-bg, #f1f5f9));
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .ap-loading {
   padding: 4rem;
   text-align: center;
   color: #64748b;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* ── body ── */

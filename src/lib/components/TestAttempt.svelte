@@ -4,6 +4,7 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import MathText from '$lib/components/MathText.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
+  import Button from '$lib/components/Button.svelte';
   import ImageLightbox from '$lib/components/ImageLightbox.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
@@ -728,29 +729,18 @@ function clearCurrentAnswer() {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <button
-            type="button"
-            onclick={() => void goTo(currentIndex - 1)}
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <Button
+            variant="ta-primary"
+            onClick={() => void goTo(currentIndex - 1)}
             disabled={currentIndex === 0 || submitted || submitInFlight}
-            class="
-              inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium
-              bg-[var(--ta-nav-btn-bg)] border-[var(--ta-nav-btn-border)]
-              text-[var(--ta-nav-btn-text)]
+            className="
+              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border !px-2.5 !py-0 text-xs font-medium leading-none whitespace-nowrap
               transition-all duration-150
-              hover:bg-[var(--ta-nav-btn-hover-bg)]
-              hover:border-[var(--ta-nav-btn-hover-border)]
-              hover:text-[var(--ta-nav-btn-hover-text)]
               disabled:cursor-not-allowed
-              disabled:bg-[var(--ta-nav-btn-disabled-bg)]
-              disabled:border-[var(--ta-nav-btn-disabled-border)]
-              disabled:text-[var(--ta-nav-btn-disabled-text)]
-              disabled:hover:bg-[var(--ta-nav-btn-disabled-bg)]
-              disabled:hover:border-[var(--ta-nav-btn-disabled-border)]
-              disabled:hover:text-[var(--ta-nav-btn-disabled-text)]
             "
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path
                 d="M15 6l-6 6 6 6"
                 stroke="currentColor"
@@ -760,61 +750,48 @@ function clearCurrentAnswer() {
               />
             </svg>
             Previous
-          </button>
+          </Button>
 
-          {#if answers[currentIndex] !== undefined}
-            <button
-              type="button"
-              onclick={() => void clearCurrentAnswer()}
-              disabled={submitted || submitInFlight}
-              class="
-                rounded-lg border border-[var(--ta-divider)] px-3 py-1.5 text-xs font-medium
-                text-[var(--ta-header-sub)]
-                transition-colors duration-150
-                hover:border-[var(--ta-nav-btn-hover-border)] hover:text-[var(--ta-header-title)]
-                disabled:cursor-not-allowed disabled:opacity-40
-              "
-            >
-              Clear
-            </button>
-          {/if}
+          <Button
+            variant="ta-nav"
+            onClick={() => void clearCurrentAnswer()}
+            disabled={answers[currentIndex] === undefined || submitted || submitInFlight}
+            className="
+              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ta-divider)] !px-2.5 !py-0 text-xs font-medium leading-none whitespace-nowrap
+              transition-colors duration-150
+              disabled:cursor-not-allowed disabled:opacity-40
+            "
+          >
+            Clear
+          </Button>
 
-          <button
-            type="button"
-            onclick={() => void markAndNext()}
+          <Button
+            variant="ta-mark"
+            onClick={() => void markAndNext()}
             disabled={submitted || submitInFlight}
-            class="
-              inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold
-              border-[var(--ta-mark-btn-border)] bg-[var(--ta-mark-btn-bg)] text-[var(--ta-mark-btn-text)]
+            className="
+              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border !px-2.5 !py-0 text-xs font-semibold leading-none whitespace-nowrap
               transition-colors
-              hover:bg-[var(--ta-mark-btn-hover-bg)] hover:border-[var(--ta-mark-btn-hover-border)] hover:text-[var(--ta-mark-btn-hover-text)]
               disabled:cursor-not-allowed disabled:opacity-40
             "
           >
             Mark &amp; next
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            onclick={() =>
+          <Button
+            variant={isLast ? 'ta-submit' : 'ta-primary'}
+            onClick={() =>
               void (isLast ? openSubmitConfirm() : goTo(currentIndex + 1))}
             disabled={submitted || submitInFlight}
-            class="
-              inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold
-              text-[var(--ta-nav-btn-primary-text)]
-              bg-[var(--ta-nav-btn-primary-bg)]
-              shadow-[var(--ta-nav-btn-primary-shadow)]
+            className="
+              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-transparent !px-2.5 !py-0 text-xs font-semibold leading-none whitespace-nowrap
               transition-shadow duration-150
-              hover:shadow-[0_6px_24px_rgba(79,126,255,0.45)]
               disabled:cursor-not-allowed
-              disabled:bg-[var(--ta-nav-btn-primary-disabled-bg)]
-              disabled:text-[var(--ta-nav-btn-primary-disabled-text)]
-              disabled:shadow-none
             "
           >
             {isLast ? 'Submit' : 'Next'}
             {#if !isLast}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M9 6l6 6-6 6"
                   stroke="currentColor"
@@ -824,7 +801,7 @@ function clearCurrentAnswer() {
                 />
               </svg>
             {/if}
-          </button>
+          </Button>
         </div>
       </div>
     </main>
@@ -870,16 +847,13 @@ function clearCurrentAnswer() {
       {formattedTime}
     </div>
 
-    <button
-      type="button"
-      onclick={openSubmitConfirm}
+    <Button
+      variant="ta-submit"
+      onClick={openSubmitConfirm}
       disabled={submitted || submitInFlight}
-      class="
+      className="
         flex-shrink-0 inline-flex items-center gap-2
         px-4 py-2 rounded-xl text-xs font-semibold
-        bg-red-600 text-white
-        shadow-md shadow-red-900/30
-        hover:bg-red-700
         transition-colors duration-150
         disabled:opacity-50 disabled:cursor-not-allowed
       "
@@ -894,7 +868,7 @@ function clearCurrentAnswer() {
         />
       </svg>
       Submit
-    </button>
+    </Button>
   </div>
 
       <div class="flex-shrink-0 border-b border-[var(--ta-divider)] px-4 pb-3 pt-4 sm:px-5">
@@ -1042,31 +1016,31 @@ function clearCurrentAnswer() {
       {/if}
 
       <div class="flex gap-3">
-        <button
-          type="button"
-          onclick={() => {
+        <Button
+          variant="ta-nav"
+          onClick={() => {
             showConfirm = false;
           }}
-          class="
+          className="
             flex-1 rounded-xl border border-[var(--ta-nav-btn-border)] bg-[var(--ta-nav-btn-bg)]
             py-2.5 text-sm font-medium text-[var(--ta-nav-btn-text)]
             transition-colors duration-150 hover:bg-[var(--ta-nav-btn-hover-bg)]
           "
         >
           Continue
-        </button>
-        <button
-          type="button"
-          onclick={() => void handleSubmit()}
+        </Button>
+        <Button
+          variant="ta-submit"
+          onClick={() => void handleSubmit()}
           disabled={submitInFlight}
-          class="
-            flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white
-            shadow-md shadow-red-900/30 transition-colors hover:bg-red-700
+          className="
+            flex-1 rounded-xl py-2.5 text-sm font-semibold
+            transition-colors
             disabled:cursor-not-allowed disabled:opacity-70
           "
         >
           {submitInFlight ? 'Submitting…' : 'Submit'}
-        </button>
+        </Button>
       </div>
     </div>
   </div>

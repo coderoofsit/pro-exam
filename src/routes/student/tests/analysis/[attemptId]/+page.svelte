@@ -4,6 +4,7 @@
 	import { Chart, registerables } from "chart.js";
 	import MathText from "$lib/components/MathText.svelte";
 	import AdvancedAnalysis from "$lib/components/AdvancedAnalysis.svelte";
+import BackButton from "$lib/components/BackButton.svelte";
 
 	Chart.register(...registerables);
 
@@ -154,16 +155,6 @@
 
 <svelte:head>
 	<title>Analysis — {testName}</title>
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link
-		rel="preconnect"
-		href="https://fonts.gstatic.com"
-		crossorigin="anonymous"
-	/>
-	<link
-		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-		rel="stylesheet"
-	/>
 </svelte:head>
 
 {#if summary}
@@ -174,22 +165,7 @@
 		<!-- ── Header ── -->
 		<div class="ap-header">
 			<div class="ap-header-inner">
-				<button
-					type="button"
-					onclick={() => history.back()}
-					class="back-btn"
-					aria-label="Back"
-				>
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-						><path
-							d="M15 18L9 12L15 6"
-							stroke="currentColor"
-							stroke-width="2.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/></svg
-					>
-				</button>
+				<BackButton label="Back" />
 				<div class="header-center">
 					<h1 class="ap-title">{testName}</h1>
 					<p class="ap-sub">
