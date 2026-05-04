@@ -414,7 +414,7 @@
 
 {#if showTrialConfirm}
 	<div
-		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-md"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="trial-confirm-title"
@@ -470,7 +470,7 @@
 
 {#if showTrialSuccess}
 	<div
-		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-md"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="trial-success-title"
@@ -513,7 +513,7 @@
 
 {#if showPaidSuccess}
 	<div
-		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-md"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="paid-success-title"

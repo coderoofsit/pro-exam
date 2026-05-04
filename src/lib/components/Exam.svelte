@@ -48,7 +48,7 @@ let {
 	}
 </script>
 
-<div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
+<div class="mx-auto p-4 w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	<div class="mt-3 mb-3 flex items-center gap-3">
 		{#if showBackButton}
 			<BackButton

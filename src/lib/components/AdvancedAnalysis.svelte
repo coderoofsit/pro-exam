@@ -802,8 +802,8 @@
 
 	.pv-qtext{font-size:.9375rem;color:#1e293b;line-height:1.7;padding:1rem 1.25rem;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
 	:global([data-theme="dark"]) .pv-qtext{background:#0f172a;color:#e2e8f0;border-color:#334155}
-	.math-content :global(mjx-container){display:inline!important}
-	.math-content :global(.MathJax){display:inline!important}
+	.math-content :global(mjx-container){display:inline-block!important;max-width:100%!important;vertical-align:middle!important}
+	.math-content :global(.MathJax){display:inline-block!important}
 
 	.pv-imgs{display:flex;flex-direction:column;gap:.5rem}
 	.pv-img{max-width:100%;max-height:260px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#fff}

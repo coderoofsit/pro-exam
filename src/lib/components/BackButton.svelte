@@ -63,5 +63,5 @@
     />
   </svg>
 
-  <span>{label}</span>
+  <span class="!hidden sm:!inline-flex">{label}</span>
 </button>

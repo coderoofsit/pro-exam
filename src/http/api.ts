@@ -36,7 +36,7 @@ export const PUBLIC_API_BASE_URL = (
 	((globalThis as unknown as { process?: { env?: { VITE_PUBLIC_API_URL?: string } } })
 		.process?.env?.VITE_PUBLIC_API_URL as string | undefined) ||
 	// 'http://localhost:8000'|| 
-  "https://test-exam-backend-yc8u.onrender.com"
+	"https://test-exam-backend-yc8u.onrender.com"
 ).replace(/\/+$/, '');
 
 export async function apiRequest<T>({
@@ -69,6 +69,7 @@ export async function apiRequest<T>({
 		const response = await customFetch(`${PUBLIC_API_BASE_URL}${endpoint}`, {
 			method,
 			headers: finalHeaders,
+			cache: 'no-store',
 			body:
 				data === undefined
 					? undefined

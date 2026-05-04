@@ -136,50 +136,37 @@
     inset: 0;
     z-index: 60;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
-    padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 70px);
+    padding: 1.25rem;
     background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     animation: ctm-fade-in 0.18s ease;
   }
 
   /* ── Sheet (bottom-sheet on mobile, centered on desktop) ── */
   .ctm-sheet {
     width: 100%;
-    max-width: 480px;
-    border-radius: 1.5rem 1.5rem 0 0;
+    max-width: 440px;
+    border-radius: 1.5rem;
     padding: 0 1.25rem 2rem;
     background: var(--sh-exam-card-bg, var(--pc-card-bg, #ffffff));
     border: 1px solid
       color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
-    border-bottom: none;
-    box-shadow: var(--pc-card-shadow, 0 -8px 48px rgba(15, 23, 42, 0.08));
-    animation: ctm-slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+    animation: ctm-modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @media (min-width: 540px) {
-    .ctm-backdrop {
-      align-items: center;
-      padding: 0;
-    }
     .ctm-sheet {
-      border-radius: 1.5rem;
-      border-bottom: 1px solid
-        color-mix(in srgb, var(--page-link, #4f7eff) 26%, var(--sh-exam-card-border, #e2e8f0));
-      margin-bottom: 0;
+      max-width: 480px;
     }
-    .ctm-handle { display: none; }
   }
 
   /* ── Handle ── */
   .ctm-handle {
-    width: 2.5rem;
-    height: 4px;
-    border-radius: 9999px;
-    background: var(--color-surface-border, #e2e8f0);
-    margin: 0.75rem auto 0;
+    display: none;
   }
 
   /* ── Header ── */
@@ -367,8 +354,8 @@
     from { opacity: 0; }
     to   { opacity: 1; }
   }
-  @keyframes ctm-slide-up {
-    from { transform: translateY(32px); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
+  @keyframes ctm-modal-in {
+    from { transform: translateY(20px) scale(0.96); opacity: 0; }
+    to   { transform: translateY(0) scale(1);    opacity: 1; }
   }
 </style>

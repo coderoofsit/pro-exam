@@ -79,7 +79,7 @@
 	<title>Student Home Page</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
+<div class="mx-auto w-full p-4 w-7xl min-w-0 text-[var(--page-text)]">
 	<section class="min-w-0" aria-labelledby="pyq-heading">
 		<div class="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 			<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">

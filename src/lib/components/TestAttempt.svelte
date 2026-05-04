@@ -4,6 +4,7 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import MathText from '$lib/components/MathText.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
+  import ImageLightbox from '$lib/components/ImageLightbox.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     extractQuestionId,
@@ -284,14 +285,7 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
     imageLightboxSrc = null;
   }
 
-  $effect(() => {
-    if (!browser || !imageLightboxSrc) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeImageLightbox();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  });
+
 
   onMount(() => {
     if (!browser || !testId.trim()) {
@@ -993,7 +987,7 @@ function clearCurrentAnswer() {
 
 {#if showConfirm}
   <button
-    class="fixed inset-0 z-40 cursor-default bg-black/50 backdrop-blur-sm"
+    class="fixed inset-0 z-40 cursor-default bg-black/50 backdrop-blur-md"
     aria-label="Close"
     onclick={() => {
       showConfirm = false;
@@ -1123,39 +1117,4 @@ function clearCurrentAnswer() {
   </div>
 {/if}
 
-{#if imageLightboxSrc}
-  <div
-    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Enlarged image"
-    tabindex="-1"
-    onclick={(e) => e.target === e.currentTarget && closeImageLightbox()}
-    onkeydown={(e) => e.key === "Escape" && closeImageLightbox()}
-  >
-    <button
-      type="button"
-      class="
-        absolute right-4 top-4 z-[101] flex h-10 w-10 items-center justify-center
-        rounded-full border border-white/20 bg-white/10 text-white
-        transition hover:bg-white/20
-      "
-      onclick={closeImageLightbox}
-      aria-label="Close"
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M18 6L6 18M6 6l12 12"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
-    </button>
-    <img
-      src={imageLightboxSrc}
-      alt=""
-      class="max-h-[min(90vh,900px)] max-w-full object-contain"
-    />
-  </div>
-{/if}
+<ImageLightbox src={imageLightboxSrc} onClose={closeImageLightbox} />

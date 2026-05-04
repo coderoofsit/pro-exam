@@ -46,7 +46,7 @@
 
 <style>
   :global(.math-inline) {
-    display: inline !important;
+    display: inline-block !important;
   }
   :global(.katex-display) {
     display: block;
@@ -60,7 +60,7 @@
   .math-content :global(mjx-container),
   .math-content :global(.MathJax),
   .math-content :global(.katex-html) {
-    display: inline !important;
+    display: inline-block !important;
   }
   .math-content :global(p) {
     margin: 0;

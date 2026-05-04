@@ -228,24 +228,6 @@
     openChapterIds = next;
   }
 
-  function selectAllTopicsInChapter(chapter: TopicsByExamChapterRow) {
-    const nc = new Set(checkedChapters);
-    const nt = new Set(checkedTopics);
-    nc.add(chapter.chapter._id);
-    for (const topic of chapter.data) nt.add(topic._id);
-    checkedChapters = nc;
-    checkedTopics = nt;
-  }
-
-  function unselectAllTopicsInChapter(chapter: TopicsByExamChapterRow) {
-    const nc = new Set(checkedChapters);
-    const nt = new Set(checkedTopics);
-    nc.delete(chapter.chapter._id);
-    for (const topic of chapter.data) nt.delete(topic._id);
-    checkedChapters = nc;
-    checkedTopics = nt;
-  }
-
   const selectedSubjectsForBar = $derived.by(() => {
     const out: { id: string; name: string; accent: number }[] = [];
     for (const [i, row] of safeGroupedSubjects.entries()) {
@@ -412,12 +394,7 @@
               </div>
               {#if isOpen}
                 <div class="own-unit__body">
-                  <div class="mb-2 text-xs text-[var(--page-text-muted)]">Up to {chapterMax} questions</div>
-                  <div class="own-unit__chapter-actions" role="group" aria-label="Topics in {chapter.chapter.name?.en ?? chapter.chapter.slug}">
-                    <button type="button" class="own-unit__chapter-action" onclick={() => selectAllTopicsInChapter(chapter)}>Select all</button>
-                    <button type="button" class="own-unit__chapter-action" onclick={() => unselectAllTopicsInChapter(chapter)}>Unselect all</button>
-                  </div>
-                  <ul class="mt-3 flex flex-col gap-2">
+                  <ul class="mt-1 flex flex-col gap-2">
                     {#each chapter.data as topic (topic._id)}
                       {@const max = Math.max(0, Number(topic.numberOfQuestions) || 0)}
                       <li>

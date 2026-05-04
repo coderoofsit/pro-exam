@@ -81,25 +81,31 @@
 </script>
 
 {#if totalPages > 1}
-  <div class={`flex flex-wrap items-center justify-center gap-1.5 ${className}`}>
+  <div class={`flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 ${className}`}>
     {#if currentPage > 1}
-      <a class="pagination-btn" href={getHref(currentPage - 1)}>{prevLabel}</a>
+      <a class="pagination-btn max-sm:!bg-transparent max-sm:!border-transparent max-sm:!shadow-none max-sm:!px-2 max-sm:!text-[13px]" href={getHref(currentPage - 1)}>
+        <span class="sm:hidden">&lt;</span>
+        <span class="hidden sm:inline">{prevLabel}</span>
+      </a>
     {/if}
 
     {#each items as item (`${keyPrefix}-${item.type}-${item.type === 'page' ? item.page : item.key}`)}
       {#if item.type === 'page'}
-        <a class={`pagination-btn px-3.5 ${item.page === currentPage ? 'page-link-active' : ''}`} href={getHref(item.page)}>
+        <a class={`pagination-btn max-sm:!border-transparent max-sm:!shadow-none max-sm:!text-[12px] sm:px-3.5 ${item.page === currentPage ? 'page-link-active max-sm:!bg-[var(--page-link)] max-sm:!text-white max-sm:!rounded-full max-sm:!w-[26px] max-sm:!h-[26px] max-sm:!p-0 max-sm:!font-bold' : 'max-sm:!bg-transparent max-sm:!bg-none max-sm:!px-1.5'}`} href={getHref(item.page)}>
           {item.page}
         </a>
       {:else}
-        <a class="pagination-btn px-3.5" href={getHref(item.targetPage)} aria-label="Jump pages">
+        <a class="pagination-btn max-sm:!bg-transparent max-sm:!border-transparent max-sm:!shadow-none max-sm:!px-1 max-sm:!text-[12px] sm:px-3.5" href={getHref(item.targetPage)} aria-label="Jump pages">
           ...
         </a>
       {/if}
     {/each}
 
     {#if currentPage < totalPages}
-      <a class="pagination-btn" href={getHref(currentPage + 1)}>{nextLabel}</a>
+      <a class="pagination-btn max-sm:!bg-transparent max-sm:!border-transparent max-sm:!shadow-none max-sm:!px-2 max-sm:!text-[13px]" href={getHref(currentPage + 1)}>
+        <span class="sm:hidden">&gt;</span>
+        <span class="hidden sm:inline">{nextLabel}</span>
+      </a>
     {/if}
   </div>
 {/if}

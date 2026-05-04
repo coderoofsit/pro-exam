@@ -143,7 +143,7 @@ export const load: PageLoad = ({ url }) => {
 			...payload,
 			testId,
 			batchId,
-			prelaunch: false
+			prelaunch: prelaunchParam
 		};
 	} catch {
 		return {

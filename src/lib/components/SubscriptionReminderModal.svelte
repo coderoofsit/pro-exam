@@ -56,7 +56,7 @@
 </script>
 
 <div 
-  class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+  class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
   transition:fade={{ duration: 200 }}
 >
   <div 

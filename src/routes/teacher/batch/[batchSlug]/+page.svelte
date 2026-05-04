@@ -1004,7 +1004,7 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 
 {#if removeConfirmOpen}
 	<div
-		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-md"
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"

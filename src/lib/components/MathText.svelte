@@ -204,13 +204,44 @@
 
 <style>
 	.math-text {
-		display: inline;
-		white-space: pre-line;
+		display: block;
+		font-size: 1rem;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+		max-width: 100%;
+	}
+
+	.math-text :global(table) {
+		width: 100% !important;
+		table-layout: fixed !important;
+		border-collapse: collapse !important;
+		margin: 0.5rem 0 !important;
+	}
+
+	.math-text :global(th),
+	.math-text :global(td) {
+		border: 1px solid #ccc !important;
+		padding: 0.5rem !important;
+		word-break: break-word !important;
+		overflow-wrap: anywhere !important;
+		vertical-align: top !important;
+		text-align: left !important;
+		white-space: normal !important;
+	}
+
+	/* Optional: Narrow columns for labels (A, B, C...) */
+	.math-text :global(td:first-child),
+	.math-text :global(td:nth-child(3)) {
+		width: 3rem !important;
 	}
 
 	/* MathJax SVG output — keep everything inline */
 	.math-text :global(mjx-container) {
-		display: inline !important;
+		display: inline-block;
+		max-width: 100%;
+		overflow-x: auto;
+		overflow-y: hidden;
 		margin: 0 0.15em;
 	}
 

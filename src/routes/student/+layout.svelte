@@ -2,12 +2,15 @@
   import { afterNavigate, invalidateAll } from '$app/navigation';
   import { browser } from '$app/environment';
   import { get } from 'svelte/store';
+  import { page } from '$app/state';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import AddPhoneModal from '$lib/components/AddPhoneModal.svelte';
   import { afterPhoneVerifiedAction } from '$lib/stores/afterPhoneVerified';
   import { authStore } from '$lib/stores/auth';
 
   let { children } = $props();
+
+  const isTestAttempt = $derived(page.url.pathname.includes('/test-attempt'));
 
   const defaultProfile = $derived(
     $authStore.users.find((u) => u.defaultProfile) ?? $authStore.users[0] ?? null
@@ -55,9 +58,15 @@
   });
 </script>
 
-<Sidebar role="student">
-  {@render children()}
-</Sidebar>
+{#if isTestAttempt}
+  <main class="min-h-screen bg-[var(--ta-page-bg)]">
+    {@render children()}
+  </main>
+{:else}
+  <Sidebar role="student">
+    {@render children()}
+  </Sidebar>
+{/if}
 
 <AddPhoneModal
   open={showPhoneModal}

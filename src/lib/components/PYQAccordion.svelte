@@ -159,7 +159,7 @@ async function viewPaper(paper: PaperItem) {
         startPaperError = 'Could not save test data in this browser.';
         return;
       }
-      await goto(`/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=`);
+      await goto(`/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=&prelaunch=1&testName=${encodeURIComponent(paper.name)}`);
     } finally {
       startingPaperId = null;
     }

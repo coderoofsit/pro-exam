@@ -126,7 +126,7 @@
 
 {#if modalOpen}
   <div
-    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur-sm"
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur-md"
     role="dialog"
     aria-modal="true"
     aria-label="Add students file upload"

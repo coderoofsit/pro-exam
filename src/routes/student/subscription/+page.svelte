@@ -344,7 +344,7 @@
 </svelte:head>
 
 <div
-  class="relative mx-auto max-w-5xl px-4 pt-2 pb-[max(10rem,calc(env(safe-area-inset-bottom)+9rem))] sm:px-5"
+  class="relative mx-auto max-w-5xl px-4 pt-2 md:pb-12 sm:px-5"
 >
   <header class="mb-10 text-center sm:mb-14">
     <p
@@ -874,7 +874,7 @@
   aria-label="Upgrade subscription"
 >
   <div
-    class="subscription-bottom-bar pointer-events-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border-2 border-[color-mix(in_srgb,var(--page-link)_55%,var(--sh-exam-card-border))] px-4 py-3 shadow-[0_-4px_28px_rgba(0,0,0,0.1)] backdrop-blur-sm sm:px-5"
+    class="subscription-bottom-bar pointer-events-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border-2 border-[color-mix(in_srgb,var(--page-link)_55%,var(--sh-exam-card-border))] px-4 py-3 shadow-[0_-4px_28px_rgba(0,0,0,0.1)] backdrop-blur-md sm:px-5"
   >
     <div class="min-w-0 flex-1">
       <p class="text-sm font-semibold text-[var(--sh-section-title)] sm:text-base">

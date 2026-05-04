@@ -115,18 +115,19 @@
   </div>
 {:else if isPrelaunch && !showAttempt}
   <div
-    class="flex min-h-[100dvh] flex-col items-center justify-center gap-2 bg-[var(--ta-page-bg)] px-6 py-12 font-sans text-[var(--ta-header-title)]"
+    class="flex flex-col items-center justify-center gap-4 px-6 py-12 font-sans text-[var(--ta-header-title)]"
     aria-live="polite"
+    style="min-height: 75vh;"
   >
     {#if !countdownDone}
       <p class="text-sm font-medium text-[var(--ta-header-sub)]">Test Start in</p>
       <p
-        class="tabular-nums text-5xl font-bold tracking-tight text-[var(--ta-nav-btn-primary-bg)] sm:text-6xl"
+        class="tabular-nums text-7xl font-black tracking-tighter text-[var(--ta-nav-btn-primary-bg)] sm:text-8xl"
       >
         {prelaunchCountdown}
       </p>
-      <p class="mt-2 text-xs text-[var(--ta-palette-sub)]">
-        Preparing questions and sections…
+      <p class="mt-2 text-sm font-medium text-[var(--ta-palette-sub)] animate-pulse">
+        Prepare yourself, test starts in...
       </p>
     {:else if !prelaunchPayload}
       <p class="text-sm font-medium text-[var(--ta-header-sub)]">Preparing your test…</p>

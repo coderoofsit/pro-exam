@@ -10,8 +10,9 @@
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/stores";
 	import { createReport, type ReportReason } from "$lib/api/reports";
-import BackButton from "$lib/components/BackButton.svelte";
-import Pagination from "$lib/components/Pagination.svelte";
+    import BackButton from "$lib/components/BackButton.svelte";
+    import Pagination from "$lib/components/Pagination.svelte";
+    import ImageLightbox from "$lib/components/ImageLightbox.svelte";
 
 	type Question = PageData["questions"][number];
 	type ImageLike =
@@ -22,6 +23,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 
 	let selectedQuestionIndex = $state<number | null>(null);
 	let filterDrawerOpen = $state(false);
+	let lightboxSrc = $state<string | null>(null);
 
 	let selectedDifficulties = $state<string[]>([]);
 	let selectedKinds = $state<string[]>([]);
@@ -226,6 +228,9 @@ import Pagination from "$lib/components/Pagination.svelte";
 			activeQuestionId = detailQuestion?._id ?? null;
 			selectedOption = null;
 			isAnswerChecked = false;
+			if (detailQuestion) {
+				console.log('[detailQuestion]', detailQuestion);
+			}
 			isEditing = false;
 			integerAnswer = null;
 			fillBlankAnswers = [];
@@ -657,7 +662,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 	<div class="mx-auto max-w-6xl flex h-full w-full  overflow-hidden ">
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
-				class="mx-auto flex h-full w-full flex-col px-4 md:px-6 overflow-hidden min-h-0 "
+				class="mx-auto flex h-full w-full flex-col px-2 sm:px-4 md:px-6 overflow-hidden min-h-0 "
 			>
 				{#if data.message}
 					<div
@@ -666,8 +671,8 @@ import Pagination from "$lib/components/Pagination.svelte";
 						{data.message}
 					</div>
 				{:else}
-					<div class="p-3 shrink-0">
-						<div class="flex items-center justify-between gap-3">
+					<div class="px-2 py-2.5 shrink-0 ">
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
 							<div class="-ml-1 flex flex-col gap-1.5 text-sm text-[var(--page-text-muted)]">
 								{#if effectiveQuestionId !== null}
 									<BackButton label="Back" useHistory={false} onClick={closeQuestionPreview} />
@@ -681,25 +686,40 @@ import Pagination from "$lib/components/Pagination.svelte";
 									/>
 								{/if}
 								{#if displayPaginationMeta}
-									<span>
-										{displayPaginationMeta.total} questions • Page {data.safePage} of {displayPaginationMeta.lastPage}
+									<span class="hidden sm:block">
+										{displayPaginationMeta.total} Q
 									</span>
 								{/if}
 							</div>
 
 							{#if !effectiveQuestionId}
-								<div class="flex shrink-0 flex-wrap items-center justify-end gap-3 self-center sm:gap-4">
+								<div class="flex flex-1 sm:flex-none shrink-0 flex-nowrap items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
+									{#if displayPaginationMeta}
+										<span class="sm:hidden text-[13px] font-semibold text-[var(--page-text-muted)] whitespace-nowrap">
+											{displayPaginationMeta.total} Q
+										</span>
+									{/if}
+
 									{#if displayPaginationMeta && displayPaginationMeta.lastPage > 1}
 										<Pagination
 											currentPage={data.safePage}
 											totalPages={displayPaginationMeta.lastPage}
 											getHref={questionsPageUrl}
+											keyPrefix="top-mobile"
+											className="flex sm:hidden"
+											windowSize={PAGINATION_WINDOW}
+										/>
+										<Pagination
+											currentPage={data.safePage}
+											totalPages={displayPaginationMeta.lastPage}
+											getHref={questionsPageUrl}
 											keyPrefix="top"
+											className="hidden sm:flex"
 											windowSize={PAGINATION_WINDOW}
 										/>
 									{/if}
 
-									<div class="flex items-center rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-1 shadow-sm">
+									<div class="hidden sm:flex items-center rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-1 shadow-sm">
 										<button
 											type="button"
 											onclick={() => setApprove("")}
@@ -725,12 +745,12 @@ import Pagination from "$lib/components/Pagination.svelte";
 
 									<button
 										type="button"
-										class="flex items-center gap-2 rounded-lg text-sm font-medium text-[var(--sh-ai-sub)] hover:text-[var(--sh-section-title)]"
+										class="flex items-center gap-1.5 sm:gap-2 rounded-lg text-sm font-medium text-[var(--sh-ai-sub)] hover:text-[var(--sh-section-title)]"
 										onclick={() =>
 											(filterDrawerOpen = !filterDrawerOpen)}
 									>
 										<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-										{filterDrawerOpen ? "Hide Filters" : "Show Filters"}
+										<span class="hidden sm:inline">{filterDrawerOpen ? "Hide Filters" : "Show Filters"}</span>
 									</button>
 								</div>
 							{/if}
@@ -896,14 +916,19 @@ import Pagination from "$lib/components/Pagination.svelte";
 																		img as ImageLike,
 																	)}
 																{#if src}
-																	<img
-																		{src}
-																		alt={imageAlt(
-																	img as ImageLike,
-																		)}
-																		class="max-h-36 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain"
-																		loading="lazy"
-																	/>
+																	<button
+																		type="button"
+																		onclick={(e) => { e.stopPropagation(); lightboxSrc = src; }}
+																		class="block w-full cursor-zoom-in"
+																		title="View larger"
+																	>
+																		<img
+																			{src}
+																			alt={imageAlt(img as ImageLike)}
+																			class="max-h-36 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain pointer-events-none"
+																			loading="lazy"
+																		/>
+																	</button>
 																{/if}
 															{/each}
 														</div>
@@ -941,7 +966,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 					{:else}
 						<div class="flex-1 overflow-hidden min-h-0">
 							<div
-								class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-4 shadow-sm flex flex-col h-full min-h-0"
+								class="rounded-none sm:rounded-2xl border-x-0 sm:border-x border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-2 sm:p-4 shadow-sm flex flex-col h-full min-h-0"
 							>
 								{#if detailLoading && !detailQuestion}
 									<div class="flex flex-col gap-4 animate-pulse" aria-busy="true">
@@ -1191,8 +1216,8 @@ import Pagination from "$lib/components/Pagination.svelte";
 										</div>
 									</form>
 								{:else}
-									<div class="flex flex-col h-full min-h-0 overflow-hidden">
-										<div class="flex-1 overflow-y-auto min-h-0 pr-1">
+									<div class="flex flex-col h-full min-h-0  overflow-hidden">
+										<div class="flex-1 overflow-y-auto min-h-0">
 										<div
 										class="mb-3"
 									>
@@ -1227,7 +1252,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 												<input type="hidden" name="approve" value={String(!(detailQuestion as any).approve)} />
 												<button
 													type="submit"
-													class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-sm transition
+													class="inline-flex items-center gap-1.5 rounded-lg border px-1.5 py-0.5 text-[10px] sm:px-2.5 sm:py-1 sm:text-xs font-semibold shadow-sm transition
 														{(detailQuestion as any).approve
 															? 'border-semantic-error/40 bg-semantic-error/10 text-semantic-error hover:bg-semantic-error/20'
 															: 'border-brand-secondary/40 bg-brand-secondary/10 text-brand-secondary hover:bg-brand-secondary/20'}"
@@ -1242,11 +1267,11 @@ import Pagination from "$lib/components/Pagination.svelte";
 											<button
 												type="button"
 												onclick={() => (isEditing = true)}
-												class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-2.5 py-1 text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
+												class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
 											>
 												<svg
-													width="12"
-													height="12"
+													width="10"
+													height="10"
 													viewBox="0 0 24 24"
 													fill="none"
 													stroke="currentColor"
@@ -1264,10 +1289,10 @@ import Pagination from "$lib/components/Pagination.svelte";
 											<button
 												type="button"
 												onclick={() => openReportModal(detailQuestion!._id)}
-												class="inline-flex items-center gap-1.5 rounded-lg border border-semantic-error/20 bg-semantic-error/5 px-2.5 py-1 text-xs font-semibold text-semantic-error shadow-sm hover:bg-semantic-error/10 transition"
+												class="inline-flex items-center gap-1.5 rounded-lg border border-semantic-error/20 bg-semantic-error/5 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-semantic-error shadow-sm hover:bg-semantic-error/10 transition"
 												title="Report Question"
 											>
-												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 													<circle cx="12" cy="12" r="10"></circle>
 													<line x1="12" y1="8" x2="12" y2="12"></line>
 													<line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -1303,14 +1328,14 @@ import Pagination from "$lib/components/Pagination.svelte";
 														img as ImageLike,
 													)}
 													{#if src}
-														<img
-															{src}
-															alt={imageAlt(
-																img as ImageLike,
-															)}
-															class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm"
-															loading="lazy"
-														/>
+														<button type="button" class="block w-full cursor-zoom-in" onclick={() => (lightboxSrc = src)} title="View larger">
+															<img
+																{src}
+																alt={imageAlt(img as ImageLike)}
+																class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm pointer-events-none"
+																loading="lazy"
+															/>
+														</button>
 													{/if}
 												{/each}
 											</div>
@@ -1323,7 +1348,9 @@ import Pagination from "$lib/components/Pagination.svelte";
 													{#each (detailQuestion as any).prompt.en.rePhrasedQuestionImage as img, imgIdx (`rq-${detailQuestion._id}-${imgIdx}`)}
 														{@const src = imageSrc(img as ImageLike)}
 														{#if src}
-															<img {src} alt={imageAlt(img as ImageLike)} class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm" loading="lazy" />
+															<button type="button" class="block w-full cursor-zoom-in" onclick={() => (lightboxSrc = src)} title="View larger">
+																<img {src} alt={imageAlt(img as ImageLike)} class="max-h-60 w-full rounded-lg border border-[var(--page-card-border)] bg-[var(--page-card-bg)] object-contain shadow-sm pointer-events-none" loading="lazy" />
+															</button>
 														{/if}
 													{/each}
 												</div>
@@ -1409,14 +1436,14 @@ import Pagination from "$lib/components/Pagination.svelte";
 																			img as ImageLike,
 																		)}
 																	{#if src}
-																		<img
-																			{src}
-																			alt={imageAlt(
-																				img as ImageLike,
-																			)}
-																			class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm"
-																			loading="lazy"
-																		/>
+																		<button type="button" class="block cursor-zoom-in" onclick={(e) => { e.stopPropagation(); lightboxSrc = src; }} title="View larger">
+																			<img
+																				{src}
+																				alt={imageAlt(img as ImageLike)}
+																				class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm pointer-events-none"
+																				loading="lazy"
+																			/>
+																		</button>
 																	{/if}
 																{/each}
 															</div>
@@ -1429,7 +1456,9 @@ import Pagination from "$lib/components/Pagination.svelte";
 																	{#each (option as any).rePhrasedOptionImage as img, imgIdx (`ropt-${detailQuestion._id}-${option.identifier}-${imgIdx}`)}
 																		{@const src = imageSrc(img as ImageLike)}
 																		{#if src}
-																			<img {src} alt={imageAlt(img as ImageLike)} class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm" loading="lazy" />
+																			<button type="button" class="block cursor-zoom-in" onclick={(e) => { e.stopPropagation(); lightboxSrc = src; }} title="View larger">
+																				<img {src} alt={imageAlt(img as ImageLike)} class="max-h-32 max-w-full rounded-md border border-[var(--page-card-border)] bg-[var(--page-bg)] object-contain shadow-sm pointer-events-none" loading="lazy" />
+																			</button>
 																		{/if}
 																	{/each}
 																</div>
@@ -1654,20 +1683,20 @@ import Pagination from "$lib/components/Pagination.svelte";
 									</div> <!-- end scrollable content -->
 
 									<div
-										class="shrink-0 mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-3"
+										class="shrink-0 mt-2 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 border-t border-[var(--sh-exam-card-border)] pt-3"
 									>
 										<button
 											type="button"
-											class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
+											class="flex-1 sm:flex-none min-w-[80px] sm:min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-2 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
 											disabled={!canGoDetailedPrev}
 											onclick={goDetailedPrev}
 										>
 											Previous
 										</button>
-
+										
 										<button
 											type="button"
-											class="min-w-[180px] rounded-lg bg-[var(--page-link)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--page-link)]/20 transition hover:bg-[var(--page-link-hover)] hover:shadow-lg disabled:opacity-50"
+											class="flex-[1.5] sm:flex-none min-w-[140px] sm:min-w-[180px] rounded-lg bg-[var(--page-link)] px-3 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-[var(--page-link)]/20 transition hover:bg-[var(--page-link-hover)] hover:shadow-lg disabled:opacity-50"
 											onclick={() => {
 												if (!isAnswerChecked) {
 													isAnswerChecked = true;
@@ -1680,7 +1709,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 
 										<button
 											type="button"
-											class="min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
+											class="flex-1 sm:flex-none min-w-[80px] sm:min-w-[100px] rounded-lg border border-[var(--page-link)]/50 bg-[var(--page-bg)] px-2 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[var(--page-link)] transition hover:bg-[var(--page-link)]/10 disabled:opacity-40 disabled:hover:bg-[var(--page-bg)]"
 											disabled={!canGoDetailedNext}
 											onclick={goDetailedNext}
 										>
@@ -1717,7 +1746,7 @@ import Pagination from "$lib/components/Pagination.svelte";
 {#if reportModalOpen}
 <div class="fixed inset-0 z-[60] flex items-center justify-center p-4">
 	<div 
-		class="fixed inset-0 bg-black/60 backdrop-blur-sm" 
+		class="fixed inset-0 bg-black/60 backdrop-blur-md" 
 		role="button"
 		tabindex="0"
 		onclick={closeReportModal}
@@ -1832,6 +1861,8 @@ import Pagination from "$lib/components/Pagination.svelte";
 </div>
 {/if}
 
+<ImageLightbox src={lightboxSrc} onClose={() => (lightboxSrc = null)} />
+
 <style>
 	.toast-wrap {
 		position: fixed;
@@ -1881,8 +1912,8 @@ import Pagination from "$lib/components/Pagination.svelte";
 
 	.question-snippet :global(mjx-container),
 	.question-snippet :global(.MathJax) {
-		display: inline !important;
-		vertical-align: baseline;
+		display: inline-block !important;
+		vertical-align: middle;
 	}
 
 	/* MathText uses block + 0.75em margins for display math — kills space before paper badge. */

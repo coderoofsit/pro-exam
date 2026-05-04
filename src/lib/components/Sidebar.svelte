@@ -544,6 +544,18 @@
     await goto(profileCreatePathByRole[role]);
   }
 
+  async function goToSettings() {
+    profileDropdownOpen = false;
+
+    const settingsPathByRole: Record<Role, string> = {
+      student: "/student/settings",
+      tutor: "/teacher/settings",
+      institute: "/institute/settings",
+    };
+
+    await goto(settingsPathByRole[role]);
+  }
+
   function usersHaveMembershipShape(users: AuthUser[]) {
     return (
       users.length > 0 &&
@@ -1096,6 +1108,19 @@
     "
     >
       <div class="flex flex-1 items-center justify-end gap-2 sm:justify-between sm:gap-4">
+        <div class="flex items-center gap-2.5 sm:hidden">
+          <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-[linear-gradient(135deg,var(--sb-logo-gradient-from),var(--sb-logo-gradient-to))] shadow-[var(--sb-logo-glow)]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M9 7v4l1.5-1L12 11V7" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-sm font-bold tracking-tight text-[var(--sb-brand-name-color)] leading-none">Exam Abhyas</span>
+            <span class="text-[9px] font-medium text-[var(--sb-brand-role-color)] capitalize leading-tight">{role} Panel</span>
+          </div>
+        </div>
         <div class="hidden sm:block"></div>
         <div class="ml-auto flex flex-shrink-0 items-center gap-1.5 sm:gap-2.5">
           <button
@@ -1108,7 +1133,7 @@
               ? "Switch to light mode"
               : "Switch to dark mode"}
             class="
-              relative flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11
+              relative hidden h-10 w-10 items-center justify-center rounded-xl sm:flex sm:h-11 sm:w-11
               bg-[var(--topbar-icon-btn-bg)]
               border border-[var(--topbar-icon-btn-border)]
               text-[var(--topbar-icon-btn-color)]
@@ -1118,52 +1143,24 @@
             "
           >
             {#if $themeStore === "dark"}
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="4"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <path
-                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
               </svg>
             {:else}
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M21 14.5A8.5 8.5 0 0 1 9.5 3 6.5 6.5 0 0 0 21 14.5Z"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 6.5 6.5 0 0 0 21 14.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             {/if}
           </button>
+
           <button
             type="button"
-            onclick={() => { goto('/student/settings'); }}
+            onclick={goToSettings}
             title="Settings"
             aria-label="Settings"
             class="
-              relative flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11
+              relative hidden h-10 w-10 items-center justify-center rounded-xl sm:flex sm:h-11 sm:w-11
               bg-[var(--topbar-icon-btn-bg)]
               border border-[var(--topbar-icon-btn-border)]
               text-[var(--topbar-icon-btn-color)]
@@ -1177,18 +1174,19 @@
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
+
           <button
             type="button"
             aria-label="Notifications"
             title="Notifications"
             onclick={openNotificationSidebar}
             class="
-              relative flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11
-              bg-[var(--topbar-icon-btn-bg)]
-              border border-[var(--topbar-icon-btn-border)]
+              relative flex items-center justify-center sm:h-11 sm:w-11 sm:rounded-xl
+              sm:bg-[var(--topbar-icon-btn-bg)]
+              sm:border sm:border-[var(--topbar-icon-btn-border)]
               text-[var(--topbar-icon-btn-color)]
               transition-[border,color] duration-150
-              hover:border-[var(--topbar-icon-btn-hover-border)]
+              hover:sm:border-[var(--topbar-icon-btn-hover-border)]
               hover:text-[var(--topbar-icon-btn-hover-color)]
             "
           >
@@ -1222,11 +1220,11 @@
               onclick={toggleProfileDropdown}
               disabled={selectingMembershipDefault}
               class="
-                flex w-auto items-center gap-1 rounded-xl px-1.5 py-2 sm:w-[160px] sm:gap-2.5 sm:px-3
-                bg-[var(--topbar-profile-bg)]
-                border border-[var(--topbar-profile-border)]
+                flex w-auto items-center gap-1 sm:gap-2.5 sm:px-3 sm:py-2
+                sm:rounded-xl sm:bg-[var(--topbar-profile-bg)]
+                sm:border sm:border-[var(--topbar-profile-border)]
                 transition-[border] duration-150
-                hover:border-[var(--topbar-profile-hover-border)]
+                hover:sm:border-[var(--topbar-profile-hover-border)]
                 disabled:pointer-events-none disabled:opacity-60
               "
             >
@@ -1262,7 +1260,7 @@
               </div>
 
               <span
-                class="text-[var(--topbar-profile-chevron)] transition-transform duration-200 {profileDropdownOpen
+                class="hidden sm:inline-flex text-[var(--topbar-profile-chevron)] transition-transform duration-200 {profileDropdownOpen
                   ? 'rotate-180'
                   : ''}"
               >
@@ -1395,6 +1393,54 @@
                 >
                   <button
                     type="button"
+                    onclick={goToSettings}
+                    class="
+                      flex sm:hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left
+                      text-sm font-medium text-[var(--topbar-dd-action-text)]
+                      transition-colors duration-150
+                      hover:bg-[var(--topbar-dd-action-hover-bg)] hover:text-[var(--topbar-dd-action-hover-text)]
+                    "
+                  >
+                    <span
+                      class="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--topbar-dd-action-icon-bg)] text-[var(--topbar-dd-action-icon-color)]"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                    <span>Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onclick={onToggleTheme}
+                    class="
+                      flex sm:hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left
+                      text-sm font-medium text-[var(--topbar-dd-action-text)]
+                      transition-colors duration-150
+                      hover:bg-[var(--topbar-dd-action-hover-bg)] hover:text-[var(--topbar-dd-action-hover-text)]
+                    "
+                  >
+                    <span
+                      class="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--topbar-dd-action-icon-bg)] text-[var(--topbar-dd-action-icon-color)]"
+                    >
+                      {#if $themeStore === "dark"}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        </svg>
+                      {:else}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 6.5 6.5 0 0 0 21 14.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                      {/if}
+                    </span>
+                    <span>{$themeStore === "dark" ? "Light Theme" : "Dark Theme"}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onclick={goToCreateProfile}
                     class="
                       flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left
@@ -1480,7 +1526,7 @@
       id="layout-main-scroll"
       class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-[72px] {isTestAttemptRoute
         ? 'flex flex-col px-0 pb-0'
-        : 'px-4 pb-24 md:px-6 md:pb-6'}"
+        : 'px-0 pb-24 md:px-6 md:pb-6'}"
     >
       {#key page.url.pathname}
         <div

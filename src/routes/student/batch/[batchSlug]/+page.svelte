@@ -134,7 +134,7 @@
         return;
       }
       await goto(
-        `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batchId=${encodeURIComponent(batchId)}`
+        `/student/test-attempt?testId=${encodeURIComponent(t.testId)}&batchId=${encodeURIComponent(batchId)}&prelaunch=1&testName=${encodeURIComponent(testTitle(t))}`
       );
     } finally {
       startingTestId = null;
@@ -562,7 +562,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-sm"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-md"
     role="dialog"
     aria-modal="true"
     aria-labelledby="pending-test-modal-title"
