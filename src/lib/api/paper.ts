@@ -47,7 +47,10 @@ export type GetPaperQuestionsResponse = {
   success: boolean;
   statusCode: number;
   message: string;
-  data: PaperQuestion[];
+  data: {
+    sections: string[];
+    questions: PaperQuestion[];
+  };
 };
 
 export async function getPapersByExamSlug(
@@ -64,9 +67,13 @@ export async function getPapersByExamSlug(
   });
 }
 
-export async function getPaperQuestionsByPaperId(paperId: string, fetchFn?: typeof fetch) {
+export async function getPaperQuestionsByPaperId(paperId: string, fetchFn?: typeof fetch, subjectSlug?: string) {
+  let endpoint = `/api/v1/papers/${encodeURIComponent(paperId)}`;
+  if (subjectSlug) {
+    endpoint += `?subjectSlug=${encodeURIComponent(subjectSlug)}`;
+  }
   return apiRequest<GetPaperQuestionsResponse>({
-    endpoint: `/api/v1/papers/${encodeURIComponent(paperId)}`,
+    endpoint,
     method: 'GET',
     fetch: fetchFn
   });
