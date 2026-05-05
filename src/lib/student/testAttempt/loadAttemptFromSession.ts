@@ -76,7 +76,8 @@ export function loadAttemptDataFromSession(testId: string, batchId: string): Att
 			expiresAt: parsed.expiresAt ?? null,
 			startedAt: parsed.startedAt ?? null
 		};
-	} catch {
+	} catch (err) {
+		console.error('[loadAttemptDataFromSession] CRITICAL: FAILED TO LOAD OR NORMALIZE ATTEMPT DATA', err);
 		return null;
 	}
 }

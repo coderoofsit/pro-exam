@@ -223,62 +223,58 @@
 
     const target = `${basePath}/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}&prelaunch=1&testName=${encodeURIComponent(name)}`;
 
-    void (async () => {
-      try {
-        const res = await createTestAttempt({
-          testId,
-          batchId: batchIdStr || null,
-          testAttemptId: options?.testAttemptId ?? null,
-        });
+    try {
+      const res = await createTestAttempt({
+        testId,
+        batchId: batchIdStr || null,
+        testAttemptId: options?.testAttemptId ?? null,
+      });
 
-        if (!res.success) {
-          try {
-            sessionStorage.setItem(
-              ATTEMPT_START_ERROR_KEY,
-              res.message || "Could not start test",
-            );
-          } catch {
-            // ignore
-          }
-          return;
-        }
-
-        const persisted = persistBatchAttemptSessionFromCreateResponse(res.data, {
-          testId,
-          batchId: batchIdStr,
-          testName: name,
-        });
-
-        if (!persisted.ok) {
-          try {
-            sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, persisted.message);
-          } catch {
-            // ignore
-          }
-          return;
-        }
-
-        try {
-          sessionStorage.removeItem(ATTEMPT_START_ERROR_KEY);
-        } catch {
-          // ignore
-        }
-      } catch (e) {
+      if (!res.success) {
         try {
           sessionStorage.setItem(
             ATTEMPT_START_ERROR_KEY,
-            e instanceof Error ? e.message : "Could not start test",
+            res.message || "Could not start test",
           );
         } catch {
           // ignore
         }
+        startingTestId = null;
+        return;
       }
-    })();
 
-    try {
+      const persisted = persistBatchAttemptSessionFromCreateResponse(res.data, {
+        testId,
+        batchId: batchIdStr,
+        testName: name,
+      });
+
+      if (!persisted.ok) {
+        try {
+          sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, persisted.message);
+        } catch {
+          // ignore
+        }
+        startingTestId = null;
+        return;
+      }
+
+      try {
+        sessionStorage.removeItem(ATTEMPT_START_ERROR_KEY);
+      } catch {
+        // ignore
+      }
+
       await goto(target);
-    } catch {
-      // ignore navigation aborts
+    } catch (e) {
+      try {
+        sessionStorage.setItem(
+          ATTEMPT_START_ERROR_KEY,
+          e instanceof Error ? e.message : "Could not start test",
+        );
+      } catch {
+        // ignore
+      }
     } finally {
       startingTestId = null;
     }
@@ -411,6 +407,7 @@
           </div>
         </div>
       {:then testsData}
+        {@const _ = console.log('[TestsPage] Received Data:', testsData)}
         {@const items = testsData.items ?? []}
         {@const error = testsData.error}
         {@const filterOptions = testsData.filterOptions}

@@ -39,7 +39,7 @@
     testId: string;
     batchId: string;
     /** Called after PATCH + submit APIs succeed and the finish screen is shown (optional). */
-    onSubmit?: (answers: Record<number, string>) => void;
+    onSubmit?: (answers: Record<number, string | string[]>) => void;
   };
 
   let {
@@ -56,7 +56,7 @@
   }: Props = $props();
 
   let currentIndex = $state(0);
-  let answers = $state<Record<number, string>>({});
+  let answers = $state<Record<number, string | string[]>>({});
   let marked = $state<Set<number>>(new Set());
   let timerEndsAt = $state<number | null>(null);
   let nowTick = $state(0);
@@ -68,6 +68,10 @@
   let showFinishScreen = $state(false);
   let submitFinishError = $state<string | null>(null);
   let imageLightboxSrc = $state<string | null>(null);
+  let questionSecondsSpent = $state(0);
+  let questionTimes = $state<Record<number, number>>({});
+  let isPaletteOpen = $state(false);
+  let selectedMobileSectionIdx = $state(0);
 
   const total = $derived(questions.length);
   const displayTotal = $derived(
@@ -142,6 +146,12 @@
     `${Math.floor(secondsLeft / 60)
       .toString()
       .padStart(2, '0')}:${(secondsLeft % 60).toString().padStart(2, '0')}`
+  );
+
+  const formattedQuestionTime = $derived(
+    `${Math.floor(questionSecondsSpent / 60)
+      .toString()
+      .padStart(2, '0')}:${(questionSecondsSpent % 60).toString().padStart(2, '0')}`
   );
 
   function readSession(): BatchTestAttemptSession | null {
@@ -226,12 +236,10 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
   const timeSpentMs =
     opts?.timeSpentMsOverride ?? Math.max(0, Date.now() - questionEnteredAt);
 
-  const answer =
-    opts?.answerOverride !== undefined
-      ? opts.answerOverride
-      : answers[questionIndex] !== undefined
-        ? [answers[questionIndex]]
-        : null;
+  const rawAnswer = answers[questionIndex];
+  const answer = rawAnswer !== undefined
+    ? (Array.isArray(rawAnswer) ? rawAnswer : [rawAnswer])
+    : null;
 
   try {
     const res = await updateTestAttemptQuestion(aid, questionId, {
@@ -253,19 +261,40 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
   if (index === currentIndex) return;
 
   const prevIndex = currentIndex;
-  const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
+  const elapsed = Math.max(0, Date.now() - questionEnteredAt);
+  const totalMsSoFar = (questionTimes[prevIndex] ?? 0) + elapsed;
+  questionTimes[prevIndex] = totalMsSoFar;
 
   currentIndex = index;
   questionEnteredAt = Date.now();
+  questionSecondsSpent = Math.floor((questionTimes[currentIndex] ?? 0) / 1000);
 
-  void flushQuestionForIndex(prevIndex, { timeSpentMsOverride: timeSpentMs });
+  // Sync mobile section index
+  const secIdx = normalizedSections.findIndex(
+    (s) => index >= s.questionStartIndex && index < s.questionStartIndex + s.questions.length
+  );
+  if (secIdx !== -1) selectedMobileSectionIdx = secIdx;
+
+  isPaletteOpen = false; // Close sidebar on mobile when navigating
+  void flushQuestionForIndex(prevIndex, { timeSpentMsOverride: totalMsSoFar });
+}
+
+// Function to handle section change from horizontal scroller
+function selectSection(idx: number) {
+  selectedMobileSectionIdx = idx;
+  const targetSec = normalizedSections[idx];
+  if (targetSec) {
+    void goTo(targetSec.questionStartIndex);
+  }
 }
 
   async function markAndNext() {
   if (submitted) return;
 
   const prevIndex = currentIndex;
-  const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
+  const elapsed = Math.max(0, Date.now() - questionEnteredAt);
+  const totalMsSoFar = (questionTimes[prevIndex] ?? 0) + elapsed;
+  questionTimes[prevIndex] = totalMsSoFar;
 
   marked = new Set([...marked, currentIndex]);
 
@@ -274,8 +303,9 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
   }
 
   questionEnteredAt = Date.now();
+  questionSecondsSpent = Math.floor((questionTimes[currentIndex] ?? 0) / 1000);
 
-  void flushQuestionForIndex(prevIndex, { timeSpentMsOverride: timeSpentMs });
+  void flushQuestionForIndex(prevIndex, { timeSpentMsOverride: totalMsSoFar });
 }
 
   function openImageLightbox(src: string) {
@@ -316,12 +346,27 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
       }
 
       if (s.answers && typeof s.answers === 'object') {
-        const next: Record<number, string> = {};
+        const next: Record<number, string | string[]> = {};
         for (const [k, v] of Object.entries(s.answers)) {
           const idx = Number(k);
-          if (!Number.isNaN(idx) && typeof v === 'string') next[idx] = v;
+          if (!Number.isNaN(idx)) {
+            if (Array.isArray(v)) {
+              next[idx] = v.filter(item => typeof item === 'string');
+            } else if (typeof v === 'string') {
+              next[idx] = v;
+            }
+          }
         }
         answers = next;
+      }
+
+      if (s.questionTimes && typeof s.questionTimes === 'object') {
+        const next: Record<number, number> = {};
+        for (const [k, v] of Object.entries(s.questionTimes)) {
+          const idx = Number(k);
+          if (!Number.isNaN(idx) && typeof v === 'number') next[idx] = v;
+        }
+        questionTimes = next;
       }
 
       if (Array.isArray(s.markedIndices)) {
@@ -350,6 +395,9 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
 
     const interval = setInterval(() => {
       nowTick++;
+      const currentElapsed = Date.now() - questionEnteredAt;
+      const totalMs = (questionTimes[currentIndex] ?? 0) + currentElapsed;
+      questionSecondsSpent = Math.floor(totalMs / 1000);
       const endMs = !Number.isNaN(serverExpires) && serverExpires > 0
         ? serverExpires
         : timerEndsAt;
@@ -374,7 +422,10 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
         Object.entries(answers).map(([k, v]) => [String(k), v])
       ),
       markedIndices: [...marked],
-      currentQuestionIndex: currentIndex
+      currentQuestionIndex: currentIndex,
+      questionTimes: Object.fromEntries(
+        Object.entries(questionTimes).map(([k, v]) => [String(k), v])
+      )
     };
     if (!prev?.expiresAt) {
       patch.timerEndsAt = timerEndsAt ?? undefined;
@@ -384,7 +435,39 @@ async function flushQuestionForIndex(questionIndex: number, opts?: FlushOpts) {
 
 function selectOption(identifier: string) {
   if (submitted) return;
-  answers = { ...answers, [currentIndex]: identifier };
+  const kind = currentQ?.questionKind?.toUpperCase() ?? 'MCQ';
+  const current = answers[currentIndex];
+
+  if (kind === 'MSQ') {
+    let next: string[] = Array.isArray(current) ? [...current] : (current ? [current] : []);
+    if (next.includes(identifier)) {
+      next = next.filter((id) => id !== identifier);
+    } else {
+      next.push(identifier);
+    }
+    if (next.length === 0) {
+      const a = { ...answers };
+      delete a[currentIndex];
+      answers = a;
+    } else {
+      answers = { ...answers, [currentIndex]: next };
+    }
+  } else {
+    // MCQ or fallback
+    answers = { ...answers, [currentIndex]: identifier };
+  }
+}
+
+function handleInputChange(e: Event) {
+  if (submitted) return;
+  const val = (e.target as HTMLInputElement).value;
+  if (!val.trim()) {
+    const a = { ...answers };
+    delete a[currentIndex];
+    answers = a;
+  } else {
+    answers = { ...answers, [currentIndex]: val };
+  }
 }
 
 function clearCurrentAnswer() {
@@ -433,9 +516,11 @@ function clearCurrentAnswer() {
 
   try {
     const timeSpentMs = Math.max(0, Date.now() - questionEnteredAt);
+    const totalMsFinal = (questionTimes[currentIndex] ?? 0) + timeSpentMs;
+    questionTimes[currentIndex] = totalMsFinal;
 
     await flushQuestionForIndex(currentIndex, {
-      timeSpentMsOverride: timeSpentMs
+      timeSpentMsOverride: totalMsFinal
     });
 
     const aid = resolveAttemptId();
@@ -524,9 +609,11 @@ function clearCurrentAnswer() {
   }
 
   .ta-img-frame--stem {
-    width: 100%;
-    min-height: 3.5rem;
-    max-height: min(14rem, 30vh);
+    width: auto;
+    max-width: min(100%, 14rem);
+    min-height: 3rem;
+    max-height: 8rem;
+    flex-shrink: 0;
   }
 
   .ta-img-frame--option {
@@ -547,7 +634,7 @@ function clearCurrentAnswer() {
 
   .ta-img-frame__img--stem {
     max-width: 100%;
-    max-height: min(12rem, 28vh);
+    max-height: 7rem;
   }
 
   .ta-img-frame__img--opt {
@@ -571,57 +658,187 @@ function clearCurrentAnswer() {
 </style>
 
 <div
-  class="flex min-h-0 flex-1 flex-col bg-[var(--ta-page-bg)] font-sans transition-colors duration-300"
+  class="flex min-h-0 h-screen flex-col bg-[var(--ta-page-bg)] font-sans transition-colors duration-300"
   data-attempt-id={attemptId ?? ''}
 >
-  <div
-    class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
-  >
-    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-6 pt-0 sm:px-6">
-      <div class="mx-auto flex max-w-2xl flex-col gap-6">
-        <div
-          class="
-          rounded-2xl p-6
-          bg-[var(--ta-qpanel-bg)]
-          border border-[var(--ta-qpanel-border)]
-          shadow-[var(--ta-qpanel-shadow)]
-        "
-        >
-          {#if showSectionChrome && currentSection}
-            <p
-              class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ta-header-sub)]"
-            >
-              {currentSection.title}
-            </p>
-          {/if}
-          <div class="mb-5 flex items-center gap-3">
+  <!-- Fixed Top Header (Mobile/Tablet Only) -->
+  <header class="sticky top-0 z-40 flex h-14 w-full shrink-0 items-center justify-between border-b border-[var(--ta-header-border)] bg-[var(--ta-header-bg)] px-4 shadow-sm backdrop-blur-md lg:hidden">
+    <div class="flex items-center gap-2">
+      <div
+        class="flex items-center gap-1.5 rounded-lg border px-3 py-1 font-mono text-sm font-bold
+        {timerWarn
+          ? 'bg-[var(--ta-timer-warn-bg)] border-[var(--ta-timer-warn-border)] text-[var(--ta-timer-warn-text)]'
+          : 'bg-[var(--ta-timer-bg)] border-[var(--ta-timer-border)] text-[var(--ta-timer-text)]'}"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+          <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        {formattedTime}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <Button
+        variant="ta-submit"
+        onClick={openSubmitConfirm}
+        disabled={submitted || submitInFlight}
+        className="!h-8 !px-3 !py-0 !text-[10px] !font-bold !uppercase !tracking-wider"
+      >
+        Submit
+      </Button>
+      
+      <button
+        type="button"
+        onclick={() => (isPaletteOpen = true)}
+        class="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--ta-nav-btn-border)] bg-[var(--ta-nav-btn-bg)] text-[var(--ta-nav-btn-text)] transition-colors hover:bg-[var(--ta-nav-btn-hover-bg)]"
+        aria-label="Open Palette"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+  </header>
+    <!-- Main Content Area Wrapper -->
+    <div class="flex min-h-0 flex-1 flex-col bg-[var(--ta-page-bg)]">
+      <!-- Mobile Section Tabs (Visible only on mobile/tablet) -->
+      <div class="lg:hidden flex-shrink-0 border-b border-[var(--ta-divider)] bg-[var(--ta-header-bg)]">
+        <!-- Subject Tabs -->
+        <div class="flex w-full overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div class="flex gap-8">
+            {#each normalizedSections as sec, idx}
+              <button
+                type="button"
+                onclick={() => selectSection(idx)}
+                class="
+                  relative shrink-0 py-3 text-xs font-bold uppercase tracking-widest transition-all
+                  {selectedMobileSectionIdx === idx
+                    ? 'text-white'
+                    : 'text-gray-500'}
+                "
+              >
+                {sec.title}
+                {#if selectedMobileSectionIdx === idx}
+                  <div class="absolute bottom-0 left-0 h-0.5 w-full bg-blue-500"></div>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Question Number Scroller (Internal to Section) -->
+        <div class="flex w-full overflow-x-auto border-t border-[var(--ta-divider)] px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div class="flex gap-3">
+            {#if normalizedSections[selectedMobileSectionIdx]}
+              {@const sec = normalizedSections[selectedMobileSectionIdx]}
+              {#each sec.questions as _, qi}
+                {@const i = sec.questionStartIndex + qi}
+                {@const state = pillState(i)}
+                <button
+                  type="button"
+                  onclick={() => void goTo(i)}
+                  class="
+                    flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all
+                    {state === 'current'
+                      ? 'bg-[var(--ta-pill-current-bg)] text-[var(--ta-pill-current-text)] ring-2 ring-blue-500 ring-offset-2 ring-offset-[var(--ta-header-bg)]'
+                      : state === 'attempted'
+                        ? 'border border-[var(--ta-pill-attempted-border)] bg-[var(--ta-pill-attempted-bg)] text-[var(--ta-pill-attempted-text)]'
+                        : state === 'marked'
+                          ? 'border border-amber-500/40 bg-amber-500/15 text-amber-200'
+                          : 'border border-[var(--ta-pill-unattempted-border)] bg-[var(--ta-pill-unattempted-bg)] text-[var(--ta-pill-unattempted-text)]'}
+                  "
+                >
+                  {i + 1}
+                </button>
+              {/each}
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <div class="flex min-h-0 flex-1 flex-row overflow-hidden">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-6 pt-12 sm:px-6">
+      <div class="mx-auto flex max-w-3xl flex-col gap-6">
+        {#if normalizedSections.length > 1 && !isPaletteOpen}
+          <div class="hidden lg:flex flex-wrap items-center gap-2 border-b border-[var(--ta-palette-border)] pb-4">
+            {#each normalizedSections as sec}
+              {@const isActive = currentSection?.slug === sec.slug}
+              <button
+                type="button"
+                onclick={() => void goTo(sec.questionStartIndex)}
+                class="
+                  relative px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-200
+                  {isActive
+                    ? 'text-[var(--ta-nav-btn-primary-bg)]'
+                    : 'text-[var(--ta-header-sub)] hover:text-[var(--ta-header-title)]'}
+                "
+              >
+                {sec.title}
+                {#if isActive}
+                  <span
+                    class="absolute bottom-[-1px] left-0 h-[2px] w-full bg-[var(--ta-nav-btn-primary-bg)] shadow-[0_0_8px_var(--ta-nav-btn-primary-bg)]"
+                  ></span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
+
+        <div class="flex flex-col">
+          <div class="mb-3 flex items-center justify-between gap-4">
+            {#if showSectionChrome && currentSection}
+              <p
+                class="text-[11px] font-semibold uppercase tracking-wider text-[var(--ta-header-sub)] opacity-80"
+              >
+                {currentSection.title}
+              </p>
+            {:else}
+              <div></div>
+            {/if}
+
+            <div class="flex items-center gap-2">
+              <div
+                class="flex items-center gap-1.5 rounded-full bg-[var(--ta-timer-bg)] px-2.5 py-1 font-mono text-[11px] font-bold text-[var(--ta-timer-text)] border border-[var(--ta-timer-border)] shadow-sm"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="opacity-70">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                  <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                {formattedQuestionTime}
+              </div>
+
+              {#if currentQ?.questionKind}
+                <span
+                  class="inline-flex items-center rounded-full bg-[var(--ta-nav-btn-primary-bg)] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--ta-nav-btn-primary-text)] border border-[color-mix(in_srgb,white_20%,var(--ta-nav-btn-primary-bg))] shadow-sm"
+                >
+                  {currentQ.questionKind}
+                </span>
+              {/if}
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
             <span
               class="
-              inline-flex h-8 w-8 flex-shrink-0 items-center justify-center
-              rounded-full text-xs font-bold
+              inline-flex h-9 w-9 flex-shrink-0 items-center justify-center
+              rounded-full text-sm font-bold shadow-sm leading-none
               bg-[var(--ta-qnum-bg)] text-[var(--ta-qnum-text)]
             "
             >
               {currentIndex + 1}
             </span>
-            <span class="text-xs text-[var(--ta-header-sub)]">
-              Question {currentIndex + 1} of {displayTotal}
-              {#if hasMultipleSections}
-                <span class="text-[var(--ta-palette-sub)]">
-                  · Q {localSectionQIndex} of {localSectionQTotal} in this section
-                </span>
-              {/if}
-            </span>
-          </div>
-
-          <div
-            class="ta-math-content mb-4 overflow-x-auto text-base font-medium leading-relaxed text-[var(--ta-qtext)]"
-          >
-            <MathText content={prompt?.content ?? ''} />
+            <div class="min-w-0 flex-1">
+              <div
+                class="ta-math-content mb-4 overflow-x-auto text-[1.05rem] font-medium leading-relaxed text-[var(--ta-qtext)]"
+              >
+                <MathText content={prompt?.content ?? ''} />
+              </div>
+            </div>
           </div>
 
           {#if prompt?.images?.length}
-            <div class="mb-6 flex flex-col gap-3">
+            <div class="mb-6 flex flex-row flex-wrap gap-3">
               {#each prompt.images as src, imgIdx (`qstem-${currentIndex}-${imgIdx}`)}
                 <button
                   type="button"
@@ -643,22 +860,47 @@ function clearCurrentAnswer() {
           {/if}
 
           <div class="flex flex-col gap-3">
-            {#each prompt?.options ?? [] as opt}
-              {@const selected = answers[currentIndex] === opt.identifier}
-              <button
-                type="button"
-                onclick={() => void selectOption(opt.identifier)}
-                disabled={submitted || submitInFlight}
-                class="
-                  group flex w-full items-start gap-4 text-left
-                  px-4 py-3.5 rounded-xl
-                  border transition-all duration-150
-                  disabled:cursor-not-allowed
-                  {selected
-                    ? 'bg-[var(--ta-opt-selected-bg)] border-[var(--ta-opt-selected-border)]'
-                    : 'bg-[var(--ta-opt-bg)] border-[var(--ta-opt-border)] hover:bg-[var(--ta-opt-hover-bg)] hover:border-[var(--ta-opt-hover-border)]'}
-                "
-              >
+            {#if ['INTEGER', 'FILL_IN_THE_BLANK', 'NUMERIC', 'SUBJECTIVE'].includes(currentQ?.questionKind?.toUpperCase() ?? '')}
+              <div class="flex flex-col gap-2">
+                <label for="integer-input" class="text-xs font-semibold text-[var(--ta-header-sub)] opacity-70">
+                  Type your answer below:
+                </label>
+                <input
+                  id="integer-input"
+                  type="text"
+                  value={typeof answers[currentIndex] === 'string' ? answers[currentIndex] : ''}
+                  oninput={handleInputChange}
+                  disabled={submitted || submitInFlight}
+                  placeholder="Enter your answer..."
+                  class="
+                    w-full rounded-xl border-2 p-4 text-base font-medium transition-all duration-200
+                    bg-[var(--ta-opt-bg)] border-[var(--ta-opt-border)]
+                    text-[var(--ta-qtext)] placeholder:text-[var(--ta-header-sub)] placeholder:opacity-50
+                    focus:border-[var(--ta-nav-btn-primary-bg)] focus:outline-none focus:ring-4 focus:ring-[color-mix(in_srgb,var(--ta-nav-btn-primary-bg)_10%,transparent)]
+                    disabled:cursor-not-allowed disabled:opacity-50
+                  "
+                />
+              </div>
+            {:else}
+              {#each prompt?.options ?? [] as opt}
+                {@const currentVal = answers[currentIndex]}
+                {@const selected = Array.isArray(currentVal) 
+                  ? currentVal.includes(opt.identifier) 
+                  : currentVal === opt.identifier}
+                <button
+                  type="button"
+                  onclick={() => void selectOption(opt.identifier)}
+                  disabled={submitted || submitInFlight}
+                  class="
+                    group flex w-full items-start gap-4 text-left
+                    px-4 py-3.5 rounded-xl
+                    border transition-all duration-150
+                    disabled:cursor-not-allowed
+                    {selected
+                      ? 'bg-[var(--ta-opt-selected-bg)] border-[var(--ta-opt-selected-border)]'
+                      : 'bg-[var(--ta-opt-bg)] border-[var(--ta-opt-border)] hover:bg-[var(--ta-opt-hover-bg)] hover:border-[var(--ta-opt-hover-border)]'}
+                  "
+                >
                 <span
                   class="
                   mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center
@@ -725,7 +967,8 @@ function clearCurrentAnswer() {
                   </span>
                 {/if}
               </button>
-            {/each}
+              {/each}
+            {/if}
           </div>
         </div>
 
@@ -789,7 +1032,7 @@ function clearCurrentAnswer() {
               disabled:cursor-not-allowed
             "
           >
-            {isLast ? 'Submit' : 'Next'}
+            <span class="leading-none">{isLast ? 'Submit' : 'Next'}</span>
             {#if !isLast}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path
@@ -806,70 +1049,63 @@ function clearCurrentAnswer() {
       </div>
     </main>
 
+    <!-- Desktop Sidebar Palette -->
     <aside
       class="
-        flex min-h-0 w-full flex-shrink-0 flex-col border-t border-[var(--ta-palette-border)]
-        bg-[var(--ta-palette-bg)]
-        max-h-[min(42vh,22rem)] min-h-0
-        lg:max-h-none lg:h-full lg:w-[220px] lg:max-w-[260px] xl:w-[256px]
-        lg:border-l lg:border-t-0
+        hidden lg:flex min-h-0 w-full flex-shrink-0 flex-col border-l border-[var(--ta-palette-border)]
+        bg-[var(--ta-palette-bg)] lg:h-full lg:w-[220px] lg:max-w-[260px] xl:w-[256px]
       "
     >
       <div
-    class="
-      sticky top-0 z-30 flex-shrink-0 flex items-center justify-end gap-3
-      px-4 sm:px-6 py-3
-      bg-[var(--ta-header-bg)]
-      border-b border-[var(--ta-header-border)]
-      shadow-[var(--ta-header-shadow)]
-      backdrop-blur-md
-    "
-  >
-    <div
-      class="
-      flex items-center gap-2 px-4 py-1.5 rounded-xl flex-shrink-0
-      border font-mono text-sm font-bold
-      {timerWarn
-        ? 'bg-[var(--ta-timer-warn-bg)] border-[var(--ta-timer-warn-border)] text-[var(--ta-timer-warn-text)]'
-        : 'bg-[var(--ta-timer-bg)] border-[var(--ta-timer-border)] text-[var(--ta-timer-text)]'}
-    "
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
-        <path
-          d="M12 7v5l3 3"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-      {formattedTime}
-    </div>
+        class="sticky top-0 z-30 flex-shrink-0 flex items-center justify-end gap-3 px-4 py-3 bg-[var(--ta-header-bg)] border-b border-[var(--ta-header-border)] shadow-sm backdrop-blur-md"
+      >
+        <div class="flex items-center justify-end gap-3 w-full">
+          <div
+            class="
+            flex items-center gap-2 px-4 py-1.5 rounded-xl flex-shrink-0
+            border font-mono text-sm font-bold
+            {timerWarn
+              ? 'bg-[var(--ta-timer-warn-bg)] border-[var(--ta-timer-warn-border)] text-[var(--ta-timer-warn-text)]'
+              : 'bg-[var(--ta-timer-bg)] border-[var(--ta-timer-border)] text-[var(--ta-timer-text)]'}
+          "
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+              <path
+                d="M12 7v5l3 3"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            {formattedTime}
+          </div>
 
-    <Button
-      variant="ta-submit"
-      onClick={openSubmitConfirm}
-      disabled={submitted || submitInFlight}
-      className="
-        flex-shrink-0 inline-flex items-center gap-2
-        px-4 py-2 rounded-xl text-xs font-semibold
-        transition-colors duration-150
-        disabled:opacity-50 disabled:cursor-not-allowed
-      "
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M5 13l4 4L19 7"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-      Submit
-    </Button>
-  </div>
+          <Button
+            variant="ta-submit"
+            onClick={openSubmitConfirm}
+            disabled={submitted || submitInFlight}
+            className="
+              flex-shrink-0 inline-flex items-center gap-2
+              px-4 py-2 rounded-xl text-xs font-semibold
+              transition-colors duration-150
+              disabled:opacity-50 disabled:cursor-not-allowed
+            "
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 13l4 4L19 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Submit
+          </Button>
+        </div>
+      </div>
 
       <div class="flex-shrink-0 border-b border-[var(--ta-divider)] px-4 pb-3 pt-4 sm:px-5">
         <p class="text-xs font-bold uppercase tracking-wider text-[var(--ta-palette-title)]">
@@ -884,7 +1120,7 @@ function clearCurrentAnswer() {
         class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 [scrollbar-width:thin]"
       >
         <div class="flex flex-col gap-4">
-          {#each normalizedSections as sec, secIdx (`${sec.slug}-${secIdx}`)}
+          {#each normalizedSections as sec, secIdx (`${sec.slug}-${secIdx}-desktop`)}
             <div class="min-w-0">
               {#if showSectionChrome}
                 <p
@@ -894,8 +1130,8 @@ function clearCurrentAnswer() {
                   {sec.title}
                 </p>
               {/if}
-              <div class="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-5">
-                {#each sec.questions as _, qi (`${sec.slug}-${sec.questionStartIndex + qi}`)}
+              <div class="grid grid-cols-5 gap-1.5 lg:grid-cols-5">
+                {#each sec.questions as _, qi (`${sec.slug}-${sec.questionStartIndex + qi}-desktop`)}
                   {@const i = sec.questionStartIndex + qi}
                   {@const state = pillState(i)}
                   <button
@@ -956,12 +1192,13 @@ function clearCurrentAnswer() {
         </div>
       </div>
     </aside>
+      </div>
+    </div>
   </div>
-</div>
 
 {#if showConfirm}
   <button
-    class="fixed inset-0 z-40 cursor-default bg-black/50 backdrop-blur-md"
+    class="fixed inset-0 z-[150] cursor-default bg-black/60 backdrop-blur-md"
     aria-label="Close"
     onclick={() => {
       showConfirm = false;
@@ -973,7 +1210,7 @@ function clearCurrentAnswer() {
     aria-modal="true"
     aria-labelledby="confirm-title"
     class="
-      fixed left-1/2 top-1/2 z-50
+      fixed left-1/2 top-1/2 z-[160]
       w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2
       overflow-hidden rounded-2xl
       border border-[var(--ta-qpanel-border)] bg-[var(--ta-qpanel-bg)]
@@ -1048,7 +1285,7 @@ function clearCurrentAnswer() {
 
 {#if showFinishScreen}
   <div
-    class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--ta-page-bg)] px-6 py-10"
+    class="fixed inset-0 z-[170] flex flex-col items-center justify-center bg-[var(--ta-page-bg)] px-6 py-10"
     role="status"
     aria-live="polite"
   >
@@ -1091,4 +1328,128 @@ function clearCurrentAnswer() {
   </div>
 {/if}
 
+
+
 <ImageLightbox src={imageLightboxSrc} onClose={closeImageLightbox} />
+
+<!-- Backdrop for Mobile Sidebar -->
+{#if isPaletteOpen}
+  <button
+    type="button"
+    class="fixed inset-0 z-[190] bg-black/90 backdrop-blur-md lg:hidden"
+    onclick={() => (isPaletteOpen = false)}
+    aria-label="Close Sidebar"
+  ></button>
+{/if}
+
+<!-- Mobile Sidebar Palette -->
+<aside
+  class="
+    fixed right-0 top-0 z-[200] h-full w-full transition-transform duration-300 ease-in-out
+    flex flex-col border-l border-[var(--ta-palette-border)] bg-[var(--ta-palette-bg)] shadow-2xl
+    lg:hidden
+    {isPaletteOpen ? 'translate-x-0' : 'translate-x-full'}
+  "
+>
+  <div
+    class="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 bg-[var(--ta-header-bg)] border-b border-[var(--ta-header-border)] shadow-sm backdrop-blur-md"
+  >
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        onclick={() => (isPaletteOpen = false)}
+        class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--ta-nav-btn-border)] bg-[var(--ta-nav-btn-bg)] text-[var(--ta-nav-btn-text)]"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <span class="text-xs font-bold text-[var(--ta-palette-title)]">Question Palette</span>
+    </div>
+  </div>
+
+  <div class="flex-shrink-0 border-b border-[var(--ta-divider)] px-4 pb-3 pt-4 sm:px-5">
+    <p class="text-xs font-bold uppercase tracking-wider text-[var(--ta-palette-title)]">
+      Question Palette
+    </p>
+    <p class="mt-1 text-xs text-[var(--ta-palette-sub)]">
+      {attempted} answered · {unattempted} remaining
+    </p>
+  </div>
+
+  <div
+    class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 [scrollbar-width:thin]"
+  >
+    <div class="flex flex-col gap-4">
+      {#each normalizedSections as sec, secIdx (`${sec.slug}-${secIdx}-mobile-v4`)}
+        <div class="min-w-0">
+          {#if showSectionChrome}
+            <p
+              class="mb-2 truncate text-[10px] font-bold uppercase tracking-wider text-[var(--ta-palette-sub)]"
+              title={sec.title}
+            >
+              {sec.title}
+            </p>
+          {/if}
+          <div class="grid grid-cols-5 gap-1.5 sm:grid-cols-6">
+            {#each sec.questions as _, qi (`${sec.slug}-${sec.questionStartIndex + qi}-mobile-v4`)}
+              {@const i = sec.questionStartIndex + qi}
+              {@const state = pillState(i)}
+              <button
+                type="button"
+                onclick={() => void goTo(i)}
+                disabled={submitted || submitInFlight}
+                title="Question {i + 1}"
+                class="
+                  flex h-9 w-full items-center justify-center rounded-lg text-xs font-bold
+                  transition-all duration-100
+                  {state === 'current'
+                    ? 'bg-[var(--ta-pill-current-bg)] text-[var(--ta-pill-current-text)] shadow-[var(--ta-pill-current-shadow)]'
+                    : state === 'attempted'
+                      ? 'border border-[var(--ta-pill-attempted-border)] bg-[var(--ta-pill-attempted-bg)] text-[var(--ta-pill-attempted-text)]'
+                      : state === 'marked'
+                        ? 'border border-amber-500/40 bg-amber-500/15 text-amber-200'
+                        : 'border border-[var(--ta-pill-unattempted-border)] bg-[var(--ta-pill-unattempted-bg)] text-[var(--ta-pill-unattempted-text)]'}
+                "
+              >
+                {i + 1}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    <div
+      class="mt-4 flex flex-col gap-2 border-t border-[var(--ta-divider)] pt-4"
+    >
+      {#each [
+        {
+          label: 'Answered',
+          class:
+            'bg-[var(--ta-pill-attempted-bg)] border-[var(--ta-pill-attempted-border)] text-[var(--ta-pill-attempted-text)]'
+        },
+        { label: 'Marked', class: 'bg-amber-500/15 border-amber-500/40 text-amber-200' },
+        {
+          label: 'Not answered',
+          class:
+            'bg-[var(--ta-pill-unattempted-bg)] border-[var(--ta-pill-unattempted-border)] text-[var(--ta-pill-unattempted-text)]'
+        },
+        {
+          label: 'Current',
+          class:
+            'bg-[var(--ta-pill-current-bg)] border-[var(--ta-pill-current-bg)] text-[var(--ta-pill-current-text)]'
+        }
+      ] as item}
+        <div class="flex items-center gap-2">
+          <span
+            class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border text-[9px] font-bold {item.class}"
+          >
+            1
+          </span>
+          <span class="text-xs text-[var(--ta-legend-text)]">{item.label}</span>
+        </div>
+      {/each}
+    </div>
+  </div>
+</aside>

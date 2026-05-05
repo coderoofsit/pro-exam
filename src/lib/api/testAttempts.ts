@@ -28,6 +28,7 @@ export type TestAttemptQuestion = {
 	prompt: {
 		en: TestAttemptPromptEn;
 	};
+	questionKind?: string | null;
 };
 
 function pickIdString(v: unknown): string | undefined {
@@ -155,9 +156,11 @@ export type BatchTestAttemptSession = {
 	/** Legacy client-only end (ms); used only when `expiresAt` is missing. */
 	timerEndsAt?: number;
 	/** Question index → selected option identifier. */
-	answers?: Record<string, string>;
+	answers?: Record<string, string | string[]>;
 	markedIndices?: number[];
 	currentQuestionIndex?: number;
+	/** Question index → cumulative time spent in ms. */
+	questionTimes?: Record<string, number>;
 };
 
 export async function createTestAttempt(

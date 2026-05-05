@@ -59,7 +59,7 @@
 </script>
 
 {#if isTestAttempt}
-  <main class="min-h-screen bg-[var(--ta-page-bg)]">
+  <main class="flex h-screen flex-col overflow-hidden bg-[var(--ta-page-bg)]">
     {@render children()}
   </main>
 {:else}

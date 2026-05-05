@@ -17,6 +17,7 @@ export type NormalizedQuestion = {
 			images: string[];
 		};
 	};
+	questionKind?: string | null;
 };
 
 export type NormalizedSection = {
@@ -167,24 +168,25 @@ function findIndicesForMetaSlug(
 export function normalizeQuestionsForTestUi(raw: TestAttemptQuestion[]): NormalizedQuestion[] {
 	return raw.map((item, orderIdx) => {
 		const id = extractQuestionId(item);
-		const en = item.prompt.en;
-		const sectionSlug = pickSectionSlug(item);
+		const prompt = item.prompt;
+		const en = prompt?.en;
+
 		return {
 			...item,
 			_id: id ?? item._id,
 			id: item.id,
 			questionId: item.questionId,
-			sectionSlug,
+			sectionSlug: pickSectionSlug(item),
 			order: orderIdx,
 			prompt: {
 				en: {
-					content: en.content,
-					options: en.options.map((o) => ({
-						identifier: o.identifier,
-						content: o.content,
-						images: normalizeImageUrls(o.images)
+					content: en?.content ?? '',
+					options: (en?.options || []).map((o: any) => ({
+						identifier: o?.identifier ?? '',
+						content: o?.content ?? '',
+						images: normalizeImageUrls(o?.images)
 					})),
-					images: normalizeImageUrls(en.images)
+					images: normalizeImageUrls(en?.images)
 				}
 			}
 		};
