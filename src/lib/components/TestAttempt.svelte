@@ -758,7 +758,7 @@ function clearCurrentAnswer() {
       </div>
 
       <div class="flex min-h-0 flex-1 flex-row overflow-hidden">
-    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-6 pt-12 sm:px-6">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-6 pt-4 sm:px-6 sm:pt-6">
       <div class="mx-auto flex max-w-3xl flex-col gap-6">
         {#if normalizedSections.length > 1 && !isPaletteOpen}
           <div class="hidden lg:flex flex-wrap items-center gap-2 border-b border-[var(--ta-palette-border)] pb-4">
