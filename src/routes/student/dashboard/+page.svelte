@@ -81,13 +81,13 @@
 
 <div class="mx-auto w-full max-w-7xl p-4 min-w-0 text-[var(--page-text)]">
 	<section class="min-w-0" aria-labelledby="pyq-heading">
-		<div class="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-			<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
+		<div class="mb-3 flex min-w-0 items-center justify-between gap-2">
+			<h2 id="pyq-heading" class="text-base font-bold text-[var(--page-text)] sm:text-xl">
 				Chapter wise PYQ
 			</h2>
 			<a
 				href="{basePath}/exams?pyq=true"
-				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
+				class="shrink-0 text-xs font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-sm sm:text-right"
 			>
 				View All
 			</a>
@@ -121,13 +121,13 @@
 	</section>
 
 	<section class="mt-2 min-w-0" aria-labelledby="qbc-heading">
-		<div class="mb-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-			<h2 id="qbc-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">
+		<div class="mb-2 flex min-w-0 items-center justify-between gap-2">
+			<h2 id="qbc-heading" class="text-base font-bold text-[var(--page-text)] sm:text-xl">
 				Questions by Chapter
 			</h2>
 			<a
 				href="{basePath}/exams"
-				class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right"
+				class="shrink-0 text-xs font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-sm sm:text-right"
 			>
 				View All
 			</a>

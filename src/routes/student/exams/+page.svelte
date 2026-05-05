@@ -90,6 +90,7 @@ let {
 		hideBoardTitle={true}
 		basePath={examBasePath}
 		showBackButton={false}
+		pageClass="student-exams"
 	/>
 
 	{#if effectiveLastPage > 1}

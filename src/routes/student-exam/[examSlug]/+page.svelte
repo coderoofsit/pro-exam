@@ -295,14 +295,21 @@
 
 			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden px-4 md:px-6 py-5"
+					class="mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden px-4 md:px-6 pt-2 pb-3 md:py-5"
 				>
+					<div class="mb-1 md:hidden">
+						<BackButton
+							label="Back"
+							useHistory={false}
+							onClick={backToSubjects}
+						/>
+					</div>
 					{#if displayChapters.length === 0}
 						<p class="text-[var(--page-text-muted)]">
 							No chapters found for this subject.
 						</p>
 					{:else}
-						<div class="flex-1 overflow-y-auto py-4">
+						<div class="flex-1 overflow-y-auto pt-1 pb-4 md:py-4">
 							<div
 								class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
 							>

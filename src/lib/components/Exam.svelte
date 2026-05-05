@@ -10,7 +10,8 @@ let {
 	pyq = false,
 	hideBoardTitle = false,
 	basePath,
-	showBackButton = true
+	showBackButton = true,
+	pageClass = ''
 }: {
 	exams: ExamApi[];
 	boardName: string;
@@ -18,6 +19,7 @@ let {
 	hideBoardTitle?: boolean;
 	basePath?: string;
 	showBackButton?: boolean;
+	pageClass?: string;
 } = $props();
 
 	function getExamSlug(exam: any): string {
@@ -46,17 +48,19 @@ let {
 		if (basePath === '/institute/exams') return '/institute/dashboard';
 		return '/';
 	}
+
+	const isStudentExamsPage = $derived(basePath === '/student/exams' || pageClass === 'student-exams');
 </script>
 
-<div class="mx-auto p-4 w-full max-w-7xl min-w-0 text-[var(--page-text)]">
-	<div class="mt-3 mb-3 flex items-center gap-3">
+<div class="mx-auto p-4 w-full max-w-7xl min-w-0 text-[var(--page-text)] {isStudentExamsPage ? 'exam-page--student' : ''}">
+	<div class="mt-3 mb-3 flex items-center gap-3 exam-page__meta">
 		{#if showBackButton}
 			<BackButton
 				label="Back"
 				onClick={() => void goto(backFallbackForBasePath(), { replaceState: true })}
 			/>
 		{/if}
-		<p class="text-sm text-[var(--page-text-muted)]">
+		<p class="text-sm text-[var(--page-text-muted)] exam-page__count">
 			{exams.length} exam{exams.length !== 1 ? 's' : ''} available
 		</p>
 	</div>
@@ -68,7 +72,7 @@ let {
 	{#if exams.length === 0}
 		<p class="text-[var(--page-text-muted)]">No exams found for this board.</p>
 	{:else}
-		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 exam-page__grid">
 			{#each exams as exam (exam._id)}
 				<ExamBoxCard
 					id={exam._id}
