@@ -768,16 +768,16 @@ function clearCurrentAnswer() {
                 type="button"
                 onclick={() => void goTo(sec.questionStartIndex)}
                 class="
-                  relative px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-200
+                  relative px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all duration-200
                   {isActive
-                    ? 'text-[var(--ta-nav-btn-primary-bg)]'
-                    : 'text-[var(--ta-header-sub)] hover:text-[var(--ta-header-title)]'}
+                    ? 'text-white'
+                    : 'text-gray-500 hover:text-gray-300'}
                 "
               >
                 {sec.title}
                 {#if isActive}
                   <span
-                    class="absolute bottom-[-1px] left-0 h-[2px] w-full bg-[var(--ta-nav-btn-primary-bg)] shadow-[0_0_8px_var(--ta-nav-btn-primary-bg)]"
+                    class="absolute bottom-[-1px] left-0 h-[2px] w-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
                   ></span>
                 {/if}
               </button>
