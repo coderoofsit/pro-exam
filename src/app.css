@@ -2921,6 +2921,22 @@ html[data-theme='dark'] .question-card:hover {
   min-width: 0;
 }
 
+/* Keep manual and random own-test panel box sizing aligned. */
+.own-test-chapters-root[data-own-panel='manual'] .own-subject-card,
+.own-test-chapters-root[data-own-panel='random'] .own-subject-card {
+  min-height: 4.25rem;
+}
+
+.own-test-chapters-root[data-own-panel='manual'] .own-unit__head,
+.own-test-chapters-root[data-own-panel='random'] .own-unit__head {
+  min-height: 3.1rem;
+}
+
+.own-test-chapters-root[data-own-panel='manual'] .own-chapter-row,
+.own-test-chapters-root[data-own-panel='random'] .own-chapter-row {
+  min-height: 2.85rem;
+}
+
 .own-chapter__next {
   flex-shrink: 0;
   display: inline-flex;
@@ -3360,6 +3376,102 @@ a.student-batch-card:hover {
 
   .exam-page--student .exam-page__count {
     font-size: 0.75rem;
+  }
+
+  /* Own test exam-picker page: match dashboard compact mobile cards. */
+  .own-test-page .own-test-exam-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .own-test-page .own-test-exam-grid .exam-box-card--dashboard {
+    min-height: 92px;
+    border-radius: 0.65rem;
+    padding: 0.5rem 0.35rem;
+    gap: 0.25rem;
+  }
+
+  .own-test-page .own-test-exam-grid .exam-box-card--dashboard .exam-box-card__icon {
+    height: 1.9rem;
+    width: 1.9rem;
+    font-size: 10px;
+  }
+
+  .own-test-page .own-test-exam-grid .exam-box-card--dashboard .exam-box-card__title {
+    font-size: 0.75rem;
+  }
+
+  /* Student subscription page: compact mobile typography only. */
+  .subscription-page h1 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+
+  .subscription-page h2 {
+    font-size: 0.78rem;
+  }
+
+  .subscription-page h3 {
+    font-size: 0.95rem;
+  }
+
+  .subscription-page p,
+  .subscription-page li,
+  .subscription-page dd,
+  .subscription-page td,
+  .subscription-page th,
+  .subscription-page button {
+    font-size: 0.78rem;
+  }
+
+  .subscription-page .text-2xl {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  /* Student tests page: compact mobile typography only. */
+  .student-tests-page p,
+  .student-tests-page li,
+  .student-tests-page a,
+  .student-tests-page button,
+  .student-tests-page input {
+    font-size: 0.78rem;
+  }
+
+  .student-tests-page .text-base {
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
+
+  .student-tests-page .text-sm {
+    font-size: 0.78rem;
+  }
+
+  .student-tests-page .text-xs {
+    font-size: 0.72rem;
+  }
+
+  .student-tests-page .student-tests-card {
+    gap: 0.5rem;
+  }
+
+  .student-tests-page .student-tests-card__content {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .student-tests-page .student-tests-card__actions {
+    padding: 0.15rem 0.75rem 0.6rem;
+    gap: 0.4rem;
+    justify-content: flex-start;
+  }
+
+  .student-tests-page .student-tests-card__actions :global(button),
+  .student-tests-page .student-tests-card__actions :global(a) {
+    min-height: 2rem !important;
+    min-width: 6.25rem !important;
+    padding: 0.25rem 0.65rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 0.65rem !important;
   }
 }
 

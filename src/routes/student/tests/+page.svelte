@@ -296,7 +296,7 @@
 </svelte:head>
 
 <div
-  class="min-h-full px-4 py-3 font-sans transition-colors duration-300 sm:px-5"
+  class="student-tests-page min-h-full px-4 py-3 font-sans transition-colors duration-300 sm:px-5"
 >
   <div class="mx-auto max-w-5xl">
     <section class="mt-1 min-w-0" aria-label="Quick actions">
@@ -494,8 +494,8 @@
               {#each items as item (item._id)}
                 <li>
                   <!-- item row contents (same as before) -->
-                    <div class="flex flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] transition-all duration-200 sm:flex-row sm:items-center sm:justify-between hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-sm">
-                      <div class="min-w-0 flex-1 px-4 py-3 sm:pl-5">
+                    <div class="student-tests-card flex flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] transition-all duration-200 sm:flex-row sm:items-center sm:justify-between hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)] hover:shadow-sm">
+                      <div class="student-tests-card__content min-w-0 flex-1 px-4 py-3 sm:pl-5">
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--pyq-paper-meta)]">
                           <p class="mr-2 text-base font-semibold text-[var(--pyq-paper-title)] leading-tight">{testName(item)}</p>
                           <span class="rounded bg-[var(--sh-tool-card-bg)] px-1.5 py-0.5 font-bold uppercase tracking-wider">{item.kind}</span>
@@ -504,7 +504,7 @@
                           <span>· {item.status}</span>
                         </div>
                       </div>
-                      <div class="flex shrink-0 items-center justify-center gap-2 px-4 py-3 sm:py-0">
+                      <div class="student-tests-card__actions flex shrink-0 items-center justify-center gap-2 px-4 py-3 sm:py-0">
                         {#if hasExistingAttempt(item)}
                           <GeneralActionButton
                             text="View Analysis"

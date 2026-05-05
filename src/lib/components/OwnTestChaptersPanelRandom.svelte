@@ -292,7 +292,7 @@
   }
 </script>
 
-<div class="own-test-chapters-root flex flex-col" data-exam-slug={examSlug}>
+<div class="own-test-chapters-root flex flex-col" data-exam-slug={examSlug} data-own-panel="random">
   <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
     <aside
       id="own-subject-rail"

@@ -344,7 +344,7 @@
 </svelte:head>
 
 <div
-  class="relative mx-auto max-w-5xl px-4 pt-2 md:pb-12 sm:px-5"
+  class="subscription-page relative mx-auto max-w-5xl px-4 pt-2 md:pb-12 sm:px-5"
 >
   <header class="mb-10 text-center sm:mb-14">
     <p
