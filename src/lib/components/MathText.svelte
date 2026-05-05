@@ -194,12 +194,6 @@
 		}
 	});
 </script>
-
-<!--
-  KEY FIX: <span> instead of <div>.
-  display:inline-block on the span preserves inline flow while
-  still allowing the MathJax SVGs inside to size correctly.
--->
 <span bind:this={container} class="math-text"></span>
 
 <style>

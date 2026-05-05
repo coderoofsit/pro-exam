@@ -8,8 +8,81 @@
   let { data }: { data: PageData } = $props();
 
   const examSlug = $derived(data.examSlug ?? '');
-  let questions = $state((data.questions ?? []) as Array<Record<string, any>>);
-  const error = $derived(data.error ?? null);
+  
+  let questions = $state<Array<Record<string, any>>>([]);
+  let error = $state<string | null>(null);
+  let isLoading = $state(true);
+
+  let fetchedSections = $state<Record<string, Array<Record<string, any>>>>({});
+  let subjectTabs = $state<string[]>([]);
+  let activeTab = $state<string>('');
+
+  $effect(() => {
+    isLoading = true;
+    data.streamed.questionsPromise.then((res: any) => {
+      if (res.success) {
+        const payload = res.data?.data || res.data; // fallback in case api wrapper changes
+        const sections = payload?.sections ?? [];
+        const loadedQuestions = payload?.questions ?? [];
+        
+        subjectTabs = sections;
+        const currentSubject = data.subjectSlug || sections[0] || '';
+        activeTab = currentSubject;
+        
+        if (currentSubject) {
+          fetchedSections[currentSubject] = loadedQuestions;
+          questions = loadedQuestions;
+        }
+        error = null;
+      } else {
+        questions = [];
+        subjectTabs = [];
+        error = res.message || 'Failed to fetch paper questions.';
+      }
+    }).catch((err) => {
+      error = err.message || 'An error occurred while fetching questions.';
+    }).finally(() => {
+      isLoading = false;
+    });
+  });
+
+  async function selectTab(tab: string) {
+    if (activeTab === tab) return;
+    activeTab = tab;
+    
+    // Update URL without full navigation
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('subject', tab);
+      window.history.replaceState({}, '', url);
+    }
+
+    if (fetchedSections[tab]) {
+      questions = fetchedSections[tab];
+      return;
+    }
+
+    isLoading = true;
+    try {
+      const { getPaperQuestionsByPaperId } = await import('$lib/api/paper');
+      const res = await getPaperQuestionsByPaperId(data.paperSlug, fetch, tab);
+      if (res.success) {
+        const payload = res.data?.data || res.data;
+        const loadedQuestions = payload?.questions ?? [];
+        fetchedSections[tab] = loadedQuestions;
+        questions = loadedQuestions;
+      } else {
+        error = res.message || 'Failed to fetch section questions.';
+      }
+    } catch (err: any) {
+      error = err.message || 'An error occurred while fetching section.';
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  const activeQuestions = $derived(questions);
+
   let editingQuestionId = $state<string | null>(null);
   let saveError = $state<string | null>(null);
   let editingQuestionKind = $state<'MCQ' | 'MSQ' | 'INTEGER' | 'FILLS'>('MCQ');
@@ -20,28 +93,6 @@
   let draftCorrectIdentifiers = $state<string[]>([]);
   let draftFills = $state<string[]>([]);
   let draftInteger = $state('');
-
-  // Group questions by subjectSlug
-  const subjectGroups = $derived.by(() => {
-    const map = new Map<string, Array<Record<string, any>>>();
-    for (const q of questions) {
-      const key = String(q.subjectSlug || 'other');
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(q);
-    }
-    return map;
-  });
-
-  const subjectTabs = $derived(Array.from(subjectGroups.keys()));
-  let activeTab = $state<string>('');
-
-  $effect(() => {
-    if (!activeTab && subjectTabs.length > 0) {
-      activeTab = subjectTabs[0];
-    }
-  });
-
-  const activeQuestions = $derived(subjectGroups.get(activeTab) ?? []);
 
   const examName = $derived.by(() =>
     examSlug
@@ -182,7 +233,25 @@
       </h1>
     </div>
 
-    {#if error}
+    {#if isLoading}
+      <div class="space-y-4">
+        {#each Array(3) as _}
+          <div class="animate-pulse rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
+            <div class="mb-4 h-5 w-3/4 rounded bg-[var(--pyq-paper-border)]/50"></div>
+            <div class="mb-6 flex gap-2">
+              <div class="h-6 w-16 rounded bg-[var(--pyq-paper-border)]/50"></div>
+              <div class="h-6 w-32 rounded bg-[var(--pyq-paper-border)]/50"></div>
+            </div>
+            <div class="space-y-2">
+              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
+              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
+              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
+              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else if error}
       <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]">
         {error}
       </div>
@@ -203,14 +272,13 @@
           {#each subjectTabs as tab}
             <button
               type="button"
-              onclick={() => (activeTab = tab)}
+              onclick={() => selectTab(tab)}
               class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
                 {activeTab === tab
                   ? 'bg-[var(--page-link)] text-white shadow-md'
                   : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
             >
               {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-              <span class="ml-1 text-xs opacity-70">({subjectGroups.get(tab)?.length ?? 0})</span>
             </button>
           {/each}
         </div>
