@@ -82,6 +82,35 @@
   const currentQ = $derived(questions[currentIndex]);
   const prompt = $derived(currentQ?.prompt?.en);
   const isLast = $derived(currentIndex === total - 1);
+  const PREFETCH_AHEAD_COUNT = 2;
+
+  function collectMathStringsForQuestion(q: NormalizedQuestion | undefined): string[] {
+    if (!q) return [];
+    const out: string[] = [];
+    const stem = String(q.prompt?.en?.content ?? '').trim();
+    if (stem) out.push(stem);
+    const opts = Array.isArray(q.prompt?.en?.options) ? q.prompt.en.options : [];
+    for (const opt of opts) {
+      const s = String(opt?.content ?? '').trim();
+      if (s) out.push(s);
+    }
+    return out;
+  }
+
+  const prefetchMathContents = $derived.by(() => {
+    const unique = new Set<string>();
+    const out: string[] = [];
+    for (let i = 1; i <= PREFETCH_AHEAD_COUNT; i++) {
+      const idx = currentIndex + i;
+      if (idx < 0 || idx >= questions.length) continue;
+      for (const s of collectMathStringsForQuestion(questions[idx])) {
+        if (unique.has(s)) continue;
+        unique.add(s);
+        out.push(s);
+      }
+    }
+    return out;
+  });
 
   /** Section list for palette / headings; falls back to one block when `sections` prop is empty. */
   const normalizedSections = $derived.by((): NormalizedSection[] => {
@@ -595,6 +624,21 @@ function clearCurrentAnswer() {
     margin: 0;
     line-height: 1.85;
   }
+  .ta-option-math {
+    overflow: visible !important;
+  }
+  .ta-option-math :global(.math-text) {
+    display: block !important;
+    line-height: 1.6;
+  }
+  .ta-option-math :global(mjx-container) {
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+  .ta-option-math :global(mjx-container > svg) {
+    max-width: 100% !important;
+    height: auto !important;
+  }
 
   .ta-img-frame {
     display: flex;
@@ -892,7 +936,7 @@ function clearCurrentAnswer() {
                   onclick={() => void selectOption(opt.identifier)}
                   disabled={submitted || submitInFlight}
                   class="
-                    group flex w-full items-start gap-4 text-left
+                    group flex w-full items-center gap-4 text-left
                     px-4 py-3.5 rounded-xl
                     border transition-all duration-150
                     disabled:cursor-not-allowed
@@ -914,7 +958,7 @@ function clearCurrentAnswer() {
                 </span>
                 <div class="min-w-0 flex-1">
                   <div
-                    class="ta-math-content overflow-x-auto text-sm font-medium {selected
+                    class="ta-math-content ta-option-math text-sm font-medium {selected
                       ? 'text-[var(--ta-opt-selected-text)]'
                       : 'text-[var(--ta-opt-text)]'}"
                   >
@@ -1331,6 +1375,18 @@ function clearCurrentAnswer() {
 
 
 <ImageLightbox src={imageLightboxSrc} onClose={closeImageLightbox} />
+
+<!-- Pre-render only the next 2 questions' math off-screen to warm MathJax cache. -->
+{#if prefetchMathContents.length > 0}
+  <div
+    aria-hidden="true"
+    class="pointer-events-none fixed left-[-99999px] top-0 h-px w-px overflow-hidden opacity-0"
+  >
+    {#each prefetchMathContents as content, i (`prefetch-math-${currentIndex}-${i}`)}
+      <MathText {content} />
+    {/each}
+  </div>
+{/if}
 
 <!-- Backdrop for Mobile Sidebar -->
 {#if isPaletteOpen}
