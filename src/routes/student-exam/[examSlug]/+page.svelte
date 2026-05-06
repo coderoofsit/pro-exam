@@ -295,7 +295,7 @@
 
 			 <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<div
-					class="mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden px-4 md:px-6 pt-2 pb-3 md:py-5"
+					class="mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden pt-2 pb-3 md:px-6 md:py-5"
 				>
 					<div class="mb-1 md:hidden">
 						<BackButton
@@ -316,7 +316,7 @@
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
 										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
-										class="exam-route-card group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] p-3 text-left text-[var(--sh-tool-card-text)]"
+										class="exam-route-card group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] p-3 text-left text-[var(--sh-tool-card-text)] md:min-h-[88px] md:justify-between"
 									>
 										
 										<h2
@@ -325,7 +325,7 @@
 											{chapter.name?.en ?? chapter.slug}
 										</h2>
 										<p
-											class="exam-route-card__link mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition"
+											class="exam-route-card__link mt-2 flex items-center gap-1 text-xs font-medium text-[var(--sh-section-link)] transition md:mt-auto md:pt-2"
 										>
 											View questions
 											<span

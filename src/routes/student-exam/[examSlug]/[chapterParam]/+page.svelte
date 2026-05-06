@@ -457,6 +457,17 @@
 		}
 	}
 
+	function formatFilterLabel(value: string): string {
+		return value
+			.split(/[\s_-]+/)
+			.filter(Boolean)
+			.map((word) => {
+				const lower = word.toLowerCase();
+				return lower.charAt(0).toUpperCase() + lower.slice(1);
+			})
+			.join(" ");
+	}
+
 	function applyFilters() {
 		const url = `${chapterBaseUrl()}?${activeFiltersQuery({ page: 1 })}`;
 		void goto(url);
@@ -777,7 +788,7 @@
 													? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
 													: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 											>
-												{diff}
+												{formatFilterLabel(diff)}
 											</button>
 										{/each}
 									</div>
@@ -798,7 +809,7 @@
 													? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
 													: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 											>
-												{kindOption}
+												{formatFilterLabel(kindOption)}
 											</button>
 										{/each}
 									</div>
@@ -825,7 +836,7 @@
 															? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
 															: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
 													>
-														{topic.name?.en || topic.slug}
+														{formatFilterLabel(topic.name?.en || topic.slug)}
 													</button>
 												{/each}
 											</div>
