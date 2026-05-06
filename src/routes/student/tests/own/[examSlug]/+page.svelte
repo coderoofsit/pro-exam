@@ -765,7 +765,7 @@
 {#if manualConfirmModalOpen}
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
     <div class="w-full max-w-lg rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
-      <h2 class="text-xl font-bold text-[var(--page-text)]">Create Test</h2>
+      <h2 class="text-xl font-bold text-[var(--page-text)]">Create Tests</h2>
       <p class="mt-3 text-sm text-[var(--page-text-muted)]">
         Duration: {durationMinutesForQuestionCount(manualSelectedCount)} minutes
       </p>
