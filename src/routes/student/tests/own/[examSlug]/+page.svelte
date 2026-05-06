@@ -710,7 +710,7 @@
           </div>
         {/if}
         <div class="own-bottom-bar__subject">
-          <span class="own-bottom-bar__label">Selected questions</span>
+          <span class="own-bottom-bar__label">Selected question</span>
           {#if manualSelectedCount > 0}
             <ul class="own-bottom-bar__list" role="list">
               {#each manualSelectedSubjectsForBar as s (s.id)}

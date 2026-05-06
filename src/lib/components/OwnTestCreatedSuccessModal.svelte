@@ -35,7 +35,7 @@
           />
         </svg>
       </div>
-      <h2 id="own-success-modal-title" class="own-success-modal-title">Test created</h2>
+      <h2 id="own-success-modal-title" class="own-success-modal-title">Your Test Created</h2>
       <p class="own-success-modal-sub">
         {#if examName}
           Your custom test for <strong>{examName}</strong> is ready when you are.
