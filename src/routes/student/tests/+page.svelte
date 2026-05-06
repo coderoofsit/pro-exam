@@ -296,7 +296,7 @@
 </svelte:head>
 
 <div
-  class="student-tests-page min-h-full px-4 py-3 font-sans transition-colors duration-300 sm:px-5"
+  class="student-tests-page min-h-full px-3 py-3 font-sans transition-colors duration-300 sm:px-5"
 >
   <div class="mx-auto max-w-5xl">
     <section class="mt-1 min-w-0" aria-label="Quick actions">
@@ -388,7 +388,7 @@
       </div>
     </section>
 
-    <section class="mt-4 min-w-0" aria-labelledby="your-tests-heading">
+    <section class="mt-3 min-w-0 sm:mt-4" aria-labelledby="your-tests-heading">
 
       {#await data.streamed.testsData}
         <div class="space-y-4">
@@ -463,11 +463,12 @@
                 />
                 <button
                   type="button"
-                  class="ml-auto inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)]"
+                  class="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] sm:w-auto sm:gap-2 sm:px-3"
+                  aria-label="Filter tests"
                   onclick={() => (filtersOpen = !filtersOpen)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Filter
+                  <span class="hidden sm:inline">Filter</span>
                 </button>
               </div>
 
@@ -509,14 +510,14 @@
                           <GeneralActionButton
                             text="View Analysis"
                             onClick={() => void handleViewAnalysis(item)}
-                            className={testsActionBtnClass}
+                            className={`${testsActionBtnClass} !min-w-0 !flex-1 sm:!min-w-[7.25rem] sm:!flex-none`}
                           />
                           <GeneralActionButton
                             text={startingTestId === item._id ? "Starting..." : "Re-attempt"}
                             onClick={() => onReAttemptClick(item)}
                             disabled={startingTestId === item._id}
                             variant="highlight"
-                            className={testsActionBtnClass}
+                            className={`${testsActionBtnClass} !min-w-0 !flex-1 sm:!min-w-[7.25rem] sm:!flex-none`}
                           />
                         {:else}
                           <GeneralActionButton
@@ -524,7 +525,7 @@
                             onClick={() => onStartTestClick(item)}
                             disabled={startingTestId === item._id}
                             variant="highlight"
-                            className={testsActionBtnClass}
+                            className={`${testsActionBtnClass} !min-w-0 !w-full sm:!min-w-[7.25rem] sm:!w-auto`}
                           />
                         {/if}
                       </div>

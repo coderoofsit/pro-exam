@@ -476,12 +476,12 @@ async function viewPaper(paper: PaperItem) {
                   </div>
                 </div>
               <div
-  class="flex w-full shrink-0 items-center justify-center gap-1.5 border-t border-[var(--pyq-paper-border)] px-2 py-2 sm:w-auto sm:justify-end sm:border-0 sm:px-2 sm:py-2 sm:pl-0"
+  class="flex w-full shrink-0 items-center justify-center gap-1.5 px-2 py-2 sm:w-auto sm:justify-end sm:px-2 sm:py-2 sm:pl-0"
 >
   <!-- View Paper Button -->
   <button
     type="button"
-    class="btn-cta-subscription-outline h-8 min-w-[7.25rem] px-3 text-xs justify-center"
+    class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] sm:min-w-[7.25rem] sm:flex-none"
     disabled={startingPaperId !== null || viewingAnalysisId !== null || viewingPaperId !== null}
     onclick={() => void viewPaper(paper)}
   >
@@ -497,7 +497,7 @@ async function viewPaper(paper: PaperItem) {
     <!-- Start Test Button -->
     <button
       type="button"
-      class="btn-cta-subscription-outline h-8 min-w-[7.25rem] px-3 text-xs justify-center disabled:opacity-60"
+      class="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
       disabled={startingPaperId !== null || viewingAnalysisId !== null}
       onclick={() => startPaperTest(paper)}
     >
@@ -509,7 +509,7 @@ async function viewPaper(paper: PaperItem) {
   {:else}
     <button
       type="button"
-      class="btn-cta-subscription-outline h-8 min-w-[7.25rem] px-3 text-xs justify-center disabled:opacity-60"
+      class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
       disabled={startingPaperId !== null || viewingAnalysisId !== null}
       onclick={() => void viewAnalysis(paper)}
     >
