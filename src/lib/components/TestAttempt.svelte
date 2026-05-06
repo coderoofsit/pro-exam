@@ -624,6 +624,21 @@ function clearCurrentAnswer() {
     margin: 0;
     line-height: 1.85;
   }
+  .ta-option-math {
+    overflow: visible !important;
+  }
+  .ta-option-math :global(.math-text) {
+    display: block !important;
+    line-height: 1.6;
+  }
+  .ta-option-math :global(mjx-container) {
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+  .ta-option-math :global(mjx-container > svg) {
+    max-width: 100% !important;
+    height: auto !important;
+  }
 
   .ta-img-frame {
     display: flex;
@@ -921,7 +936,7 @@ function clearCurrentAnswer() {
                   onclick={() => void selectOption(opt.identifier)}
                   disabled={submitted || submitInFlight}
                   class="
-                    group flex w-full items-start gap-4 text-left
+                    group flex w-full items-center gap-4 text-left
                     px-4 py-3.5 rounded-xl
                     border transition-all duration-150
                     disabled:cursor-not-allowed
@@ -943,7 +958,7 @@ function clearCurrentAnswer() {
                 </span>
                 <div class="min-w-0 flex-1">
                   <div
-                    class="ta-math-content overflow-x-auto text-sm font-medium {selected
+                    class="ta-math-content ta-option-math text-sm font-medium {selected
                       ? 'text-[var(--ta-opt-selected-text)]'
                       : 'text-[var(--ta-opt-text)]'}"
                   >
