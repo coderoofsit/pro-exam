@@ -2312,7 +2312,7 @@ html[data-theme='dark'] .question-card:hover {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: color-mix(in srgb, #0f172a 52%, transparent);
+  background: rgba(15, 23, 42, 0.52);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
