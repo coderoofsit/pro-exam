@@ -710,7 +710,7 @@
           </div>
         {/if}
         <div class="own-bottom-bar__subject">
-          <span class="own-bottom-bar__label">Selected question</span>
+          <span class="own-bottom-bar__label">Selected questionss</span>
           {#if manualSelectedCount > 0}
             <ul class="own-bottom-bar__list" role="list">
               {#each manualSelectedSubjectsForBar as s (s.id)}
@@ -763,7 +763,7 @@
 />
 
 {#if manualConfirmModalOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
+  <div class="own-manual-confirm-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
     <div class="w-full max-w-lg rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
       <h2 class="text-xl font-bold text-[var(--page-text)]">Create Tests</h2>
       <p class="mt-3 text-sm text-[var(--page-text-muted)]">
@@ -808,3 +808,19 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Ensure blur works in production for this page (component-scoped override). */
+  :global(.own-manual-confirm-overlay) {
+    background: rgba(0, 0, 0, 0.55) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+
+  /* Make bottom bar translucent and keep blur enabled. */
+  :global(.own-bottom-bar) {
+    background: rgba(15, 23, 42, 0.62) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+  }
+</style>
