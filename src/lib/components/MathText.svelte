@@ -1,5 +1,90 @@
+<script context="module" lang="ts">
+	type MathJaxWindow = Window &
+		typeof globalThis & {
+			MathJax?: {
+				typesetPromise?: (elements?: HTMLElement[]) => Promise<void>;
+			};
+		};
+
+	// Batch MathJax typesetting across many <MathText /> instances.
+	// This prevents sequential backlog when users switch sections quickly.
+	const TYPESER_DEBOUNCE_MS = 80;
+	const pending = new Set<HTMLElement>();
+	let flushTimer: number | null = null;
+	let flushRunning = false;
+
+	// Simple in-memory cache: latex string -> rendered HTML
+	const renderedCache = new Map<string, string>();
+
+	function postProcessTypeset(root: HTMLElement) {
+		// Keep everything inline for consistent layout with your question cards.
+		root.querySelectorAll('mjx-container').forEach((el) => {
+			(el as HTMLElement).style.display = 'inline';
+			(el as HTMLElement).style.margin = '0 0.15em';
+		});
+		root.querySelectorAll('mjx-container > svg').forEach((el) => {
+			(el as SVGElement).style.display = 'inline';
+			(el as SVGElement).style.verticalAlign = 'middle';
+		});
+	}
+
+	function scheduleFlush() {
+		if (flushRunning) return;
+		if (flushTimer != null) return;
+		if (typeof window === 'undefined') return;
+
+		flushTimer = window.setTimeout(() => {
+			flushTimer = null;
+			void flush();
+		}, TYPESER_DEBOUNCE_MS);
+	}
+
+	function requestTypeset(el: HTMLElement) {
+		if (!el?.isConnected) return;
+		pending.add(el);
+		scheduleFlush();
+	}
+
+	function cancelTypeset(el: HTMLElement) {
+		pending.delete(el);
+	}
+
+	async function flush() {
+		if (flushRunning) return;
+		flushRunning = true;
+
+		const mathWindow = window as MathJaxWindow;
+		const elements = Array.from(pending).filter((x) => x.isConnected);
+		pending.clear();
+
+		try {
+			if (mathWindow.MathJax?.typesetPromise && elements.length) {
+				await mathWindow.MathJax.typesetPromise(elements);
+				for (const el of elements) {
+					postProcessTypeset(el);
+					const cacheKey = el.getAttribute('data-math-cache-key');
+					if (cacheKey) {
+						renderedCache.set(cacheKey, el.innerHTML);
+					}
+				}
+			}
+		} finally {
+			flushRunning = false;
+			// If new requests came in while we were running, schedule again.
+			if (pending.size) scheduleFlush();
+		}
+	}
+
+	// Expose a singleton manager to all <MathText /> instances (module-scoped closures).
+	(globalThis as any).__pro_exam_mathTextMjMgr_v1 = {
+		requestTypeset,
+		cancelTypeset,
+		renderedCache
+	};
+</script>
+
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
 
 	type MathJaxWindow = Window &
 		typeof globalThis & {
@@ -26,6 +111,7 @@
 	let container: HTMLSpanElement;
 	let loaded = false;
 	let lastRendered = '';
+	let lastCacheKey = '';
 
 	function normalizeMfenced(root: HTMLElement) {
 		const mfencedNodes = Array.from(root.querySelectorAll('mfenced'));
@@ -160,31 +246,43 @@
 		if (!loaded) return;
 		if (lastRendered === content) return;
 
-		const mathWindow = window as MathJaxWindow;
-		if (!mathWindow.MathJax?.typesetPromise) return;
+		// Cache key – you can tweak if needed (e.g. include theme).
+		const cacheKey = content;
+		lastCacheKey = cacheKey;
+
+		// Fast path: reuse already typeset HTML for identical content.
+		const manager = (globalThis as any).__pro_exam_mathTextMjMgr_v1 as
+			| { renderedCache?: Map<string, string>; requestTypeset?: (el: HTMLElement) => void }
+			| undefined;
+		const cachedHtml = manager?.renderedCache?.get(cacheKey);
 
 		await tick();
-		container.innerHTML = content;
-		normalizeMfenced(container);
-		normalizeMathDisplay(container);
-		await mathWindow.MathJax.typesetPromise([container]);
 
-		// After MathJax renders, force all SVG math elements to be inline
-		container.querySelectorAll('mjx-container').forEach((el) => {
-			(el as HTMLElement).style.display = 'inline';
-			(el as HTMLElement).style.margin = '0 0.15em';
-		});
-		container.querySelectorAll('mjx-container > svg').forEach((el) => {
-			(el as SVGElement).style.display = 'inline';
-			(el as SVGElement).style.verticalAlign = 'middle';
-		});
+		if (cachedHtml) {
+			container.innerHTML = cachedHtml;
+		} else {
+			container.innerHTML = content;
+			normalizeMfenced(container);
+			normalizeMathDisplay(container);
+			container.setAttribute('data-math-cache-key', cacheKey);
+		}
 
 		lastRendered = content;
+		// Debounced/batched typesetting to avoid MathJax backlog.
+		if (!cachedHtml) {
+			manager?.requestTypeset?.(container);
+		}
 	}
 
 	onMount(async () => {
 		await loadMathJax();
 		await renderMath();
+	});
+
+	onDestroy(() => {
+		// If a section changes quickly, ensure this <MathText /> doesn't keep its
+		// element in the pending typeset batch.
+		if (container) (globalThis as any).__pro_exam_mathTextMjMgr_v1?.cancelTypeset?.(container);
 	});
 
 	$effect(() => {
@@ -198,7 +296,8 @@
 
 <style>
 	.math-text {
-		display: block;
+		display: inline;
+		vertical-align: baseline;
 		font-size: 1rem;
 		white-space: normal;
 		overflow-wrap: anywhere;
