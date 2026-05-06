@@ -79,3 +79,67 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Backdrop – reuse visual from customeModal with high z-index */
+  .own-success-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .own-success-modal-sheet {
+    width: 100%;
+    max-width: 22rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.75rem 1.5rem 1.5rem;
+    border-radius: 1.25rem;
+    border: 1px solid var(--page-card-border);
+    background: var(--page-card-bg);
+    color: var(--page-text);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  }
+
+  .own-success-modal-icon {
+    margin-bottom: 0.5rem;
+    color: color-mix(in srgb, var(--own-next-btn-bg) 92%, #fff);
+  }
+
+  .own-success-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--page-card-heading);
+  }
+
+  .own-success-modal-sub {
+    margin: 0.5rem 0 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--page-text-muted);
+  }
+
+  .own-success-modal-sub strong {
+    color: var(--page-text);
+    font-weight: 600;
+  }
+
+  .own-success-modal-actions {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+</style>
