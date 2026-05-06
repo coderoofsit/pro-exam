@@ -5254,3 +5254,114 @@ a.student-batch-card:hover {
   overflow-x: auto !important;
   display: inline-block !important;
 }
+
+/* Route-specific body lock for student exam question page. */
+body.student-exam-questions-lock-scroll {
+  overflow: hidden;
+}
+
+/* Student exam question page local styles moved from route component. */
+.student-exam-question-page .toast-wrap {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: toast-in 0.25s ease;
+  max-width: 360px;
+}
+
+.student-exam-question-page .toast-wrap.success {
+  background: #10b981;
+  color: #fff;
+}
+
+.student-exam-question-page .toast-wrap.error {
+  background: #ef4444;
+  color: #fff;
+}
+
+.student-exam-question-page .toast-wrap button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 0;
+  display: flex;
+}
+
+.student-exam-question-page .toast-wrap button:hover {
+  opacity: 1;
+}
+
+.student-exam-question-page .toast-wrap span {
+  flex: 1;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sb-border-color);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--page-link);
+}
+
+.student-exam-question-page .q-num {
+  line-height: 1.35;
+}
+
+.student-exam-question-page .question-snippet mjx-container,
+.student-exam-question-page .question-snippet .MathJax {
+  display: inline-block !important;
+  vertical-align: middle;
+}
+
+.student-exam-question-page .question-snippet mjx-container[display="true"] {
+  display: inline-block !important;
+  margin: 0.08em 0.1em !important;
+  vertical-align: middle;
+  text-align: left;
+}
+
+/* Shared utility moved from own test chapter route. */
+.skeleton-pulse {
+  animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

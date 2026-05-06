@@ -10,9 +10,10 @@
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/stores";
 	import { createReport, type ReportReason } from "$lib/api/reports";
-    import BackButton from "$lib/components/BackButton.svelte";
-    import Pagination from "$lib/components/Pagination.svelte";
-    import ImageLightbox from "$lib/components/ImageLightbox.svelte";
+	import BackButton from "$lib/components/BackButton.svelte";
+	import Pagination from "$lib/components/Pagination.svelte";
+	import ImageLightbox from "$lib/components/ImageLightbox.svelte";
+	import Button from "$lib/components/Button.svelte";
 
 	type Question = PageData["questions"][number];
 	type ImageLike =
@@ -249,6 +250,14 @@
 		if (form?.success) {
 			isEditing = false;
 		}
+	});
+
+	$effect(() => {
+		if (!browser) return;
+		document.body.classList.add("student-exam-questions-lock-scroll");
+		return () => {
+			document.body.classList.remove("student-exam-questions-lock-scroll");
+		};
 	});
 
 	const PAGINATION_WINDOW = 2;
@@ -660,15 +669,10 @@
 
 <svelte:head>
 	<title>Questions</title>
-	<style>
-		body {
-			overflow: hidden;
-		}
-	</style>
 </svelte:head>
 
 <div
-	class="flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
+	class="student-exam-question-page flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
 	<div class="mx-auto max-w-6xl flex h-full w-full  overflow-hidden ">
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
@@ -771,7 +775,7 @@
 					{#if !effectiveQuestionId && filterDrawerOpen}
 						<div class="mb-4">
 							<div
-								class="mt-3 grid gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4"
+								class="mt-3 grid gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-3 sm:gap-4 sm:p-4"
 							>
 								<div>
 									<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
@@ -779,17 +783,15 @@
 									</div>
 									<div class="flex flex-wrap gap-2.5">
 										{#each ["easy", "medium", "hard"] as diff}
-											<button
-												type="button"
-												onclick={() => toggleDifficulty(diff)}
-												class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {selectedDifficulties.includes(
-													diff,
-												)
-													? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
-													: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-											>
-												{formatFilterLabel(diff)}
-											</button>
+											<label class="flex max-w-full cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] px-3 py-2 text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)]/50">
+												<input
+													type="checkbox"
+													class="h-4 w-4 rounded border-[var(--sb-border-color)] accent-[var(--page-link)]"
+													checked={selectedDifficulties.includes(diff)}
+													onchange={() => toggleDifficulty(diff)}
+												/>
+												<span>{formatFilterLabel(diff)}</span>
+											</label>
 										{/each}
 									</div>
 								</div>
@@ -798,19 +800,17 @@
 									<div class="mb-3 text-sm font-semibold text-[var(--page-text)]">
 										Type
 									</div>
-									<div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+									<div class="flex flex-wrap gap-2.5">
 										{#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as kindOption}
-											<button
-												type="button"
-												onclick={() => toggleKind(kindOption)}
-												class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedKinds.includes(
-													kindOption,
-												)
-													? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
-													: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-											>
-												{formatFilterLabel(kindOption)}
-											</button>
+											<label class="flex max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] px-3 py-2 text-left text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)]/50">
+												<input
+													type="checkbox"
+													class="h-4 w-4 rounded border-[var(--sb-border-color)] accent-[var(--page-link)]"
+													checked={selectedKinds.includes(kindOption)}
+													onchange={() => toggleKind(kindOption)}
+												/>
+												<span>{formatFilterLabel(kindOption)}</span>
+											</label>
 										{/each}
 									</div>
 								</div>
@@ -827,38 +827,38 @@
 												{/each}
 											</div>
 										{:else}
-											<div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+											<div class="flex flex-wrap gap-2.5">
 												{#each topicOptions as topic}
-													<button
-														type="button"
-														onclick={() => toggleTopic(topic.slug)}
-														class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {selectedTopics.includes(topic.slug)
-															? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
-															: 'border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/50'}"
-													>
-														{formatFilterLabel(topic.name?.en || topic.slug)}
-													</button>
+													<label class="flex max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[var(--sb-border-color)] bg-[var(--sb-bg-from)] px-3 py-2 text-left text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)]/50">
+														<input
+															type="checkbox"
+															class="h-4 w-4 rounded border-[var(--sb-border-color)] accent-[var(--page-link)]"
+															checked={selectedTopics.includes(topic.slug)}
+															onchange={() => toggleTopic(topic.slug)}
+														/>
+														<span>{formatFilterLabel(topic.name?.en || topic.slug)}</span>
+													</label>
 												{/each}
 											</div>
 										{/if}
 									</div>
 								</div>
 
-								<div class="flex items-center gap-3 border-t border-[var(--sb-border-color)] pt-4">
-									<button
+								<div class="flex items-center justify-between gap-3 border-t border-[var(--sb-border-color)] pt-3 sm:pt-4">
+									<Button
 										type="button"
-										class="flex-1 rounded-xl border border-[var(--sb-border-color)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
-										onclick={clearFilters}
+										onClick={clearFilters}
+										className="rounded-lg border border-[var(--sb-border-color)] px-3 py-1.5 text-xs font-medium text-[var(--sb-nav-text)] transition hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--sb-collapse-hover-text)]"
 									>
 										Clear
-									</button>
-									<button
+									</Button>
+									<Button
 										type="button"
-										class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--page-link-hover)]"
-										onclick={applyFilters}
+										onClick={applyFilters}
+										className="rounded-lg border border-[color-mix(in_srgb,var(--page-link)_38%,transparent)] bg-[color-mix(in_srgb,var(--page-link)_52%,var(--page-card-bg))] px-4 py-1.5 text-xs font-medium text-[var(--page-text)] transition hover:bg-[color-mix(in_srgb,var(--page-link)_64%,var(--page-card-bg))]"
 									>
 										Apply
-									</button>
+									</Button>
 								</div>
 							</div>
 						</div>
@@ -1874,64 +1874,3 @@
 
 <ImageLightbox src={lightboxSrc} onClose={() => (lightboxSrc = null)} />
 
-<style>
-	.toast-wrap {
-		position: fixed;
-		bottom: 1.5rem;
-		right: 1.5rem;
-		z-index: 9999;
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.875rem 1.25rem;
-		border-radius: 12px;
-		font-size: 0.875rem;
-		font-weight: 600;
-		box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-		animation: toast-in 0.25s ease;
-		max-width: 360px;
-	}
-	.toast-wrap.success { background: #10b981; color: #fff; }
-	.toast-wrap.error   { background: #ef4444; color: #fff; }
-	.toast-wrap button  { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.8; padding: 0; display: flex; }
-	.toast-wrap button:hover { opacity: 1; }
-	.toast-wrap span { flex: 1; }
-	@keyframes toast-in {
-		from { opacity: 0; transform: translateY(12px); }
-		to   { opacity: 1; transform: translateY(0); }
-	}
-
-	/* Custom Scrollbar */
-	.custom-scrollbar::-webkit-scrollbar {
-		width: 4px;
-	}
-	.custom-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background: var(--sb-border-color);
-		border-radius: 10px;
-	}
-	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: var(--page-link);
-	}
-
-	/* Keep question number and prompt aligned; compact math (no display-math block gaps). */
-	.q-num {
-		line-height: 1.35;
-	}
-
-	.question-snippet :global(mjx-container),
-	.question-snippet :global(.MathJax) {
-		display: inline-block !important;
-		vertical-align: middle;
-	}
-
-	/* MathText uses block + 0.75em margins for display math — kills space before paper badge. */
-	.question-snippet :global(mjx-container[display="true"]) {
-		display: inline-block !important;
-		margin: 0.08em 0.1em !important;
-		vertical-align: middle;
-		text-align: left;
-	}
-</style>

@@ -3,6 +3,7 @@
   import { questionPromptEnContent } from "$lib/api/questions";
   import { fetchTopicsByChapterSlug, type TopicRow } from "$lib/api/topics";
   import Pagination from "$lib/components/Pagination.svelte";
+  import Button from "$lib/components/Button.svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -243,6 +244,17 @@
       : [...pendingDifficulty, d];
   }
 
+  function formatFilterLabel(value: string): string {
+    return value
+      .split(/[\s_-]+/)
+      .filter(Boolean)
+      .map((word) => {
+        const lower = word.toLowerCase();
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      })
+      .join(" ");
+  }
+
   const activeFilterCount = $derived(
     selectedTopicSlug.length + selectedKind.length + selectedDifficulty.length
   );
@@ -327,33 +339,37 @@
       
 
       {#if filterDrawerOpen}
-        <div class="mt-3 grid gap-4 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-4">
+        <div class="mt-3 grid gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,var(--sh-exam-card-bg))] p-3 sm:gap-4 sm:p-4">
           <div>
             <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Difficulty</div>
             <div class="flex flex-wrap gap-2.5">
               {#each ["easy", "medium", "hard"] as diff}
-                <button
-                  type="button"
-                  onclick={() => togglePendingDifficulty(diff)}
-                  class="rounded-lg border px-3 py-1.5 text-xs font-medium transition {pendingDifficulty.includes(diff) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
-                >
-                  {diff}
-                </button>
+                <label class="flex max-w-full cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] px-3 py-2 text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)]/60">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-[var(--sh-exam-card-border)] accent-[var(--page-link)]"
+                    checked={pendingDifficulty.includes(diff)}
+                    onchange={() => togglePendingDifficulty(diff)}
+                  />
+                  <span>{formatFilterLabel(diff)}</span>
+                </label>
               {/each}
             </div>
           </div>
 
           <div>
             <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Type</div>
-            <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="flex flex-wrap gap-2.5">
               {#each ["MCQ", "MSQ", "TRUE_FALSE", "INTEGER", "FILL_BLANK", "COMPREHENSION_PASSAGE"] as k}
-                <button
-                  type="button"
-                  onclick={() => togglePendingKind(k)}
-                  class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingKind.includes(k) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
-                >
-                  {k}
-                </button>
+                <label class="flex max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] px-3 py-2 text-left text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)]/60">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-[var(--sh-exam-card-border)] accent-[var(--page-link)]"
+                    checked={pendingKind.includes(k)}
+                    onchange={() => togglePendingKind(k)}
+                  />
+                  <span>{formatFilterLabel(k)}</span>
+                </label>
               {/each}
             </div>
           </div>
@@ -364,31 +380,26 @@
               {#if topicsLoading}
                 <div class="text-xs text-[var(--page-text-muted)]">Loading...</div>
               {:else}
-                <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                  <button
-                    type="button"
-                    onclick={() => (pendingTopic = [])}
-                    class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.length === 0 ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
-                  >
-                    All Topics
-                  </button>
+                <div class="flex flex-wrap gap-2.5">
                   {#each topicOptions as t (t._id)}
-                    <button
-                      type="button"
-                      onclick={() => togglePendingTopic(t.slug)}
-                      class="rounded-xl border px-3 py-2 text-left text-xs font-medium transition {pendingTopic.includes(t.slug) ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]' : 'border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] text-[var(--sb-nav-text)] hover:border-[var(--page-link)]/60'}"
-                    >
-                      {t.name?.en ?? t.slug}
-                    </button>
+                    <label class="flex max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sb-bg-from)] px-3 py-2 text-left text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)]/60">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-[var(--sh-exam-card-border)] accent-[var(--page-link)]"
+                        checked={pendingTopic.includes(t.slug)}
+                        onchange={() => togglePendingTopic(t.slug)}
+                      />
+                      <span>{formatFilterLabel(t.name?.en ?? t.slug)}</span>
+                    </label>
                   {/each}
                 </div>
               {/if}
             </div>
           {/if}
 
-          <div class="flex items-center gap-3 border-t border-[var(--sh-exam-card-border)] pt-4">
-            <button type="button" class="flex-1 rounded-xl border border-[var(--sh-exam-card-border)] px-3 py-2 text-sm font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--page-link)]" onclick={clearFilters}>Clear</button>
-            <button type="button" class="flex-1 rounded-xl bg-[var(--page-link)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--page-link-hover)]" onclick={applyFilters}>Apply</button>
+          <div class="flex items-center justify-between gap-3 border-t border-[var(--sh-exam-card-border)] pt-3 sm:pt-4">
+            <Button type="button" onClick={clearFilters} className="rounded-lg border border-[var(--sh-exam-card-border)] px-3 py-1.5 text-xs font-medium text-[var(--sb-nav-text)] transition hover:border-[var(--page-link)] hover:bg-[var(--sb-collapse-hover-bg)] hover:text-[var(--page-link)]">Clear</Button>
+            <Button type="button" onClick={applyFilters} className="rounded-lg border border-[color-mix(in_srgb,var(--page-link)_38%,transparent)] bg-[color-mix(in_srgb,var(--page-link)_52%,var(--page-card-bg))] px-4 py-1.5 text-xs font-medium text-[var(--page-text)] transition hover:bg-[color-mix(in_srgb,var(--page-link)_64%,var(--page-card-bg))]">Apply</Button>
           </div>
         </div>
       {/if}
@@ -473,13 +484,3 @@
   </div>
 </div>
 
-<style>
-  :global(.skeleton-pulse) {
-    animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes skeletonPulse {
-    0%, 100% { opacity: 0.8; }
-    50%       { opacity: 0.3; }
-  }
-</style>
