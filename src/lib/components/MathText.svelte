@@ -411,7 +411,7 @@
 		}
 	});
 </script>
-<span bind:this={container} class="math-text"></span>
+<span bind:this={container} class="math-text" data-math-state="pending"></span>
 
 <style>
 	.math-text {
