@@ -30,16 +30,28 @@ export type GetPapersByExamResponse = {
 
 export type PaperQuestion = {
   _id: string;
+  kind?: string;
   prompt?: {
     en?: {
       content?: string;
-      options?: Array<{ identifier?: string; content?: string }>;
+      images?: Array<{ url?: string; alt?: string }>;
+      rePhrasedQuestionImage?: Array<{ url?: string; alt?: string }>;
+      options?: Array<{
+        identifier?: string;
+        content?: string;
+        images?: Array<{ url?: string; alt?: string }>;
+        rePhrasedOptionImage?: Array<{ url?: string; alt?: string }>;
+      }>;
       explanation?: string;
+      explanationImages?: Array<{ url?: string; alt?: string }>;
+      rePhrasedExplanation?: string;
+      rePhrasedImage?: Array<{ url?: string; alt?: string }>;
     };
   };
   correct?: {
     identifiers?: string[];
     integer?: number;
+    fills?: string[];
   };
 };
 

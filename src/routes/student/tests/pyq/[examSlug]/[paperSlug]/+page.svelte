@@ -16,6 +16,9 @@
   let fetchedSections = $state<Record<string, Array<Record<string, any>>>>({});
   let subjectTabs = $state<string[]>([]);
   let activeTab = $state<string>('');
+  let showOptions = $state(false);
+  let showSolution = $state(false);
+  let expandedSolutionIds = $state<Set<string>>(new Set());
 
   $effect(() => {
     isLoading = true;
@@ -59,6 +62,7 @@
 
     if (fetchedSections[tab]) {
       questions = fetchedSections[tab];
+      expandedSolutionIds = new Set();
       return;
     }
 
@@ -71,6 +75,7 @@
         const loadedQuestions = payload?.questions ?? [];
         fetchedSections[tab] = loadedQuestions;
         questions = loadedQuestions;
+        expandedSolutionIds = new Set();
       } else {
         error = res.message || 'Failed to fetch section questions.';
       }
@@ -79,6 +84,15 @@
     } finally {
       isLoading = false;
     }
+  }
+
+  function toggleSolutionCard(questionId: string) {
+    const id = String(questionId ?? '');
+    if (!id) return;
+    const next = new Set(expandedSolutionIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    expandedSolutionIds = next;
   }
 
   const activeQuestions = $derived(questions);
@@ -267,22 +281,34 @@
       {/if}
 
       <!-- Subject tabs -->
-      {#if subjectTabs.length > 1}
-        <div class="mb-5 flex flex-wrap gap-2">
-          {#each subjectTabs as tab}
-            <button
-              type="button"
-              onclick={() => selectTab(tab)}
-              class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
-                {activeTab === tab
-                  ? 'bg-[var(--page-link)] text-white shadow-md'
-                  : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
-            >
-              {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-            </button>
-          {/each}
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap gap-2">
+          {#if subjectTabs.length > 1}
+            {#each subjectTabs as tab}
+              <button
+                type="button"
+                onclick={() => selectTab(tab)}
+                class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
+                  {activeTab === tab
+                    ? 'bg-[var(--page-link)] text-white shadow-md'
+                    : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
+              >
+                {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              </button>
+            {/each}
+          {/if}
         </div>
-      {/if}
+        <div class="ml-auto flex items-center gap-4">
+          <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[var(--pyq-paper-meta)]">
+            <input type="checkbox" bind:checked={showOptions} class="h-4 w-4 rounded border-[var(--pyq-paper-border)] bg-transparent" />
+            <span>Options</span>
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[var(--pyq-paper-meta)]">
+            <input type="checkbox" bind:checked={showSolution} class="h-4 w-4 rounded border-[var(--pyq-paper-border)] bg-transparent" />
+            <span>Solution</span>
+          </label>
+        </div>
+      </div>
 
       <div class="space-y-3">
         {#each activeQuestions as q, idx (q._id)}
@@ -298,6 +324,7 @@
           {@const isInteger = kind === 'INTEGER' || (kind === '' && typeof integerValue === 'number')}
           {@const isFill = kind === 'FILLS' || (!isMcq && !isMsq && !isInteger && fills.length > 0)}
           {@const isEditing = editingQuestionId === q._id}
+          {@const isSolutionExpanded = expandedSolutionIds.has(String(q._id))}
           <section class="rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
             <div class="space-y-2">
               <h2 class="text-base font-semibold text-[var(--pyq-paper-title)]">
@@ -449,7 +476,19 @@
                 </div>
               {/if}
 
-              {#if isMcq || isMsq}
+              {#if showSolution && !isEditing && (explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length)}
+                <div class="mt-3">
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-md border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--pyq-paper-title)] transition hover:bg-[var(--pyq-paper-border)]/20"
+                    onclick={() => toggleSolutionCard(String(q._id))}
+                  >
+                    <span>{isSolutionExpanded ? 'Hide solution' : 'Show solution'}</span>
+                  </button>
+                </div>
+              {/if}
+
+              {#if showOptions && (isMcq || isMsq)}
                 <ul class="mt-3 space-y-2 text-base text-[var(--pyq-paper-title)]">
                   {#each options as opt}
                     {@const isCorrectOption = (q.correct?.identifiers ?? []).includes(opt.identifier)}
@@ -492,21 +531,21 @@
                     </li>
                   {/each}
                 </ul>
-              {:else if isInteger}
+              {:else if showOptions && isInteger}
                 <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-sm text-[var(--pyq-paper-meta)]">
                   <span class="font-semibold">Integer:</span> {integerValue}
                 </div>
-              {:else if isFill}
+              {:else if showOptions && isFill}
                 <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-sm text-[var(--pyq-paper-meta)]">
                   <span class="font-semibold">Fills:</span> {fills.join(', ')}
                 </div>
               {/if}
 
-              {#if explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length}
+              {#if showSolution && isSolutionExpanded && (explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length)}
                 <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-[var(--pyq-paper-title)]">
                   {#if explanation}
                     <span class="font-semibold text-sm">Explanation:</span>
-                    <div class="mt-1"><MathText content={explanation} /></div>
+                    <div class="mt-1"><MathText content={explanation} disableCache={true} /></div>
                   {/if}
                   
                   {#if q.prompt?.en?.explanationImages?.length}
@@ -524,7 +563,7 @@
                     <div class="mt-3 border-t border-[var(--pyq-paper-border)]/60 pt-3">
                       <span class="font-semibold text-sm">Re-phrased explanation:</span>
                       {#if rePhrasedExplanation}
-                        <div class="mt-1"><MathText content={rePhrasedExplanation} /></div>
+                        <div class="mt-1"><MathText content={rePhrasedExplanation} disableCache={true} /></div>
                       {/if}
 
                       {#if q.prompt?.en?.rePhrasedImage?.length}

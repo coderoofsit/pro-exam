@@ -9,12 +9,38 @@
 	// Batch MathJax typesetting across many <MathText /> instances.
 	// This prevents sequential backlog when users switch sections quickly.
 	const TYPESER_DEBOUNCE_MS = 80;
+	// Keep each MathJax call small; large explanation blocks can freeze the tab
+	// when too many nodes are typeset in one Promise.
+	const TYPESET_BATCH_SIZE = 6;
+	const MAX_RENDER_CACHE_ENTRIES = 180;
 	const pending = new Set<HTMLElement>();
 	let flushTimer: number | null = null;
 	let flushRunning = false;
 
 	// Simple in-memory cache: latex string -> rendered HTML
 	const renderedCache = new Map<string, string>();
+
+	function getCachedHtml(key: string): string | undefined {
+		const value = renderedCache.get(key);
+		if (value === undefined) return undefined;
+		// LRU touch on read
+		renderedCache.delete(key);
+		renderedCache.set(key, value);
+		return value;
+	}
+
+	function setCachedHtml(key: string, value: string) {
+		if (!key) return;
+		if (renderedCache.has(key)) {
+			renderedCache.delete(key);
+		}
+		renderedCache.set(key, value);
+		while (renderedCache.size > MAX_RENDER_CACHE_ENTRIES) {
+			const oldestKey = renderedCache.keys().next().value as string | undefined;
+			if (!oldestKey) break;
+			renderedCache.delete(oldestKey);
+		}
+	}
 
 	function postProcessTypeset(root: HTMLElement) {
 		// Keep everything inline for consistent layout with your question cards.
@@ -59,12 +85,24 @@
 
 		try {
 			if (mathWindow.MathJax?.typesetPromise && elements.length) {
-				await mathWindow.MathJax.typesetPromise(elements);
-				for (const el of elements) {
-					postProcessTypeset(el);
-					const cacheKey = el.getAttribute('data-math-cache-key');
-					if (cacheKey) {
-						renderedCache.set(cacheKey, el.innerHTML);
+				for (let i = 0; i < elements.length; i += TYPESET_BATCH_SIZE) {
+					const chunk = elements
+						.slice(i, i + TYPESET_BATCH_SIZE)
+						.filter((x) => x.isConnected);
+					if (!chunk.length) continue;
+
+					await mathWindow.MathJax.typesetPromise(chunk);
+					for (const el of chunk) {
+						postProcessTypeset(el);
+						const cacheKey = el.getAttribute('data-math-cache-key');
+						if (cacheKey) {
+							setCachedHtml(cacheKey, el.innerHTML);
+						}
+					}
+
+					// Yield back to browser between chunks so UI remains responsive.
+					if (i + TYPESET_BATCH_SIZE < elements.length) {
+						await new Promise<void>((resolve) => setTimeout(resolve, 0));
 					}
 				}
 			}
@@ -79,7 +117,9 @@
 	(globalThis as any).__pro_exam_mathTextMjMgr_v1 = {
 		requestTypeset,
 		cancelTypeset,
-		renderedCache
+		renderedCache,
+		getCachedHtml,
+		setCachedHtml
 	};
 </script>
 
@@ -104,8 +144,9 @@
 			};
 		};
 
-	let { content } = $props<{
+	let { content, disableCache = false } = $props<{
 		content: string;
+		disableCache?: boolean;
 	}>();
 
 	let container: HTMLSpanElement;
@@ -247,14 +288,20 @@
 		if (lastRendered === content) return;
 
 		// Cache key – you can tweak if needed (e.g. include theme).
-		const cacheKey = content;
+		const cacheKey = disableCache ? '' : content;
 		lastCacheKey = cacheKey;
 
 		// Fast path: reuse already typeset HTML for identical content.
 		const manager = (globalThis as any).__pro_exam_mathTextMjMgr_v1 as
-			| { renderedCache?: Map<string, string>; requestTypeset?: (el: HTMLElement) => void }
+			| {
+					renderedCache?: Map<string, string>;
+					requestTypeset?: (el: HTMLElement) => void;
+					getCachedHtml?: (key: string) => string | undefined;
+			  }
 			| undefined;
-		const cachedHtml = manager?.renderedCache?.get(cacheKey);
+		const cachedHtml = disableCache
+			? undefined
+			: manager?.getCachedHtml?.(cacheKey) ?? manager?.renderedCache?.get(cacheKey);
 
 		await tick();
 
@@ -264,7 +311,11 @@
 			container.innerHTML = content;
 			normalizeMfenced(container);
 			normalizeMathDisplay(container);
-			container.setAttribute('data-math-cache-key', cacheKey);
+			if (cacheKey) {
+				container.setAttribute('data-math-cache-key', cacheKey);
+			} else {
+				container.removeAttribute('data-math-cache-key');
+			}
 		}
 
 		lastRendered = content;
