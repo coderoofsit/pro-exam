@@ -331,7 +331,20 @@
 			container.setAttribute('data-math-ready', 'true');
 		} else {
 			let renderedWithKatex = false;
-			const wantKatex = engine === 'katex' || engine === 'auto';
+			// If `content` already contains MathML markup, KaTeX will not render it correctly
+			// (and may not throw), so skip directly to MathJax in auto-mode.
+			const looksLikeMathML =
+				/<math(?:\s|>)/i.test(content) ||
+				/<mrow(?:\s|>)/i.test(content) ||
+				/<mfenced(?:\s|>)/i.test(content) ||
+				/<msub(?:\s|>)/i.test(content) ||
+				/<msup(?:\s|>)/i.test(content) ||
+				/<mtable(?:\s|>)/i.test(content) ||
+				/<mtr(?:\s|>)/i.test(content) ||
+				/<mtd(?:\s|>)/i.test(content);
+
+			const wantKatex =
+				engine === 'katex' || (engine === 'auto' && !looksLikeMathML);
 			if (wantKatex) {
 				try {
 					// KaTeX expects plain TeX; we assume `content` holds the math expression or HTML with a single expression.
