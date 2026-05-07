@@ -67,6 +67,7 @@
 
 	function requestTypeset(el: HTMLElement) {
 		if (!el?.isConnected) return;
+		el.setAttribute('data-math-ready', 'false');
 		pending.add(el);
 		scheduleFlush();
 	}
@@ -98,6 +99,7 @@
 						if (cacheKey) {
 							setCachedHtml(cacheKey, el.innerHTML);
 						}
+						el.setAttribute('data-math-ready', 'true');
 					}
 
 					// Yield back to browser between chunks so UI remains responsive.
@@ -125,6 +127,8 @@
 
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
+	import katex from 'katex';
+	import 'katex/dist/katex.min.css';
 
 	type MathJaxWindow = Window &
 		typeof globalThis & {
@@ -144,15 +148,31 @@
 			};
 		};
 
-	let { content, disableCache = false } = $props<{
+	let {
+		content,
+		disableCache = false,
+		lazy = true,
+		engine = 'auto'
+	} = $props<{
 		content: string;
 		disableCache?: boolean;
+		/** When true (default), defer heavy MathJax typesetting until the math block is near the viewport. */
+		lazy?: boolean;
+		/**
+		 * Rendering engine:
+		 * - 'auto' (default): try KaTeX first, fall back to MathJax when needed
+		 * - 'katex': force KaTeX only
+		 * - 'mathjax': force MathJax only
+		 */
+		engine?: 'auto' | 'katex' | 'mathjax';
 	}>();
 
 	let container: HTMLSpanElement;
-	let loaded = false;
+	let mathJaxLoaded = false;
 	let lastRendered = '';
 	let lastCacheKey = '';
+	let isVisible = false;
+	let observer: IntersectionObserver | null = null;
 
 	function normalizeMfenced(root: HTMLElement) {
 		const mfencedNodes = Array.from(root.querySelectorAll('mfenced'));
@@ -221,7 +241,7 @@
 		}
 
 		if (mathWindow.MathJax?.typesetPromise) {
-			loaded = true;
+			mathJaxLoaded = true;
 			return;
 		}
 
@@ -279,16 +299,16 @@
 			await mathWindow.MathJax.startup.promise;
 		}
 
-		loaded = true;
+		mathJaxLoaded = true;
 	}
 
 	async function renderMath() {
 		if (!container || typeof window === 'undefined') return;
-		if (!loaded) return;
-		if (lastRendered === content) return;
+		if (lazy && !isVisible) return;
+		if (lastRendered === content && container.innerHTML.trim().length > 0) return;
 
-		// Cache key – you can tweak if needed (e.g. include theme).
-		const cacheKey = disableCache ? '' : content;
+		// Cache key – include engine so KaTeX/MathJax outputs don't clash.
+		const cacheKey = disableCache ? '' : `${engine || 'auto'}::${content}`;
 		lastCacheKey = cacheKey;
 
 		// Fast path: reuse already typeset HTML for identical content.
@@ -299,38 +319,103 @@
 					getCachedHtml?: (key: string) => string | undefined;
 			  }
 			| undefined;
-		const cachedHtml = disableCache
-			? undefined
-			: manager?.getCachedHtml?.(cacheKey) ?? manager?.renderedCache?.get(cacheKey);
+		const cachedHtml =
+			disableCache || !cacheKey
+				? undefined
+				: manager?.getCachedHtml?.(cacheKey) ?? manager?.renderedCache?.get(cacheKey);
 
 		await tick();
 
 		if (cachedHtml) {
 			container.innerHTML = cachedHtml;
+			container.setAttribute('data-math-ready', 'true');
 		} else {
-			container.innerHTML = content;
-			normalizeMfenced(container);
-			normalizeMathDisplay(container);
-			if (cacheKey) {
-				container.setAttribute('data-math-cache-key', cacheKey);
-			} else {
-				container.removeAttribute('data-math-cache-key');
+			let renderedWithKatex = false;
+			const wantKatex = engine === 'katex' || engine === 'auto';
+			if (wantKatex) {
+				try {
+					// KaTeX expects plain TeX; we assume `content` holds the math expression or HTML with a single expression.
+					const html = katex.renderToString(content, {
+						// Throw so auto-mode can safely fall back to MathJax
+						// instead of showing KaTeX red error text.
+						throwOnError: true,
+						displayMode: content.includes('\\[') || content.includes('$$')
+					});
+					container.innerHTML = html;
+					container.setAttribute('data-math-ready', 'true');
+					renderedWithKatex = true;
+				} catch (e) {
+					// Fallback to MathJax path.
+					renderedWithKatex = false;
+				}
+			}
+
+			if (!renderedWithKatex) {
+				await loadMathJax();
+				container.setAttribute('data-math-ready', 'false');
+				container.innerHTML = content;
+				normalizeMfenced(container);
+				normalizeMathDisplay(container);
+				if (cacheKey) {
+					container.setAttribute('data-math-cache-key', cacheKey);
+				} else {
+					container.removeAttribute('data-math-cache-key');
+				}
 			}
 		}
 
 		lastRendered = content;
-		// Debounced/batched typesetting to avoid MathJax backlog.
-		if (!cachedHtml) {
+
+		// When KaTeX handled rendering, no MathJax call is needed.
+		const usedKatex = (() => {
+			if (!container) return false;
+			// Very lightweight heuristic: KaTeX output uses .katex class.
+			return container.querySelector('.katex') !== null;
+		})();
+
+		// Debounced/batched typesetting to avoid MathJax backlog (only if KaTeX did not render).
+		if (!cachedHtml && !usedKatex) {
 			manager?.requestTypeset?.(container);
 		}
 	}
 
 	onMount(async () => {
-		await loadMathJax();
-		await renderMath();
+		if (typeof window !== 'undefined' && lazy) {
+			observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) {
+						if (entry.isIntersecting || entry.intersectionRatio > 0) {
+							isVisible = true;
+							observer?.disconnect();
+							observer = null;
+							// If MathJax is already loaded, render immediately; otherwise render after load.
+							void renderMath();
+							break;
+						}
+					}
+				},
+				{
+					// Start rendering slightly before the element fully enters the viewport
+					rootMargin: '300px 0px'
+				}
+			);
+			if (container) {
+				observer.observe(container);
+			}
+		} else {
+			isVisible = true;
+		}
+
+		if (!lazy || isVisible) {
+			await renderMath();
+		}
 	});
 
 	onDestroy(() => {
+		if (observer) {
+			observer.disconnect();
+			observer = null;
+		}
 		// If a section changes quickly, ensure this <MathText /> doesn't keep its
 		// element in the pending typeset batch.
 		if (container) (globalThis as any).__pro_exam_mathTextMjMgr_v1?.cancelTypeset?.(container);
@@ -338,7 +423,7 @@
 
 	$effect(() => {
 		content;
-		if (loaded) {
+		if (!lazy || isVisible) {
 			renderMath();
 		}
 	});
@@ -354,6 +439,11 @@
 		overflow-wrap: anywhere;
 		word-break: break-word;
 		max-width: 100%;
+	}
+
+	/* Avoid showing raw TeX while MathJax is still processing. */
+	.math-text[data-math-ready='false'] {
+		visibility: hidden;
 	}
 
 	.math-text :global(table) {
