@@ -21,6 +21,18 @@
   let expandedSolutionIds = $state<Set<string>>(new Set());
 
   $effect(() => {
+    if (!showSolution) {
+      expandedSolutionIds = new Set();
+      return;
+    }
+    expandedSolutionIds = new Set(
+      questions
+        .map((q) => String(q?._id ?? ''))
+        .filter(Boolean)
+    );
+  });
+
+  $effect(() => {
     isLoading = true;
     data.streamed.questionsPromise.then((res: any) => {
       if (res.success) {
