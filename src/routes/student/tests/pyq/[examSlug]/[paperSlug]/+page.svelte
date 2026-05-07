@@ -17,7 +17,7 @@
   let subjectTabs = $state<string[]>([]);
   let activeTab = $state<string>('');
   let showOptions = $state(false);
-  let showSolution = $state(false);
+  let openSolutionQuestionId = $state<string | null>(null);
 
   $effect(() => {
     isLoading = true;
@@ -61,6 +61,7 @@
 
     if (fetchedSections[tab]) {
       questions = fetchedSections[tab];
+      openSolutionQuestionId = null;
       return;
     }
 
@@ -73,6 +74,7 @@
         const loadedQuestions = payload?.questions ?? [];
         fetchedSections[tab] = loadedQuestions;
         questions = loadedQuestions;
+        openSolutionQuestionId = null;
       } else {
         error = res.message || 'Failed to fetch section questions.';
       }
@@ -81,6 +83,10 @@
     } finally {
       isLoading = false;
     }
+  }
+
+  function toggleSolution(questionId: string) {
+    openSolutionQuestionId = openSolutionQuestionId === questionId ? null : questionId;
   }
 
 
@@ -292,10 +298,6 @@
             <input type="checkbox" bind:checked={showOptions} class="h-4 w-4 rounded border-[var(--pyq-paper-border)] bg-transparent" />
             <span>Options</span>
           </label>
-          <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[var(--pyq-paper-meta)]">
-            <input type="checkbox" bind:checked={showSolution} class="h-4 w-4 rounded border-[var(--pyq-paper-border)] bg-transparent" />
-            <span>Solution</span>
-          </label>
         </div>
       </div>
 
@@ -365,6 +367,15 @@
                       onclick={() => startEdit(q)}
                     >
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-md border px-3 py-1 text-xs font-semibold transition {openSolutionQuestionId === String(q._id)
+                        ? 'border-[var(--page-link)] bg-[var(--page-link)]/15 text-[var(--page-link)]'
+                        : 'border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
+                      onclick={() => toggleSolution(String(q._id))}
+                    >
+                      {openSolutionQuestionId === String(q._id) ? 'Hide Solution' : 'Solution'}
                     </button>
                   </div>
                 {/if}
@@ -518,7 +529,7 @@
                 </div>
               {/if}
 
-              {#if showSolution && (explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length)}
+              {#if openSolutionQuestionId === String(q._id) && (explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length)}
                 <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-[var(--pyq-paper-title)]">
                   {#if explanation}
                     <span class="font-semibold text-sm">Explanation:</span>
