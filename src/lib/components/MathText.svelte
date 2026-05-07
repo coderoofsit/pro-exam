@@ -11,7 +11,7 @@
 	const TYPESER_DEBOUNCE_MS = 80;
 	// Keep each MathJax call small; large explanation blocks can freeze the tab
 	// when too many nodes are typeset in one Promise.
-	const TYPESET_BATCH_SIZE = 6;
+	const TYPESET_BATCH_SIZE = 2;
 	const MAX_RENDER_CACHE_ENTRIES = 180;
 	const pending = new Set<HTMLElement>();
 	let flushTimer: number | null = null;
@@ -52,6 +52,7 @@
 			(el as SVGElement).style.display = 'inline';
 			(el as SVGElement).style.verticalAlign = 'middle';
 		});
+		root.setAttribute('data-math-state', 'ready');
 	}
 
 	function scheduleFlush() {
@@ -154,6 +155,27 @@
 	let lastRendered = '';
 	let lastCacheKey = '';
 
+	// Lazy typesetting: only ask MathJax to typeset this element once it's near
+	// the viewport. Hundreds of off-screen MathText instances queueing
+	// simultaneously can crash the renderer (SIGILL) due to memory pressure
+	// from the resulting SVG output.
+	let isVisible = false;
+	let typesetPending = false;
+	let intersectionObserver: IntersectionObserver | null = null;
+
+	function containsMathSyntax(input: string) {
+		if (!input) return false;
+		return (
+			input.includes('<math') ||
+			input.includes('\\begin{') ||
+			input.includes('\\(') ||
+			input.includes('\\[') ||
+			input.includes('$$') ||
+			input.includes('$') ||
+			/\\[a-zA-Z]+/.test(input)
+		);
+	}
+
 	function normalizeMfenced(root: HTMLElement) {
 		const mfencedNodes = Array.from(root.querySelectorAll('mfenced'));
 		for (const mfenced of mfencedNodes) {
@@ -210,11 +232,13 @@
 		if (typeof window === 'undefined') return;
 
 		const mathWindow = window as MathJaxWindow;
-		const desiredScript = 'https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-svg.js';
+		// Use CHTML output instead of SVG to reduce memory pressure and avoid
+		// renderer crashes on long solution pages with many formulas.
+		const desiredScript = 'https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js';
 		const existingScript = document.querySelector(
 			'script[data-mathjax="true"]'
 		) as HTMLScriptElement | null;
-		const existingScriptIsDesired = Boolean(existingScript?.src?.includes('tex-mml-svg.js'));
+		const existingScriptIsDesired = Boolean(existingScript?.src?.includes('tex-mml-chtml.js'));
 		if (existingScript && !existingScriptIsDesired) {
 			existingScript.remove();
 			delete mathWindow.MathJax;
@@ -236,9 +260,7 @@
 					['$$', '$$']
 				]
 			},
-			svg: {
-				fontCache: 'global'
-			},
+			chtml: {},
 			startup: {
 				typeset: false
 			}
@@ -287,6 +309,8 @@
 		if (!loaded) return;
 		if (lastRendered === content) return;
 
+		const contentStr = String(content ?? '');
+
 		// Cache key – you can tweak if needed (e.g. include theme).
 		const cacheKey = disableCache ? '' : content;
 		lastCacheKey = cacheKey;
@@ -307,7 +331,11 @@
 
 		if (cachedHtml) {
 			container.innerHTML = cachedHtml;
+			container.setAttribute('data-math-state', 'ready');
 		} else {
+			const hasMathSyntax = containsMathSyntax(contentStr);
+			// Set pending state before injecting raw source to avoid one-frame flashes.
+			container.setAttribute('data-math-state', hasMathSyntax ? 'pending' : 'ready');
 			container.innerHTML = content;
 			normalizeMfenced(container);
 			normalizeMathDisplay(container);
@@ -319,13 +347,51 @@
 		}
 
 		lastRendered = content;
-		// Debounced/batched typesetting to avoid MathJax backlog.
+		// Debounced/batched typesetting to avoid MathJax backlog. Only request
+		// when this element is near the viewport — otherwise mark as pending
+		// and let the IntersectionObserver trigger the request later.
 		if (!cachedHtml) {
-			manager?.requestTypeset?.(container);
+			if (isVisible) {
+				manager?.requestTypeset?.(container);
+			} else {
+				typesetPending = true;
+			}
 		}
 	}
 
+	function setupIntersectionObserver() {
+		if (typeof window === 'undefined') return;
+		if (!container || intersectionObserver) return;
+		// If IntersectionObserver isn't supported, render eagerly.
+		if (typeof IntersectionObserver === 'undefined') {
+			isVisible = true;
+			return;
+		}
+		intersectionObserver = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						isVisible = true;
+						intersectionObserver?.disconnect();
+						intersectionObserver = null;
+						if (typesetPending) {
+							typesetPending = false;
+							const manager = (globalThis as any).__pro_exam_mathTextMjMgr_v1 as
+								| { requestTypeset?: (el: HTMLElement) => void }
+								| undefined;
+							manager?.requestTypeset?.(container);
+						}
+						break;
+					}
+				}
+			},
+			{ rootMargin: '120px 0px', threshold: 0 }
+		);
+		intersectionObserver.observe(container);
+	}
+
 	onMount(async () => {
+		setupIntersectionObserver();
 		await loadMathJax();
 		await renderMath();
 	});
@@ -334,6 +400,8 @@
 		// If a section changes quickly, ensure this <MathText /> doesn't keep its
 		// element in the pending typeset batch.
 		if (container) (globalThis as any).__pro_exam_mathTextMjMgr_v1?.cancelTypeset?.(container);
+		intersectionObserver?.disconnect();
+		intersectionObserver = null;
 	});
 
 	$effect(() => {
@@ -354,6 +422,25 @@
 		overflow-wrap: anywhere;
 		word-break: break-word;
 		max-width: 100%;
+	}
+
+	.math-text[data-math-state='pending'] {
+		position: relative;
+		color: transparent !important;
+	}
+
+	.math-text[data-math-state='pending'] :global(*) {
+		opacity: 0 !important;
+	}
+
+	.math-text[data-math-state='pending']::after {
+		content: 'Rendering math...';
+		position: absolute;
+		inset: 0 auto auto 0;
+		color: var(--pyq-paper-meta, #9ca3af);
+		font-size: 0.85em;
+		font-weight: 500;
+		opacity: 1;
 	}
 
 	.math-text :global(table) {
