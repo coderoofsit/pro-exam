@@ -1,15 +1,27 @@
 <script lang="ts">
   import Exam from '$lib/components/Exam.svelte';
   import type { Exam as ExamApi } from '$lib/api/exams';
-  import type { PageData } from './$types';
+  import { pyqExamsStore } from '$lib/stores/pyqExams';
+  import { onMount } from 'svelte';
 
   let {
-    data,
     basePath = '/student/tests/pyq'
-  }: { data: PageData; basePath?: string } = $props();
+  }: { basePath?: string } = $props();
 
-  const exams = $derived((data.exams ?? []) as ExamApi[]);
-  const error = $derived(data.error ?? null);
+  let exams = $state<ExamApi[]>([]);
+  let error = $state<string | null>(null);
+  let loading = $state(true);
+
+  onMount(() => {
+    const unsubscribe = pyqExamsStore.subscribe((state) => {
+      exams = state.exams;
+      error = state.error;
+      loading = !state.loaded && (state.loading || state.exams.length === 0);
+    });
+
+    void pyqExamsStore.load();
+    return unsubscribe;
+  });
 </script>
 
 <svelte:head>
@@ -18,8 +30,17 @@
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
   <div class="mx-auto max-w-7xl px-4 pt-0 pb-8">
-    <!-- Error state -->
-    {#if error}
+    {#if loading}
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {#each Array(6) as _, i (i)}
+          <div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4">
+            <div class="mx-auto h-14 w-14 animate-pulse rounded-full bg-[var(--sh-exam-card-arrow-bg)]"></div>
+            <div class="mx-auto mt-4 h-3 w-20 animate-pulse rounded bg-[var(--sh-exam-card-arrow-bg)]"></div>
+          </div>
+        {/each}
+      </div>
+    {:else if error}
+      <!-- Error state -->
       <div class="
         flex items-center gap-3 rounded-2xl px-5 py-4
         bg-[var(--pc-error-bg)]
@@ -58,14 +79,14 @@
       </div>
     {:else}
       <Exam
-  exams={exams}
-  boardName="All"
-  pyq={true}
-  hideBoardTitle={true}
-  {basePath}
-  showBackButton={false}
-  pageClass="student-exams"
-/>
+        {exams}
+        boardName="All"
+        pyq={true}
+        hideBoardTitle={true}
+        {basePath}
+        showBackButton={false}
+        pageClass="student-exams"
+      />
     {/if}
 
   </div>
