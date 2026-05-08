@@ -1,7 +1,9 @@
 <script lang="ts">
 import { tick } from 'svelte';
+  import { browser } from '$app/environment';
   import type { PageData } from './$types';
   import { updateQuestion, updateQuestionApproveStatus } from '$lib/api/questions';
+  import { createReport, type ReportReason } from '$lib/api/reports';
   import MathText from '$lib/components/MathText.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
   import { questionPromptEnContent } from '$lib/api/questions';
@@ -139,6 +141,25 @@ import { tick } from 'svelte';
   let draftExplanationImages = $state<string[]>([]);
   let draftRePhrasedQuestionImages = $state<string[]>([]);
   let draftRePhrasedExplanationImages = $state<string[]>([]);
+  let reportModalOpen = $state(false);
+  let reportingQuestionId = $state('');
+  let reportReason = $state<ReportReason>('WRONG_QUESTION');
+  const reportReasonOptions: { value: ReportReason; label: string }[] = [
+    { value: 'WRONG_QUESTION', label: 'Wrong Question' },
+    { value: 'WRONG_ANSWER', label: 'Wrong Answer' },
+    { value: 'WRONG_SOLUTION', label: 'Wrong Solution' },
+    { value: 'TYPO', label: 'Typo / Spelling error' },
+    { value: 'BAD_LATEX', label: 'Math Formatting (LaTeX) issue' },
+    { value: 'MISSING_IMAGE', label: 'Missing Image' },
+    { value: 'WRONG_OPTIONS', label: 'Incorrect Options' },
+    { value: 'DUPLICATE', label: 'Duplicate Question' },
+    { value: 'OTHER', label: 'Other' }
+  ];
+  let reportReasonDropdownOpen = $state(false);
+  let reportReasonDropdownRef = $state<HTMLElement | null>(null);
+  let reportMessage = $state('');
+  let isSubmittingReport = $state(false);
+  let reportFeedback = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const examName = $derived.by(() =>
     examSlug
@@ -275,6 +296,67 @@ import { tick } from 'svelte';
     }
   }
 
+  function openReportModal(qid: string) {
+    reportingQuestionId = qid;
+    reportReason = 'WRONG_QUESTION';
+    reportMessage = '';
+    reportModalOpen = true;
+    reportReasonDropdownOpen = false;
+  }
+
+  function closeReportModal() {
+    reportModalOpen = false;
+    reportReasonDropdownOpen = false;
+  }
+
+  function selectReportReason(reason: ReportReason) {
+    reportReason = reason;
+    reportReasonDropdownOpen = false;
+  }
+
+  async function handleReportSubmit() {
+    if (!reportingQuestionId || !reportReason) return;
+    isSubmittingReport = true;
+    try {
+      await createReport({
+        questionId: reportingQuestionId,
+        reason: reportReason,
+        message: reportMessage
+      });
+      reportFeedback = { type: 'success', message: 'Report submitted successfully.' };
+      closeReportModal();
+    } catch (e: any) {
+      reportFeedback = { type: 'error', message: e?.message || 'Failed to submit report.' };
+    } finally {
+      isSubmittingReport = false;
+    }
+  }
+
+  $effect(() => {
+    if (!browser || !reportReasonDropdownOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        reportReasonDropdownRef &&
+        target instanceof Node &&
+        !reportReasonDropdownRef.contains(target)
+      ) {
+        reportReasonDropdownOpen = false;
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        reportReasonDropdownOpen = false;
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  });
+
 </script>
 
 <svelte:head>
@@ -320,6 +402,13 @@ import { tick } from 'svelte';
       {#if saveError}
         <div class="mb-3 rounded-lg border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-3 py-2 text-xs text-[var(--pc-error-text)]">
           {saveError}
+        </div>
+      {/if}
+      {#if reportFeedback}
+        <div class="mb-3 rounded-lg border px-3 py-2 text-xs {reportFeedback.type === 'success'
+          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+          : 'border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] text-[var(--pc-error-text)]'}">
+          {reportFeedback.message}
         </div>
       {/if}
 
@@ -438,6 +527,13 @@ import { tick } from 'svelte';
                       onclick={() => toggleSolution(String(q._id))}
                     >
                       {openSolutionQuestionId === String(q._id) ? 'Hide' : 'Solution'}
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-md border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-3 py-1 text-xs font-semibold text-[var(--pc-error-text)] transition hover:opacity-90"
+                      onclick={() => openReportModal(String(q._id))}
+                    >
+                      Report
                     </button>
                   </div>
                 {/if}
@@ -682,3 +778,109 @@ import { tick } from 'svelte';
     {/if}
   </div>
 </div>
+
+{#if reportModalOpen}
+  <div class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div
+      class="fixed inset-0 bg-black/60 backdrop-blur-md"
+      role="button"
+      tabindex="0"
+      onclick={closeReportModal}
+      onkeydown={(e) => e.key === 'Escape' ? closeReportModal() : null}
+    ></div>
+    <div class="relative w-full max-w-md rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-bg)] shadow-2xl">
+      <div class="border-b border-[var(--page-card-border)] bg-[var(--page-card-bg)]/50 px-6 py-4">
+        <h3 class="text-lg font-bold text-[var(--page-text)]">Report Question</h3>
+      </div>
+
+      <div class="space-y-4 p-6">
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-[var(--page-text)]" for="reportReason">
+            Reason for reporting
+          </label>
+          <div class="relative" bind:this={reportReasonDropdownRef}>
+            <button
+              type="button"
+              id="reportReason"
+              class="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-left text-sm text-[var(--page-text)] transition hover:border-[var(--page-link)]"
+              aria-haspopup="listbox"
+              aria-expanded={reportReasonDropdownOpen}
+              onclick={() => (reportReasonDropdownOpen = !reportReasonDropdownOpen)}
+            >
+              <span class="truncate">
+                {reportReasonOptions.find((option) => option.value === reportReason)?.label ?? 'Select reason'}
+              </span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="shrink-0 text-[var(--page-text-muted)] transition-transform {reportReasonDropdownOpen ? 'rotate-180' : ''}"
+                aria-hidden="true"
+              >
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </button>
+            {#if reportReasonDropdownOpen}
+              <div class="absolute left-0 right-0 z-10 mt-2 max-h-60 overflow-y-auto rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] shadow-xl">
+                <ul role="listbox" aria-labelledby="reportReason" class="py-1">
+                  {#each reportReasonOptions as option (option.value)}
+                    <li>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={reportReason === option.value}
+                        class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition {reportReason === option.value ? 'bg-[var(--page-link)]/12 text-[var(--page-link)]' : 'text-[var(--page-text)] hover:bg-[var(--page-card-bg)]/70'}"
+                        onclick={() => selectReportReason(option.value)}
+                      >
+                        <span class="truncate">{option.label}</span>
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-[var(--page-text)]" for="reportMessage">
+            Description (optional)
+          </label>
+          <textarea
+            id="reportMessage"
+            bind:value={reportMessage}
+            placeholder="Provide more details about the issue..."
+            rows="4"
+            class="w-full resize-none rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] p-4 text-sm text-[var(--page-text)]"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 border-t border-[var(--page-card-border)] bg-[var(--page-card-bg)]/30 px-6 py-4">
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-semibold text-[var(--page-text-muted)] transition hover:text-[var(--page-text)]"
+          onclick={closeReportModal}
+          disabled={isSubmittingReport}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-lg bg-semantic-error px-6 py-2 text-sm font-bold text-white transition hover:bg-semantic-error/90 disabled:opacity-50"
+          onclick={handleReportSubmit}
+          disabled={isSubmittingReport}
+        >
+          {#if isSubmittingReport}
+            Submitting...
+          {:else}
+            Submit Report
+          {/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
