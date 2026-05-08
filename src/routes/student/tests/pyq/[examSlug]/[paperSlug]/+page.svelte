@@ -1,4 +1,5 @@
 <script lang="ts">
+import { tick } from 'svelte';
   import type { PageData } from './$types';
   import { updateQuestion, updateQuestionApproveStatus } from '$lib/api/questions';
   import MathText from '$lib/components/MathText.svelte';
@@ -18,6 +19,7 @@
   let activeTab = $state<string>('');
   let showOptions = $state(false);
   let openSolutionQuestionId = $state<string | null>(null);
+  let isTabSwitching = $state(false);
 
   $effect(() => {
     isLoading = true;
@@ -49,9 +51,19 @@
   });
 
   async function selectTab(tab: string) {
-    if (activeTab === tab) return;
+  // Do not allow another click while tab switch is in progress
+  if (isTabSwitching) return;
+
+  // Do nothing if same tab is clicked
+  if (activeTab === tab) return;
+
+  isTabSwitching = true;
+  error = null;
+
+  try {
     activeTab = tab;
-    
+    openSolutionQuestionId = null;
+
     // Update URL without full navigation
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -59,31 +71,47 @@
       window.history.replaceState({}, '', url);
     }
 
+    // If section is already cached, use it directly
     if (fetchedSections[tab]) {
       questions = fetchedSections[tab];
-      openSolutionQuestionId = null;
+
+      // Wait for Svelte DOM update
+      await tick();
       return;
     }
 
+    // Fetch new section
     isLoading = true;
-    try {
-      const { getPaperQuestionsByPaperId } = await import('$lib/api/paper');
-      const res = await getPaperQuestionsByPaperId(data.paperSlug, fetch, tab);
-      if (res.success) {
-        const payload = res.data?.data || res.data;
-        const loadedQuestions = payload?.questions ?? [];
-        fetchedSections[tab] = loadedQuestions;
-        questions = loadedQuestions;
-        openSolutionQuestionId = null;
-      } else {
-        error = res.message || 'Failed to fetch section questions.';
-      }
-    } catch (err: any) {
-      error = err.message || 'An error occurred while fetching section.';
-    } finally {
-      isLoading = false;
+
+    const { getPaperQuestionsByPaperId } = await import('$lib/api/paper');
+    const res = await getPaperQuestionsByPaperId(data.paperSlug, fetch, tab);
+
+    if (res.success) {
+      const payload = res.data?.data || res.data;
+      const loadedQuestions = payload?.questions ?? [];
+
+      fetchedSections[tab] = loadedQuestions;
+      questions = loadedQuestions;
+      error = null;
+
+      // Wait for Svelte DOM update after questions are assigned
+      await tick();
+    } else {
+      questions = [];
+      error = res.message || 'Failed to fetch section questions.';
     }
+  } catch (err: any) {
+    questions = [];
+    error = err.message || 'An error occurred while fetching section.';
+  } finally {
+    isLoading = false;
+
+    // Let the UI finish one more update before enabling tabs again
+    await tick();
+
+    isTabSwitching = false;
   }
+}
 
   function toggleSolution(questionId: string) {
     openSolutionQuestionId = openSolutionQuestionId === questionId ? null : questionId;
@@ -98,10 +126,19 @@
   let draftContent = $state('');
   let draftExplanation = $state('');
   let draftRePhrasedExplanation = $state('');
-  let draftOptions = $state<Array<{ identifier: string; content: string }>>([]);
+  let draftOptions = $state<Array<{ 
+    identifier: string; 
+    content: string; 
+    images: string[]; 
+    rePhrasedOptionImage: string[] 
+  }>>([]);
   let draftCorrectIdentifiers = $state<string[]>([]);
   let draftFills = $state<string[]>([]);
   let draftInteger = $state('');
+  let draftImages = $state<string[]>([]);
+  let draftExplanationImages = $state<string[]>([]);
+  let draftRePhrasedQuestionImages = $state<string[]>([]);
+  let draftRePhrasedExplanationImages = $state<string[]>([]);
 
   const examName = $derived.by(() =>
     examSlug
@@ -125,7 +162,9 @@
         : (options.length > 0 ? 'MCQ' : 'FILLS');
     draftOptions = options.map((opt: any) => ({
       identifier: String(opt?.identifier ?? '').trim(),
-      content: String(opt?.content ?? '').trim()
+      content: String(opt?.content ?? '').trim(),
+      images: Array.isArray(opt?.images) ? opt.images.map((img: any) => img.url).filter(Boolean) : [],
+      rePhrasedOptionImage: Array.isArray(opt?.rePhrasedOptionImage) ? opt.rePhrasedOptionImage.map((img: any) => img.url).filter(Boolean) : []
     }));
     draftCorrectIdentifiers = Array.isArray(q?.correct?.identifiers)
       ? q.correct.identifiers.map((x: unknown) => String(x ?? '').trim()).filter(Boolean)
@@ -137,6 +176,10 @@
       typeof q?.correct?.integer === 'number' || typeof q?.correct?.integer === 'string'
         ? String(q.correct.integer)
         : '';
+    draftImages = Array.isArray(q?.prompt?.en?.images) ? q.prompt.en.images.map((img: any) => img.url).filter(Boolean) : [];
+    draftExplanationImages = Array.isArray(q?.prompt?.en?.explanationImages) ? q.prompt.en.explanationImages.map((img: any) => img.url).filter(Boolean) : [];
+    draftRePhrasedQuestionImages = Array.isArray(q?.prompt?.en?.rePhrasedQuestionImage) ? q.prompt.en.rePhrasedQuestionImage.map((img: any) => img.url).filter(Boolean) : [];
+    draftRePhrasedExplanationImages = Array.isArray(q?.prompt?.en?.rePhrasedImage) ? q.prompt.en.rePhrasedImage.map((img: any) => img.url).filter(Boolean) : [];
   }
 
   function cancelEdit() {
@@ -151,7 +194,8 @@
         .map((opt) => ({
           identifier: String(opt.identifier ?? '').trim(),
           content: String(opt.content ?? '').trim(),
-          images: [] as string[]
+          images: opt.images.map(url => ({ url })),
+          rePhrasedOptionImage: opt.rePhrasedOptionImage.map(url => ({ url }))
         }))
         .filter((opt) => opt.identifier && opt.content);
 
@@ -169,6 +213,10 @@
             content: draftContent,
             explanation: draftExplanation,
             rePhrasedExplanation: draftRePhrasedExplanation,
+            images: draftImages.map(url => ({ url })),
+            explanationImages: draftExplanationImages.map(url => ({ url })),
+            rePhrasedQuestionImage: draftRePhrasedQuestionImages.map(url => ({ url })),
+            rePhrasedImage: draftRePhrasedExplanationImages.map(url => ({ url })),
             options: editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ' ? options : []
           }
         },
@@ -280,22 +328,36 @@
         <div class="flex flex-wrap gap-2">
           {#if subjectTabs.length > 1}
             {#each subjectTabs as tab}
-              <button
-                type="button"
-                onclick={() => selectTab(tab)}
-                class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
-                  {activeTab === tab
-                    ? 'bg-[var(--page-link)] text-white shadow-md'
-                    : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
-              >
-                {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-              </button>
-            {/each}
+  <button
+    type="button"
+    disabled={isTabSwitching}
+    aria-busy={isTabSwitching && activeTab === tab}
+    onclick={() => selectTab(tab)}
+    class="rounded-full px-4 py-1.5 text-sm font-semibold transition-all
+      {activeTab === tab
+        ? 'bg-[var(--page-link)] text-white shadow-md'
+        : 'border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}
+      {isTabSwitching
+        ? 'cursor-not-allowed opacity-60 pointer-events-none'
+        : ''}"
+  >
+    {#if isTabSwitching && activeTab === tab}
+      Loading...
+    {:else}
+      {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+    {/if}
+  </button>
+{/each}
           {/if}
         </div>
         <div class="ml-auto flex items-center gap-4">
           <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[var(--pyq-paper-meta)]">
-            <input type="checkbox" bind:checked={showOptions} class="h-4 w-4 rounded border-[var(--pyq-paper-border)] bg-transparent" />
+            <input
+  type="checkbox"
+  bind:checked={showOptions}
+  disabled={isTabSwitching}
+  class="h-4 w-4 rounded border-[var(--pyq-paper-border)] bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+/>
             <span>Options</span>
           </label>
         </div>
@@ -375,7 +437,7 @@
                         : 'border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]'}"
                       onclick={() => toggleSolution(String(q._id))}
                     >
-                      {openSolutionQuestionId === String(q._id) ? 'Hide Solution' : 'Solution'}
+                      {openSolutionQuestionId === String(q._id) ? 'Hide' : 'Solution'}
                     </button>
                   </div>
                 {/if}
@@ -388,39 +450,85 @@
                   Question
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" rows="3" bind:value={draftContent}></textarea>
                 </label>
+                <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
+                  Question Images (comma separated URLs)
+                  <input class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                    value={draftImages.join(', ')} 
+                    oninput={(e) => draftImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+                  />
+                </label>
+                <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
+                  Re-phrased Question Image (comma separated URLs)
+                  <input class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                    value={draftRePhrasedQuestionImages.join(', ')} 
+                    oninput={(e) => draftRePhrasedQuestionImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+                  />
+                </label>
 
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                   Explanation
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-lg text-[var(--pyq-paper-title)]" rows="3" bind:value={draftExplanation}></textarea>
+                </label>
+                <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
+                  Explanation Images (comma separated URLs)
+                  <input class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                    value={draftExplanationImages.join(', ')} 
+                    oninput={(e) => draftExplanationImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+                  />
                 </label>
 
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
                   Re-phrased Explanation
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" rows="3" bind:value={draftRePhrasedExplanation}></textarea>
                 </label>
+                <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
+                  Re-phrased Explanation Images (comma separated URLs)
+                  <input class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                    value={draftRePhrasedExplanationImages.join(', ')} 
+                    oninput={(e) => draftRePhrasedExplanationImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+                  />
+                </label>
 
                 {#if editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ'}
                   <div class="space-y-2">
                     {#each draftOptions as opt, optIndex (opt.identifier + optIndex)}
                       {@const selected = draftCorrectIdentifiers.includes(opt.identifier)}
-                      <div class="flex items-center gap-2 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-2">
-                        <input
-                          class="w-14 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-sm text-[var(--pyq-paper-title)]"
-                          bind:value={draftOptions[optIndex].identifier}
-                          placeholder="A"
-                        />
-                        <input
-                          class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-base text-[var(--pyq-paper-title)]"
-                          bind:value={draftOptions[optIndex].content}
-                          placeholder="Option text"
-                        />
-                        <button
-                          type="button"
-                          class="rounded px-2 py-1 text-xs border {selected ? 'border-emerald-500 text-emerald-600' : 'border-[var(--pyq-paper-border)]'}"
-                          onclick={() => toggleCorrectOption(opt.identifier)}
-                        >
-                          {selected ? 'Correct' : 'Mark correct'}
-                        </button>
+                      <div class="flex flex-col gap-2 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-2">
+                        <div class="flex items-center gap-2">
+                          <input
+                            class="w-14 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-sm text-[var(--pyq-paper-title)]"
+                            bind:value={draftOptions[optIndex].identifier}
+                            placeholder="A"
+                          />
+                          <input
+                            class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-base text-[var(--pyq-paper-title)]"
+                            bind:value={draftOptions[optIndex].content}
+                            placeholder="Option text"
+                          />
+                          <button
+                            type="button"
+                            class="rounded px-2 py-1 text-xs border {selected ? 'border-emerald-500 text-emerald-600' : 'border-[var(--pyq-paper-border)]'}"
+                            onclick={() => toggleCorrectOption(opt.identifier)}
+                          >
+                            {selected ? 'Correct' : 'Mark correct'}
+                          </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <label class="text-[10px] text-[var(--pyq-paper-meta)]">
+                            Images (URLs)
+                            <input class="mt-0.5 w-full rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-xs" 
+                              value={draftOptions[optIndex].images.join(', ')} 
+                              oninput={(e) => draftOptions[optIndex].images = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+                            />
+                          </label>
+                          <label class="text-[10px] text-[var(--pyq-paper-meta)]">
+                            Re-phrased Images (URLs)
+                            <input class="mt-0.5 w-full rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-xs" 
+                              value={draftOptions[optIndex].rePhrasedOptionImage.join(', ')} 
+                              oninput={(e) => draftOptions[optIndex].rePhrasedOptionImage = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+                            />
+                          </label>
+                        </div>
                       </div>
                     {/each}
                   </div>

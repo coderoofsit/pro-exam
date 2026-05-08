@@ -14,10 +14,16 @@
 					promise?: Promise<void>;
 					typeset?: boolean;
 				};
+				loader?: {
+					load?: string[];
+				};
 				tex?: {
 					inlineMath?: string[][];
 					displayMath?: string[][];
 					processEscapes?: boolean;
+					packages?: {
+						'[+]'?: string[];
+					};
 				};
 				svg?: {
 					fontCache?: string;
@@ -33,6 +39,18 @@
 	let loaded = false;
 	let lastRendered = '';
 	let renderToken = 0;
+
+	function normalizeLatexContent(value: string) {
+		return String(value ?? '')
+			.replace(/\\text\s+\{/g, '\\text{')
+			.replace(/\\mathrm\s+\{/g, '\\mathrm{')
+			.replace(/\\mathbf\s+\{/g, '\\mathbf{')
+			.replace(/\\boldsymbol\s+\{/g, '\\boldsymbol{')
+			.replace(/\\mathit\s+\{/g, '\\mathit{')
+			.replace(/\\mathsf\s+\{/g, '\\mathsf{')
+			.replace(/\\frac\s+\{/g, '\\frac{')
+			.replace(/\\sqrt\s+\{/g, '\\sqrt{');
+	}
 
 	async function loadMathJax() {
 		if (typeof window === 'undefined') return;
@@ -52,7 +70,13 @@
 
 		mathJaxLoadPromise = new Promise<void>((resolve, reject) => {
 			mathWindow.MathJax = {
+				loader: {
+					load: ['[tex]/boldsymbol', '[tex]/ams', '[tex]/color', '[tex]/cancel', '[tex]/mhchem']
+				},
 				tex: {
+					packages: {
+						'[+]': ['boldsymbol', 'ams', 'color', 'cancel', 'mhchem']
+					},
 					inlineMath: [
 						['\\(', '\\)'],
 						['$', '$']
@@ -92,10 +116,10 @@
 
 			const script = document.createElement('script');
 
-			// Use this if your content is LaTeX only:
+			// LaTeX input + SVG output. Best for your current question data.
 			script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
 
-			// Use tex-mml-svg.js only if your backend really sends MathML <math>...</math>.
+			// Use this only if your backend sends real MathML like <math>...</math>.
 			// script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js';
 
 			script.async = true;
@@ -122,7 +146,10 @@
 	async function renderMath() {
 		if (!container || typeof window === 'undefined') return;
 		if (!loaded) return;
-		if (lastRendered === content) return;
+
+		const normalizedContent = normalizeLatexContent(content);
+
+		if (lastRendered === normalizedContent) return;
 
 		const currentToken = ++renderToken;
 		const mathWindow = window as MathJaxWindow;
@@ -136,7 +163,7 @@
 		try {
 			mathWindow.MathJax.typesetClear?.([container]);
 
-			container.innerHTML = content;
+			container.innerHTML = normalizedContent;
 
 			await mathWindow.MathJax.typesetPromise([container]);
 
@@ -154,7 +181,7 @@
 				svgEl.style.verticalAlign = 'middle';
 			});
 
-			lastRendered = content;
+			lastRendered = normalizedContent;
 		} catch (error) {
 			console.error('MathJax render failed:', error);
 		}
@@ -175,9 +202,9 @@
 	});
 
 	$effect(() => {
-		const value = content;
+		const normalizedContent = normalizeLatexContent(content);
 
-		if (loaded && value !== lastRendered) {
+		if (loaded && normalizedContent !== lastRendered) {
 			renderMath();
 		}
 	});
