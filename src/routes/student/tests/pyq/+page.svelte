@@ -58,12 +58,14 @@
       </div>
     {:else}
       <Exam
-        exams={exams}
-        boardName="All"
-        pyq={true}
-        hideBoardTitle={true}
-        {basePath}
-      />
+  exams={exams}
+  boardName="All"
+  pyq={true}
+  hideBoardTitle={true}
+  {basePath}
+  showBackButton={false}
+  pageClass="student-exams"
+/>
     {/if}
 
   </div>

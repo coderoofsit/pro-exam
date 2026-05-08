@@ -468,7 +468,6 @@
         console.error("Failed to set default profile", res.message);
         return;
       }
-    console.log("res",res.data);
       const root = res.data as SelectMembershipApiBody;
       if (
         root?.success === true &&
@@ -1591,9 +1590,10 @@
 
 <!-- Mobile Bottom Navigation -->
 <nav
-  class="
-    fixed bottom-0 left-0 right-0 z-[100] flex h-16 items-center justify-around
-    md:hidden px-4
+ class="
+    fixed inset-x-0 bottom-0 z-[100] flex h-[calc(4rem+env(safe-area-inset-bottom,0px))]
+    items-start justify-around md:hidden px-4 pt-2
+    pb-[env(safe-area-inset-bottom,0px)]
     bg-[var(--topbar-bg)] border-t border-[var(--topbar-border)]
     shadow-[0_-4px_16px_rgba(0,0,0,0.06)]
     backdrop-blur-xl

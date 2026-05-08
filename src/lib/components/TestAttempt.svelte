@@ -1016,80 +1016,80 @@ function clearCurrentAnswer() {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <Button
-            variant="ta-primary"
-            onClick={() => void goTo(currentIndex - 1)}
-            disabled={currentIndex === 0 || submitted || submitInFlight}
-            className="
-              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border !px-2.5 !py-0 text-xs font-medium leading-none whitespace-nowrap
-              transition-all duration-150
-              disabled:cursor-not-allowed
-            "
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 6l-6 6 6 6"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            Previous
-          </Button>
+        <div class="flex flex-nowrap items-center justify-between gap-1 sm:flex-wrap sm:gap-2">
+  <Button
+    variant="ta-primary"
+    onClick={() => void goTo(currentIndex - 1)}
+    disabled={currentIndex === 0 || submitted || submitInFlight}
+    className="
+      !inline-flex !w-[4.9rem] sm:!w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1 sm:gap-1.5 rounded-lg border !px-1.5 sm:!px-2.5 !py-0 text-[11px] sm:text-xs font-medium leading-none whitespace-nowrap
+      transition-all duration-150
+      disabled:cursor-not-allowed
+    "
+  >
+    <svg class="hidden xs:block" width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M15 6l-6 6 6 6"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    Previous
+  </Button>
 
-          <Button
-            variant="ta-nav"
-            onClick={() => void clearCurrentAnswer()}
-            disabled={answers[currentIndex] === undefined || submitted || submitInFlight}
-            className="
-              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ta-divider)] !px-2.5 !py-0 text-xs font-medium leading-none whitespace-nowrap
-              transition-colors duration-150
-              disabled:cursor-not-allowed disabled:opacity-40
-            "
-          >
-            Clear
-          </Button>
+  <Button
+    variant="ta-nav"
+    onClick={() => void clearCurrentAnswer()}
+    disabled={answers[currentIndex] === undefined || submitted || submitInFlight}
+    className="
+      !inline-flex !w-[4.2rem] sm:!w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ta-divider)] !px-1.5 sm:!px-2.5 !py-0 text-[11px] sm:text-xs font-medium leading-none whitespace-nowrap
+      transition-colors duration-150
+      disabled:cursor-not-allowed disabled:opacity-40
+    "
+  >
+    Clear
+  </Button>
 
-          <Button
-            variant="ta-mark"
-            onClick={() => void markAndNext()}
-            disabled={submitted || submitInFlight}
-            className="
-              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border !px-2.5 !py-0 text-xs font-semibold leading-none whitespace-nowrap
-              transition-colors
-              disabled:cursor-not-allowed disabled:opacity-40
-            "
-          >
-            Mark &amp; next
-          </Button>
+  <Button
+    variant="ta-mark"
+    onClick={() => void markAndNext()}
+    disabled={submitted || submitInFlight}
+    className="
+      !inline-flex !w-[5.4rem] sm:!w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1 sm:gap-1.5 rounded-lg border !px-1.5 sm:!px-2.5 !py-0 text-[11px] sm:text-xs font-semibold leading-none whitespace-nowrap
+      transition-colors
+      disabled:cursor-not-allowed disabled:opacity-40
+    "
+  >
+    Mark &amp; next
+  </Button>
 
-          <Button
-            variant={isLast ? 'ta-submit' : 'ta-primary'}
-            onClick={() =>
-              void (isLast ? openSubmitConfirm() : goTo(currentIndex + 1))}
-            disabled={submitted || submitInFlight}
-            className="
-              !inline-flex !w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-transparent !px-2.5 !py-0 text-xs font-semibold leading-none whitespace-nowrap
-              transition-shadow duration-150
-              disabled:cursor-not-allowed
-            "
-          >
-            <span class="leading-none">{isLast ? 'Submit' : 'Next'}</span>
-            {#if !isLast}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M9 6l6 6-6 6"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            {/if}
-          </Button>
-        </div>
+  <Button
+    variant={isLast ? 'ta-submit' : 'ta-primary'}
+    onClick={() =>
+      void (isLast ? openSubmitConfirm() : goTo(currentIndex + 1))}
+    disabled={submitted || submitInFlight}
+    className="
+      !inline-flex !w-[4.2rem] sm:!w-[6.75rem] !self-center !h-9 shrink-0 items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-transparent !px-1.5 sm:!px-2.5 !py-0 text-[11px] sm:text-xs font-semibold leading-none whitespace-nowrap
+      transition-shadow duration-150
+      disabled:cursor-not-allowed
+    "
+  >
+    <span class="leading-none">{isLast ? 'Submit' : 'Next'}</span>
+    {#if !isLast}
+      <svg class="hidden xs:block" width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 6l6 6-6 6"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    {/if}
+  </Button>
+</div>
       </div>
     </main>
 
