@@ -59,7 +59,7 @@
         </button>
         <button
           type="button"
-          class="btn-cta-subscription-outline min-w-[8.5rem] justify-center"
+          class="flex h-10 min-w-[6.5rem] items-center gap-2 shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50 justify-center"
           onclick={onStartTest}
           disabled={starting}
         >

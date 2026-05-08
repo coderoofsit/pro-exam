@@ -555,7 +555,7 @@ import { tick } from 'svelte';
 
                 <div class="flex items-center justify-end gap-2">
                   <button type="button" class="btn-cta-subscription-outline px-3 py-1 text-xs" onclick={cancelEdit}>Cancel</button>
-                  <button type="button" class="btn-cta-subscription px-3 py-1 text-xs" onclick={() => saveEdit(q._id)}>Save</button>
+                  <button type="button" class=" h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50" onclick={() => saveEdit(q._id)}>Save</button>
                 </div>
               </div>
             {:else}

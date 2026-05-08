@@ -710,7 +710,7 @@
           </div>
         {/if}
         <div class="own-bottom-bar__subject">
-          <span class="own-bottom-bar__label">Selected questionss</span>
+          <span class="own-bottom-bar__label">Selected questions</span>
           {#if manualSelectedCount > 0}
             <ul class="own-bottom-bar__list" role="list">
               {#each manualSelectedSubjectsForBar as s (s.id)}
@@ -801,7 +801,7 @@
       {/if}
 
       <div class="mt-6 flex justify-center">
-        <button type="button" class="btn-cta-subscription min-w-[8rem]" onclick={handleManualConfirmOk}>
+        <button type="button" class="h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50" onclick={handleManualConfirmOk}>
           OK
         </button>
       </div>
