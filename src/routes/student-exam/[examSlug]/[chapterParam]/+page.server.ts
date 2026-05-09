@@ -155,14 +155,42 @@ export const actions: Actions = {
 			const explanationContent = data.get('explanationContent')?.toString() ?? existing.prompt?.en?.explanation ?? '';
 			const rePhrasedExplanationContent = data.get('rePhrasedExplanationContent')?.toString() ?? existing.prompt?.en?.rePhrasedExplanation ?? '';
 			
+			const parseImageUrls = (str: string | undefined) => {
+				if (!str) return undefined;
+				try {
+					const arr = JSON.parse(str);
+					if (Array.isArray(arr)) {
+						return arr.map(url => ({ url }));
+					}
+				} catch (e) {
+					// Fallback for comma separated just in case
+					return str.split(',').map(s => s.trim()).filter(Boolean).map(url => ({ url }));
+				}
+				return undefined;
+			};
+
+			const promptImages = parseImageUrls(data.get('promptImages')?.toString());
+			const rePhrasedQuestionImage = parseImageUrls(data.get('rePhrasedQuestionImage')?.toString());
+			const explanationImages = parseImageUrls(data.get('explanationImages')?.toString());
+			const rePhrasedImage = parseImageUrls(data.get('rePhrasedImage')?.toString());
+
 			const newOptions = [...(existing.prompt?.en?.options || [])];
 			let i = 0;
 			while (data.has(`option_${i}_id`)) {
 				const id = data.get(`option_${i}_id`)?.toString();
 				const content = data.get(`option_${i}_content`)?.toString() ?? '';
+				
+				const optImages = parseImageUrls(data.get(`option_${i}_images`)?.toString());
+				const optRePhrasedImage = parseImageUrls(data.get(`option_${i}_rePhrasedImage`)?.toString());
+
 				const optIdx = newOptions.findIndex(o => o.identifier === id);
 				if (optIdx !== -1) {
-					newOptions[optIdx].content = content;
+					newOptions[optIdx] = {
+						...newOptions[optIdx],
+						content,
+						...(optImages ? { images: optImages } : {}),
+						...(optRePhrasedImage ? { rePhrasedOptionImage: optRePhrasedImage } : {})
+					};
 				}
 				i++;
 			}
@@ -174,7 +202,11 @@ export const actions: Actions = {
 					content: promptContent,
 					explanation: explanationContent,
 					rePhrasedExplanation: rePhrasedExplanationContent,
-					options: newOptions
+					options: newOptions,
+					...(promptImages ? { images: promptImages } : {}),
+					...(rePhrasedQuestionImage ? { rePhrasedQuestionImage } : {}),
+					...(explanationImages ? { explanationImages } : {}),
+					...(rePhrasedImage ? { rePhrasedImage } : {})
 				}
 			};
 

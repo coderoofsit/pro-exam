@@ -188,3 +188,28 @@ export async function updateQuestionApproveStatus(
 	if (!response.success) throw new Error(response.message || 'Unable to update question approval');
 	return response.data.data;
 }
+
+export async function uploadImage(
+	file: File,
+	token?: string | null,
+	signal?: AbortSignal
+): Promise<string> {
+	const t = resolveApiToken(token);
+	const formData = new FormData();
+	formData.append('image', file);
+
+	const response = await apiRequest<{
+		success: boolean;
+		message: string;
+		data: { url: string };
+	}>({
+		endpoint: `/api/v1/questions/upload-image`,
+		method: 'POST',
+		data: formData,
+		token: t,
+		signal
+	});
+
+	if (!response.success) throw new Error(response.message || 'Unable to upload image');
+	return response.data.data.url;
+}

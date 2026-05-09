@@ -1,6 +1,6 @@
 <script lang="ts">
 	import MathText from "$lib/components/MathText.svelte";
-	import { questionPromptEnContent, fetchQuestionById } from "$lib/api/questions";
+	import { questionPromptEnContent, fetchQuestionById, uploadImage } from "$lib/api/questions";
 	import { fetchTopicsByChapterSlug } from "$lib/api/topics";
 	import type { PageData, ActionData } from "./$types";
 	import { enhance } from "$app/forms";
@@ -41,6 +41,49 @@
 	let integerAnswer = $state<number | null>(null);
 	let fillBlankAnswers = $state<string[]>([]);
 	let currentQuestionNumber = $state<number | null>(null);
+
+	let draftImages = $state<string[]>([]);
+	let draftRePhrasedQuestionImages = $state<string[]>([]);
+	let draftExplanationImages = $state<string[]>([]);
+	let draftRePhrasedExplanationImages = $state<string[]>([]);
+	let draftOptionsImages = $state<Record<string, string[]>>({});
+	let draftOptionsRePhrasedImages = $state<Record<string, string[]>>({});
+	let isUploadingImage = $state(false);
+
+	async function handleImageUpload(e: Event, updateFn: (url: string) => void) {
+		const input = e.target as HTMLInputElement;
+		if (!input.files?.length) return;
+		const file = input.files[0];
+		isUploadingImage = true;
+		try {
+			const url = await uploadImage(file);
+			updateFn(url);
+		} catch (err: any) {
+			showToast(err.message || "Failed to upload image", "error");
+		} finally {
+			isUploadingImage = false;
+			input.value = "";
+		}
+	}
+
+	function startEditing() {
+		if (!detailQuestion) return;
+		draftImages = promptImagesOnly(detailQuestion).map(imageSrc).filter(Boolean);
+		draftRePhrasedQuestionImages = Array.isArray((detailQuestion as any).prompt?.en?.rePhrasedQuestionImage) ? (detailQuestion as any).prompt.en.rePhrasedQuestionImage.map(imageSrc).filter(Boolean) : [];
+		draftExplanationImages = Array.isArray((detailQuestion as any).prompt?.en?.explanationImages) ? (detailQuestion as any).prompt.en.explanationImages.map(imageSrc).filter(Boolean) : [];
+		draftRePhrasedExplanationImages = Array.isArray((detailQuestion as any).prompt?.en?.rePhrasedImage) ? (detailQuestion as any).prompt.en.rePhrasedImage.map(imageSrc).filter(Boolean) : [];
+		
+		const optImgs: Record<string, string[]> = {};
+		const roptImgs: Record<string, string[]> = {};
+		((detailQuestion as any).prompt?.en?.options || []).forEach((opt: any) => {
+			optImgs[opt.identifier] = (opt.images || []).map(imageSrc).filter(Boolean);
+			roptImgs[opt.identifier] = (opt.rePhrasedOptionImage || []).map(imageSrc).filter(Boolean);
+		});
+		draftOptionsImages = optImgs;
+		draftOptionsRePhrasedImages = roptImgs;
+		
+		isEditing = true;
+	}
 
 	// ── toast ──────────────────────────────────────────────────────────────
 	let toastMsg = $state<string | null>(null);
@@ -1065,6 +1108,60 @@
 													rows="5"
 													>{detailQuestion.prompt?.en?.content ?? ""}</textarea
 												>
+												<input type="hidden" name="promptImages" value={JSON.stringify(draftImages)} />
+												<input type="hidden" name="rePhrasedQuestionImage" value={JSON.stringify(draftRePhrasedQuestionImages)} />
+												
+												<div class="mt-4">
+													<label class="block text-xs font-semibold text-[var(--page-text-muted)] mb-1">
+														Question Images (comma separated URLs)
+													</label>
+													<div class="flex gap-2">
+														<input class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)]" 
+															value={draftImages.join(', ')} 
+															oninput={(e) => draftImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+														/>
+														<label class="cursor-pointer rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-3 py-2 text-xs font-semibold text-[var(--page-link)] flex items-center justify-center hover:bg-[var(--page-link)]/20 transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+															<span>Upload</span>
+															<input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftImages = [...draftImages, url])} />
+														</label>
+													</div>
+													{#if draftImages.length > 0}
+														<div class="mt-2 flex flex-wrap gap-2">
+															{#each draftImages as img, idx}
+																<div class="relative group rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] p-1">
+																	<img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
+																	<button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-semantic-error text-[10px] text-white opacity-0 shadow transition-opacity hover:opacity-90 group-hover:opacity-100" onclick={() => draftImages = draftImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+																</div>
+															{/each}
+														</div>
+													{/if}
+												</div>
+
+												<div class="mt-4">
+													<label class="block text-xs font-semibold text-[var(--page-text-muted)] mb-1">
+														Re-phrased Question Image (comma separated URLs)
+													</label>
+													<div class="flex gap-2">
+														<input class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)]" 
+															value={draftRePhrasedQuestionImages.join(', ')} 
+															oninput={(e) => draftRePhrasedQuestionImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+														/>
+														<label class="cursor-pointer rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-3 py-2 text-xs font-semibold text-[var(--page-link)] flex items-center justify-center hover:bg-[var(--page-link)]/20 transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+															<span>Upload</span>
+															<input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftRePhrasedQuestionImages = [...draftRePhrasedQuestionImages, url])} />
+														</label>
+													</div>
+													{#if draftRePhrasedQuestionImages.length > 0}
+														<div class="mt-2 flex flex-wrap gap-2">
+															{#each draftRePhrasedQuestionImages as img, idx}
+																<div class="relative group rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] p-1">
+																	<img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
+																	<button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-semantic-error text-[10px] text-white opacity-0 shadow transition-opacity hover:opacity-90 group-hover:opacity-100" onclick={() => draftRePhrasedQuestionImages = draftRePhrasedQuestionImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+																</div>
+															{/each}
+														</div>
+													{/if}
+												</div>
 											</div>
 
 											<!-- Options Grid for Editing -->
@@ -1106,6 +1203,67 @@
 																	>{option.content ??
 																		""}</textarea
 																>
+																
+																<input type="hidden" name="option_{i}_images" value={JSON.stringify(draftOptionsImages[option.identifier] || [])} />
+																<input type="hidden" name="option_{i}_rePhrasedImage" value={JSON.stringify(draftOptionsRePhrasedImages[option.identifier] || [])} />
+
+																<div class="mt-2">
+																	<label class="block text-[10px] font-semibold text-[var(--page-text-muted)] mb-1">
+																		Images (URLs)
+																	</label>
+																	<div class="flex gap-1">
+																		<input class="flex-1 rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] px-2 py-1 text-xs text-[var(--page-text)]" 
+																			value={(draftOptionsImages[option.identifier] || []).join(', ')} 
+																			oninput={(e) => {
+																				const val = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean);
+																				draftOptionsImages = { ...draftOptionsImages, [option.identifier]: val };
+																			}}
+																		/>
+																		<label class="cursor-pointer rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-2 py-1 text-[10px] font-semibold text-[var(--page-link)] hover:bg-[var(--page-link)]/20 transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+																			<span>↑</span>
+																			<input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftOptionsImages = { ...draftOptionsImages, [option.identifier]: [...(draftOptionsImages[option.identifier] || []), url] })} />
+																		</label>
+																	</div>
+																	{#if (draftOptionsImages[option.identifier] || []).length > 0}
+																		<div class="mt-1 flex flex-wrap gap-1">
+																			{#each draftOptionsImages[option.identifier] as img, imgIdx}
+																				<div class="relative group rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] p-1">
+																					<img src={img} alt="preview" class="max-h-12 max-w-[100px] object-contain rounded" />
+																					<button type="button" class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-semantic-error text-[8px] text-white opacity-0 shadow transition-opacity hover:opacity-90 group-hover:opacity-100" onclick={() => draftOptionsImages = { ...draftOptionsImages, [option.identifier]: draftOptionsImages[option.identifier].filter((_, i) => i !== imgIdx) }} title="Remove image">✕</button>
+																				</div>
+																			{/each}
+																		</div>
+																	{/if}
+																</div>
+
+																<div class="mt-2">
+																	<label class="block text-[10px] font-semibold text-[var(--page-text-muted)] mb-1">
+																		Re-phrased Images (URLs)
+																	</label>
+																	<div class="flex gap-1">
+																		<input class="flex-1 rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] px-2 py-1 text-xs text-[var(--page-text)]" 
+																			value={(draftOptionsRePhrasedImages[option.identifier] || []).join(', ')} 
+																			oninput={(e) => {
+																				const val = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean);
+																				draftOptionsRePhrasedImages = { ...draftOptionsRePhrasedImages, [option.identifier]: val };
+																			}}
+																		/>
+																		<label class="cursor-pointer rounded border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-2 py-1 text-[10px] font-semibold text-[var(--page-link)] hover:bg-[var(--page-link)]/20 transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+																			<span>↑</span>
+																			<input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftOptionsRePhrasedImages = { ...draftOptionsRePhrasedImages, [option.identifier]: [...(draftOptionsRePhrasedImages[option.identifier] || []), url] })} />
+																		</label>
+																	</div>
+																	{#if (draftOptionsRePhrasedImages[option.identifier] || []).length > 0}
+																		<div class="mt-1 flex flex-wrap gap-1">
+																			{#each draftOptionsRePhrasedImages[option.identifier] as img, imgIdx}
+																				<div class="relative group rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] p-1">
+																					<img src={img} alt="preview" class="max-h-12 max-w-[100px] object-contain rounded" />
+																					<button type="button" class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-semantic-error text-[8px] text-white opacity-0 shadow transition-opacity hover:opacity-90 group-hover:opacity-100" onclick={() => draftOptionsRePhrasedImages = { ...draftOptionsRePhrasedImages, [option.identifier]: draftOptionsRePhrasedImages[option.identifier].filter((_, i) => i !== imgIdx) }} title="Remove image">✕</button>
+																				</div>
+																			{/each}
+																		</div>
+																	{/if}
+																</div>
 															</div>
 														{/each}
 													</div>
@@ -1126,6 +1284,33 @@
 													rows="6"
 													>{detailQuestion.prompt?.en?.explanation ?? ""}</textarea
 												>
+												<input type="hidden" name="explanationImages" value={JSON.stringify(draftExplanationImages)} />
+												
+												<div class="mt-4">
+													<label class="block text-xs font-semibold text-[var(--page-text-muted)] mb-1">
+														Explanation Images (comma separated URLs)
+													</label>
+													<div class="flex gap-2">
+														<input class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)]" 
+															value={draftExplanationImages.join(', ')} 
+															oninput={(e) => draftExplanationImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+														/>
+														<label class="cursor-pointer rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-3 py-2 text-xs font-semibold text-[var(--page-link)] flex items-center justify-center hover:bg-[var(--page-link)]/20 transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+															<span>Upload</span>
+															<input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftExplanationImages = [...draftExplanationImages, url])} />
+														</label>
+													</div>
+													{#if draftExplanationImages.length > 0}
+														<div class="mt-2 flex flex-wrap gap-2">
+															{#each draftExplanationImages as img, idx}
+																<div class="relative group rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] p-1">
+																	<img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
+																	<button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-semantic-error text-[10px] text-white opacity-0 shadow transition-opacity hover:opacity-90 group-hover:opacity-100" onclick={() => draftExplanationImages = draftExplanationImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+																</div>
+															{/each}
+														</div>
+													{/if}
+												</div>
 											</div>
 
 											<!-- Re-phrased Explanation -->
@@ -1142,6 +1327,33 @@
 													rows="6"
 													>{detailQuestion.prompt?.en?.rePhrasedExplanation ?? ""}</textarea
 												>
+												<input type="hidden" name="rePhrasedImage" value={JSON.stringify(draftRePhrasedExplanationImages)} />
+												
+												<div class="mt-4">
+													<label class="block text-xs font-semibold text-[var(--page-text-muted)] mb-1">
+														Re-phrased Explanation Images (comma separated URLs)
+													</label>
+													<div class="flex gap-2">
+														<input class="flex-1 rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)]" 
+															value={draftRePhrasedExplanationImages.join(', ')} 
+															oninput={(e) => draftRePhrasedExplanationImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
+														/>
+														<label class="cursor-pointer rounded-lg border border-[var(--page-link)]/30 bg-[var(--page-link)]/10 px-3 py-2 text-xs font-semibold text-[var(--page-link)] flex items-center justify-center hover:bg-[var(--page-link)]/20 transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+															<span>Upload</span>
+															<input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftRePhrasedExplanationImages = [...draftRePhrasedExplanationImages, url])} />
+														</label>
+													</div>
+													{#if draftRePhrasedExplanationImages.length > 0}
+														<div class="mt-2 flex flex-wrap gap-2">
+															{#each draftRePhrasedExplanationImages as img, idx}
+																<div class="relative group rounded border border-[var(--page-card-border)] bg-[var(--page-bg)] p-1">
+																	<img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
+																	<button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-semantic-error text-[10px] text-white opacity-0 shadow transition-opacity hover:opacity-90 group-hover:opacity-100" onclick={() => draftRePhrasedExplanationImages = draftRePhrasedExplanationImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+																</div>
+															{/each}
+														</div>
+													{/if}
+												</div>
 											</div>
 
 											<!-- Correct Answer Editing -->
@@ -1277,7 +1489,7 @@
 											</form>
 											<button
 												type="button"
-												onclick={() => (isEditing = true)}
+												onclick={startEditing}
 												class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--page-card-border)] px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-[var(--page-text)] shadow-sm hover:bg-[var(--sh-exam-card-hover-border)]/20 transition"
 											>
 												<svg
