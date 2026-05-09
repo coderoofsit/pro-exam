@@ -160,7 +160,7 @@ export const actions: Actions = {
 				try {
 					const arr = JSON.parse(str);
 					if (Array.isArray(arr)) {
-						return arr.map(url => ({ url }));
+						return arr.filter(Boolean).map(url => ({ url }));
 					}
 				} catch (e) {
 					// Fallback for comma separated just in case

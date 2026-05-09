@@ -184,8 +184,8 @@ import { tick } from 'svelte';
     draftOptions = options.map((opt: any) => ({
       identifier: String(opt?.identifier ?? '').trim(),
       content: String(opt?.content ?? '').trim(),
-      images: Array.isArray(opt?.images) ? opt.images.map((img: any) => img.url).filter(Boolean) : [],
-      rePhrasedOptionImage: Array.isArray(opt?.rePhrasedOptionImage) ? opt.rePhrasedOptionImage.map((img: any) => img.url).filter(Boolean) : []
+      images: Array.isArray(opt?.images) && opt.images.length ? opt.images.map((img: any) => img.url).filter(Boolean) : [''],
+      rePhrasedOptionImage: Array.isArray(opt?.rePhrasedOptionImage) && opt.rePhrasedOptionImage.length ? opt.rePhrasedOptionImage.map((img: any) => img.url).filter(Boolean) : ['']
     }));
     draftCorrectIdentifiers = Array.isArray(q?.correct?.identifiers)
       ? q.correct.identifiers.map((x: unknown) => String(x ?? '').trim()).filter(Boolean)
@@ -197,10 +197,17 @@ import { tick } from 'svelte';
       typeof q?.correct?.integer === 'number' || typeof q?.correct?.integer === 'string'
         ? String(q.correct.integer)
         : '';
-    draftImages = Array.isArray(q?.prompt?.en?.images) ? q.prompt.en.images.map((img: any) => img.url).filter(Boolean) : [];
-    draftExplanationImages = Array.isArray(q?.prompt?.en?.explanationImages) ? q.prompt.en.explanationImages.map((img: any) => img.url).filter(Boolean) : [];
-    draftRePhrasedQuestionImages = Array.isArray(q?.prompt?.en?.rePhrasedQuestionImage) ? q.prompt.en.rePhrasedQuestionImage.map((img: any) => img.url).filter(Boolean) : [];
-    draftRePhrasedExplanationImages = Array.isArray(q?.prompt?.en?.rePhrasedImage) ? q.prompt.en.rePhrasedImage.map((img: any) => img.url).filter(Boolean) : [];
+    const imgs = Array.isArray(q?.prompt?.en?.images) ? q.prompt.en.images.map((img: any) => img.url).filter(Boolean) : [];
+    draftImages = imgs.length ? imgs : [''];
+    
+    const expImgs = Array.isArray(q?.prompt?.en?.explanationImages) ? q.prompt.en.explanationImages.map((img: any) => img.url).filter(Boolean) : [];
+    draftExplanationImages = expImgs.length ? expImgs : [''];
+    
+    const rpQImgs = Array.isArray(q?.prompt?.en?.rePhrasedQuestionImage) ? q.prompt.en.rePhrasedQuestionImage.map((img: any) => img.url).filter(Boolean) : [];
+    draftRePhrasedQuestionImages = rpQImgs.length ? rpQImgs : [''];
+    
+    const rpExpImgs = Array.isArray(q?.prompt?.en?.rePhrasedImage) ? q.prompt.en.rePhrasedImage.map((img: any) => img.url).filter(Boolean) : [];
+    draftRePhrasedExplanationImages = rpExpImgs.length ? rpExpImgs : [''];
   }
 
   let isUploadingImage = $state(false);
@@ -253,15 +260,24 @@ import { tick } from 'svelte';
             content: draftContent,
             explanation: draftExplanation,
             rePhrasedExplanation: draftRePhrasedExplanation,
-            images: draftImages.map(url => ({ url })),
-            explanationImages: draftExplanationImages.map(url => ({ url })),
-            rePhrasedQuestionImage: draftRePhrasedQuestionImages.map(url => ({ url })),
-            rePhrasedImage: draftRePhrasedExplanationImages.map(url => ({ url })),
-            options: editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ' ? options : []
+            images: draftImages.filter(Boolean).map(url => ({ url })),
+            rePhrasedQuestionImage: draftRePhrasedQuestionImages.filter(Boolean).map(url => ({ url })),
+            explanationImages: draftExplanationImages.filter(Boolean).map(url => ({ url })),
+            rePhrasedImage: draftRePhrasedExplanationImages.filter(Boolean).map(url => ({ url })),
+            options: editingQuestionKind === 'MCQ' || editingQuestionKind === 'MSQ' ? draftOptions.map(opt => ({
+              identifier: String(opt.identifier ?? '').trim(),
+              content: String(opt.content ?? '').trim(),
+              images: opt.images?.filter(Boolean).map((url: string) => ({ url })) ?? [],
+              rePhrasedOptionImage: opt.rePhrasedOptionImage?.filter(Boolean).map((url: string) => ({ url })) ?? []
+            })) : []
           }
         },
         correct: {
-          identifiers,
+          identifiers: editingQuestionKind === 'MCQ'
+            ? draftCorrectIdentifiers.slice(0, 1)
+            : editingQuestionKind === 'MSQ'
+              ? draftCorrectIdentifiers
+              : [],
           fills: editingQuestionKind === 'FILLS' ? draftFills.map((s) => s.trim()).filter(Boolean) : [],
           ...(editingQuestionKind === 'INTEGER' && draftInteger.trim() ? { integer: Number(draftInteger.trim()) } : {})
         }
@@ -566,46 +582,86 @@ import { tick } from 'svelte';
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" rows="3" bind:value={draftContent}></textarea>
                 </label>
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
-                  Question Images (comma separated URLs)
-                  <div class="mt-1 flex gap-2">
-                    <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
-                      value={draftImages.join(', ')} 
-                      oninput={(e) => draftImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
-                    />
-                    <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
-                      <span>Upload</span>
-                      <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftImages = [...draftImages, url])} />
-                    </label>
+                  Question Images (URLs)
+                  <div class="mt-1 flex flex-col gap-2">
+                    {#each draftImages as img, idx}
+                      <div class="flex gap-2 items-center">
+                        <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                          value={img} 
+                          oninput={(e) => {
+                            const val = (e.currentTarget as HTMLInputElement).value;
+                            const arr = [...draftImages];
+                            arr[idx] = val;
+                            draftImages = arr;
+                          }}
+                          placeholder="Image URL"
+                        />
+                        <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+                          <span>Browse</span>
+                          <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => {
+                            const arr = [...draftImages];
+                            arr[idx] = url;
+                            draftImages = arr;
+                          })} />
+                        </label>
+                        {#if draftImages.length > 1}
+                          <button type="button" class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--pc-error-bg)] text-[var(--pc-error-text)] border border-[var(--pc-error-border)]" onclick={() => draftImages = draftImages.filter((_, i) => i !== idx)} title="Remove URL">✕</button>
+                        {/if}
+                      </div>
+                    {/each}
+                    <button type="button" class="btn-cta-subscription-outline self-end px-3 py-1 text-xs" onclick={() => draftImages = [...draftImages, '']}>
+                      +
+                    </button>
                   </div>
-                  {#if draftImages.length > 0}
+                  {#if draftImages.filter(Boolean).length > 0}
                     <div class="mt-2 flex flex-wrap gap-2">
-                      {#each draftImages as img, idx}
+                      {#each draftImages.filter(Boolean) as img, idx}
                         <div class="relative group rounded border border-[var(--pyq-paper-border)] bg-black/20 p-1">
                           <img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
-                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftImages = draftImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftImages = draftImages.filter((val) => val !== img)} title="Remove image">✕</button>
                         </div>
                       {/each}
                     </div>
                   {/if}
                 </label>
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
-                  Re-phrased Question Image (comma separated URLs)
-                  <div class="mt-1 flex gap-2">
-                    <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
-                      value={draftRePhrasedQuestionImages.join(', ')} 
-                      oninput={(e) => draftRePhrasedQuestionImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
-                    />
-                    <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
-                      <span>Upload</span>
-                      <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftRePhrasedQuestionImages = [...draftRePhrasedQuestionImages, url])} />
-                    </label>
+                  Re-phrased Question Image (URLs)
+                  <div class="mt-1 flex flex-col gap-2">
+                    {#each draftRePhrasedQuestionImages as img, idx}
+                      <div class="flex gap-2 items-center">
+                        <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                          value={img} 
+                          oninput={(e) => {
+                            const val = (e.currentTarget as HTMLInputElement).value;
+                            const arr = [...draftRePhrasedQuestionImages];
+                            arr[idx] = val;
+                            draftRePhrasedQuestionImages = arr;
+                          }}
+                          placeholder="Image URL"
+                        />
+                        <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+                          <span>Browse</span>
+                          <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => {
+                            const arr = [...draftRePhrasedQuestionImages];
+                            arr[idx] = url;
+                            draftRePhrasedQuestionImages = arr;
+                          })} />
+                        </label>
+                        {#if draftRePhrasedQuestionImages.length > 1}
+                          <button type="button" class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--pc-error-bg)] text-[var(--pc-error-text)] border border-[var(--pc-error-border)]" onclick={() => draftRePhrasedQuestionImages = draftRePhrasedQuestionImages.filter((_, i) => i !== idx)} title="Remove URL">✕</button>
+                        {/if}
+                      </div>
+                    {/each}
+                    <button type="button" class="btn-cta-subscription-outline self-end px-3 py-1 text-xs" onclick={() => draftRePhrasedQuestionImages = [...draftRePhrasedQuestionImages, '']}>
+                      +
+                    </button>
                   </div>
-                  {#if draftRePhrasedQuestionImages.length > 0}
+                  {#if draftRePhrasedQuestionImages.filter(Boolean).length > 0}
                     <div class="mt-2 flex flex-wrap gap-2">
-                      {#each draftRePhrasedQuestionImages as img, idx}
+                      {#each draftRePhrasedQuestionImages.filter(Boolean) as img, idx}
                         <div class="relative group rounded border border-[var(--pyq-paper-border)] bg-black/20 p-1">
                           <img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
-                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftRePhrasedQuestionImages = draftRePhrasedQuestionImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftRePhrasedQuestionImages = draftRePhrasedQuestionImages.filter((val) => val !== img)} title="Remove image">✕</button>
                         </div>
                       {/each}
                     </div>
@@ -617,23 +673,43 @@ import { tick } from 'svelte';
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-lg text-[var(--pyq-paper-title)]" rows="3" bind:value={draftExplanation}></textarea>
                 </label>
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
-                  Explanation Images (comma separated URLs)
-                  <div class="mt-1 flex gap-2">
-                    <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
-                      value={draftExplanationImages.join(', ')} 
-                      oninput={(e) => draftExplanationImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
-                    />
-                    <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
-                      <span>Upload</span>
-                      <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftExplanationImages = [...draftExplanationImages, url])} />
-                    </label>
+                  Explanation Images (URLs)
+                  <div class="mt-1 flex flex-col gap-2">
+                    {#each draftExplanationImages as img, idx}
+                      <div class="flex gap-2 items-center">
+                        <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                          value={img} 
+                          oninput={(e) => {
+                            const val = (e.currentTarget as HTMLInputElement).value;
+                            const arr = [...draftExplanationImages];
+                            arr[idx] = val;
+                            draftExplanationImages = arr;
+                          }}
+                          placeholder="Image URL"
+                        />
+                        <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+                          <span>Browse</span>
+                          <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => {
+                            const arr = [...draftExplanationImages];
+                            arr[idx] = url;
+                            draftExplanationImages = arr;
+                          })} />
+                        </label>
+                        {#if draftExplanationImages.length > 1}
+                          <button type="button" class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--pc-error-bg)] text-[var(--pc-error-text)] border border-[var(--pc-error-border)]" onclick={() => draftExplanationImages = draftExplanationImages.filter((_, i) => i !== idx)} title="Remove URL">✕</button>
+                        {/if}
+                      </div>
+                    {/each}
+                    <button type="button" class="btn-cta-subscription-outline self-end px-3 py-1 text-xs" onclick={() => draftExplanationImages = [...draftExplanationImages, '']}>
+                      +
+                    </button>
                   </div>
-                  {#if draftExplanationImages.length > 0}
+                  {#if draftExplanationImages.filter(Boolean).length > 0}
                     <div class="mt-2 flex flex-wrap gap-2">
-                      {#each draftExplanationImages as img, idx}
+                      {#each draftExplanationImages.filter(Boolean) as img, idx}
                         <div class="relative group rounded border border-[var(--pyq-paper-border)] bg-black/20 p-1">
                           <img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
-                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftExplanationImages = draftExplanationImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftExplanationImages = draftExplanationImages.filter((val) => val !== img)} title="Remove image">✕</button>
                         </div>
                       {/each}
                     </div>
@@ -645,23 +721,43 @@ import { tick } from 'svelte';
                   <textarea class="mt-1 w-full rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-base text-[var(--pyq-paper-title)]" rows="3" bind:value={draftRePhrasedExplanation}></textarea>
                 </label>
                 <label class="block text-xs font-semibold text-[var(--pyq-paper-meta)]">
-                  Re-phrased Explanation Images (comma separated URLs)
-                  <div class="mt-1 flex gap-2">
-                    <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
-                      value={draftRePhrasedExplanationImages.join(', ')} 
-                      oninput={(e) => draftRePhrasedExplanationImages = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
-                    />
-                    <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
-                      <span>Upload</span>
-                      <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftRePhrasedExplanationImages = [...draftRePhrasedExplanationImages, url])} />
-                    </label>
+                  Re-phrased Explanation Images (URLs)
+                  <div class="mt-1 flex flex-col gap-2">
+                    {#each draftRePhrasedExplanationImages as img, idx}
+                      <div class="flex gap-2 items-center">
+                        <input class="flex-1 rounded-lg border border-[var(--pyq-paper-border)] bg-transparent px-3 py-2 text-sm text-[var(--pyq-paper-title)]" 
+                          value={img} 
+                          oninput={(e) => {
+                            const val = (e.currentTarget as HTMLInputElement).value;
+                            const arr = [...draftRePhrasedExplanationImages];
+                            arr[idx] = val;
+                            draftRePhrasedExplanationImages = arr;
+                          }}
+                          placeholder="Image URL"
+                        />
+                        <label class="btn-cta-subscription-outline flex cursor-pointer items-center justify-center px-3 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+                          <span>Browse</span>
+                          <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => {
+                            const arr = [...draftRePhrasedExplanationImages];
+                            arr[idx] = url;
+                            draftRePhrasedExplanationImages = arr;
+                          })} />
+                        </label>
+                        {#if draftRePhrasedExplanationImages.length > 1}
+                          <button type="button" class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--pc-error-bg)] text-[var(--pc-error-text)] border border-[var(--pc-error-border)]" onclick={() => draftRePhrasedExplanationImages = draftRePhrasedExplanationImages.filter((_, i) => i !== idx)} title="Remove URL">✕</button>
+                        {/if}
+                      </div>
+                    {/each}
+                    <button type="button" class="btn-cta-subscription-outline self-end px-3 py-1 text-xs" onclick={() => draftRePhrasedExplanationImages = [...draftRePhrasedExplanationImages, '']}>
+                      +
+                    </button>
                   </div>
-                  {#if draftRePhrasedExplanationImages.length > 0}
+                  {#if draftRePhrasedExplanationImages.filter(Boolean).length > 0}
                     <div class="mt-2 flex flex-wrap gap-2">
-                      {#each draftRePhrasedExplanationImages as img, idx}
+                      {#each draftRePhrasedExplanationImages.filter(Boolean) as img, idx}
                         <div class="relative group rounded border border-[var(--pyq-paper-border)] bg-black/20 p-1">
                           <img src={img} alt="preview" class="max-h-20 max-w-[150px] object-contain rounded" />
-                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftRePhrasedExplanationImages = draftRePhrasedExplanationImages.filter((_, i) => i !== idx)} title="Remove image">✕</button>
+                          <button type="button" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftRePhrasedExplanationImages = draftRePhrasedExplanationImages.filter((val) => val !== img)} title="Remove image">✕</button>
                         </div>
                       {/each}
                     </div>
@@ -693,52 +789,97 @@ import { tick } from 'svelte';
                           </button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <label class="text-[10px] text-[var(--pyq-paper-meta)]">
-                            Images (URLs)
-                            <div class="mt-0.5 flex gap-1">
-                              <input class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-xs" 
-                                value={draftOptions[optIndex].images.join(', ')} 
-                                oninput={(e) => draftOptions[optIndex].images = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
-                              />
-                              <label class="cursor-pointer rounded border border-[var(--pyq-paper-border)] px-2 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
-                                <span title="Upload">↑</span>
-                                <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftOptions[optIndex].images = [...draftOptions[optIndex].images, url])} />
-                              </label>
+                          <div class="mt-2">
+                            <label class="block text-[10px] font-semibold text-[var(--pyq-paper-meta)]">
+                              Option Images
+                            </label>
+                            <div class="mt-1 flex flex-col gap-1">
+                              {#each (opt.images || ['']) as img, imgIdx}
+                                <div class="flex gap-1 items-center">
+                                  <input class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-xs text-[var(--pyq-paper-title)]" 
+                                    value={img} 
+                                    oninput={(e) => {
+                                      const val = (e.currentTarget as HTMLInputElement).value;
+                                      const arr = [...(opt.images || [''])];
+                                      arr[imgIdx] = val;
+                                      draftOptions[optIndex].images = arr;
+                                    }}
+                                    placeholder="Image URL"
+                                  />
+                                  <label class="cursor-pointer rounded border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-[10px] font-semibold text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)] transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+                                    <span>Browse</span>
+                                    <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => {
+                                      const arr = [...(opt.images || [])];
+                                      arr[imgIdx] = url;
+                                      draftOptions[optIndex].images = arr;
+                                    })} />
+                                  </label>
+                                  {#if (opt.images || []).length > 1}
+                                    <button type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--pc-error-bg)] text-[var(--pc-error-text)] border border-[var(--pc-error-border)]" onclick={() => draftOptions[optIndex].images = (opt.images || []).filter((_: any, i: number) => i !== imgIdx)} title="Remove URL">✕</button>
+                                  {/if}
+                                </div>
+                              {/each}
+                              <button type="button" class="rounded border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] self-end w-fit px-2 py-1 text-[10px] font-semibold text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]" onclick={() => draftOptions[optIndex].images = [...(opt.images || []), '']}>
+                                +
+                              </button>
                             </div>
-                            {#if draftOptions[optIndex].images.length > 0}
+                            {#if (opt.images || []).filter((i: any) => i).length > 0}
                               <div class="mt-1 flex flex-wrap gap-1">
-                                {#each draftOptions[optIndex].images as img, imgIdx}
+                                {#each (opt.images || []).filter((i: any) => i) as img, imgIdx}
                                   <div class="relative group rounded border border-[var(--pyq-paper-border)] bg-black/20 p-1">
                                     <img src={img} alt="preview" class="max-h-12 max-w-[100px] object-contain rounded" />
-                                    <button type="button" class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftOptions[optIndex].images = draftOptions[optIndex].images.filter((_, i) => i !== imgIdx)} title="Remove image">✕</button>
+                                    <button type="button" class="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftOptions[optIndex].images = (opt.images || []).filter((val: any) => val !== img)} title="Remove image">✕</button>
                                   </div>
                                 {/each}
                               </div>
                             {/if}
-                          </label>
-                          <label class="text-[10px] text-[var(--pyq-paper-meta)]">
-                            Re-phrased Images (URLs)
-                            <div class="mt-0.5 flex gap-1">
-                              <input class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-xs" 
-                                value={draftOptions[optIndex].rePhrasedOptionImage.join(', ')} 
-                                oninput={(e) => draftOptions[optIndex].rePhrasedOptionImage = (e.currentTarget as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean)} 
-                              />
-                              <label class="cursor-pointer rounded border border-[var(--pyq-paper-border)] px-2 py-1 text-xs {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
-                                <span title="Upload">↑</span>
-                                <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => draftOptions[optIndex].rePhrasedOptionImage = [...draftOptions[optIndex].rePhrasedOptionImage, url])} />
-                              </label>
+                          </div>
+
+                          <div class="mt-2">
+                            <label class="block text-[10px] font-semibold text-[var(--pyq-paper-meta)]">
+                              Re-phrased Option Images
+                            </label>
+                            <div class="mt-1 flex flex-col gap-1">
+                              {#each (opt.rePhrasedOptionImage || ['']) as img, imgIdx}
+                                <div class="flex gap-1 items-center">
+                                  <input class="flex-1 rounded border border-[var(--pyq-paper-border)] bg-transparent px-2 py-1 text-xs text-[var(--pyq-paper-title)]" 
+                                    value={img} 
+                                    oninput={(e) => {
+                                      const val = (e.currentTarget as HTMLInputElement).value;
+                                      const arr = [...(opt.rePhrasedOptionImage || [''])];
+                                      arr[imgIdx] = val;
+                                      draftOptions[optIndex].rePhrasedOptionImage = arr;
+                                    }}
+                                    placeholder="Image URL"
+                                  />
+                                  <label class="cursor-pointer rounded border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-2 py-1 text-[10px] font-semibold text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)] transition {isUploadingImage ? 'opacity-50 pointer-events-none' : ''}">
+                                    <span>Browse</span>
+                                    <input type="file" accept="image/*" class="hidden" onchange={(e) => handleImageUpload(e, (url) => {
+                                      const arr = [...(opt.rePhrasedOptionImage || [])];
+                                      arr[imgIdx] = url;
+                                      draftOptions[optIndex].rePhrasedOptionImage = arr;
+                                    })} />
+                                  </label>
+                                  {#if (opt.rePhrasedOptionImage || []).length > 1}
+                                    <button type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--pc-error-bg)] text-[var(--pc-error-text)] border border-[var(--pc-error-border)]" onclick={() => draftOptions[optIndex].rePhrasedOptionImage = (opt.rePhrasedOptionImage || []).filter((_: any, i: number) => i !== imgIdx)} title="Remove URL">✕</button>
+                                  {/if}
+                                </div>
+                              {/each}
+                              <button type="button" class="rounded border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] self-end w-fit px-2 py-1 text-[10px] font-semibold text-[var(--pyq-paper-meta)] hover:text-[var(--pyq-paper-title)]" onclick={() => draftOptions[optIndex].rePhrasedOptionImage = [...(opt.rePhrasedOptionImage || []), '']}>
+                                +
+                              </button>
                             </div>
-                            {#if draftOptions[optIndex].rePhrasedOptionImage.length > 0}
+                            {#if (opt.rePhrasedOptionImage || []).filter((i: any) => i).length > 0}
                               <div class="mt-1 flex flex-wrap gap-1">
-                                {#each draftOptions[optIndex].rePhrasedOptionImage as img, imgIdx}
+                                {#each (opt.rePhrasedOptionImage || []).filter((i: any) => i) as img, imgIdx}
                                   <div class="relative group rounded border border-[var(--pyq-paper-border)] bg-black/20 p-1">
                                     <img src={img} alt="preview" class="max-h-12 max-w-[100px] object-contain rounded" />
-                                    <button type="button" class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftOptions[optIndex].rePhrasedOptionImage = draftOptions[optIndex].rePhrasedOptionImage.filter((_, i) => i !== imgIdx)} title="Remove image">✕</button>
+                                    <button type="button" class="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] text-white opacity-0 shadow transition-opacity hover:bg-red-600 group-hover:opacity-100" onclick={() => draftOptions[optIndex].rePhrasedOptionImage = (opt.rePhrasedOptionImage || []).filter((val: any) => val !== img)} title="Remove image">✕</button>
                                   </div>
                                 {/each}
                               </div>
                             {/if}
-                          </label>
+                          </div>
                         </div>
                       </div>
                     {/each}
