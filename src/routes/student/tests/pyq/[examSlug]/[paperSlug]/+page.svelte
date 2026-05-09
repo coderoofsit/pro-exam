@@ -7,6 +7,15 @@ import { tick } from 'svelte';
   import MathText from '$lib/components/MathText.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
   import { questionPromptEnContent, uploadImage } from '$lib/api/questions';
+  import { 
+    BATCH_TEST_ATTEMPT_STORAGE_KEY, 
+    createTestAttempt, 
+    peelTestAttemptEnvelope, 
+    findAttemptIdInApiResponse,
+    persistBatchAttemptSessionFromCreateResponse 
+  } from '$lib/api/testAttempts';
+  import { ATTEMPT_START_ERROR_KEY } from '$lib/student/testAttempt/loadAttemptFromSession';
+  import { goto } from '$app/navigation';
 
   let { data }: { data: PageData } = $props();
 
@@ -22,6 +31,65 @@ import { tick } from 'svelte';
   let showOptions = $state(false);
   let openSolutionQuestionId = $state<string | null>(null);
   let isTabSwitching = $state(false);
+
+  let paperDetails = $state<any>(null);
+  let startingPaperId = $state<string | null>(null);
+  let startingTestError = $state<string | null>(null);
+
+  $effect(() => {
+    data.streamed.paperDetailsPromise.then(res => {
+      paperDetails = res;
+    });
+  });
+
+  async function handleStartPaperTest(details: any, options?: { testAttemptId?: string | null }) {
+    if (startingPaperId) return;
+    const testId = (details?.testId ?? '').trim();
+    if (!testId) {
+      startingTestError = 'Test id is missing for this paper.';
+      return;
+    }
+    startingTestError = null;
+    startingPaperId = details._id;
+    
+    // Clear any previous errors from session storage before starting
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(ATTEMPT_START_ERROR_KEY);
+      sessionStorage.removeItem(BATCH_TEST_ATTEMPT_STORAGE_KEY);
+    }
+
+    // Trigger the API in the background
+    createTestAttempt({ 
+      testId, 
+      batchId: null,
+      testAttemptId: options?.testAttemptId ?? null 
+    }).then(res => {
+      if (!res.success) {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, res.message || 'Could not start test');
+        }
+        return;
+      }
+      persistBatchAttemptSessionFromCreateResponse(res.data, {
+        testId,
+        batchId: '',
+        testName: details.name
+      });
+    }).catch(err => {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, err.message || 'An error occurred while starting the test');
+      }
+    });
+
+    // Redirect immediately
+    await goto(`/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=&prelaunch=1&testName=${encodeURIComponent(details.name)}`);
+  }
+
+  function handleViewAnalysis(details: any) {
+    const aid = (details?.testAttemptedId ?? '').trim();
+    if (!aid) return;
+    goto(`/student/tests/analysis/${encodeURIComponent(aid)}?testName=${encodeURIComponent(details.name)}`);
+  }
 
   $effect(() => {
     isLoading = true;
@@ -400,12 +468,49 @@ import { tick } from 'svelte';
 
 <div class="pyq-papers-page min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 pt-3 pb-8">
-    <div class="mb-4 flex flex-wrap items-center gap-3">
-      <BackButton label="Back" tone="pyq" />
-      <h1 class="text-xl font-bold text-[var(--pyq-accordion-title)]">
-        {examName} Paper Questions
-      </h1>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <BackButton label="Back" tone="pyq" />
+        <h1 class="text-xl font-bold text-[var(--pyq-accordion-title)]">
+          {examName} Paper Questions
+        </h1>
+      </div>
+
+      {#if paperDetails}
+        <div class="flex items-center gap-2">
+          {#if (paperDetails.testAttemptedId ?? '').trim()}
+            <button
+              type="button"
+              class="h-9 min-w-[7.25rem] rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-4 text-sm font-medium text-[var(--pyq-sort-btn-text)] transition-all hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)]"
+              onclick={() => handleViewAnalysis(paperDetails)}
+            >
+              View Analysis
+            </button>
+            <button
+              type="button"
+              class="h-9 min-w-[7.25rem] rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-4 text-sm font-medium text-[var(--pyq-sort-btn-text)] transition-all hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)]"
+              onclick={() => handleStartPaperTest(paperDetails, { testAttemptId: paperDetails.testAttemptedId })}
+            >
+              {startingPaperId === paperDetails._id ? 'Starting...' : 'Re-attempt'}
+            </button>
+          {:else if paperDetails.testId}
+             <button
+              type="button"
+              class="h-9 min-w-[7.25rem] rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-4 text-sm font-medium text-[var(--pyq-sort-btn-text)] transition-all hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)]"
+              onclick={() => handleStartPaperTest(paperDetails)}
+            >
+              {startingPaperId === paperDetails._id ? 'Starting...' : 'Start Test'}
+            </button>
+          {/if}
+        </div>
+      {/if}
     </div>
+
+    {#if startingTestError}
+      <div class="mb-4 rounded-xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]">
+        {startingTestError}
+      </div>
+    {/if}
 
     {#if isLoading}
       <div class="space-y-4">

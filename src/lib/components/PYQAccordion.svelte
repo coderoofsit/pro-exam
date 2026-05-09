@@ -8,8 +8,10 @@
     createTestAttempt,
     fetchTestAttemptById,
     findAttemptIdInApiResponse,
-    peelTestAttemptEnvelope
+    peelTestAttemptEnvelope,
+    persistBatchAttemptSessionFromCreateResponse
   } from '$lib/api/testAttempts';
+  import { ATTEMPT_START_ERROR_KEY } from '$lib/student/testAttempt/loadAttemptFromSession';
 
   // ── Types ──────────────────────────────────────────────────────────────
   export type PaperItem = {
@@ -91,7 +93,7 @@ async function viewPaper(paper: PaperItem) {
     }
   }
 
-  async function startPaperTest(paper: PaperItem) {
+  async function startPaperTest(paper: PaperItem, options?: { testAttemptId?: string | null }) {
     if (startingPaperId) return;
     const testId = (paper.testId ?? '').trim();
     if (!testId) {
@@ -100,69 +102,38 @@ async function viewPaper(paper: PaperItem) {
     }
     startPaperError = null;
     startingPaperId = paper._id;
-    try {
-      const res = await createTestAttempt({ testId, batchId: null });
-      if (!res.success) {
-        startPaperError = res.message || 'Could not start test';
-        return;
-      }
-      const body = res.data as Record<string, unknown> | undefined;
-      const peeled = peelTestAttemptEnvelope(body ?? res.data);
-      const payload =
-        peeled && typeof peeled === 'object' ? (peeled as Record<string, unknown>) : {};
-      const attemptIdResolved =
-        (typeof payload.attemptId === 'string' && payload.attemptId.trim()) ||
-        (typeof payload.attempt_id === 'string' && payload.attempt_id.trim()) ||
-        findAttemptIdInApiResponse(res.data);
-      const questions = Array.isArray(payload.questions) ? payload.questions : [];
-      if (!questions.length) {
-        startPaperError = 'No questions returned for this test.';
-        return;
-      }
-      try {
-        sessionStorage.setItem(
-          BATCH_TEST_ATTEMPT_STORAGE_KEY,
-          JSON.stringify({
-            testId,
-            batchId: '',
-            questions,
-            fetchedAt: Date.now(),
-            testName: paper.name,
-            attemptId: attemptIdResolved,
-            durationMinutes:
-              typeof payload.durationMinutes === 'number'
-                ? payload.durationMinutes
-                : typeof payload.duration_minutes === 'number'
-                  ? payload.duration_minutes
-                  : undefined,
-            questionCount:
-              typeof payload.questionCount === 'number'
-                ? payload.questionCount
-                : typeof payload.question_count === 'number'
-                  ? payload.question_count
-                  : undefined,
-            startedAt:
-              typeof payload.startedAt === 'string'
-                ? payload.startedAt
-                : typeof payload.started_at === 'string'
-                  ? payload.started_at
-                  : undefined,
-            expiresAt:
-              typeof payload.expiresAt === 'string'
-                ? payload.expiresAt
-                : typeof payload.expires_at === 'string'
-                  ? payload.expires_at
-                  : undefined
-          })
-        );
-      } catch {
-        startPaperError = 'Could not save test data in this browser.';
-        return;
-      }
-      await goto(`/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=&prelaunch=1&testName=${encodeURIComponent(paper.name)}`);
-    } finally {
-      startingPaperId = null;
+    
+    // Clear any previous errors from session storage before starting
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(ATTEMPT_START_ERROR_KEY);
+      sessionStorage.removeItem(BATCH_TEST_ATTEMPT_STORAGE_KEY);
     }
+
+    // Trigger the API in the background
+    createTestAttempt({ 
+      testId, 
+      batchId: null,
+      testAttemptId: options?.testAttemptId ?? null 
+    }).then(res => {
+      if (!res.success) {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, res.message || 'Could not start test');
+        }
+        return;
+      }
+      persistBatchAttemptSessionFromCreateResponse(res.data, {
+        testId,
+        batchId: '',
+        testName: paper.name
+      });
+    }).catch(err => {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(ATTEMPT_START_ERROR_KEY, err.message || 'An error occurred while starting the test');
+      }
+    });
+
+    // Redirect immediately
+    await goto(`/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=&prelaunch=1&testName=${encodeURIComponent(paper.name)}`);
   }
 
   // ── Derived ────────────────────────────────────────────────────────────
@@ -514,6 +485,14 @@ async function viewPaper(paper: PaperItem) {
       onclick={() => void viewAnalysis(paper)}
     >
       {viewingAnalysisId === paper._id ? 'Opening…' : 'View Analysis'}
+    </button>
+    <button
+      type="button"
+      class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
+      disabled={startingPaperId !== null || viewingAnalysisId !== null}
+      onclick={() => startPaperTest(paper, { testAttemptId: (paper.testAttemptedId ?? '').trim() })}
+    >
+      {startingPaperId === paper._id ? 'Starting…' : 'Re-attempt'}
     </button>
   {/if}
 </div>
