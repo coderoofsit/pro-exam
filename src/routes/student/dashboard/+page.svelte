@@ -109,7 +109,7 @@
 						image={(exam as any).image ?? null}
 						subtitle={getExamSub(exam) ?? undefined}
 						variant="dashboard"
-						href={`/student-exam/${getExamSlug(exam)}?pyq=true`}
+						href={`/exams/${getExamSlug(exam)}?pyq=true`}
 					/>
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
@@ -149,7 +149,7 @@
 						image={(exam as any).image ?? null}
 						subtitle={getExamSub(exam) ?? undefined}
 						variant="dashboard"
-						href={`/student-exam/${getExamSlug(exam)}`}
+						href={`/exams/${getExamSlug(exam)}`}
 					/>
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>

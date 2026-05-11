@@ -2,7 +2,7 @@ import { dev } from '$app/environment';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { AUTH_ROLE_STORAGE_KEY, AUTH_STORAGE_KEY } from '$lib/stores/auth';
 
-const PROTECTED_PREFIXES = ['/student/dashboard', '/student/settings'];
+const PROTECTED_PREFIXES = ['/student', '/teacher', '/institute'];
 
 type AccountRole = 'student' | 'tutor' | 'institute';
 
@@ -39,6 +39,16 @@ function isProtectedPath(pathname: string): boolean {
 	return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+function rolePrefix(role: AccountRole): '/student' | '/teacher' | '/institute' {
+	if (role === 'tutor') return '/teacher';
+	if (role === 'institute') return '/institute';
+	return '/student';
+}
+
+function isRoleNamespace(pathname: string): boolean {
+	return pathname.startsWith('/student') || pathname.startsWith('/teacher') || pathname.startsWith('/institute');
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(AUTH_STORAGE_KEY) ?? null;
 	const isAuthenticated = Boolean(token && token.trim().length > 0);
@@ -54,6 +64,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (!isAuthenticated && isProtectedPath(pathname)) {
 		throw redirect(302, '/');
+	}
+
+	if (isAuthenticated && isRoleNamespace(pathname)) {
+		const allowedPrefix = rolePrefix(role);
+		if (!pathname.startsWith(allowedPrefix)) {
+			throw redirect(302, roleDashboardPath(role));
+		}
 	}
 
 	const response = await resolve(event);

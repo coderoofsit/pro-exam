@@ -44,7 +44,10 @@
   import { generateSlug } from '$lib/utils/generateSlug';
   import { page } from '$app/state';
 
-  let { data }: { data: PageData } = $props();
+  let {
+    data,
+    basePath = '/student'
+  }: { data: PageData; basePath?: string } = $props();
 
   // Handle streamed data
   let topicsResponse = $state<any>(null);
@@ -604,7 +607,7 @@
     successModalOpen = false;
     createdTestId = null;
     successStartError = null;
-    void goto('/student/tests');
+    void goto(`${basePath}/tests`);
   }
 
   async function handleSuccessStartTest() {
@@ -635,7 +638,7 @@
       successModalOpen = false;
       createdTestId = null;
       await goto(
-        `/student/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}&prelaunch=1&testName=${encodeURIComponent(examName)}`
+        `${basePath}/test-attempt?testId=${encodeURIComponent(testId)}&batchId=${encodeURIComponent(batchIdStr)}&prelaunch=1&testName=${encodeURIComponent(examName)}`
       );
     } finally {
       startingOwnSuccessTest = false;
@@ -655,7 +658,7 @@
         label="Back"
         className="ml-2"
         useHistory={false}
-        onClick={() => void goto('/student/tests/own?mode=manual')}
+        onClick={() => void goto(`${basePath}/tests/own?mode=manual`)}
       />
     </div>
     {#if isLoading}
@@ -702,6 +705,7 @@
         {examSlug}
         examId={examIdFromPage}
         boardId={boardIdFromPage}
+        {basePath}
       />
       <footer class="own-bottom-bar" aria-label="Selection summary">
         {#if createTestError}

@@ -30,7 +30,13 @@ let {
 
 	const currentPage = $derived(data.currentPage);
 	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
-	const examBasePath = $derived(basePath === '/student/exams' ? undefined : basePath);
+	const examBasePath = $derived(
+		basePath === '/student/exams' || 
+		basePath === '/institute/exams' || 
+		basePath === '/teacher/exams' 
+			? undefined 
+			: basePath
+	);
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -46,6 +52,7 @@ let {
 
 	$effect(() => {
 		if (!browser) return;
+		sessionStorage.setItem('lastExamsPath', basePath);
 		data.streamed.examsData.then((examsData: ExamsData) => {
 			if (!examsData?.data.length) return;
 			if (hasCurrentPage) return;

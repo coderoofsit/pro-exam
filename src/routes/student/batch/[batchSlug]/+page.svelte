@@ -449,7 +449,7 @@
                       {#if t.attempted}
                         <a
                           href={viewAnalysisHref(t)}
-                          class="btn-cta-subscription-outline sm:flex-initial sm:min-w-[8.5rem] flex-1"
+                          class="flex items-center justify-center gap-2 h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80">
                             <path

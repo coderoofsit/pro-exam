@@ -32,7 +32,7 @@ let {
 			const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
 			return `${normalizedBasePath}/${encodeURIComponent(slug)}`;
 		}
-		return pyq ? `/student-exam/${slug}?pyq=true` : `/student-exam/${slug}`;
+		return pyq ? `/exams/${slug}?pyq=true` : `/exams/${slug}`;
 	}
 
 	function getExamNameEn(exam: any): string {

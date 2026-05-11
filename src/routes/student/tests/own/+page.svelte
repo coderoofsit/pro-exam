@@ -66,7 +66,7 @@
         <BackButton
           label="Back"
           useHistory={false}
-          onClick={() => void goto('/student/tests/own')}
+          onClick={() => void goto(`${basePath}/tests/own`)}
         />
       </div>
 
@@ -125,7 +125,7 @@
               variant="dashboard"
               loading={openingExamId === item._id}
               onNavigate={(e) => void openExam(item, e)}
-              href={'/student/tests/own/' +
+              href={`${basePath}/tests/own/` +
                 (item?.slug ?? '') +
                 (creationMode ? `?mode=${creationMode}` : '')}
             />

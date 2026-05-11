@@ -3315,8 +3315,9 @@ a.student-batch-card:hover {
 
 /* Dashboard-only mobile tightening: 3 cards per row, smaller boxes. */
 @media (max-width: 639px) {
-  section[aria-labelledby="pyq-heading"] > .grid,
-  section[aria-labelledby="qbc-heading"] > .grid {
+
+  section[aria-labelledby="pyq-heading"]>.grid,
+  section[aria-labelledby="qbc-heading"]>.grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
   }
@@ -3546,11 +3547,13 @@ a.student-batch-card:hover {
   border-color: var(--ta-nav-btn-border);
   color: var(--ta-nav-btn-text);
 }
+
 .exam-btn--ta-nav:hover {
   background: var(--ta-nav-btn-hover-bg);
   border-color: var(--ta-nav-btn-hover-border);
   color: var(--ta-nav-btn-hover-text);
 }
+
 .exam-btn--ta-nav:disabled,
 .exam-btn--ta-nav:disabled:hover {
   background: var(--ta-nav-btn-disabled-bg);
@@ -3564,6 +3567,7 @@ a.student-batch-card:hover {
   border-color: var(--ta-mark-btn-border);
   color: var(--ta-mark-btn-text);
 }
+
 .exam-btn--ta-mark:hover {
   background: var(--ta-mark-btn-hover-bg);
   border-color: var(--ta-mark-btn-hover-border);
@@ -3576,9 +3580,11 @@ a.student-batch-card:hover {
   color: var(--ta-nav-btn-primary-text);
   box-shadow: var(--ta-nav-btn-primary-shadow);
 }
+
 .exam-btn--ta-primary:hover {
   box-shadow: var(--ta-nav-btn-primary-hover-shadow, 0 6px 24px rgba(79, 126, 255, 0.45));
 }
+
 .exam-btn--ta-primary:disabled,
 .exam-btn--ta-primary:disabled:hover {
   border-color: var(--ta-nav-btn-primary-disabled-border, transparent);
@@ -3594,16 +3600,18 @@ a.student-batch-card:hover {
   color: var(--ta-submit-text);
   box-shadow: var(--ta-submit-shadow);
 }
+
 .exam-btn--ta-submit:hover {
   box-shadow: var(--ta-submit-hover-shadow);
 }
+
 .exam-btn--ta-submit:disabled,
 .exam-btn--ta-submit:disabled:hover {
   opacity: 0.7;
   box-shadow: none;
 }
 
-/* Subject/chapter list cards on /student-exam routes use exam-box theme. */
+/* Subject/chapter list cards on /exams routes use exam-box theme. */
 .exam-route-card {
   border: 1px solid var(--dash-exam-card-border);
   background: var(--sh-exam-card-bg);
@@ -5311,6 +5319,7 @@ body.student-exam-questions-lock-scroll {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -5357,10 +5366,12 @@ body.student-exam-questions-lock-scroll {
 }
 
 @keyframes skeletonPulse {
+
   0%,
   100% {
     opacity: 0.8;
   }
+
   50% {
     opacity: 0.3;
   }

@@ -5,4 +5,4 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<StudentOwnChapterPage {data} />
+<StudentOwnChapterPage {data} basePath="/teacher" />

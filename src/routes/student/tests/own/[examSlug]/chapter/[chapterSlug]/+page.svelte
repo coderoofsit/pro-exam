@@ -8,7 +8,10 @@
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
 
-  let { data }: { data: PageData } = $props();
+  let {
+    data,
+    basePath = "/student",
+  }: { data: PageData; basePath?: string } = $props();
 
   let topicOptions = $state<TopicRow[]>(data.topics ?? []);
   let topicsLoading = $state(false);
@@ -199,7 +202,7 @@
     if (t.length) params.set("topic", t.join(","));
     if (k.length) params.set("kind", k.join(","));
     if (d.length) params.set("difficulty", d.join(","));
-    return `/student/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(data.chapterSlug)}?${params.toString()}`;
+    return `${basePath}/tests/own/${encodeURIComponent(data.examSlug)}/chapter/${encodeURIComponent(data.chapterSlug)}?${params.toString()}`;
   };
 
   function toggleFilterPanel() {
@@ -275,14 +278,14 @@
   }
 
   function resumeTestCreationUrl(): string {
-    if (!browser) return `/student/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`;
+    if (!browser) return `${basePath}/tests/own/${encodeURIComponent(data.examSlug)}?mode=manual`;
     const params = new URLSearchParams(window.location.search);
     const q = new URLSearchParams({ mode: "manual" });
     const subject = String(params.get("subject") ?? "").trim();
     const units = String(params.get("units") ?? "").trim();
     if (subject) q.set("subject", subject);
     if (units) q.set("units", units);
-    return `/student/tests/own/${encodeURIComponent(data.examSlug)}?${q.toString()}`;
+    return `${basePath}/tests/own/${encodeURIComponent(data.examSlug)}?${q.toString()}`;
   }
 
 </script>

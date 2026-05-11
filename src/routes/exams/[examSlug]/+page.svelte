@@ -10,7 +10,7 @@
 	import {
 		buildChaptersBySubjectFromGrouped,
 		buildSubjectsFromGrouped,
-	} from "$lib/student-exam/groupedExamData";
+	} from "$lib/exams/groupedExamData";
 	import BackButton from "$lib/components/BackButton.svelte";
 
 	type SubjectNavRow = {
@@ -57,7 +57,11 @@
 		const referrer = document.referrer;
 		const isFromExamsOrDashboard =
 			referrer.includes("/student/exams") ||
-			referrer.includes("/student/dashboard");
+			referrer.includes("/student/dashboard") ||
+			referrer.includes("/teacher/exams") ||
+			referrer.includes("/teacher/dashboard") ||
+			referrer.includes("/institute/exams") ||
+			referrer.includes("/institute/dashboard");
 		if (isFromExamsOrDashboard) {
 			sessionStorage.removeItem(`exam-${examSlug}-subject`);
 		}
@@ -194,8 +198,7 @@
 					<BackButton
 						label="Back"
 						className="self-center mt-1"
-						useHistory={false}
-						onClick={() => void goto("/student/exams", { replaceState: true })}
+						fallback={browser ? (sessionStorage.getItem('lastExamsPath') || '/student/exams') : '/student/exams'}
 					/>
 					<h1 class="text-2xl font-bold leading-none md:text-3xl">
 						{examTitle}
@@ -315,7 +318,7 @@
 							>
 								{#each displayChapters as { chapter, groupName } (chapter._id)}
 									<a
-										href={`/student-exam/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
+										href={`/exams/${examSlug}/${chapter._id}?page=1${pyqParam === 'true' ? '&pyq=true' : ''}`}
 										class="exam-route-card group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] p-3 text-left text-[var(--sh-tool-card-text)] md:min-h-[88px] md:justify-between"
 									>
 										

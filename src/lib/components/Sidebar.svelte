@@ -244,7 +244,7 @@
   const isDark = $derived($themeStore === "dark");
   const isAutoCollapseRoute = $derived(
     /^\/student\/tests\/own\/[^/]+/.test(page.url.pathname) ||
-    (/^\/student-exam/.test(page.url.pathname) && page.url.searchParams.get("view") === "chapters")
+    (/^\/exams/.test(page.url.pathname) && page.url.searchParams.get("view") === "chapters")
   );
   const isCollapsed = $derived(sidebarCollapsed);
 

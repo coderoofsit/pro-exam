@@ -23,9 +23,10 @@
     examSlug: string;
     examId: string;
     boardId: string;
+    basePath?: string;
   };
 
-  let { groupedSubjects, examSlug, examId, boardId }: Props = $props();
+  let { groupedSubjects, examSlug, examId, boardId, basePath = '/student' }: Props = $props();
 
   function getInitialState() {
     if (!groupedSubjects || !groupedSubjects.length) return { subject: '', units: new Set<string>() };
@@ -258,7 +259,7 @@
     const q = new URLSearchParams({ mode: 'manual', examId, boardId, subject: openSubjectSlug });
     if (openUnitIds.size > 0) q.set('units', Array.from(openUnitIds).join(','));
     if (topicSlug) q.set('topic', topicSlug);
-    return `/student/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chapterSlug)}?${q}`;
+    return `${basePath}/tests/own/${encodeURIComponent(examSlug)}/chapter/${encodeURIComponent(chapterSlug)}?${q}`;
   }
 
   async function openChapter(chapterSlug: string, topicSlug: string, topicId: string) {

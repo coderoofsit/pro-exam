@@ -469,7 +469,7 @@
 	});
 
 	const chapterBaseUrl = (chapterParamOverride?: string) =>
-		`/student-exam/${data.examSlug}/${encodeURIComponent(chapterParamOverride ?? data.chapterParam)}`;
+		`/exams/${data.examSlug}/${encodeURIComponent(chapterParamOverride ?? data.chapterParam)}`;
 
 	const activeFiltersQuery = (opts?: { page?: number }) => {
 		const params = new URLSearchParams();
@@ -746,10 +746,7 @@
 								{:else}
 									<BackButton
 										label="Back"
-										useHistory={false}
-										onClick={() => {
-											void goto(`/student-exam/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`);
-										}}
+										fallback={`/exams/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`}
 									/>
 								{/if}
 								{#if displayPaginationMeta}

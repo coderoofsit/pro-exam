@@ -149,7 +149,7 @@ let {
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{#each allChapters as { chapter, groupName } (chapter._id)}
 						<a
-							href={chapterQuestionsPath(examSlug ?? '', subjectSlug ?? '', chapter)}
+							href={chapterQuestionsPath(examSlug ?? '', subjectSlug ?? '', chapter, basePath)}
 							class="group flex flex-col rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-5 text-left text-[var(--page-card-heading)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--page-link)] hover:shadow-md"
 						>
 							<h2 class="text-base font-semibold leading-snug">{groupName} — {chapter.order}. {chapter.name?.en ?? chapter.slug}</h2>
