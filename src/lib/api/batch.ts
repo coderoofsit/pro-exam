@@ -187,6 +187,7 @@ export async function fetchBatchTests(
 
 export type UpdateBatchAssignmentsBody = {
 	addStudents: string[];
+	addTeachers?: string[];
 	addTests: Array<{
 		id: string;
 		startAt: string | null;

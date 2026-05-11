@@ -27,11 +27,18 @@
   type Role = "student" | "tutor" | "institute";
   type SidebarIcon = "dashboard" | "exams" | "tests" | "batch" | "subscription";
 
+  type SidebarSubItem = {
+    label: string;
+    href: string;
+    icon?: "students" | "teachers" | "relations";
+  };
+
   type SidebarItem = {
     id: string;
     label: string;
-    href: string;
+    href?: string;
     icon: SidebarIcon;
+    children?: SidebarSubItem[];
   };
 
   let { role, children }: { role: Role; children?: import("svelte").Snippet } =
@@ -57,6 +64,7 @@
   let membershipFetchCompleted = $state(false);
   /** Tracks route transitions so we auto-collapse nav once when entering “create own test” exam flow. */
   let wasOwnTestExamRoute = $state(false);
+  let openGroups = $state<Record<string, boolean>>({});
 
   // -- Phone verification modal --
   let phoneModal = $state({ open: false, phone: '', step: 'input' as 'input' | 'otp', otp: '', loading: false, error: '', success: '' });
@@ -212,6 +220,16 @@
         label: "Home",
         href: "/institute/dashboard",
         icon: "dashboard",
+      },
+      {
+        id: "sidebar-user-management",
+        label: "User Managements",
+        icon: "batch",
+        children: [
+          { label: "Students Management", href: "/institute/users/students", icon: "students" },
+          { label: "Teachers Management", href: "/institute/users/teachers", icon: "teachers" },
+          { label: "Teacher & Student Relations", href: "/institute/users/relations", icon: "relations" },
+        ],
       },
       {
         id: "sidebar-exams",
@@ -854,180 +872,166 @@
       class="flex-1 min-h-0 overflow-y-auto px-2.5 py-2.5 flex flex-col gap-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {#each sidebarNavItems as navItem}
-        {@const active = isActive(navItem.href)}
-        <a
-          id={navItem.id}
-          href={navItem.href}
-          onmouseenter={() => warmSidebarRoute(navItem.href)}
-          onfocus={() => warmSidebarRoute(navItem.href)}
-          onclick={(event) => void handleSidebarNavClick(event, navItem.href)}
-          title={isCollapsed ? navItem.label : undefined}
-          aria-current={active ? "page" : undefined}
-          class="
-            relative flex items-center gap-3 px-3 py-2.5 rounded-xl no-underline whitespace-nowrap
-            text-[length:var(--sb-font-size-nav)] font-[var(--sb-font-nav)]
-            transition-[background,color,box-shadow] duration-150
-            {active
-            ? 'bg-[var(--sb-nav-active-bg)] text-[var(--sb-nav-active-text)] shadow-[var(--sb-nav-active-glow)]'
-            : 'text-[var(--sb-nav-text)] hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]'}
-          "
-        >
-          {#if active}
+        {#if navItem.children}
+          {@const isGroupActive = navItem.children.some(sub => isActive(sub.href))}
+          {@const isOpen = openGroups[navItem.id] || (isGroupActive && openGroups[navItem.id] !== false)}
+          <div class="flex flex-col gap-0.5">
+            <button
+              type="button"
+              id={navItem.id}
+              onclick={() => openGroups[navItem.id] = !isOpen}
+              title={isCollapsed ? navItem.label : undefined}
+              class="
+                relative flex items-center gap-3 px-3 py-2.5 rounded-xl border-none bg-transparent cursor-pointer
+                text-[length:var(--sb-font-size-nav)] font-[var(--sb-font-nav)] text-[var(--sb-nav-text)]
+                transition-[background,color] duration-150
+                hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]
+              "
+            >
+              <span class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-[var(--sb-nav-icon)]">
+                {#if navItem.icon === "batch"}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="1.75" />
+                    <path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                    <circle cx="17" cy="7" r="2.25" stroke="currentColor" stroke-width="1.75" />
+                    <path d="M21 20c0-2.485-1.79-4.5-4-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                  </svg>
+                {/if}
+              </span>
+
+              {#if !isCollapsed}
+                <span class="flex-1 overflow-hidden text-ellipsis text-left">{navItem.label}</span>
+                <span class="flex-shrink-0 transition-transform duration-200 {isOpen ? 'rotate-180' : ''}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+              {/if}
+            </button>
+
+            {#if isOpen && !isCollapsed}
+              <div class="flex flex-col gap-0.5 ml-8 mt-0.5 border-l border-[var(--sb-divider)] pl-2">
+                {#each navItem.children as sub}
+                  {@const subActive = isActive(sub.href)}
+                  <a
+                    href={sub.href}
+                    onmouseenter={() => warmSidebarRoute(sub.href)}
+                    onfocus={() => warmSidebarRoute(sub.href)}
+                    onclick={(event) => void handleSidebarNavClick(event, sub.href)}
+                    class="
+                      flex items-center gap-2.5 px-3 py-2 rounded-lg no-underline whitespace-nowrap
+                      text-[13px] font-medium transition-colors duration-150
+                      {subActive 
+                        ? 'text-[var(--sb-nav-active-text)] font-semibold' 
+                        : 'text-[var(--sb-nav-text)] opacity-80 hover:opacity-100 hover:text-[var(--sb-nav-hover-text)]'}
+                    "
+                  >
+                    {#if sub.icon}
+                      <span class="flex-shrink-0 w-4 h-4 opacity-70">
+                        {#if sub.icon === "students"}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                          </svg>
+                        {:else if sub.icon === "teachers"}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <polyline points="17 11 19 13 23 9"></polyline>
+                          </svg>
+                        {:else if sub.icon === "relations"}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full">
+                            <path d="M13.828 10.172a4 4 0 0 0-5.656 0l-4 4a4 4 0 1 0 5.656 5.656l1.102-1.101"></path>
+                            <path d="M10.172 13.828a4 4 0 0 0 5.656 0l4-4a4 4 0 1 0-5.656-5.656l-1.102 1.101"></path>
+                          </svg>
+                        {/if}
+                      </span>
+                    {/if}
+                    {sub.label}
+                  </a>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {:else}
+          {@const active = navItem.href ? isActive(navItem.href) : false}
+          <a
+            id={navItem.id}
+            href={navItem.href}
+            onmouseenter={() => navItem.href && warmSidebarRoute(navItem.href)}
+            onfocus={() => navItem.href && warmSidebarRoute(navItem.href)}
+            onclick={(event) => navItem.href && void handleSidebarNavClick(event, navItem.href)}
+            title={isCollapsed ? navItem.label : undefined}
+            aria-current={active ? "page" : undefined}
+            class="
+              relative flex items-center gap-3 px-3 py-2.5 rounded-xl no-underline whitespace-nowrap
+              text-[length:var(--sb-font-size-nav)] font-[var(--sb-font-nav)]
+              transition-[background,color,box-shadow] duration-150
+              {active
+              ? 'bg-[var(--sb-nav-active-bg)] text-[var(--sb-nav-active-text)] shadow-[var(--sb-nav-active-glow)]'
+              : 'text-[var(--sb-nav-text)] hover:bg-[var(--sb-nav-hover-bg)] hover:text-[var(--sb-nav-hover-text)]'}
+            "
+          >
+            {#if active}
+              <span
+                class="
+                absolute left-0 top-1/2 -translate-y-1/2
+                w-[3px] h-5 rounded-r-full
+                bg-[var(--sb-nav-active-indicator)]
+                shadow-[0_0_8px_var(--sb-nav-active-indicator)]
+              "
+              ></span>
+            {/if}
+
             <span
               class="
-              absolute left-0 top-1/2 -translate-y-1/2
-              w-[3px] h-5 rounded-r-full
-              bg-[var(--sb-nav-active-indicator)]
-              shadow-[0_0_8px_var(--sb-nav-active-indicator)]
+              flex-shrink-0 w-5 h-5 flex items-center justify-center
+              {active
+                ? 'text-[var(--sb-nav-active-icon)]'
+                : 'text-[var(--sb-nav-icon)]'}
             "
-            ></span>
-          {/if}
+            >
+              {#if navItem.icon === "dashboard"}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" stroke-width="1.75" />
+                  <rect x="13" y="3" width="8" height="5" rx="2" stroke="currentColor" stroke-width="1.75" />
+                  <rect x="13" y="12" width="8" height="9" rx="2" stroke="currentColor" stroke-width="1.75" />
+                  <rect x="3" y="15" width="8" height="6" rx="2" stroke="currentColor" stroke-width="1.75" />
+                </svg>
+              {:else if navItem.icon === "exams"}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                  <rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.75" />
+                  <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+              {:else if navItem.icon === "tests"}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M16 3l2 2-6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M18 5l2-2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+              {:else if navItem.icon === "batch"}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="1.75" />
+                  <path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                  <circle cx="17" cy="7" r="2.25" stroke="currentColor" stroke-width="1.75" />
+                  <path d="M21 20c0-2.485-1.79-4.5-4-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+              {:else if navItem.icon === "subscription"}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" />
+                </svg>
+              {/if}
+            </span>
 
-          <span
-            class="
-            flex-shrink-0 w-5 h-5 flex items-center justify-center
-            {active
-              ? 'text-[var(--sb-nav-active-icon)]'
-              : 'text-[var(--sb-nav-icon)]'}
-          "
-          >
-            {#if navItem.icon === "dashboard"}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <rect
-                  x="3"
-                  y="3"
-                  width="8"
-                  height="8"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-                <rect
-                  x="13"
-                  y="3"
-                  width="8"
-                  height="5"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-                <rect
-                  x="13"
-                  y="12"
-                  width="8"
-                  height="9"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-                <rect
-                  x="3"
-                  y="15"
-                  width="8"
-                  height="6"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-              </svg>
-            {:else if navItem.icon === "exams"}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                />
-                <rect
-                  x="9"
-                  y="3"
-                  width="6"
-                  height="4"
-                  rx="1.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-                <path
-                  d="M9 12h6M9 16h4"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                />
-              </svg>
-            {:else if navItem.icon === "tests"}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M9 12l2 2 4-4"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M16 3l2 2-6 6"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M18 5l2-2"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                />
-              </svg>
-            {:else if navItem.icon === "batch"}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="9"
-                  cy="7"
-                  r="3"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-                <path
-                  d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                />
-                <circle
-                  cx="17"
-                  cy="7"
-                  r="2.25"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                />
-                <path
-                  d="M21 20c0-2.485-1.79-4.5-4-4.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                />
-              </svg>
-            {:else if navItem.icon === "subscription"}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2Z"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linejoin="round"
-                />
-              </svg>
+            {#if !isCollapsed}
+              <span class="overflow-hidden text-ellipsis">{navItem.label}</span>
             {/if}
-          </span>
-
-          {#if !isCollapsed}
-            <span class="overflow-hidden text-ellipsis">{navItem.label}</span>
-          {/if}
-        </a>
+          </a>
+        {/if}
       {/each}
     </nav>
 

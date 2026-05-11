@@ -8,7 +8,7 @@
   import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
   import { debounce } from '$lib/utils/debounce';
   import type { PageData } from './$types';
-  import { fetchBatchStudents, type BatchStudentItem } from '$lib/api/teacher';
+  import { fetchBatchStudents, fetchBatchTeachers, type BatchStudentItem } from '$lib/api/teacher';
   import {
     createBatch,
     fetchBatchTests,
@@ -24,7 +24,7 @@
   let searchInput = $state(data.search ?? '');
   let createBatchModalOpen = $state(false);
   let createBatchStep = $state<1 | 2>(1);
-  let step2Tab = $state<'tests' | 'students'>('tests');
+  let step2Tab = $state<'tests' | 'students' | 'teachers'>('tests');
   let createdBatchId = $state<string | null>(null);
   let editingBatchId = $state<string | null>(null);
   let batchName = $state('');
@@ -58,6 +58,12 @@
   let step2StudentsPage = $state(1);
   let step2StudentsLastPage = $state(1);
   let selectedStudentIds = $state<string[]>([]);
+  let step2TeachersLoading = $state(false);
+  let step2TeachersLoadingMore = $state(false);
+  let step2Teachers = $state<BatchStudentItem[]>([]);
+  let step2TeachersPage = $state(1);
+  let step2TeachersLastPage = $state(1);
+  let selectedTeacherIds = $state<string[]>([]);
   let step2PrefetchStarted = $state(false);
 
   $effect(() => {
@@ -165,14 +171,38 @@
     selectedStudentIds = [...selectedStudentIds, userId];
     createBatchError = null;
   }
+
   function toggleAllStudents(checked: boolean) {
     const visibleIds = step2Students.map((u) => u._id);
     if (checked) {
-      const merged = Array.from(new Set([...selectedStudentIds, ...visibleIds]));
-      selectedStudentIds = merged;
+      selectedStudentIds = Array.from(new Set([...selectedStudentIds, ...visibleIds]));
       return;
     }
     selectedStudentIds = selectedStudentIds.filter((id) => !visibleIds.includes(id));
+  }
+
+  function isTeacherSelected(userId: string) {
+    return selectedTeacherIds.includes(userId);
+  }
+
+  function toggleTeacher(userId: string) {
+    const alreadySelected = isTeacherSelected(userId);
+    if (alreadySelected) {
+      selectedTeacherIds = selectedTeacherIds.filter((id) => id !== userId);
+      createBatchError = null;
+      return;
+    }
+    selectedTeacherIds = [...selectedTeacherIds, userId];
+    createBatchError = null;
+  }
+
+  function toggleAllTeachers(checked: boolean) {
+    const visibleIds = step2Teachers.map((u) => u._id);
+    if (checked) {
+      selectedTeacherIds = Array.from(new Set([...selectedTeacherIds, ...visibleIds]));
+      return;
+    }
+    selectedTeacherIds = selectedTeacherIds.filter((id) => !visibleIds.includes(id));
   }
 
   async function loadStep2Data() {
@@ -201,11 +231,11 @@
 
     step2StudentsLoading = true;
     try {
-      const res = await fetchBatchStudents({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
-      if (res.success && res.data?.data?.data) {
-        step2Students = res.data.data.data;
-        step2StudentsPage = res.data.data.currentPage ?? 1;
-        step2StudentsLastPage = res.data.data.lastPage ?? 1;
+      const studRes = await fetchBatchStudents({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
+      if (studRes.success && studRes.data?.data?.data) {
+        step2Students = studRes.data.data.data;
+        step2StudentsPage = studRes.data.data.currentPage ?? 1;
+        step2StudentsLastPage = studRes.data.data.lastPage ?? 1;
       } else {
         step2Students = [];
         step2StudentsPage = 1;
@@ -213,6 +243,22 @@
       }
     } finally {
       step2StudentsLoading = false;
+    }
+
+    step2TeachersLoading = true;
+    try {
+      const teachRes = await fetchBatchTeachers({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
+      if (teachRes.success && teachRes.data?.data) {
+        step2Teachers = teachRes.data.data;
+        step2TeachersPage = teachRes.data.currentPage ?? 1;
+        step2TeachersLastPage = teachRes.data.lastPage ?? 1;
+      } else {
+        step2Teachers = [];
+        step2TeachersPage = 1;
+        step2TeachersLastPage = 1;
+      }
+    } finally {
+      step2TeachersLoading = false;
     }
   }
 
@@ -242,12 +288,27 @@
       const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
       if (!res.success || !res.data?.data?.data) return;
       const nextStudents = Array.isArray(res.data.data.data) ? res.data.data.data : [];
-      const mergedStudents = [...step2Students, ...nextStudents];
-      step2Students = [...mergedStudents];
+      step2Students = [...step2Students, ...nextStudents];
       step2StudentsPage = res.data.data.currentPage ?? nextPage;
       step2StudentsLastPage = res.data.data.lastPage ?? nextPage;
     } finally {
       step2StudentsLoadingMore = false;
+    }
+  }
+
+  async function loadMoreStep2Teachers() {
+    if (step2TeachersLoading || step2TeachersLoadingMore || step2TeachersPage >= step2TeachersLastPage) return;
+    step2TeachersLoadingMore = true;
+    try {
+      const nextPage = step2TeachersPage + 1;
+      const res = await fetchBatchTeachers({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
+      if (!res.success || !res.data?.data) return;
+      const nextTeachers = Array.isArray(res.data.data) ? res.data.data : [];
+      step2Teachers = [...step2Teachers, ...nextTeachers];
+      step2TeachersPage = res.data.currentPage ?? nextPage;
+      step2TeachersLastPage = res.data.lastPage ?? nextPage;
+    } finally {
+      step2TeachersLoadingMore = false;
     }
   }
 
@@ -288,6 +349,7 @@
     createBatchSubmitting = false;
     selectedTestIds = [];
     selectedStudentIds = [];
+    selectedTeacherIds = [];
     prefetchStep2Data();
   }
 
@@ -308,6 +370,7 @@
     createBatchSubmitting = false;
     selectedTestIds = [];
     selectedStudentIds = [];
+    selectedTeacherIds = [];
     step2PrefetchStarted = false;
     step2TestsLoaded = false;
     step2Tests = [];
@@ -317,6 +380,9 @@
     step2Students = [];
     step2StudentsPage = 1;
     step2StudentsLastPage = 1;
+    step2Teachers = [];
+    step2TeachersPage = 1;
+    step2TeachersLastPage = 1;
     createBatchModalOpen = true;
     prefetchStep2Data();
   }
@@ -413,6 +479,7 @@
         createdBatchId,
         {
           addStudents: selectedStudentIds,
+          addTeachers: selectedTeacherIds,
           addTests: selectedTestIds.map((id) => {
             const t = step2Tests.find((x) => x._id === id);
             return {
@@ -625,11 +692,16 @@
   testsError={step2TestsError}
   tests={step2Tests}
   selectedTestIds={selectedTestIds}
+  students={step2Students}
+  selectedStudentIds={selectedStudentIds}
   studentsLoading={step2StudentsLoading}
   studentsLoadingMore={step2StudentsLoadingMore}
   studentsHasMore={step2StudentsPage < step2StudentsLastPage}
-  students={step2Students}
-  selectedStudentIds={selectedStudentIds}
+  teachersLoading={step2TeachersLoading}
+  teachersLoadingMore={step2TeachersLoadingMore}
+  teachersHasMore={step2TeachersPage < step2TeachersLastPage}
+  teachers={step2Teachers}
+  selectedTeacherIds={selectedTeacherIds}
   onClose={closeCreateBatchModal}
   onSubmitStep1={() => void onCreateBatchClick()}
   onBack={() => {
@@ -640,14 +712,20 @@
   onSwitchTab={(tab) => (step2Tab = tab)}
   onToggleTest={toggleTest}
   onToggleStudent={toggleStudent}
+  onToggleTeacher={toggleTeacher}
   onToggleAllTests={toggleAllTests}
   onToggleAllStudents={toggleAllStudents}
+  onToggleAllTeachers={toggleAllTeachers}
   onLoadMoreTests={() => void loadMoreStep2Tests()}
   onLoadMoreStudents={() => void loadMoreStep2Students()}
+  onLoadMoreTeachers={() => void loadMoreStep2Teachers()}
   isReady={isCreateBatchReady}
   {testLabel}
   {testStatusLabel}
   {studentLabel}
+  teacherLabel={studentLabel}
   isTestSelected={isTestSelected}
   isStudentSelected={isStudentSelected}
+  isTeacherSelected={isTeacherSelected}
+  isInstitute={true}
 />

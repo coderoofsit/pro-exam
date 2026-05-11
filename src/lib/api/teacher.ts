@@ -52,3 +52,34 @@ export async function fetchBatchStudents(
 	});
 }
 
+export type BatchTeachersResponse = {
+	success: true;
+	statusCode: number;
+	message: string;
+	data: {
+		mode: string;
+		currentPage: number;
+		lastPage: number;
+		total: number;
+		data: BatchStudentItem[]; // Reusing the same item structure as they share common fields
+	};
+};
+
+export async function fetchBatchTeachers(
+	params: FetchBatchStudentsParams,
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+) {
+	const q = new URLSearchParams({
+		page: String(Math.max(1, params.page)),
+		limit: String(Math.min(100, Math.max(1, params.limit)))
+	});
+	q.set('_ts', String(Date.now()));
+
+	return apiRequest<BatchTeachersResponse>({
+		endpoint: `/api/v1/batch/teachers?${q.toString()}`,
+		method: 'GET',
+		fetch: fetchFn,
+		token: options?.token ?? null
+	});
+}

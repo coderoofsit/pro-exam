@@ -21,7 +21,7 @@
     open: boolean;
     modeLabel: 'Create' | 'Edit';
     step: 1 | 2;
-    tab: 'tests' | 'students';
+    tab: 'tests' | 'students' | 'teachers';
     batchName: string;
     startDate: string;
     startTime: string;
@@ -43,11 +43,17 @@
     studentsHasMore: boolean;
     students: ModalStudentItem[];
     selectedStudentIds: string[];
-    onClose: () => void;
-    onSubmitStep1: () => void;
-    onBack: () => void;
-    onContinue: () => void;
-    onSwitchTab: (tab: 'tests' | 'students') => void;
+    teachersLoading?: boolean;
+    teachersLoadingMore?: boolean;
+    teachersHasMore?: boolean;
+    teachers?: ModalStudentItem[];
+    selectedTeacherIds?: string[];
+    onToggleTeacher?: (teacherId: string) => void;
+    onToggleAllTeachers?: (checked: boolean) => void;
+    onLoadMoreTeachers?: () => void;
+    isTeacherSelected?: (teacherId: string) => boolean;
+    teacherLabel?: (u: ModalStudentItem) => string;
+    onSwitchTab: (tab: 'tests' | 'students' | 'teachers') => void;
     onToggleTest: (testId: string) => void;
     onToggleStudent: (studentId: string) => void;
     onToggleAllTests: (checked: boolean) => void;
@@ -60,6 +66,7 @@
     studentLabel: (u: ModalStudentItem) => string;
     isTestSelected: (testId: string) => boolean;
     isStudentSelected: (studentId: string) => boolean;
+    isInstitute?: boolean;
   };
 
   let {
@@ -88,6 +95,16 @@
     studentsHasMore,
     students,
     selectedStudentIds,
+    teachersLoading = false,
+    teachersLoadingMore = false,
+    teachersHasMore = false,
+    teachers = [],
+    selectedTeacherIds = [],
+    onToggleTeacher,
+    onToggleAllTeachers,
+    onLoadMoreTeachers,
+    isTeacherSelected,
+    teacherLabel,
     onClose,
     onSubmitStep1,
     onBack,
@@ -104,7 +121,8 @@
     testStatusLabel,
     studentLabel,
     isTestSelected,
-    isStudentSelected
+    isStudentSelected,
+    isInstitute = false
   }: Props = $props();
 
   function maybeLoadMoreTests(el: HTMLElement) {
@@ -115,6 +133,11 @@
   function maybeLoadMoreStudents(el: HTMLElement) {
     if (!studentsHasMore || studentsLoadingMore || studentsLoading) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 60) onLoadMoreStudents();
+  }
+
+  function maybeLoadMoreTeachers(el: HTMLElement) {
+    if (!teachersHasMore || teachersLoadingMore || teachersLoading || !onLoadMoreTeachers) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 60) onLoadMoreTeachers();
   }
 
   function studentId(u: ModalStudentItem): string {
@@ -274,7 +297,7 @@
         <div class="mt-4">
           <div class="mt-4">
             <div
-              class="grid grid-cols-2 border-b border-[var(--sh-exam-card-border)]"
+              class="grid {isInstitute || onToggleTeacher || teachers.length > 0 || selectedTeacherIds.length > 0 ? 'grid-cols-3' : 'grid-cols-2'} border-b border-[var(--sh-exam-card-border)]"
               role="tablist"
               aria-label="Batch assignment tabs"
             >
@@ -304,6 +327,21 @@
               >
                 Students ({selectedStudentIds.length})
               </button>
+              {#if isInstitute || onToggleTeacher || teachers.length > 0 || selectedTeacherIds.length > 0}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === 'teachers'}
+                  class={`-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
+                    tab === 'teachers'
+                      ? 'border-[var(--accent-cta-cyan)] text-[var(--page-text)]'
+                      : 'border-transparent text-[var(--sh-ai-sub)] hover:text-[var(--page-text)]'
+                  }`}
+                  onclick={() => onSwitchTab('teachers')}
+                >
+                  Teachers ({selectedTeacherIds.length})
+                </button>
+              {/if}
             </div>
 
             <div class="mt-4">
@@ -427,6 +465,71 @@
                     </ul>
                   {/if}
                 </section>
+              {:else if tab === 'teachers'}
+                <section class="flex h-[22rem] flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select teachers">
+                  <div class="flex items-center justify-between gap-2">
+                    <h3 class="text-sm font-bold text-[var(--page-text)]">Teachers</h3>
+                    <label class="inline-flex items-center gap-2 text-xs text-[var(--sh-ai-sub)]">
+                      <input
+                        type="checkbox"
+                        checked={teachers.length > 0 && teachers.every((u) => isTeacherSelected?.(studentId(u)))}
+                        onchange={(e) => onToggleAllTeachers?.((e.currentTarget as HTMLInputElement).checked)}
+                      />
+                      Select all
+                    </label>
+                  </div>
+                  {#if teachersLoading}
+                    <div class="mt-3 flex-1 space-y-2 overflow-auto pr-1">
+                      {#each Array(7) as _}
+                        <div class="flex items-center gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-2">
+                          <div class="h-5 w-10 rounded-full bg-[var(--page-card-border)] opacity-20" />
+                          <Skeleton width="w-28" height="h-3" />
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <ul
+                      class="mt-3 flex-1 space-y-2 overflow-auto pr-1"
+                      role="list"
+                      onscroll={(e) => maybeLoadMoreTeachers(e.currentTarget as HTMLElement)}
+                    >
+                      {#each teachers as u, index (`${studentId(u)}-${index}`)}
+                        <li>
+                          <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-3 py-2 text-sm transition-colors hover:border-[var(--sh-exam-card-hover-border)]">
+                            <input
+                              type="checkbox"
+                              checked={isTeacherSelected?.(studentId(u))}
+                              onchange={() => onToggleTeacher?.(studentId(u))}
+                              class="h-4 w-4 rounded border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]"
+                            />
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[10px] font-bold text-[var(--page-text)]">
+                              {#if studentImage(u)}
+                                <img src={studentImage(u)} alt={teacherLabel?.(u) ?? studentLabel(u)} class="h-full w-full object-cover" />
+                              {:else}
+                                {initialsFromLabel(teacherLabel?.(u) ?? studentLabel(u))}
+                              {/if}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                              <p class="truncate font-semibold text-[var(--page-text)]">{teacherLabel?.(u) ?? studentLabel(u)}</p>
+                              <p class="truncate text-[11px] text-[var(--sh-ai-sub)]">
+                                {studentEmail(u) || 'No email'}
+                                {#if studentPhone(u)}
+                                  <span class="mx-1">•</span>{studentPhone(u)}
+                                {/if}
+                              </p>
+                            </div>
+                          </label>
+                        </li>
+                      {/each}
+                      {#if teachers.length === 0}
+                        <li class="text-xs text-[var(--sh-ai-sub)]">No teachers found.</li>
+                      {/if}
+                      {#if teachersLoadingMore}
+                        <li class="text-center text-xs text-[var(--sh-ai-sub)]">Loading more teachers...</li>
+                      {/if}
+                    </ul>
+                  {/if}
+                </section>
               {/if}
             </div>
           </div>
@@ -457,7 +560,7 @@
               <button
                 type="button"
                 class="rounded-xl bg-[var(--sh-exam-card-arrow-bg)] px-4 py-2 text-sm font-semibold text-[var(--sh-exam-card-title)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={selectedTestIds.length === 0 || selectedStudentIds.length === 0 || submitting}
+                disabled={(selectedTestIds.length === 0 && selectedStudentIds.length === 0 && selectedTeacherIds.length === 0) || submitting}
                 onclick={onContinue}
               >
                 {submitting ? 'Saving…' : 'Continue'}
