@@ -17,7 +17,7 @@ import { tick } from 'svelte';
   import { ATTEMPT_START_ERROR_KEY } from '$lib/student/testAttempt/loadAttemptFromSession';
   import { goto } from '$app/navigation';
 
-  let { data }: { data: PageData } = $props();
+  let { data, isReadOnly = false }: { data: PageData; isReadOnly?: boolean } = $props();
 
   const examSlug = $derived(data.examSlug ?? '');
   
@@ -478,7 +478,14 @@ import { tick } from 'svelte';
 
       {#if paperDetails}
         <div class="flex items-center gap-2">
-          {#if (paperDetails.testAttemptedId ?? '').trim()}
+          {#if isReadOnly}
+            <button
+              type="button"
+              class="h-9 min-w-[7.25rem] rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-4 text-sm font-medium text-[var(--pyq-sort-btn-text)] transition-all opacity-80 cursor-default"
+            >
+              View Test
+            </button>
+          {:else if (paperDetails.testAttemptedId ?? '').trim()}
             <button
               type="button"
               class="h-9 min-w-[7.25rem] rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-4 text-sm font-medium text-[var(--pyq-sort-btn-text)] transition-all hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)]"

@@ -29,6 +29,8 @@ export type GetTestUserItem = {
 	attempted: boolean;
 	attemptId: string | null;
 	batchId: string | null;
+	examSlug: string;
+	paperRefId: string | null;
 };
 
 export type GetTestUserFilterOptions = {

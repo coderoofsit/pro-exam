@@ -39,6 +39,7 @@
     examSlug: string;
     basePath?: string;
     backHref?: string;
+    isReadOnly?: boolean;
   };
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -46,7 +47,8 @@
     papersByYear,
     examSlug,
     basePath = '/student/tests/pyq',
-    backHref
+    backHref,
+    isReadOnly = false
   }: Props = $props();
 
   // ── Accordion state ────────────────────────────────────────────────────
@@ -460,40 +462,42 @@ async function viewPaper(paper: PaperItem) {
       <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
       Opening...
     {:else}
-      View Paper
+      {isReadOnly ? 'View Test' : 'View Paper'}
     {/if}
   </button>
 
-  {#if !(paper.testAttemptedId ?? '').trim()}
-    <!-- Start Test Button -->
-    <button
-      type="button"
-      class="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
-      disabled={startingPaperId !== null || viewingAnalysisId !== null}
-      onclick={() => startPaperTest(paper)}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
-        <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
-      </svg>
-      {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
-    </button>
-  {:else}
-    <button
-      type="button"
-      class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
-      disabled={startingPaperId !== null || viewingAnalysisId !== null}
-      onclick={() => void viewAnalysis(paper)}
-    >
-      {viewingAnalysisId === paper._id ? 'Opening…' : 'View Analysis'}
-    </button>
-    <button
-      type="button"
-      class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
-      disabled={startingPaperId !== null || viewingAnalysisId !== null}
-      onclick={() => startPaperTest(paper, { testAttemptId: (paper.testAttemptedId ?? '').trim() })}
-    >
-      {startingPaperId === paper._id ? 'Starting…' : 'Re-attempt'}
-    </button>
+  {#if !isReadOnly}
+    {#if !(paper.testAttemptedId ?? '').trim()}
+      <!-- Start Test Button -->
+      <button
+        type="button"
+        class="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
+        disabled={startingPaperId !== null || viewingAnalysisId !== null}
+        onclick={() => startPaperTest(paper)}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
+          <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
+        </svg>
+        {startingPaperId === paper._id ? 'Starting…' : 'Start Test'}
+      </button>
+    {:else}
+      <button
+        type="button"
+        class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
+        disabled={startingPaperId !== null || viewingAnalysisId !== null}
+        onclick={() => void viewAnalysis(paper)}
+      >
+        {viewingAnalysisId === paper._id ? 'Opening…' : 'View Analysis'}
+      </button>
+      <button
+        type="button"
+        class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] disabled:opacity-60 sm:min-w-[7.25rem] sm:flex-none"
+        disabled={startingPaperId !== null || viewingAnalysisId !== null}
+        onclick={() => startPaperTest(paper, { testAttemptId: (paper.testAttemptedId ?? '').trim() })}
+      >
+        {startingPaperId === paper._id ? 'Starting…' : 'Re-attempt'}
+      </button>
+    {/if}
   {/if}
 </div>
               </div>

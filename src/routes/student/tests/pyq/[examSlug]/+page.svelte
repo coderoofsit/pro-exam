@@ -3,7 +3,11 @@
   import PYQAccordion from '$lib/components/PYQAccordion.svelte';
   import type { PapersByYearItem } from '$lib/components/PYQAccordion.svelte';
 
-  let { data }: { data: PageData } = $props();
+  let {
+    data,
+    isReadOnly = false,
+    basePath = '/student/tests/pyq'
+  }: { data: PageData; isReadOnly?: boolean; basePath?: string } = $props();
 
   const papersByYear = $derived((data.papersByYear ?? []) as PapersByYearItem[]);
   const error = $derived(data.error ?? null);
@@ -68,8 +72,9 @@
       <PYQAccordion
         {papersByYear}
         {examSlug}
-        basePath="/student/tests/pyq"
-        backHref="/student/tests/pyq"
+        {basePath}
+        {isReadOnly}
+        backHref={basePath}
       />
     {/if}
 

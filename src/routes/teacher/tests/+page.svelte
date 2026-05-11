@@ -5,4 +5,4 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<StudentTestsPage {data} basePath="/teacher" />
+<StudentTestsPage {data} basePath="/teacher" isReadOnly={true} />

@@ -5,4 +5,4 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<StudentPyqPaperPage {data} />
+<StudentPyqPaperPage {data} isReadOnly={true} />

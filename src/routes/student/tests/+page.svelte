@@ -17,7 +17,8 @@
   let {
     data,
     basePath = "/student",
-  }: { data: PageData; basePath?: string } = $props();
+    isReadOnly = false,
+  }: { data: PageData; basePath?: string; isReadOnly?: boolean } = $props();
 
   let ownTestsPreloaded = false;
   let ownTestsPreloadPromise: Promise<void> | null = null;
@@ -506,7 +507,22 @@
                         </div>
                       </div>
                       <div class="student-tests-card__actions flex shrink-0 items-center justify-center gap-2 px-4 py-3 sm:py-0">
-                        {#if hasExistingAttempt(item)}
+                        {#if isReadOnly}
+                          <GeneralActionButton
+                            text="View Test"
+                            onClick={() => {
+                              if (item.examSlug && item.paperRefId) {
+                                void goto(`${basePath}/tests/pyq/${item.examSlug}/${item.paperRefId}`);
+                              } else {
+                                // For non-PYQ tests, if there's a detail page, we would link it here.
+                                // Currently, the user request specifically mentioned "View Paper" 
+                                // which maps to the PYQ detail view.
+                              }
+                            }}
+                            variant="highlight"
+                            className={`${testsActionBtnClass} !min-w-0 !w-full sm:!min-w-[7.25rem] sm:!w-auto`}
+                          />
+                        {:else if hasExistingAttempt(item)}
                           <GeneralActionButton
                             text="View Analysis"
                             onClick={() => void handleViewAnalysis(item)}

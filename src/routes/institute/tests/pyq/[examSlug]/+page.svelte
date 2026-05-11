@@ -5,4 +5,4 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<StudentPyqExamPage {data} />
+<StudentPyqExamPage {data} isReadOnly={true} basePath="/institute/tests/pyq" />
