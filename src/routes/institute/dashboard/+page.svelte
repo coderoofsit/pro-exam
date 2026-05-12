@@ -200,7 +200,10 @@
 			
 		</div>
 	</section>
-		<AddStudentsUploadSection />
+		<AddStudentsUploadSection
+			sectionTitle="Add teacher and students"
+			importEndpoint="/api/v1/institute/import-users"
+		/>
 		<section class="mt-6 min-w-0" aria-label="WhatsApp community">
 			<div
 				class="flex flex-col items-start gap-3 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--whatsapp-bg,var(--dash-glass-bg))] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"

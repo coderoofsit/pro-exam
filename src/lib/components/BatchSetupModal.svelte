@@ -37,11 +37,13 @@
     testsHasMore: boolean;
     testsError: string | null;
     tests: BatchTestItem[];
+    testsSearch: string;
     selectedTestIds: string[];
     studentsLoading: boolean;
     studentsLoadingMore: boolean;
     studentsHasMore: boolean;
     students: ModalStudentItem[];
+    studentsSearch: string;
     selectedStudentIds: string[];
     teachersLoading?: boolean;
     teachersLoadingMore?: boolean;
@@ -60,6 +62,8 @@
     onToggleAllStudents: (checked: boolean) => void;
     onLoadMoreTests: () => void;
     onLoadMoreStudents: () => void;
+    onTestsSearchChange: (value: string) => void;
+    onStudentsSearchChange: (value: string) => void;
     isReady: () => boolean;
     testLabel: (t: BatchTestItem) => string;
     testStatusLabel: (t?: BatchTestItem) => string;
@@ -89,11 +93,13 @@
     testsHasMore,
     testsError,
     tests,
+    testsSearch,
     selectedTestIds,
     studentsLoading,
     studentsLoadingMore,
     studentsHasMore,
     students,
+    studentsSearch,
     selectedStudentIds,
     teachersLoading = false,
     teachersLoadingMore = false,
@@ -116,6 +122,8 @@
     onToggleAllStudents,
     onLoadMoreTests,
     onLoadMoreStudents,
+    onTestsSearchChange,
+    onStudentsSearchChange,
     isReady,
     testLabel,
     testStatusLabel,
@@ -177,10 +185,14 @@
     onclick={(e) => e.target === e.currentTarget && onClose()}
   >
     <div
-      class="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-2xl"
+      class={`w-full max-w-2xl rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-2xl ${
+        step === 2
+          ? 'flex max-h-[92vh] h-[92vh] flex-col overflow-hidden'
+          : 'max-h-[88vh] overflow-y-auto'
+      }`}
       onclick={(e) => e.stopPropagation()}
     >
-      <h2 class="text-lg font-bold text-[var(--sh-section-title)]">{modeLabel} Batch</h2>
+      <h2 class="shrink-0 text-lg font-bold text-[var(--sh-section-title)]">{modeLabel} Batch</h2>
 
       {#if step === 1}
         <form
@@ -294,10 +306,10 @@
           </div>
         </form>
       {:else}
-        <div class="mt-4">
-          <div class="mt-4">
+        <div class="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div
-              class="grid {isInstitute || onToggleTeacher || teachers.length > 0 || selectedTeacherIds.length > 0 ? 'grid-cols-3' : 'grid-cols-2'} border-b border-[var(--sh-exam-card-border)]"
+              class="grid shrink-0 {isInstitute || onToggleTeacher || teachers.length > 0 || selectedTeacherIds.length > 0 ? 'grid-cols-3' : 'grid-cols-2'} border-b border-[var(--sh-exam-card-border)]"
               role="tablist"
               aria-label="Batch assignment tabs"
             >
@@ -344,9 +356,9 @@
               {/if}
             </div>
 
-            <div class="mt-4">
+            <div class="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
               {#if tab === 'tests'}
-                <section class="flex h-[22rem] flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select tests">
+                <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select tests">
                   <div class="flex items-center justify-between gap-2">
                     <h3 class="text-sm font-bold text-[var(--page-text)]">Tests</h3>
                     <label class="inline-flex items-center gap-2 text-xs text-[var(--sh-ai-sub)]">
@@ -358,6 +370,13 @@
                       Select all
                     </label>
                   </div>
+                  <input
+                    type="search"
+                    placeholder="Search tests by name"
+                    class="mt-3 w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
+                    value={testsSearch}
+                    oninput={(e) => onTestsSearchChange((e.currentTarget as HTMLInputElement).value)}
+                  />
                   {#if testsLoading}
                     <div class="mt-3 flex-1 space-y-2 overflow-auto pr-1">
                       {#each Array(6) as _}
@@ -400,8 +419,8 @@
                     </ul>
                   {/if}
                 </section>
-              {:else}
-                <section class="flex h-[22rem] flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select students">
+              {:else if tab === 'students'}
+                <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select students">
                   <div class="flex items-center justify-between gap-2">
                     <h3 class="text-sm font-bold text-[var(--page-text)]">Students</h3>
                     <label class="inline-flex items-center gap-2 text-xs text-[var(--sh-ai-sub)]">
@@ -413,6 +432,13 @@
                       Select all
                     </label>
                   </div>
+                  <input
+                    type="search"
+                    placeholder="Search students by name"
+                    class="mt-3 w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
+                    value={studentsSearch}
+                    oninput={(e) => onStudentsSearchChange((e.currentTarget as HTMLInputElement).value)}
+                  />
                   {#if studentsLoading}
                     <div class="mt-3 flex-1 space-y-2 overflow-auto pr-1">
                       {#each Array(7) as _}
@@ -466,7 +492,7 @@
                   {/if}
                 </section>
               {:else if tab === 'teachers'}
-                <section class="flex h-[22rem] flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select teachers">
+                <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3" aria-label="Select teachers">
                   <div class="flex items-center justify-between gap-2">
                     <h3 class="text-sm font-bold text-[var(--page-text)]">Teachers</h3>
                     <label class="inline-flex items-center gap-2 text-xs text-[var(--sh-ai-sub)]">
@@ -541,7 +567,7 @@
             <p class="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">{success}</p>
           {/if}
 
-          <div class="mt-5 flex items-center justify-between gap-2">
+          <div class="mt-5 flex shrink-0 items-center justify-between gap-2">
             <button
               type="button"
               class="rounded-xl border border-[var(--sh-exam-card-border)] px-4 py-2 text-sm font-semibold text-[var(--page-text)] hover:bg-[color-mix(in_srgb,var(--dash-cta-hover-bg)_35%,transparent)]"

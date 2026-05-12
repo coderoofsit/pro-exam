@@ -8,7 +8,7 @@
   import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
   import { debounce } from '$lib/utils/debounce';
   import type { PageData } from './$types';
-  import { fetchBatchStudents, type BatchStudentItem } from '$lib/api/teacher';
+  import { fetchBatchStudents, unwrapBatchStudentsPage, type BatchStudentItem } from '$lib/api/teacher';
   import {
     createBatch,
     fetchBatchTests,
@@ -79,6 +79,7 @@
   let step2Tests = $state<BatchTestItem[]>([]);
   let step2TestsPage = $state(1);
   let step2TestsLastPage = $state(1);
+  let step2TestsSearch = $state('');
   let selectedTestIds = $state<string[]>([]);
 
   let step2StudentsLoading = $state(false);
@@ -86,6 +87,7 @@
   let step2Students = $state<BatchStudentItem[]>([]);
   let step2StudentsPage = $state(1);
   let step2StudentsLastPage = $state(1);
+  let step2StudentsSearch = $state('');
   let selectedStudentIds = $state<string[]>([]);
   let step2PrefetchStarted = $state(false);
 
@@ -139,7 +141,7 @@
     createBatchError = null;
   }
   function toggleAllStudents(checked: boolean) {
-    const visibleIds = step2Students.map((u) => u._id);
+    const visibleIds = step2Students.map((u) => String(u._id ?? ''));
     if (checked) {
       const merged = Array.from(new Set([...selectedStudentIds, ...visibleIds]));
       selectedStudentIds = merged;
@@ -149,11 +151,12 @@
   }
 
   async function loadStep2Data() {
-    if (!step2TestsLoaded) {
+    const loadTests = async () => {
+      if (step2TestsLoaded) return;
       step2TestsLoading = true;
       try {
         const res = await fetchBatchTests(
-          { search: '', page: 1, limit: 20 },
+          { search: step2TestsSearch, page: 1, limit: 20 },
           fetch,
           { token: $authStore.token }
         );
@@ -174,27 +177,32 @@
       } finally {
         step2TestsLoading = false;
       }
-    }
+    };
 
-    step2StudentsLoading = true;
-    try {
-      const res = await fetchBatchStudents(
-        { page: 1, limit: 20 },
-        fetch,
-        { token: $authStore.token }
-      );
-      if (res.success && res.data?.data?.data) {
-        step2Students = res.data.data.data;
-        step2StudentsPage = res.data.data.currentPage ?? 1;
-        step2StudentsLastPage = res.data.data.lastPage ?? 1;
-      } else {
-        step2Students = [];
-        step2StudentsPage = 1;
-        step2StudentsLastPage = 1;
+    const loadStudents = async () => {
+      step2StudentsLoading = true;
+      try {
+        const res = await fetchBatchStudents(
+          { page: 1, limit: 20, search: step2StudentsSearch },
+          fetch,
+          { token: $authStore.token }
+        );
+        const parsed = unwrapBatchStudentsPage(res);
+        if (parsed) {
+          step2Students = parsed.rows;
+          step2StudentsPage = parsed.currentPage;
+          step2StudentsLastPage = parsed.lastPage;
+        } else {
+          step2Students = [];
+          step2StudentsPage = 1;
+          step2StudentsLastPage = 1;
+        }
+      } finally {
+        step2StudentsLoading = false;
       }
-    } finally {
-      step2StudentsLoading = false;
-    }
+    };
+
+    await Promise.all([loadTests(), loadStudents()]);
   }
 
   async function loadMoreStep2Tests() {
@@ -202,7 +210,7 @@
     step2TestsLoadingMore = true;
     try {
       const nextPage = step2TestsPage + 1;
-      const res = await fetchBatchTests({ search: '', page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
+      const res = await fetchBatchTests({ search: step2TestsSearch, page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
       if (!res.success) return;
       const payload = res.data?.data;
       const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
@@ -220,13 +228,14 @@
     step2StudentsLoadingMore = true;
     try {
       const nextPage = step2StudentsPage + 1;
-      const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
-      if (!res.success || !res.data?.data?.data) return;
-      const nextStudents = Array.isArray(res.data.data.data) ? res.data.data.data : [];
+      const res = await fetchBatchStudents({ page: nextPage, limit: 20, search: step2StudentsSearch }, fetch, { token: $authStore.token });
+      const parsed = unwrapBatchStudentsPage(res);
+      if (!parsed) return;
+      const nextStudents = parsed.rows;
       const mergedStudents = [...step2Students, ...nextStudents];
 step2Students = [...mergedStudents];
-      step2StudentsPage = res.data.data.currentPage ?? nextPage;
-      step2StudentsLastPage = res.data.data.lastPage ?? nextPage;
+      step2StudentsPage = parsed.currentPage ?? nextPage;
+      step2StudentsLastPage = parsed.lastPage ?? nextPage;
     } finally {
       step2StudentsLoadingMore = false;
     }
@@ -236,6 +245,25 @@ step2Students = [...mergedStudents];
     if (step2PrefetchStarted) return;
     step2PrefetchStarted = true;
     void loadStep2Data();
+  }
+
+  const debouncedLoadStep2Tests = debounce(() => {
+    step2TestsLoaded = false;
+    void loadStep2Data();
+  }, 350);
+
+  const debouncedLoadStep2Students = debounce(() => {
+    void loadStep2Data();
+  }, 350);
+
+  function onStep2TestsSearchChange(value: string) {
+    step2TestsSearch = value;
+    debouncedLoadStep2Tests();
+  }
+
+  function onStep2StudentsSearchChange(value: string) {
+    step2StudentsSearch = value;
+    debouncedLoadStep2Students();
   }
 
   function toInputDate(value: string): string {
@@ -325,6 +353,8 @@ step2Students = [...mergedStudents];
 		createBatchSubmitting = false;
 		selectedTestIds = [];
 		selectedStudentIds = [];
+		step2TestsSearch = '';
+		step2StudentsSearch = '';
 		step2PrefetchStarted = false;
 		step2TestsLoaded = false;
 		step2Tests = [];
@@ -665,11 +695,13 @@ step2Students = [...mergedStudents];
   testsHasMore={step2TestsPage < step2TestsLastPage}
   testsError={step2TestsError}
   tests={step2Tests}
+  testsSearch={step2TestsSearch}
   selectedTestIds={selectedTestIds}
   studentsLoading={step2StudentsLoading}
   studentsLoadingMore={step2StudentsLoadingMore}
   studentsHasMore={step2StudentsPage < step2StudentsLastPage}
   students={step2Students}
+  studentsSearch={step2StudentsSearch}
   selectedStudentIds={selectedStudentIds}
   onClose={closeCreateBatchModal}
   onSubmitStep1={() => void onCreateBatchClick()}
@@ -685,6 +717,8 @@ step2Students = [...mergedStudents];
   onToggleAllStudents={toggleAllStudents}
   onLoadMoreTests={() => void loadMoreStep2Tests()}
   onLoadMoreStudents={() => void loadMoreStep2Students()}
+  onTestsSearchChange={onStep2TestsSearchChange}
+  onStudentsSearchChange={onStep2StudentsSearchChange}
   isReady={isCreateBatchReady}
   {testLabel}
   {testStatusLabel}
