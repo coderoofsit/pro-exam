@@ -964,7 +964,7 @@
 														index +
 														1}.
 												</span>
-												<div class="question-snippet min-w-0 flex-1 text-[0.88rem] font-medium leading-relaxed text-[var(--page-text)]">
+												<div class="question-snippet min-w-0 flex-1 text-base font-semibold leading-relaxed text-[var(--page-text)]">
 													<MathText content={questionPromptEnContent(q)} />
 													{#if promptImagesOnly(q).length}
 														<div
@@ -1646,7 +1646,7 @@
 									</div>
 
 									<div
-										class="mb-3 text-[0.97rem] font-medium leading-relaxed text-[var(--page-text)]"
+										class="mb-3 text-base font-semibold leading-relaxed text-[var(--page-text)]"
 									>
 										<div class="flex items-baseline gap-2">
 											{#if currentQuestionNumber !== null}
@@ -1957,7 +1957,7 @@
 													Exam Flow Solution
 												</div>
 												<div
-													class="text-[0.88rem] font-medium leading-relaxed text-[var(--page-text)]"
+													class="text-base font-semibold leading-relaxed text-[var(--page-text)]"
 												>
 													<MathText
 														content={detailQuestion.prompt.en.explanation}

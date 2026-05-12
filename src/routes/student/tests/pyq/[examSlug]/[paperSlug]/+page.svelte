@@ -615,7 +615,7 @@ import { tick } from 'svelte';
           {@const isEditing = editingQuestionId === q._id}
           <section class="rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
             <div class="space-y-2">
-              <h2 class="text-[0.88rem] font-medium text-[var(--pyq-paper-title)]">
+              <h2 class="text-base font-semibold text-[var(--pyq-paper-title)]">
                 Q{idx + 1}. {#if isEditing}Editing question{:else}<MathText content={prompt} />{/if}
               </h2>
 
@@ -1060,7 +1060,7 @@ import { tick } from 'svelte';
                       <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pyq-paper-border)] text-[11px] font-semibold">
                         {opt.identifier}
                       </span>
-                      <div class="min-w-0 flex-1 break-words text-[0.88rem] font-medium leading-[1.7] text-[var(--pyq-paper-title)]">
+                      <div class="min-w-0 flex-1 break-words text-[1.02rem] leading-[1.7] text-[var(--pyq-paper-title)]">
                         <MathText content={opt.content ?? ''} />
                         {#if opt.images?.length}
                           <div class="mt-2 flex flex-wrap gap-2">
@@ -1102,7 +1102,7 @@ import { tick } from 'svelte';
               {/if}
 
               {#if openSolutionQuestionId === String(q._id) && (explanation || q.prompt?.en?.explanationImages?.length || rePhrasedExplanation || q.prompt?.en?.rePhrasedImage?.length)}
-                <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[0.88rem] font-medium leading-relaxed text-[var(--pyq-paper-title)]">
+                <div class="mt-3 rounded-lg border border-[var(--pyq-paper-border)] bg-[var(--pyq-accordion-bg)] px-3 py-2 text-[1.05rem] leading-relaxed text-[var(--pyq-paper-title)]">
                   {#if explanation}
                     <span class="font-semibold text-sm">Explanation:</span>
                     <div class="mt-1"><MathText content={explanation} disableCache={true} /></div>
