@@ -1,6 +1,18 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { importInstituteUsers } from '$lib/api/auth';
+  import { importUsersFile } from '$lib/api/auth';
+
+  type Props = {
+    /** Main label on the card and modal title */
+    sectionTitle?: string;
+    /** POST multipart endpoint (must accept field name `file`) */
+    importEndpoint?: string;
+  };
+
+  let {
+    sectionTitle = 'Add Students',
+    importEndpoint = '/api/v1/teacher/import-students'
+  }: Props = $props();
 
   const ACCEPT = '.xlsx,.xls,.csv,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json';
   const allowedExtensions = ['xlsx', 'xls', 'csv', 'json'];
@@ -85,7 +97,7 @@
     successMessage = '';
     submitting = true;
     try {
-      const response = await importInstituteUsers({ file: selectedFile });
+      const response = await importUsersFile({ file: selectedFile, endpoint: importEndpoint });
       if (!response.success) {
         errorMessage = response.message || 'Failed to import users.';
         return;
@@ -104,7 +116,7 @@
   }
 </script>
 
-<section class="mt-6 min-w-0" aria-label="Add students">
+<section class="mt-6 min-w-0" aria-label={sectionTitle}>
   <button
     type="button"
     onclick={openModal}
@@ -116,7 +128,7 @@
       </svg>
     </span>
     <span class="min-w-0 flex-1">
-      <span class="block font-semibold text-[var(--dash-cta-text)]">Add Students</span>
+      <span class="block font-semibold text-[var(--dash-cta-text)]">{sectionTitle}</span>
       <span class="block text-xs text-[var(--page-text-muted)]">Upload XLSX, XLS, CSV or JSON</span>
     </span>
     <span class="shrink-0 rounded-md bg-[var(--badge-new-bg)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--badge-new-text)]">Import</span>
@@ -129,14 +141,14 @@
     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur-md"
     role="dialog"
     aria-modal="true"
-    aria-label="Add students file upload"
+    aria-label={`${sectionTitle} file upload`}
     onclick={(e) => e.target === e.currentTarget && closeModal()}
   >
     <div
       class="w-full max-w-xl rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-2xl"
       onclick={(e) => e.stopPropagation()}
     >
-      <h3 class="text-lg font-bold text-[var(--page-text)]">Add Students</h3>
+      <h3 class="text-lg font-bold text-[var(--page-text)]">{sectionTitle}</h3>
       <p class="mt-1 text-sm text-[var(--page-text-muted)]">
         Browse file or drag and drop. Accepted: XLSX, XLS, CSV, JSON.
       </p>

@@ -8,7 +8,12 @@
   import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
   import { debounce } from '$lib/utils/debounce';
   import type { PageData } from './$types';
-  import { fetchBatchStudents, fetchBatchTeachers, type BatchStudentItem } from '$lib/api/teacher';
+  import {
+    fetchBatchStudents,
+    fetchBatchTeachers,
+    unwrapBatchStudentsPage,
+    type BatchStudentItem
+  } from '$lib/api/teacher';
   import {
     createBatch,
     fetchBatchTests,
@@ -173,7 +178,7 @@
   }
 
   function toggleAllStudents(checked: boolean) {
-    const visibleIds = step2Students.map((u) => u._id);
+    const visibleIds = step2Students.map((u) => String(u._id ?? ''));
     if (checked) {
       selectedStudentIds = Array.from(new Set([...selectedStudentIds, ...visibleIds]));
       return;
@@ -197,7 +202,7 @@
   }
 
   function toggleAllTeachers(checked: boolean) {
-    const visibleIds = step2Teachers.map((u) => u._id);
+    const visibleIds = step2Teachers.map((u) => String(u._id ?? ''));
     if (checked) {
       selectedTeacherIds = Array.from(new Set([...selectedTeacherIds, ...visibleIds]));
       return;
@@ -206,7 +211,8 @@
   }
 
   async function loadStep2Data() {
-    if (!step2TestsLoaded) {
+    const loadTests = async () => {
+      if (step2TestsLoaded) return;
       step2TestsLoading = true;
       try {
         const res = await fetchBatchTests({ search: '', page: 1, limit: 20 }, fetch, { token: $authStore.token });
@@ -227,39 +233,46 @@
       } finally {
         step2TestsLoading = false;
       }
-    }
+    };
 
-    step2StudentsLoading = true;
-    try {
-      const studRes = await fetchBatchStudents({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
-      if (studRes.success && studRes.data?.data?.data) {
-        step2Students = studRes.data.data.data;
-        step2StudentsPage = studRes.data.data.currentPage ?? 1;
-        step2StudentsLastPage = studRes.data.data.lastPage ?? 1;
-      } else {
-        step2Students = [];
-        step2StudentsPage = 1;
-        step2StudentsLastPage = 1;
+    const loadStudents = async () => {
+      step2StudentsLoading = true;
+      try {
+        const studRes = await fetchBatchStudents({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
+        const parsed = unwrapBatchStudentsPage(studRes);
+        if (parsed) {
+          step2Students = parsed.rows;
+          step2StudentsPage = parsed.currentPage;
+          step2StudentsLastPage = parsed.lastPage;
+        } else {
+          step2Students = [];
+          step2StudentsPage = 1;
+          step2StudentsLastPage = 1;
+        }
+      } finally {
+        step2StudentsLoading = false;
       }
-    } finally {
-      step2StudentsLoading = false;
-    }
+    };
 
-    step2TeachersLoading = true;
-    try {
-      const teachRes = await fetchBatchTeachers({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
-      if (teachRes.success && teachRes.data?.data) {
-        step2Teachers = teachRes.data.data;
-        step2TeachersPage = teachRes.data.currentPage ?? 1;
-        step2TeachersLastPage = teachRes.data.lastPage ?? 1;
-      } else {
-        step2Teachers = [];
-        step2TeachersPage = 1;
-        step2TeachersLastPage = 1;
+    const loadTeachers = async () => {
+      step2TeachersLoading = true;
+      try {
+        const teachRes = await fetchBatchTeachers({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
+        if (teachRes.success && teachRes.data?.data) {
+          step2Teachers = teachRes.data.data;
+          step2TeachersPage = teachRes.data.currentPage ?? 1;
+          step2TeachersLastPage = teachRes.data.lastPage ?? 1;
+        } else {
+          step2Teachers = [];
+          step2TeachersPage = 1;
+          step2TeachersLastPage = 1;
+        }
+      } finally {
+        step2TeachersLoading = false;
       }
-    } finally {
-      step2TeachersLoading = false;
-    }
+    };
+
+    await Promise.all([loadTests(), loadStudents(), loadTeachers()]);
   }
 
   async function loadMoreStep2Tests() {
@@ -286,11 +299,11 @@
     try {
       const nextPage = step2StudentsPage + 1;
       const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
-      if (!res.success || !res.data?.data?.data) return;
-      const nextStudents = Array.isArray(res.data.data.data) ? res.data.data.data : [];
-      step2Students = [...step2Students, ...nextStudents];
-      step2StudentsPage = res.data.data.currentPage ?? nextPage;
-      step2StudentsLastPage = res.data.data.lastPage ?? nextPage;
+      const parsed = unwrapBatchStudentsPage(res);
+      if (!parsed) return;
+      step2Students = [...step2Students, ...parsed.rows];
+      step2StudentsPage = parsed.currentPage ?? nextPage;
+      step2StudentsLastPage = parsed.lastPage ?? nextPage;
     } finally {
       step2StudentsLoadingMore = false;
     }

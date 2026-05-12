@@ -271,15 +271,17 @@ export async function updateFcmToken(params: {
   });
 }
 
-export async function importInstituteUsers(params: {
+/** Multipart import (teacher students or institute teachers+students). Field name must be `file`. */
+export async function importUsersFile(params: {
   file: File;
+  endpoint: string;
   token?: string | null;
 }) {
   const formData = new FormData();
   formData.append('file', params.file);
 
   return apiRequest<{ success?: boolean; statusCode?: number; message?: string; data?: unknown }>({
-    endpoint: '/api/v1/teacher/import-students',
+    endpoint: params.endpoint,
     method: 'POST',
     data: formData,
     token: params.token

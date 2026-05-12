@@ -4,7 +4,7 @@
 	import { page } from "$app/state";
 	import Pagination from "$lib/components/Pagination.svelte";
 	import { type TeacherStudentsRow } from "$lib/api/studentManagement";
-	import Skeleton from "$lib/components/Skeleton.svelte";
+	import ManagementTableSkeleton from "$lib/components/ManagementTableSkeleton.svelte";
 	import type { PageData } from "./$types";
 
 	let { data }: { data: PageData } = $props();
@@ -280,26 +280,7 @@
 		</div>
 
 		{#if loading}
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{#each Array(6) as _}
-					<div
-						class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5"
-					>
-						<Skeleton width="w-3/4" height="h-5" className="mb-3" />
-						<Skeleton
-							width="w-full"
-							height="h-3"
-							className="mb-2"
-						/>
-						<Skeleton width="w-2/3" height="h-3" className="mb-2" />
-						<Skeleton
-							width="w-24"
-							height="h-8"
-							rounded="rounded-xl"
-						/>
-					</div>
-				{/each}
-			</div>
+			<ManagementTableSkeleton firstColumnLabel="STUDENT" thirdColumnLabel="Status" rowCount={8} />
 		{:else if studentsData.length === 0}
 			<div
 				class="flex flex-col items-center justify-center rounded-2xl border px-6 py-16 text-center border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]"

@@ -910,7 +910,7 @@
             </button>
 
             {#if isOpen && !isCollapsed}
-              <div class="flex flex-col gap-0.5 ml-8 mt-0.5 border-l border-[var(--sb-divider)] pl-2">
+              <div class="mt-0.5 ml-3 flex min-w-0 flex-col gap-0.5">
                 {#each navItem.children as sub}
                   {@const subActive = isActive(sub.href)}
                   <a
@@ -919,15 +919,15 @@
                     onfocus={() => warmSidebarRoute(sub.href)}
                     onclick={(event) => void handleSidebarNavClick(event, sub.href)}
                     class="
-                      flex items-center gap-2.5 px-3 py-2 rounded-lg no-underline whitespace-nowrap
-                      text-[13px] font-medium transition-colors duration-150
+                      flex min-w-0 items-start gap-2.5 rounded-lg px-3 py-2 no-underline
+                      text-[13px] font-medium leading-snug transition-colors duration-150
                       {subActive 
                         ? 'text-[var(--sb-nav-active-text)] font-semibold' 
                         : 'text-[var(--sb-nav-text)] opacity-80 hover:opacity-100 hover:text-[var(--sb-nav-hover-text)]'}
                     "
                   >
                     {#if sub.icon}
-                      <span class="flex-shrink-0 w-4 h-4 opacity-70">
+                      <span class="mt-0.5 flex-shrink-0 w-4 h-4 opacity-70">
                         {#if sub.icon === "students"}
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -949,7 +949,7 @@
                         {/if}
                       </span>
                     {/if}
-                    {sub.label}
+                    <span class="min-w-0 flex-1 break-words">{sub.label}</span>
                   </a>
                 {/each}
               </div>

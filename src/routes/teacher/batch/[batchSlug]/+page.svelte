@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { fetchBatchStudents, type BatchStudentItem } from '$lib/api/teacher';
+	import { fetchBatchStudents, unwrapBatchStudentsPage, type BatchStudentItem } from '$lib/api/teacher';
 	import {
 		fetchBatchTests,
 	type CreateBatchBody,
@@ -67,12 +67,14 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	let editTests = $state<BatchTestItem[]>([]);
 	let editTestsPage = $state(1);
 	let editTestsLastPage = $state(1);
+	let editTestsSearch = $state('');
 	let editSelectedTestIds = $state<string[]>([]);
 	let editStudentsLoading = $state(false);
 	let editStudentsLoadingMore = $state(false);
 	let editStudents = $state<BatchStudentItem[]>([]);
 	let editStudentsPage = $state(1);
 	let editStudentsLastPage = $state(1);
+	let editStudentsSearch = $state('');
 	let editSelectedStudentIds = $state<string[]>([]);
 	let editPrefetchStarted = $state(false);
 
@@ -381,7 +383,7 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 		editBatchError = null;
 	}
 	function toggleAllEditStudents(checked: boolean) {
-		const visibleIds = editStudents.map((u) => u._id);
+		const visibleIds = editStudents.map((u) => String(u._id ?? ''));
 		if (checked) {
 			const merged = Array.from(new Set([...editSelectedStudentIds, ...visibleIds]));
 			editSelectedStudentIds = merged;
@@ -391,10 +393,11 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	}
 
 	async function loadEditStep2Data() {
-		if (!editTestsLoaded) {
+		const loadTests = async () => {
+			if (editTestsLoaded) return;
 			editTestsLoading = true;
 			try {
-				const res = await fetchBatchTests({ search: '', page: 1, limit: 20 }, fetch);
+				const res = await fetchBatchTests({ search: editTestsSearch, page: 1, limit: 20 }, fetch);
 				if (res.success) {
 					const payload = res.data?.data;
 					const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
@@ -412,23 +415,28 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 			} finally {
 				editTestsLoading = false;
 			}
-		}
+		};
 
-		editStudentsLoading = true;
-		try {
-			const res = await fetchBatchStudents({ page: 1, limit: 20 }, fetch);
-			if (res.success && res.data?.data?.data) {
-				editStudents = res.data.data.data;
-				editStudentsPage = res.data.data.currentPage ?? 1;
-				editStudentsLastPage = res.data.data.lastPage ?? 1;
-			} else {
-				editStudents = [];
-				editStudentsPage = 1;
-				editStudentsLastPage = 1;
+		const loadStudents = async () => {
+			editStudentsLoading = true;
+			try {
+				const res = await fetchBatchStudents({ page: 1, limit: 20, search: editStudentsSearch }, fetch);
+				const parsed = unwrapBatchStudentsPage(res);
+				if (parsed) {
+					editStudents = parsed.rows;
+					editStudentsPage = parsed.currentPage;
+					editStudentsLastPage = parsed.lastPage;
+				} else {
+					editStudents = [];
+					editStudentsPage = 1;
+					editStudentsLastPage = 1;
+				}
+			} finally {
+				editStudentsLoading = false;
 			}
-		} finally {
-			editStudentsLoading = false;
-		}
+		};
+
+		await Promise.all([loadTests(), loadStudents()]);
 	}
 
 	async function loadMoreEditTests() {
@@ -436,7 +444,7 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 		editTestsLoadingMore = true;
 		try {
 			const nextPage = editTestsPage + 1;
-			const res = await fetchBatchTests({ search: '', page: nextPage, limit: 20 }, fetch);
+			const res = await fetchBatchTests({ search: editTestsSearch, page: nextPage, limit: 20 }, fetch);
 			if (!res.success) return;
 			const payload = res.data?.data;
 			const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
@@ -454,13 +462,14 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 		editStudentsLoadingMore = true;
 		try {
 			const nextPage = editStudentsPage + 1;
-			const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch);
-			if (!res.success || !res.data?.data?.data) return;
-			const nextStudents = Array.isArray(res.data.data.data) ? res.data.data.data : [];
+			const res = await fetchBatchStudents({ page: nextPage, limit: 20, search: editStudentsSearch }, fetch);
+			const parsed = unwrapBatchStudentsPage(res);
+			if (!parsed) return;
+			const nextStudents = parsed.rows;
 			const mergedStudents = [...editStudents, ...nextStudents];
 			editStudents = [...mergedStudents];
-			editStudentsPage = res.data.data.currentPage ?? nextPage;
-			editStudentsLastPage = res.data.data.lastPage ?? nextPage;
+			editStudentsPage = parsed.currentPage ?? nextPage;
+			editStudentsLastPage = parsed.lastPage ?? nextPage;
 		} finally {
 			editStudentsLoadingMore = false;
 		}
@@ -471,6 +480,25 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 		editPrefetchStarted = true;
 		void loadEditStep2Data();
 	}
+
+	$effect(() => {
+		editTestsSearch.trim();
+		if (!editBatchModalOpen || editBatchStep !== 2) return;
+		const t = setTimeout(() => {
+			editTestsLoaded = false;
+			void loadEditStep2Data();
+		}, 350);
+		return () => clearTimeout(t);
+	});
+
+	$effect(() => {
+		editStudentsSearch.trim();
+		if (!editBatchModalOpen || editBatchStep !== 2) return;
+		const t = setTimeout(() => {
+			void loadEditStep2Data();
+		}, 350);
+		return () => clearTimeout(t);
+	});
 
 	function openEditBatchModal() {
 		editBatchModalOpen = true;
@@ -495,6 +523,8 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 		};
 		editSelectedTestIds = [];
 		editSelectedStudentIds = [];
+		editTestsSearch = '';
+		editStudentsSearch = '';
 		editPrefetchStarted = false;
 		editTestsLoaded = false;
 		editTests = [];
@@ -1137,11 +1167,13 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	testsHasMore={editTestsPage < editTestsLastPage}
 	testsError={editTestsError}
 	tests={editTests}
+	testsSearch={editTestsSearch}
 	selectedTestIds={editSelectedTestIds}
 	studentsLoading={editStudentsLoading}
 	studentsLoadingMore={editStudentsLoadingMore}
 	studentsHasMore={editStudentsPage < editStudentsLastPage}
 	students={editStudents}
+	studentsSearch={editStudentsSearch}
 	selectedStudentIds={editSelectedStudentIds}
 	onClose={closeEditBatchModal}
 	onSubmitStep1={() => void onEditBatchStep1Continue()}
@@ -1157,6 +1189,8 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	onToggleAllStudents={toggleAllEditStudents}
 	onLoadMoreTests={() => void loadMoreEditTests()}
 	onLoadMoreStudents={() => void loadMoreEditStudents()}
+	onTestsSearchChange={(value) => (editTestsSearch = value)}
+	onStudentsSearchChange={(value) => (editStudentsSearch = value)}
 	isReady={isEditBatchReady}
 	{testLabel}
 	{testStatusLabel}
