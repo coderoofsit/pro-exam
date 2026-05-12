@@ -1396,7 +1396,7 @@ html[data-theme="light"] {
    GLOBAL UI CLASSES (colors only reference variables above)
 ═══════════════════════════════════════════════════════════════════════════ */
 
-.page-link-active {
+.pagination-btn.page-link-active {
   border-color: transparent;
   color: var(--pagination-active-text);
   background: linear-gradient(135deg,
@@ -1529,7 +1529,7 @@ html[data-theme='dark'] .question-card:hover {
 
 .pagination-btn:hover {
   border-color: var(--pagination-active-from);
-  color: var(--pagination-active-text);
+  color: var(--pagination-active-from);
 }
 
 .pagination-btn.page-link-active:hover {
