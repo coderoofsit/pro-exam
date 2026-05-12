@@ -11,6 +11,8 @@ let {
 	hideBoardTitle = false,
 	basePath,
 	showBackButton = true,
+	hideCount = false,
+	compact = false,
 	pageClass = ''
 }: {
 	exams: ExamApi[];
@@ -19,6 +21,8 @@ let {
 	hideBoardTitle?: boolean;
 	basePath?: string;
 	showBackButton?: boolean;
+	hideCount?: boolean;
+	compact?: boolean;
 	pageClass?: string;
 } = $props();
 
@@ -52,18 +56,22 @@ let {
 	const isStudentExamsPage = $derived(basePath === '/student/exams' || pageClass === 'student-exams');
 </script>
 
-<div class="mx-auto p-4 w-full max-w-7xl min-w-0 text-[var(--page-text)] {isStudentExamsPage ? 'exam-page--student' : ''}">
-	<div class="mt-3 mb-3 flex items-center gap-3 exam-page__meta">
+<div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)] {compact ? '' : 'p-4'} {isStudentExamsPage ? 'exam-page--student' : ''}">
+	{#if showBackButton || !hideCount}
+	<div class="{showBackButton || !hideCount ? 'mt-3 mb-3' : ''} flex items-center gap-3 exam-page__meta">
 		{#if showBackButton}
 			<BackButton
 				label="Back"
 				onClick={() => void goto(backFallbackForBasePath(), { replaceState: true })}
 			/>
 		{/if}
+		{#if !hideCount}
 		<p class="text-sm text-[var(--page-text-muted)] exam-page__count">
 			{exams.length} exam{exams.length !== 1 ? 's' : ''} available
 		</p>
+		{/if}
 	</div>
+	{/if}
 
 	{#if !hideBoardTitle}
 		<h1 class="mb-6 mt-1 text-xl font-bold text-[var(--page-text)] md:text-2xl">{boardName} Exams</h1>

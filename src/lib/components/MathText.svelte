@@ -87,9 +87,10 @@
 					],
 					processEscapes: true
 				},
-				svg: {
-					fontCache: 'global'
-				},
+			svg: {
+				fontCache: 'global',
+				scale: 0.92
+			},
 				startup: {
 					typeset: false
 				}
@@ -221,6 +222,8 @@
 	.math-text :global(mjx-container) {
 		display: inline !important;
 		margin: 0 0.15em;
+		opacity: 1 !important;
+		color: inherit;
 	}
 
 	.math-text :global(mjx-container[display='true']) {
@@ -232,6 +235,9 @@
 	.math-text :global(mjx-container > svg) {
 		display: inline !important;
 		vertical-align: middle;
+		color: inherit;
+		fill: currentColor;
+		opacity: 1 !important;
 	}
 
 	.math-text :global(p) {

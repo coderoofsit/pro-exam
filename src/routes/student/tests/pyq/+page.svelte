@@ -1,5 +1,6 @@
 <script lang="ts">
   import Exam from '$lib/components/Exam.svelte';
+  import BackButton from '$lib/components/BackButton.svelte';
   import type { Exam as ExamApi } from '$lib/api/exams';
   import { pyqExamsStore } from '$lib/stores/pyqExams';
   import { onMount } from 'svelte';
@@ -30,6 +31,9 @@
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
   <div class="mx-auto max-w-7xl px-4 pt-0 pb-8">
+    <div class="mb-3 mt-2 flex justify-start">
+      <BackButton label="Back" fallback="/student/tests" />
+    </div>
     {#if loading}
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {#each Array(6) as _, i (i)}
@@ -85,6 +89,8 @@
         hideBoardTitle={true}
         {basePath}
         showBackButton={false}
+        hideCount={true}
+        compact={true}
         pageClass="student-exams"
       />
     {/if}

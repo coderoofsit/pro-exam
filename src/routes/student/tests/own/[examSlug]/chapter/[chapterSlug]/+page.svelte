@@ -431,7 +431,7 @@
           >
             <div class="flex gap-3">
               <!-- Center 18px checkbox in the first line box: line-height 1.8 × 1.02rem -->
-              <span class="flex shrink-0 items-center self-start pt-[calc((1.836rem-18px)/2)]">
+              <span class="flex shrink-0 items-center self-start pt-[calc((1.584rem-18px)/2)]">
                 <label class="own-check">
                   <input
                     type="checkbox"
@@ -444,7 +444,7 @@
               </span>
 
               <div class="min-w-0 flex-1">
-                <div class="flex items-start gap-2 text-[1.02rem] leading-[1.8] text-[var(--page-text)]">
+                <div class="flex items-start gap-2 text-[0.88rem] font-medium leading-[1.8] text-[var(--page-text)]">
                   <span class="shrink-0 font-medium text-[var(--page-text-muted)]">
                     {(data.safePage - 1) * (paginationMeta?.limit ?? 25) + index + 1}.
                   </span>
