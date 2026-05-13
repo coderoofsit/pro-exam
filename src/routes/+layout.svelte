@@ -4,6 +4,7 @@
   import { normalizeMembershipProfileRef, type MembershipUser } from '$lib/api/auth';
   import '../app.css';
   import { authStore } from '$lib/stores/auth';
+  import NotificationHost from '$lib/components/notifications/NotificationHost.svelte';
 
   let { children, data } = $props<{
     children: import('svelte').Snippet;
@@ -57,4 +58,5 @@
   <link rel="icon" href={favicon} />
 </svelte:head>
 
+<NotificationHost />
 {@render children()}

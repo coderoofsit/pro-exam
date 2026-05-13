@@ -35,6 +35,8 @@ export async function fetchInstituteUsers(params: {
 	page?: number;
 	limit?: number;
 	search?: string;
+	/** When true, appends `relation=true` to the query string (institute student–teacher flows). */
+	relation?: boolean;
 	token?: string | null;
 	fetchFn?: typeof fetch;
 }) {
@@ -46,6 +48,9 @@ export async function fetchInstituteUsers(params: {
 	qs.set('limit', String(limit));
 	if (typeof params.search === 'string' && params.search.trim()) {
 		qs.set('search', params.search.trim());
+	}
+	if (params.relation) {
+		qs.set('relation', 'true');
 	}
 
 	const segment = params.role === 'teacher' ? 'teachers' : 'students';
@@ -74,6 +79,30 @@ export type RemoveInstituteUsersApiBody = {
 	success?: boolean;
 	message?: string;
 };
+
+/** POST `/api/v1/institute/teacher-student-relations` — body `{ teacherId, add?, remove? }`. */
+export async function createInstituteTeacherStudentRelations(params: {
+	teacherId: string;
+	add: string[];
+	remove?: string[];
+	token?: string | null;
+	fetchFn?: typeof fetch;
+}) {
+	const t = resolveApiToken(params.token ?? null);
+	const body: { teacherId: string; add: string[]; remove?: string[] } = {
+		teacherId: params.teacherId,
+		add: params.add
+	};
+	if (params.remove?.length) body.remove = params.remove;
+
+	return apiRequest<{ success?: boolean; message?: string }>({
+		endpoint: '/api/v1/institute/teacher-student-relations',
+		method: 'POST',
+		data: body,
+		fetch: params.fetchFn,
+		token: t
+	});
+}
 
 /** PATCH `/api/v1/institute/remove-users` — send either `teachers` or `students` IDs. */
 export async function removeInstituteUsers(params: {

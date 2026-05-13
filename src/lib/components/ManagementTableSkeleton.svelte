@@ -1,15 +1,17 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
 
-	/** Matches `perf-table` management UIs: checkbox + name | contact | status | action */
+	/** Matches `perf-table` management UIs: checkbox + name | contact | optional status | action */
 	let {
 		firstColumnLabel = 'STUDENT',
 		thirdColumnLabel = 'Status',
-		rowCount = 8
+		rowCount = 8,
+		showStatusColumn = true
 	}: {
 		firstColumnLabel?: string;
 		thirdColumnLabel?: string;
 		rowCount?: number;
+		showStatusColumn?: boolean;
 	} = $props();
 
 	const rows = $derived(Math.min(Math.max(rowCount, 1), 24));
@@ -19,8 +21,8 @@
   Skeleton layout aligned with ManagementTable pattern:
   - Column 1: checkbox + primary name line
   - Column 2: email + phone lines
-  - Column 3: status pill
-  - Column 4: action button
+  - Column 3 (optional): status pill when showStatusColumn
+  - Column 4 / 3: action button
 -->
 <div class="table-wrap bg-[var(--sh-exam-card-bg)]" aria-busy="true" aria-label="Loading table">
 	<table class="perf-table">
@@ -36,7 +38,9 @@
 					</div>
 				</th>
 				<th>Contact</th>
-				<th>{thirdColumnLabel}</th>
+				{#if showStatusColumn}
+					<th>{thirdColumnLabel}</th>
+				{/if}
 				<th>Action</th>
 			</tr>
 		</thead>
@@ -57,9 +61,11 @@
 							<Skeleton width="w-28" height="h-3" className="max-w-full" />
 						</div>
 					</td>
-					<td>
-						<Skeleton width="w-[5.5rem]" height="h-6" rounded="rounded-full" />
-					</td>
+					{#if showStatusColumn}
+						<td>
+							<Skeleton width="w-[5.5rem]" height="h-6" rounded="rounded-full" />
+						</td>
+					{/if}
 					<td>
 						<Skeleton width="w-24" height="h-8" rounded="rounded-xl" />
 					</td>

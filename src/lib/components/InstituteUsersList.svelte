@@ -5,11 +5,13 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import ManagementTableSkeleton from '$lib/components/ManagementTableSkeleton.svelte';
 	import ConfirmPermanentRemoveModal from '$lib/components/ConfirmPermanentRemoveModal.svelte';
+	import InstituteTeacherAddStudentsModal from '$lib/components/InstituteTeacherAddStudentsModal.svelte';
 	import {
 		removeInstituteUsers,
 		type InstituteUserRow,
 		type InstituteUsersPagePayload
 	} from '$lib/api/instituteUsers';
+	import { notifyError, notifySuccess } from '$lib/notifications';
 	import { authStore } from '$lib/stores/auth';
 
 	type Variant = 'students' | 'teachers';
@@ -33,8 +35,11 @@
 	let searchInput = $state('');
 	let selectedIds = $state<string[]>([]);
 	let confirmRemoveOpen = $state(false);
-	let removeSubmitting = $state(false);
 	let removeError = $state('');
+	/** When true, streamed list refetches (GET) apply without showing the table skeleton — used during remove + invalidate. */
+	let suppressListLoading = $state(false);
+	let addStudentsModalOpen = $state(false);
+	let addStudentsTeacherId = $state<string | null>(null);
 
 	const roleColumnLabel = $derived(variant === 'teachers' ? 'TEACHER' : 'STUDENT');
 
@@ -49,7 +54,8 @@
 
 	$effect(() => {
 		if (typeof ssrAuthMissing !== 'boolean') return;
-		loading = !ssrAuthMissing;
+		/* When there is no SSR token, skip list loading — do not force loading=true when auth is present (stream effect owns that). */
+		if (ssrAuthMissing) loading = false;
 	});
 
 	$effect(() => {
@@ -60,7 +66,8 @@
 		const p = streamedList;
 		if (!p || typeof (p as any).then !== 'function') return;
 
-		loading = true;
+		const showSkeleton = !suppressListLoading;
+		if (showSkeleton) loading = true;
 		void p.then((payload) => {
 			if (!payload) {
 				rows = [];
@@ -68,6 +75,7 @@
 				totalPages = 1;
 				selectedIds = [];
 				loading = false;
+				suppressListLoading = false;
 				return;
 			}
 			rows = payload.data ?? [];
@@ -75,6 +83,7 @@
 			totalPages = payload.lastPage ?? 1;
 			selectedIds = [];
 			loading = false;
+			suppressListLoading = false;
 		});
 	});
 
@@ -149,36 +158,46 @@
 	}
 
 	function closeRemoveModal() {
-		if (removeSubmitting) return;
 		confirmRemoveOpen = false;
 		removeError = '';
 	}
 
-	async function executeRemovePermanently() {
+	function executeRemovePermanently() {
 		const ids = selectedIds.slice();
 		if (!ids.length) return;
 
-		removeSubmitting = true;
+		const previousRows = rows.slice();
 		removeError = '';
+		/* Hide table skeleton for the follow-up GET after invalidate (and until the stream resolves). */
+		suppressListLoading = true;
+
+		confirmRemoveOpen = false;
+		rows = rows.filter((r) => !ids.includes(r._id));
+		selectedIds = [];
 
 		const token = get(authStore).token;
-		const res = await removeInstituteUsers({
+		void removeInstituteUsers({
 			role: variant === 'teachers' ? 'teacher' : 'student',
 			ids,
 			token,
 			fetchFn: fetch
+		}).then((res) => {
+			if (!res.success) {
+				rows = previousRows;
+				suppressListLoading = false;
+				const msg = res.message || 'Something went wrong';
+				removeError = msg;
+				notifyError(msg);
+				return;
+			}
+
+			const removedCount = ids.length;
+			notifySuccess(
+				`Successfully removed ${removedCount} ${removedCount === 1 ? entitySingular : entityPlural}.`
+			);
+
+			void invalidateAll();
 		});
-
-		removeSubmitting = false;
-
-		if (!res.success) {
-			removeError = res.message || 'Something went wrong';
-			return;
-		}
-
-		confirmRemoveOpen = false;
-		selectedIds = [];
-		await invalidateAll();
 	}
 </script>
 
@@ -245,8 +264,9 @@
 		{#if loading}
 			<ManagementTableSkeleton
 				firstColumnLabel={roleColumnLabel}
-				thirdColumnLabel={variant === 'teachers' ? 'Batch Approval' : 'Status'}
+				thirdColumnLabel="Batch Approval"
 				rowCount={8}
+				showStatusColumn={variant === 'teachers'}
 			/>
 		{:else if rows.length === 0}
 			<div
@@ -275,7 +295,9 @@
 								</div>
 							</th>
 							<th>Contact</th>
-							<th>{variant === 'teachers' ? 'Batch Approval' : 'Status'}</th>
+							{#if variant === 'teachers'}
+								<th>Batch Approval</th>
+							{/if}
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -304,8 +326,8 @@
 										{contactPhone(u) || '—'}
 									</div>
 								</td>
-								<td>
-									{#if variant === 'teachers'}
+								{#if variant === 'teachers'}
+									<td>
 										{#if u.batchApproved === true}
 											<span
 												class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp-brand)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]"
@@ -317,25 +339,29 @@
 												>Un-Approval</span
 											>
 										{/if}
-									{:else if u.isActive === false}
-										<span
-											class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--semantic-error)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--semantic-error)_12%,transparent)] px-3 py-1 text-xs font-semibold text-semantic-error"
-											>Blocked</span
-										>
-									{:else}
-										<span
-											class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp-brand)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]"
-											>Active</span
-										>
-									{/if}
-								</td>
+									</td>
+								{/if}
 								<td>
-									<button
-										type="button"
-										class="cursor-pointer rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm font-semibold text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
-									>
-										View details
-									</button>
+									<div class="flex flex-wrap items-center gap-1.5">
+										<button
+											type="button"
+											class="cursor-pointer rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
+										>
+											View
+										</button>
+										{#if variant === 'teachers'}
+											<button
+												type="button"
+												class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--page-link)_35%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_08%,transparent)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-link)] transition-colors hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_12%,transparent)]"
+												onclick={() => {
+													addStudentsTeacherId = u._id;
+													addStudentsModalOpen = true;
+												}}
+											>
+												Add Student
+											</button>
+										{/if}
+									</div>
 								</td>
 							</tr>
 						{/each}
@@ -358,14 +384,24 @@
 	</div>
 </div>
 
+<InstituteTeacherAddStudentsModal
+	open={addStudentsModalOpen}
+	teacherId={addStudentsTeacherId}
+	onClose={() => {
+		addStudentsModalOpen = false;
+		addStudentsTeacherId = null;
+	}}
+	onRelationsSaved={() => void invalidateAll()}
+/>
+
 <ConfirmPermanentRemoveModal
 	open={confirmRemoveOpen}
 	title="Remove permanently?"
 	entitySingular={entitySingular}
 	entityPlural={entityPlural}
 	count={selectedIds.length}
-	submitting={removeSubmitting}
+	submitting={false}
 	errorMessage={removeError}
 	onCancel={closeRemoveModal}
-	onConfirm={() => void executeRemovePermanently()}
+	onConfirm={executeRemovePermanently}
 />

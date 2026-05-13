@@ -280,7 +280,7 @@
 		</div>
 
 		{#if loading}
-			<ManagementTableSkeleton firstColumnLabel="STUDENT" thirdColumnLabel="Status" rowCount={8} />
+			<ManagementTableSkeleton firstColumnLabel="STUDENT" rowCount={8} showStatusColumn={false} />
 		{:else if studentsData.length === 0}
 			<div
 				class="flex flex-col items-center justify-center rounded-2xl border px-6 py-16 text-center border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]"
@@ -314,7 +314,6 @@
 								</div>
 							</th>
 							<th>Contact</th>
-							<th>Status</th>
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -357,24 +356,11 @@
 									</div>
 								</td>
 								<td>
-									{#if s.isActive === false}
-										<span
-											class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--semantic-error)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--semantic-error)_12%,transparent)] px-3 py-1 text-xs font-semibold text-semantic-error"
-											>Blocked</span
-										>
-									{:else}
-										<span
-											class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp-brand)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]"
-											>Active</span
-										>
-									{/if}
-								</td>
-								<td>
 									<button
 										type="button"
-										class="rounded-xl border px-3 py-2 text-sm font-semibold border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)] cursor-pointer"
+										class="cursor-pointer rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
 									>
-										View details
+										View
 									</button>
 								</td>
 							</tr>
