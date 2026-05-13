@@ -299,7 +299,7 @@
 						<tr>
 							<th>
 								<div class="flex items-center gap-2">
-									<input
+									<!-- <input
 										id="select-all-visible"
 										type="checkbox"
 										checked={allVisibleSelected}
@@ -309,8 +309,8 @@
 													e.currentTarget as HTMLInputElement
 												).checked,
 											)}
-									/>
-									<span>STUDENT</span>
+									/> -->
+									<span>STUDENTS</span>
 								</div>
 							</th>
 							<th>Contact</th>
@@ -324,7 +324,7 @@
 							<tr>
 								<td>
 									<div class="flex items-center gap-3">
-										<input
+										<!-- <input
 											type="checkbox"
 											checked={selectedStudentIds.includes(
 												s._id,
@@ -336,7 +336,7 @@
 														e.currentTarget as HTMLInputElement
 													).checked,
 												)}
-										/>
+										/> -->
 										<div
 											class="font-semibold text-[var(--page-text)]"
 										>

@@ -50,6 +50,8 @@
    [data-theme="dark"] below overrides only what changes.
 ═══════════════════════════════════════════════════════════════════════════ */
 :root {
+  /** MathJax (MathText): fixed em basis so formulas match across exams, PYQ, analysis, tests */
+  --math-text-font-size: 1rem;
 
   /* ── SIDEBAR ─────────────────────────────────────────────────────────── */
   --sb-bg-from: #ffffff;
@@ -411,6 +413,10 @@
   --own-unit-border-mix: 55%;
   --own-chapter-surface: transparent;
   --own-chapter-border-mix: 42%;
+  /* Question boxes inside manual chapter question list */
+  --own-question-bg: var(--pyq-paper-bg);
+  --own-question-border: var(--pyq-paper-border);
+  --own-question-hover-border: color-mix(in srgb, var(--page-link) 42%, var(--pyq-paper-border));
   /* Bottom bar (OwnTestChaptersPanel) */
   --own-bottom-bar-bg: rgba(255, 255, 255, 0.95);
   --own-bottom-bar-border: #e2e8f0;

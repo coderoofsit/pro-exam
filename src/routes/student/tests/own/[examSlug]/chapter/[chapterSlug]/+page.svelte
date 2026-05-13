@@ -426,34 +426,33 @@
         {#each questions as q, index (q._id)}
           <button
             type="button"
-            class="rounded-xl border border-[var(--page-link)]/35 bg-[var(--page-card-bg)] px-4 py-3.5 text-left transition hover:border-[var(--page-link)]/70"
+            class="rounded-2xl border border-[var(--own-question-border)] bg-[var(--own-question-bg)] p-4 text-left transition hover:border-[var(--own-question-hover-border)]"
             onclick={() => toggleQuestion(q)}
           >
-            <div class="flex gap-3">
-              <!-- Center 18px checkbox in the first line box: line-height 1.8 × 1.02rem -->
-              <span class="flex shrink-0 items-center self-start pt-[calc((1.8rem-18px)/2)]">
-                <label class="own-check">
+            <!-- One row: checkbox, number, and stem share the same baseline (first line). -->
+            <div class="flex min-w-0 flex-col gap-3">
+              <div
+                class="own-chapter-q-stem flex min-w-0 flex-wrap items-start gap-x-2 gap-y-2 text-base font-semibold leading-relaxed text-[var(--page-text)]"
+              >
+                <label class="own-check own-chapter-q-check shrink-0">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(q._id)}
+                    onclick={(e) => e.stopPropagation()}
                     onchange={() => toggleQuestion(q)}
                     aria-label="Select question"
                   />
                   <span class="own-check__visual" data-own-accent="0"></span>
                 </label>
-              </span>
-
-              <div class="min-w-0 flex-1">
-                <div class="flex items-start gap-2 text-base font-semibold leading-[1.8] text-[var(--page-text)]">
-                  <span class="shrink-0 font-medium text-[var(--page-text-muted)]">
-                    {(data.safePage - 1) * (paginationMeta?.limit ?? 25) + index + 1}.
-                  </span>
-                  <div class="min-w-0 flex-1">
-                    <MathText content={questionPromptEnContent(q)} />
-                  </div>
-                </div>
-                {#if promptImages(q).length > 0}
-                  <div class="mt-3 grid grid-cols-2 gap-2">
+                <span class="own-chapter-q-num shrink-0 font-medium tabular-nums text-[var(--page-text-muted)]">
+                  {(data.safePage - 1) * (paginationMeta?.limit ?? 25) + index + 1}.
+                </span>
+                <span class="own-chapter-q-math min-w-0 flex-[1_1_12rem] basis-0">
+                  <MathText content={questionPromptEnContent(q)} />
+                </span>
+              </div>
+              {#if promptImages(q).length > 0}
+                <div class="grid grid-cols-2 gap-2">
                     {#each promptImages(q) as img, imgIdx}
                       {@const src = imageSrc(img)}
                       {#if src}
@@ -467,7 +466,6 @@
                     {/each}
                   </div>
                 {/if}
-              </div>
             </div>
           </button>
         {/each}
@@ -487,3 +485,30 @@
   </div>
 </div>
 
+<style>
+  /* Keep check/number locked to first text line regardless of checked pseudo-mark. */
+  .own-chapter-q-check {
+    margin-top: 0.35rem;
+  }
+  .own-chapter-q-num {
+    margin-top: 0.06rem;
+  }
+  /* Checkbox visual scales with row text but does not shift when checked. */
+  .own-chapter-q-stem :global(.own-check__visual) {
+    width: 1em;
+    height: 1em;
+    min-width: 1em;
+    min-height: 1em;
+  }
+  /* MathText uses vertical-align:middle on SVG; middle skews the flex baseline row */
+  .own-chapter-q-math :global(mjx-container) {
+    vertical-align: baseline !important;
+  }
+  .own-chapter-q-math :global(mjx-container > svg) {
+    vertical-align: baseline !important;
+  }
+  /* Some stems come wrapped in <p>, whose top margin causes per-question vertical drift. */
+  .own-chapter-q-math :global(p) {
+    margin-top: 0 !important;
+  }
+</style>

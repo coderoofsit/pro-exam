@@ -217,6 +217,7 @@
 	.math-text {
 		display: inline;
 		white-space: pre-line;
+		font-size: var(--math-text-font-size, 1rem) !important;
 	}
 
 	.math-text :global(mjx-container) {
@@ -224,6 +225,7 @@
 		margin: 0 0.15em;
 		opacity: 1 !important;
 		color: inherit;
+		font-size: inherit !important;
 	}
 
 	.math-text :global(mjx-container[display='true']) {
