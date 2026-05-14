@@ -139,8 +139,12 @@
     return String(raw ?? '').replace(/\s+/g, ' ').trim();
   }
 
+  function questionId(q: Question): string {
+    return String((q as any)?._id ?? (q as any)?.id ?? "").trim();
+  }
+
   function toggleQuestion(q: Question) {
-    const id = String(q?._id ?? '');
+    const id = questionId(q);
     if (!id) return;
     const exists = selectedIds.has(id);
     if (exists) {
@@ -423,11 +427,21 @@
       </div>
     {:else}
       <div class="flex flex-col gap-3 pb-24">
-        {#each questions as q, index (q._id)}
-          <button
-            type="button"
-            class="rounded-2xl border border-[var(--own-question-border)] bg-[var(--own-question-bg)] p-4 text-left transition hover:border-[var(--own-question-hover-border)]"
-            onclick={() => toggleQuestion(q)}
+        {#each questions as q, index (questionId(q))}
+          <!-- Do not wrap the checkbox in <button>: interactive content inside a button is invalid HTML and breaks selection in browsers. -->
+          <article
+            class="rounded-2xl border border-[var(--own-question-border)] bg-[var(--own-question-bg)] p-4 text-left transition hover:border-[var(--own-question-hover-border)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--page-link)_45%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--own-question-bg)]"
+            tabindex="0"
+            onclick={(e) => {
+              const el = e.target as HTMLElement;
+              if (el.closest("label.own-chapter-q-check") || el.closest('input[type="checkbox"]')) return;
+              toggleQuestion(q);
+            }}
+            onkeydown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              toggleQuestion(q);
+            }}
           >
             <!-- One row: checkbox, number, and stem share the same baseline (first line). -->
             <div class="flex min-w-0 flex-col gap-3">
@@ -437,8 +451,7 @@
                 <label class="own-check own-chapter-q-check shrink-0">
                   <input
                     type="checkbox"
-                    checked={selectedIds.has(q._id)}
-                    onclick={(e) => e.stopPropagation()}
+                    checked={selectedIds.has(questionId(q))}
                     onchange={() => toggleQuestion(q)}
                     aria-label="Select question"
                   />
@@ -467,7 +480,7 @@
                   </div>
                 {/if}
             </div>
-          </button>
+          </article>
         {/each}
       </div>
 
