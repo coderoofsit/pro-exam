@@ -49,6 +49,8 @@
     basePath = '/student'
   }: { data: PageData; basePath?: string } = $props();
 
+  const isStudent = $derived(basePath === '/student');
+
   // Handle streamed data
   let topicsResponse = $state<any>(null);
   let isLoading = $state(true);
@@ -148,6 +150,30 @@
   /** Set when POST /tests succeeds; user must click OK to open success modal. */
   let manualBgCreatedTestId = $state<string | null>(null);
   let manualBgCreateRequestGen = $state(0);
+  
+  // Test Settings State
+  let testSettingsOpen = $state(false);
+  let customTestName = $state('');
+  let customDuration = $state<string>('');
+  let customKind = $state('CUSTOM');
+  let customStartDate = $state('');
+  let customStartTime = $state('');
+  let customEndDate = $state('');
+  let customEndTime = $state('');
+  let startNow = $state(false);
+  let noExpiry = $state(false);
+  let pendingDistData = $state<OwnTestDistributionContinueData | null>(null);
+  let pendingSnapshot = $state<OwnTestSelectionSnapshot | null>(null);
+
+  const isSettingsValid = $derived.by(() => {
+    if (!customTestName.trim()) return false;
+    if (!customDuration) return false;
+    if (!isStudent) {
+      if (!startNow && (!customStartDate || !customStartTime)) return false;
+      if (!noExpiry && (!customEndDate || !customEndTime)) return false;
+    }
+    return true;
+  });
 
   const manualSelectionKey = $derived(`own-manual-selected::${examSlug}`);
   const manualSelectedCount = $derived(manualSelectedIds.size);
@@ -411,34 +437,49 @@
   }
 
   const manualConfirmHierarchy = $derived.by(() => {
-    const selectedChapterIds = new Set(
-      manualSelectedRows.map((r) => String(r.chapterId || r.chapterGroupId || '').trim()).filter(Boolean)
-    );
+    const selectedChapterIds = new Set();
+    const selectedTopicIds = new Set();
+    
+    if (distMode === 'manual') {
+      manualSelectedRows.forEach(r => {
+        const cId = String(r.chapterId || r.chapterGroupId || '').trim();
+        if (cId) selectedChapterIds.add(cId);
+      });
+    } else if (pendingDistData) {
+      pendingDistData.subjects.forEach(s => {
+        s.chapterGroup.forEach(cg => {
+          if (cg.numberOfQuestions > 0) {
+            selectedChapterIds.add(String(cg.id));
+            cg.topics.forEach(t => {
+              if (t.numberOfQuestions > 0) selectedTopicIds.add(String(t.id));
+            });
+          }
+        });
+      });
+    }
+
     const out: { subjectName: string; chapters: { chapterName: string; topicNames: string[] }[] }[] = [];
     for (const row of groupedSubjects) {
-      const subjectName = row.subject.name?.en ?? row.subject.slug;
       const chaptersOut: { chapterName: string; topicNames: string[] }[] = [];
       for (const unit of row.data ?? []) {
-        const chapterName = unit.chapterGroup.name?.en ?? unit.chapterGroup.slug;
+        if (!selectedChapterIds.has(String(unit.chapterGroup._id))) continue;
+        
         const topicNames: string[] = [];
-        for (const ch of unit.data ?? []) {
-          // Note: In manual mode, chapterId stored in row is actually the Chapter ID,
-          // but we are selecting topics. Wait, the chapter page stores the Chapter ID.
-          // So selecting any topic in a chapter will highlight that chapter.
-          if (selectedChapterIds.has(String(unit.chapterGroup._id))) {
-             // Wait, if I select a question, it stores the chapterId.
-             // I need to check if the question belongs to this topic.
-             // But our manualSelectedRows only has {id, chapterId}.
-             // So we can only reliably show selection at the Chapter level.
-             // Actually, the current logic shows chapterNames.
-             topicNames.push(ch.name?.en ?? ch.slug);
+        for (const topic of unit.data ?? []) {
+          if (distMode === 'manual' || selectedTopicIds.has(String(topic._id))) {
+            topicNames.push(topic.name?.en ?? topic.slug);
           }
         }
-        if (topicNames.length === 0) continue;
-        chaptersOut.push({ chapterName, topicNames });
+        if (topicNames.length > 0) {
+          chaptersOut.push({ 
+            chapterName: unit.chapterGroup.name?.en ?? unit.chapterGroup.slug, 
+            topicNames 
+          });
+        }
       }
-      if (chaptersOut.length === 0) continue;
-      out.push({ subjectName, chapters: chaptersOut });
+      if (chaptersOut.length > 0) {
+        out.push({ subjectName: row.subject.name?.en ?? row.subject.slug, chapters: chaptersOut });
+      }
     }
     return out;
   });
@@ -468,14 +509,93 @@
       return;
     }
 
-    manualConfirmModalOpen = true;
+    distMode = 'manual';
+    pendingSnapshot = buildManualSnapshot();
+    customTestName = `Custom Test ${examName} ${formatIstDateDdMmYyyy()}`;
+    customDuration = String(durationMinutesForQuestionCount(manualSelectedCount));
+    testSettingsOpen = true;
+  }
+
+  function formatDatePickerToBackend(dateStr: string): string {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    if (!y || !m || !d) return dateStr;
+    return `${d}/${m}/${y}`;
+  }
+
+  async function executeCreate() {
+    createTestError = null;
+    manualBgCreatedTestId = null;
     manualBgCreatePending = true;
     manualBgCreateRequestGen++;
     const gen = manualBgCreateRequestGen;
 
+    const istDate = formatIstDateDdMmYyyy();
+    const boardId = (pendingSnapshot?.boardId || boardIdFromPage)?.trim();
+    const examId = (pendingSnapshot?.examId || examIdFromPage)?.trim();
+
+    if (!boardId || !examId) {
+      createTestError = 'Missing exam or board information.';
+      manualBgCreatePending = false;
+      return;
+    }
+
+    // Switch modals immediately
+    testSettingsOpen = false;
+    manualConfirmModalOpen = true;
+
     void (async () => {
       try {
-        const res = await createManualCustomTest(payload);
+        let res: Awaited<ReturnType<typeof createManualCustomTest>>;
+        
+        if (distMode === 'manual') {
+          const payload = buildManualCreatePayload();
+          if (payload) {
+            payload.name.en = customTestName;
+            payload.kind = customKind;
+            payload.settings.durationMinutes = parseInt(customDuration) || payload.settings.durationMinutes;
+            
+            if (!isStudent) {
+              if (!startNow) {
+                (payload.settings as any).startDate = formatDatePickerToBackend(customStartDate);
+                (payload.settings as any).startTime = customStartTime;
+              }
+              if (!noExpiry) {
+                (payload.settings as any).endDate = formatDatePickerToBackend(customEndDate);
+                (payload.settings as any).endTime = customEndTime;
+              }
+            }
+            
+            res = await createManualCustomTest(payload);
+          } else {
+            throw new Error('Could not build manual payload');
+          }
+        } else {
+          if (!pendingDistData) throw new Error('Missing distribution data');
+          const settings: any = { durationMinutes: parseInt(customDuration) || 1 };
+          
+          if (!isStudent) {
+            if (!startNow) {
+              settings.startDate = formatDatePickerToBackend(customStartDate);
+              settings.startTime = customStartTime;
+            }
+            if (!noExpiry) {
+              settings.endDate = formatDatePickerToBackend(customEndDate);
+              settings.endTime = customEndTime;
+            }
+          }
+
+          res = await createRandomCustomTest({
+            boardId,
+            examId,
+            examSlug,
+            name: { en: customTestName },
+            kind: customKind,
+            settings,
+            subjects: pendingDistData.subjects
+          });
+        }
+
         if (gen !== manualBgCreateRequestGen) return;
         if (!res.success) {
           createTestError = res.message;
@@ -483,8 +603,7 @@
         }
         const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
         if (!newTestId) {
-          createTestError =
-            'Test was created but we could not read its id. Start it from Tests instead.';
+          createTestError = 'Test created but ID not found.';
           return;
         }
         manualBgCreatedTestId = newTestId;
@@ -526,81 +645,16 @@
     data: OwnTestDistributionContinueData;
   }) {
     const { snapshot, data } = _payload;
-    const istDate = formatIstDateDdMmYyyy();
-    createTestError = null;
-    creatingTest = true;
-
-    const boardId = snapshot.boardId?.trim() || boardIdFromPage;
-    const examId = snapshot.examId?.trim() || examIdFromPage;
-    if (!boardId || !examId) {
-      createTestError =
-        'Missing exam or board for this test. Please refresh the page or pick another exam.';
-      creatingTest = false;
-      return;
-    }
-
-    try {
-      const manualQuestionCount = manualSelectedRows.length
-        ? manualSelectedRows.length
-        : manualSelectedIds.size;
-      const randomQuestionCount = totalQuestionsFromDistributionPayload(data);
-      const durationMinutes = durationMinutesForQuestionCount(
-        distMode === 'manual' ? manualQuestionCount : randomQuestionCount
-      );
-
-      let res: Awaited<ReturnType<typeof createManualCustomTest>>;
-      if (distMode === 'manual') {
-        const manualPayload = buildManualCreatePayload();
-        if (!manualPayload) {
-          createTestError =
-            'Missing exam or board for this test. Please refresh the page or pick another exam.';
-          return;
-        }
-        res = await createManualCustomTest(manualPayload);
-      } else {
-        res = await createRandomCustomTest({
-          boardId,
-          examId,
-          examSlug,
-          name: {
-            en: `Custom Test ${examName} ${istDate}`
-          },
-          kind: 'CUSTOM',
-          settings: {
-            durationMinutes
-          },
-          subjects: data.subjects
-        });
-      }
-
-      if (!res.success) {
-        createTestError = res.message;
-        return;
-      }
-
-      const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
-      if (!newTestId) {
-        createTestError =
-          'Test was created but we could not read its id. Start it from Tests instead.';
-        createdTestId = null;
-        return;
-      }
-      createdTestId = newTestId;
-      successStartError = null;
-
-      if (distMode === 'manual' && browser) {
-        try {
-          sessionStorage.removeItem(manualSelectionKey);
-        } catch {}
-        manualSelectedIds = new Set();
-        manualSelectedRows = [];
-      }
-      distModalOpen = false;
-      distSnapshot = null;
-      successModalOpen = true;
-    } finally {
-      creatingTest = false;
-    }
+    distMode = 'random';
+    pendingSnapshot = snapshot;
+    pendingDistData = data;
+    
+    const count = totalQuestionsFromDistributionPayload(data);
+    customTestName = `Custom Test ${examName} ${formatIstDateDdMmYyyy()}`;
+    customDuration = String(durationMinutesForQuestionCount(count));
+    
+    distModalOpen = false;
+    testSettingsOpen = true;
   }
 
   function handleSuccessDoLater() {
@@ -766,12 +820,140 @@
   onStartTest={() => void handleSuccessStartTest()}
 />
 
+{#if testSettingsOpen}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
+    <div class="w-full max-w-lg rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
+      <h2 class="text-xl font-bold text-[var(--page-text)]">Test Settings</h2>
+      
+      <div class="mt-6 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">Test Name</span>
+          <input
+            type="text"
+            class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)]"
+            placeholder="Enter test name"
+            bind:value={customTestName}
+          />
+        </label>
+
+        {#if !isStudent}
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">Type</span>
+            <select
+              class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)]"
+              bind:value={customKind}
+            >
+              <option value="PRACTICE">Practice</option>
+              <option value="MOCK">Mock</option>
+              <option value="SECTIONAL">Sectional</option>
+              <option value="CHAPTERWISE">Chapterwise</option>
+              <option value="CUSTOM">Custom</option>
+              <option value="PREVIOUSYEAR">Previous Year</option>
+            </select>
+          </label>
+        {/if}
+
+        <label class="flex flex-col gap-1.5">
+          <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">Duration (minutes)</span>
+          <input
+            type="number"
+            min="1"
+            class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)]"
+            placeholder="e.g. 60"
+            bind:value={customDuration}
+          />
+        </label>
+
+        {#if !isStudent}
+          <div class="space-y-4 pt-2">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="startNow" class="h-4 w-4 accent-[var(--page-link)]" bind:checked={startNow} />
+              <label for="startNow" class="text-xs font-bold uppercase tracking-wider text-[var(--page-text)] cursor-pointer">Start Now</label>
+            </div>
+            <div class="grid grid-cols-2 gap-4" class:opacity-50={startNow}>
+              <label class="flex flex-col gap-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">Start Date</span>
+                <input
+                  type="date"
+                  class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)] disabled:cursor-not-allowed"
+                  bind:value={customStartDate}
+                  disabled={startNow}
+                />
+              </label>
+              <label class="flex flex-col gap-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">Start Time</span>
+                <input
+                  type="time"
+                  class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)] disabled:cursor-not-allowed"
+                  bind:value={customStartTime}
+                  disabled={startNow}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-4 pt-2">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="noExpiry" class="h-4 w-4 accent-[var(--page-link)]" bind:checked={noExpiry} />
+              <label for="noExpiry" class="text-xs font-bold uppercase tracking-wider text-[var(--page-text)] cursor-pointer">No Expiry date</label>
+            </div>
+            <div class="grid grid-cols-2 gap-4" class:opacity-50={noExpiry}>
+              <label class="flex flex-col gap-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">End Date</span>
+                <input
+                  type="date"
+                  class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)] disabled:cursor-not-allowed"
+                  bind:value={customEndDate}
+                  disabled={noExpiry}
+                />
+              </label>
+              <label class="flex flex-col gap-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-[var(--page-text-muted)]">End Time</span>
+                <input
+                  type="time"
+                  class="w-full rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-sm text-[var(--page-text)] outline-none focus:border-[var(--page-link)] disabled:cursor-not-allowed"
+                  bind:value={customEndTime}
+                  disabled={noExpiry}
+                />
+              </label>
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      {#if createTestError}
+        <p class="mt-4 text-sm text-[var(--pc-error-text)] bg-[var(--pc-error-bg)] p-3 rounded-lg border border-[var(--pc-error-border)]">
+          {createTestError}
+        </p>
+      {/if}
+
+      <div class="mt-8 flex gap-3">
+        <button
+          type="button"
+          class="flex-1 rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] py-3 text-sm font-bold text-[var(--page-text)] transition hover:bg-[var(--page-card-border)]"
+          onclick={() => { testSettingsOpen = false; createTestError = null; }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-xl bg-[var(--page-link)] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          onclick={executeCreate}
+          disabled={!isSettingsValid}
+        >
+          Create Test
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 {#if manualConfirmModalOpen}
   <div class="own-manual-confirm-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
     <div class="w-full max-w-lg rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6 shadow-xl">
       <h2 class="text-xl font-bold text-[var(--page-text)]">Create Tests</h2>
       <p class="mt-3 text-sm text-[var(--page-text-muted)]">
-        Duration: {durationMinutesForQuestionCount(manualSelectedCount)} minutes
+        Duration: {customDuration} minutes
       </p>
 
       <div class="mt-5 max-h-[min(52vh,26rem)] space-y-6 overflow-y-auto pr-1 text-sm text-[var(--page-text)]">
