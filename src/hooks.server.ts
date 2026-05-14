@@ -39,6 +39,17 @@ function isProtectedPath(pathname: string): boolean {
 	return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+/** First-time Google sign-in returns no JWT until membership exists — allow onboarding without session cookie. */
+function allowsUnauthenticatedOnboarding(pathname: string): boolean {
+	const p = pathname.replace(/\/+$/, '') || '/';
+	return (
+		p === '/student/profile/create' ||
+		p === '/teacher/profile/create' ||
+		p === '/institute/profile/create' ||
+		p === '/institute/profile'
+	);
+}
+
 function rolePrefix(role: AccountRole): '/student' | '/teacher' | '/institute' {
 	if (role === 'tutor') return '/teacher';
 	if (role === 'institute') return '/institute';
@@ -62,7 +73,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(302, roleDashboardPath(role));
 	}
 
-	if (!isAuthenticated && isProtectedPath(pathname)) {
+	if (!isAuthenticated && isProtectedPath(pathname) && !allowsUnauthenticatedOnboarding(pathname)) {
 		throw redirect(302, '/');
 	}
 

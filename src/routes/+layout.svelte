@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { page } from '$app/state';
   import favicon from '$lib/assets/favicon.svg';
   import { normalizeMembershipProfileRef, type MembershipUser } from '$lib/api/auth';
   import '../app.css';
@@ -59,4 +60,6 @@
 </svelte:head>
 
 <NotificationHost />
-{@render children()}
+{#key page.url.pathname}
+  {@render children()}
+{/key}

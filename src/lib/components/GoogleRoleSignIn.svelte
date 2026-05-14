@@ -34,6 +34,14 @@
     return "student";
   }
 
+  function dismissGoogleUi() {
+    try {
+      window.google?.accounts?.id?.cancel?.();
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function handleGoogleCredential(response: { credential?: string }) {
     const idToken = response?.credential;
 
@@ -84,22 +92,26 @@
       authStore.setAuthFromLoginResponse(loginResponse, selected);
       onSuccess?.(loginResponse);
 
+      dismissGoogleUi();
+
+      const navOpts = { replaceState: true };
+
       if (users.length === 0 && !token) {
         if (selected === "student") {
-          await goto("/student/profile/create");
+          await goto("/student/profile/create", navOpts);
           return;
         }
 
         if (selected === "tutor") {
-          await goto("/teacher/profile/create");
+          await goto("/teacher/profile/create", navOpts);
           return;
         }
 
-        await goto("/institute/profile/create");
+        await goto("/institute/profile", navOpts);
         return;
       }
 
-      await goto(getRedirectPath(selected));
+      await goto(getRedirectPath(selected), navOpts);
     } catch (error) {
       errorMessage =
         error instanceof Error ? error.message : "Google authentication failed";
