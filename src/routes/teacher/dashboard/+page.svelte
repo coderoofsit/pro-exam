@@ -65,6 +65,12 @@
 		if (typeof (exam as any).description === 'string') return (exam as any).description;
 		return null;
 	}
+
+	/** Institute-linked teachers add students via the institute; hide bulk add for them. */
+	function shouldShowAddStudentsUpload(d: UserDashboardData | null): boolean {
+		if (d == null) return true;
+		return d.instituteId == null;
+	}
 </script>
 
 <svelte:head>
@@ -200,10 +206,14 @@
 			
 		</div>
 	</section>
-		<AddStudentsUploadSection
-			sectionTitle="Add Students"
-			importEndpoint="/api/v1/teacher/import-students"
-		/>
+		{#await dashboardPromise then dashboardData}
+			{#if shouldShowAddStudentsUpload(dashboardData)}
+				<AddStudentsUploadSection
+					sectionTitle="Add Students"
+					importEndpoint="/api/v1/teacher/import-students"
+				/>
+			{/if}
+		{/await}
 		<section class="mt-6 min-w-0" aria-label="WhatsApp community">
 			<div
 				class="flex flex-col items-start gap-3 rounded-2xl border-2 border-[var(--whatsapp-border-soft)] bg-[var(--whatsapp-bg,var(--dash-glass-bg))] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
