@@ -17,6 +17,8 @@ export type AuthLinkedProfile = {
 export type AuthUser = {
   /** Membership row id from GET /membership (distinct per listed profile). */
   _id: string;
+  /** When true, teacher may create batches (from GET /membership). */
+  batchApproved?: boolean;
   /** Profile document id — required for select-membership when present on API. */
   userProfileId?: string;
   /** From populated GET /membership `userProfileId` (shared across profiles). */

@@ -596,6 +596,7 @@
       const prof = normalizeMembershipProfileRef(user.userProfileId);
       return {
         _id: user._id,
+        batchApproved: user.batchApproved,
         userProfileId: prof.userProfileId,
         profileEmail: prof.email,
         profilePhone: prof.phone,

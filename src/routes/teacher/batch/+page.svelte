@@ -21,6 +21,12 @@
 
   let { data }: { data: PageData } = $props();
 
+  const activeTeacherMembership = $derived(
+    $authStore.users.find((u) => u.defaultProfile) ?? $authStore.users[0]
+  );
+  const canCreateBatch = $derived(activeTeacherMembership?.batchApproved === true);
+  const currentTeacherUserId = $derived((activeTeacherMembership?._id ?? '').trim());
+
   let searchInput = $state(data.search ?? '');
 	let createBatchModalOpen = $state(false);
 	let createBatchStep = $state<1 | 2>(1);
@@ -273,6 +279,8 @@ step2Students = [...mergedStudents];
   }
 
   function openEditBatchModal(batch: StudentBatchItem) {
+    const creatorId = (batch.createdByUser?._id ?? '').trim();
+    if (!currentTeacherUserId || creatorId !== currentTeacherUserId) return;
     createBatchModalOpen = true;
     createBatchStep = 1;
     step2Tab = 'tests';
@@ -336,6 +344,7 @@ step2Students = [...mergedStudents];
   }
 
 	function openCreateBatchModal() {
+		if (!canCreateBatch) return;
 		// Reset on open so users always start fresh.
 		createBatchStep = 1;
 		step2Tab = 'tests';
@@ -539,16 +548,18 @@ step2Students = [...mergedStudents];
           oninput={onSearchInput}
         />
       </label>
-      <button
-        type="button"
-        onclick={openCreateBatchModal}
-        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="text-[var(--accent-cta-cyan)]">
-          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-        Create Batch
-      </button>
+      {#if canCreateBatch}
+        <button
+          type="button"
+          onclick={openCreateBatchModal}
+          class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--cta-cyan-border)] bg-[var(--dash-cta-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--dash-cta-text)] shadow-[var(--cta-cyan-glow)] transition hover:border-[var(--cta-cyan-border-hover)] hover:bg-[var(--dash-cta-hover-bg)]"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="text-[var(--accent-cta-cyan)]">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          Create Batch
+        </button>
+      {/if}
     </header>
 
     {#await data.streamed.batchesData}
@@ -599,21 +610,23 @@ step2Students = [...mergedStudents];
           {#each batches as batch (batch._id)}
             <li class="relative">
               <StudentBatchCard {batch} basePath="/teacher/batch" />
-              <button
-                type="button"
-                class="absolute right-12 top-3 z-30 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-arrow-color)] transition hover:border-[var(--sh-exam-card-hover-border)]"
-                aria-label={`Edit ${batch.name}`}
-                title="Edit batch"
-                onclick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  openEditBatchModal(batch);
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
+              {#if currentTeacherUserId && (batch.createdByUser?._id ?? '').trim() === currentTeacherUserId}
+                <button
+                  type="button"
+                  class="absolute right-12 top-3 z-30 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-arrow-color)] transition hover:border-[var(--sh-exam-card-hover-border)]"
+                  aria-label={`Edit ${batch.name}`}
+                  title="Edit batch"
+                  onclick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEditBatchModal(batch);
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              {/if}
             </li>
           {/each}
         </ul>

@@ -69,6 +69,8 @@ export async function dismissNotification(params: {
 export type MembershipUser = {
   /** Membership row id — use as `membershipId` for select-membership. */
   _id: string;
+  /** Institute-approved flag for batch create/manage UI (teacher profiles). */
+  batchApproved?: boolean;
   /** Profile id string or populated `{ _id, email, phone }`. */
   userProfileId?: MembershipUserProfileRef;
   firstName?: string;
