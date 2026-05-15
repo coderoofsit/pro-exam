@@ -20,13 +20,29 @@ export type LoginUser = {
   instituteId?: LinkedProfile | null;
   teacherId?: LinkedProfile | null;
   adminId?: LinkedProfile | null;
+  defaultProfile?: boolean;
 };
+
+export function normalizeOwnedId(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    const id = value.trim();
+    return id || null;
+  }
+  if (typeof value === 'object' && '_id' in value) {
+    const id = String((value as { _id?: unknown })._id ?? '').trim();
+    return id || null;
+  }
+  return null;
+}
 
 export type GoogleLoginData = {
   users: LoginUser[];
   id: string;
   token: string | null;
   role: BackendRole;
+  ownedBy?: string | { _id?: string } | null;
+  ownedRole?: string | null;
 };
 
 export type LoginResponse = {
@@ -125,6 +141,8 @@ export type SelectMembershipApiBody = {
   data: {
     token: string;
     users: MembershipUser[];
+    ownedBy?: string | { _id?: string } | null;
+    ownedRole?: string | null;
     fcmToken?: string | null;
     phone?: string | null;
     isVerifiedPhone?: boolean;

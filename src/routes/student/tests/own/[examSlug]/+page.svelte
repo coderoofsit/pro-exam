@@ -816,6 +816,7 @@
   examName={examName}
   starting={startingOwnSuccessTest}
   startError={successStartError}
+  isStudent={isStudent}
   onDoLater={handleSuccessDoLater}
   onStartTest={() => void handleSuccessStartTest()}
 />

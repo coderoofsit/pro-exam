@@ -1,11 +1,12 @@
 
 import { writable, get } from "svelte/store";
-import type {
-  AccountType,
-  LoginResponse,
-  LoginUser,
-  LinkedProfile,
-  MembershipSubscription,
+import {
+  normalizeOwnedId,
+  type AccountType,
+  type LoginResponse,
+  type LoginUser,
+  type LinkedProfile,
+  type MembershipSubscription,
 } from "$lib/api/auth";
 
 export type AuthLinkedProfile = {
@@ -39,6 +40,8 @@ export type AuthState = {
   token: string | null;
   role: AccountType | null;
   profileId: string | null;
+  ownedBy: string | null;
+  ownedRole: string | null;
   isAuthenticated: boolean;
 };
 
@@ -49,14 +52,36 @@ export const AUTH_ROLE_STORAGE_KEY = "auth_role";
 /** Cookie key for FCM token mirrored by `/auth/session`. */
 export const FCM_TOKEN_STORAGE_KEY = "fcm_token";
 const AUTH_PROFILE_ID_KEY = "auth_profile_id";
+const OWNED_BY_KEY = "owned_by";
+const OWNED_ROLE_KEY = "owned_role";
 
 const initialState: AuthState = {
   users: [],
   token: null,
   role: null,
   profileId: null,
+  ownedBy: null,
+  ownedRole: null,
   isAuthenticated: false,
 };
+
+function persistOwned(ownedBy: string | null, ownedRole: string | null) {
+  if (typeof localStorage === "undefined") return;
+  if (ownedBy) localStorage.setItem(OWNED_BY_KEY, ownedBy);
+  else localStorage.removeItem(OWNED_BY_KEY);
+  if (ownedRole) localStorage.setItem(OWNED_ROLE_KEY, ownedRole);
+  else localStorage.removeItem(OWNED_ROLE_KEY);
+}
+
+function readPersistedOwned(): { ownedBy: string | null; ownedRole: string | null } {
+  if (typeof localStorage === "undefined") {
+    return { ownedBy: null, ownedRole: null };
+  }
+  return {
+    ownedBy: localStorage.getItem(OWNED_BY_KEY)?.trim() || null,
+    ownedRole: localStorage.getItem(OWNED_ROLE_KEY)?.trim() || null,
+  };
+}
 
 function mapLinkedProfile(
   profile?: LinkedProfile | null,
@@ -109,14 +134,22 @@ function createAuthStore() {
       token: string | null;
       role: AccountType | null;
       profileId: string | null;
+      ownedBy?: string | null;
+      ownedRole?: string | null;
     }) {
+      const persisted = readPersistedOwned();
+      const ownedBy = data.ownedBy ?? persisted.ownedBy;
+      const ownedRole = data.ownedRole ?? persisted.ownedRole;
       const authData: AuthState = {
         users: data.users,
         token: data.token,
         role: data.role,
         profileId: data.profileId,
+        ownedBy,
+        ownedRole,
         isAuthenticated: !!data.token,
       };
+      persistOwned(ownedBy, ownedRole);
 
       persistToken(data.token);
       persistProfileId(data.profileId);
@@ -127,14 +160,26 @@ function createAuthStore() {
       token: string | null;
       users: AuthUser[];
       role: AccountType | null;
+      ownedBy?: string | null;
+      ownedRole?: string | null;
     }) {
       persistToken(data.token);
+      const ownedBy =
+        data.ownedBy !== undefined ? data.ownedBy : get({ subscribe }).ownedBy;
+      const ownedRole =
+        data.ownedRole !== undefined ? data.ownedRole : get({ subscribe }).ownedRole;
+      if (data.ownedBy !== undefined || data.ownedRole !== undefined) {
+        persistOwned(ownedBy, ownedRole);
+      }
 
       update((state) => ({
         ...state,
         token: data.token,
         users: data.users,
         role: data.role,
+        ownedBy: data.ownedBy !== undefined ? (data.ownedBy ?? null) : state.ownedBy,
+        ownedRole:
+          data.ownedRole !== undefined ? (data.ownedRole ?? null) : state.ownedRole,
         isAuthenticated: !!data.token,
       }));
     },
@@ -149,6 +194,8 @@ function createAuthStore() {
       const token = payload?.token ?? null;
       const profileId = payload?.id ?? null;
       const backendRole = payload?.role ?? null;
+      const ownedBy = normalizeOwnedId(payload?.ownedBy);
+      const ownedRole = payload?.ownedRole?.trim() || null;
 
       const mappedUsers: AuthUser[] = usersFromApi.map((user: LoginUser) => ({
         _id: user._id,
@@ -158,6 +205,7 @@ function createAuthStore() {
         instituteId: mapLinkedProfile(user.instituteId),
         teacherId: mapLinkedProfile(user.teacherId),
         adminId: mapLinkedProfile(user.adminId),
+        defaultProfile: user.defaultProfile,
       }));
 
       const mappedRole: AccountType | null =
@@ -168,22 +216,28 @@ function createAuthStore() {
         token,
         role: mappedRole,
         profileId,
+        ownedBy,
+        ownedRole,
         isAuthenticated: !!token,
       };
 
       persistToken(token);
       persistProfileId(profileId);
+      persistOwned(ownedBy, ownedRole);
       set(authData);
     },
 
     restore() {
       const token = null;
       const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
+      const { ownedBy, ownedRole } = readPersistedOwned();
 
       update((state) => ({
         ...state,
         token,
         profileId,
+        ownedBy,
+        ownedRole,
         isAuthenticated: !!token,
       }));
     },
@@ -191,11 +245,14 @@ function createAuthStore() {
     restoreToken() {
       const token = null;
       const profileId = localStorage.getItem(AUTH_PROFILE_ID_KEY);
+      const { ownedBy, ownedRole } = readPersistedOwned();
 
       update((state) => ({
         ...state,
         token,
         profileId,
+        ownedBy,
+        ownedRole,
         isAuthenticated: !!token,
       }));
     },
@@ -234,12 +291,15 @@ function createAuthStore() {
 
     clearUserData() {
       persistProfileId(null);
+      persistOwned(null, null);
 
       update((state) => ({
         ...state,
         users: [],
         role: null,
         profileId: null,
+        ownedBy: null,
+        ownedRole: null,
       }));
     },
 
@@ -250,12 +310,14 @@ function createAuthStore() {
     logout() {
       persistToken(null);
       persistProfileId(null);
+      persistOwned(null, null);
       set(initialState);
     },
 
     clear() {
       persistToken(null);
       persistProfileId(null);
+      persistOwned(null, null);
       set(initialState);
     },
   };

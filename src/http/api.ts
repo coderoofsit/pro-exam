@@ -1,4 +1,4 @@
-import { resolveApiToken } from '$lib/api/authToken';
+import { resolveApiToken, withOwnedQuery } from '$lib/api/authToken';
 
 export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -66,7 +66,7 @@ export async function apiRequest<T>({
 			finalHeaders['Authorization'] = `Bearer ${bearer}`;
 		}
 
-		const response = await customFetch(`${PUBLIC_API_BASE_URL}${endpoint}`, {
+		const response = await customFetch(`${PUBLIC_API_BASE_URL}${withOwnedQuery(endpoint)}`, {
 			method,
 			headers: finalHeaders,
 			cache: 'no-store',

@@ -4,6 +4,7 @@
     examName?: string;
     starting?: boolean;
     startError?: string | null;
+    isStudent?: boolean;
     onDoLater: () => void;
     onStartTest: () => void;
   };
@@ -13,6 +14,7 @@
     examName = '',
     starting = false,
     startError = null,
+    isStudent = true,
     onDoLater,
     onStartTest
   }: Props = $props();
@@ -55,7 +57,7 @@
           onclick={onDoLater}
           disabled={starting}
         >
-          Do it later
+          {isStudent ? 'Do it later' : 'Back to tests'}
         </button>
         <button
           type="button"
@@ -67,12 +69,12 @@
             <span
               class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
             ></span>
-            Starting…
+            {isStudent ? 'Starting…' : 'Opening…'}
           {:else}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80" aria-hidden="true">
               <path d="M8 5v14l11-7-11-7z" fill="currentColor" />
             </svg>
-            Start Test
+            {isStudent ? 'Start Test' : 'View Test'}
           {/if}
         </button>
       </div>

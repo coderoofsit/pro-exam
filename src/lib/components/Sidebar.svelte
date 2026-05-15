@@ -6,6 +6,7 @@
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
     getMembershipUsers,
+    normalizeOwnedId,
     normalizeMembershipProfileRef,
     selectMembershipProfile,
     updateFcmToken,
@@ -519,6 +520,8 @@
           token: root.data.token,
           users: mapped,
           role: $authStore.role,
+          ownedBy: normalizeOwnedId(root.data.ownedBy),
+          ownedRole: root.data.ownedRole?.trim() || null,
         });
 
         // Show phone modal if phone missing or not verified
