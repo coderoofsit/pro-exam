@@ -193,3 +193,104 @@ export function extractCreatedTestIdFromCreateTestResponse(root: unknown): strin
 	}
 	return undefined;
 }
+
+export type ViewTestSection = {
+	name: { en?: string; hi?: string } | string;
+	slug: string;
+};
+
+export type ViewTestApiResponse = {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: {
+		test: { name: { en?: string; hi?: string } };
+		sections: ViewTestSection[];
+		questions: Array<Record<string, unknown>>;
+	};
+};
+
+/** GET /api/v1/tests/view-test/:testId — optional ?sectionSlug= for tab switch. */
+export async function fetchViewTest(
+	testId: string,
+	sectionSlug?: string,
+	fetchFn?: typeof fetch
+) {
+	let endpoint = `/api/v1/tests/view-test/${encodeURIComponent(testId)}`;
+	const slug = sectionSlug?.trim();
+	if (slug) {
+		endpoint += `?sectionSlug=${encodeURIComponent(slug)}`;
+	}
+	return apiRequest<ViewTestApiResponse>({
+		endpoint,
+		method: 'GET',
+		fetch: fetchFn
+	});
+}
+
+export function normalizeViewTestQuestions(
+	questions: Array<Record<string, unknown>>,
+	testId: string,
+	sectionSlug: string
+): Array<Record<string, unknown>> {
+	return questions.map((q, idx) => ({
+		...q,
+		_id: q._id ?? `view-${testId}-${sectionSlug}-${idx}`,
+		kind: q.kind ?? q.questionKind ?? ''
+	}));
+}
+
+export function parseViewTestPayload(
+	res:
+		| { success: true; data: unknown }
+		| { success: false; message?: string }
+		| ViewTestApiResponse
+) {
+	if (!res.success) {
+		return { ok: false as const, message: res.message || 'Failed to fetch test questions.' };
+	}
+	const envelope = res.data as ViewTestApiResponse | ViewTestApiResponse['data'] | null;
+	if (envelope != null && typeof envelope === 'object' && 'success' in envelope && !envelope.success) {
+		return {
+			ok: false as const,
+			message:
+				(typeof (envelope as ViewTestApiResponse).message === 'string' &&
+					(envelope as ViewTestApiResponse).message) ||
+				'Failed to fetch test questions.'
+		};
+	}
+	const payload =
+		envelope != null && typeof envelope === 'object' && 'data' in envelope
+			? ((envelope as ViewTestApiResponse).data ?? envelope)
+			: (envelope as ViewTestApiResponse['data']);
+	const sectionsRaw = payload?.sections ?? [];
+	const sectionSlugs: string[] = [];
+	const sectionTabLabels: Record<string, string> = {};
+	for (const s of sectionsRaw) {
+		if (typeof s === 'string') {
+			sectionSlugs.push(s);
+			continue;
+		}
+		const slug = String(s?.slug ?? '').trim();
+		if (!slug) continue;
+		sectionSlugs.push(slug);
+		const name = s.name;
+		if (typeof name === 'string') {
+			sectionTabLabels[slug] = name;
+		} else {
+			sectionTabLabels[slug] =
+				(name?.en ?? name?.hi ?? slug).trim() || slug;
+		}
+	}
+	const testName =
+		typeof payload?.test?.name === 'object'
+			? (payload.test.name.en ?? payload.test.name.hi ?? '').trim()
+			: String(payload?.test?.name ?? '').trim();
+	return {
+		ok: true as const,
+		sectionSlugs,
+		sectionTabLabels,
+		testName,
+		questions: (payload?.questions ?? []) as Array<Record<string, unknown>>
+	};
+}

@@ -16,10 +16,23 @@ import { tick } from 'svelte';
   } from '$lib/api/testAttempts';
   import { ATTEMPT_START_ERROR_KEY } from '$lib/student/testAttempt/loadAttemptFromSession';
   import { goto } from '$app/navigation';
+  import {
+    fetchViewTest,
+    normalizeViewTestQuestions,
+    parseViewTestPayload,
+  } from '$lib/api/tests';
 
-  let { data, isReadOnly = false }: { data: PageData; isReadOnly?: boolean } = $props();
+  let {
+    data,
+    isReadOnly = false,
+  }: {
+    data: PageData & { viewTestId?: string };
+    isReadOnly?: boolean;
+  } = $props();
 
   const examSlug = $derived(data.examSlug ?? '');
+  const viewTestId = $derived((data.viewTestId ?? '').trim());
+  const isViewTestMode = $derived(Boolean(viewTestId));
   
   let questions = $state<Array<Record<string, any>>>([]);
   let error = $state<string | null>(null);
@@ -35,9 +48,12 @@ import { tick } from 'svelte';
   let paperDetails = $state<any>(null);
   let startingPaperId = $state<string | null>(null);
   let startingTestError = $state<string | null>(null);
+  let testViewTitle = $state('');
+  let sectionTabLabels = $state<Record<string, string>>({});
 
   $effect(() => {
-    data.streamed.paperDetailsPromise.then(res => {
+    if (isViewTestMode) return;
+    data.streamed?.paperDetailsPromise?.then((res) => {
       paperDetails = res;
     });
   });
@@ -91,33 +107,80 @@ import { tick } from 'svelte';
     goto(`/student/tests/analysis/${encodeURIComponent(aid)}?testName=${encodeURIComponent(details.name)}`);
   }
 
+  function applyViewTestResult(
+    res: Awaited<ReturnType<typeof fetchViewTest>>,
+    sectionSlug: string
+  ) {
+    const parsed = parseViewTestPayload(res);
+    if (!parsed.ok) {
+      questions = [];
+      subjectTabs = [];
+      error = parsed.message;
+      return;
+    }
+    sectionTabLabels = parsed.sectionTabLabels;
+    testViewTitle = parsed.testName;
+    subjectTabs = parsed.sectionSlugs;
+    const currentSubject = sectionSlug || parsed.sectionSlugs[0] || '';
+    activeTab = currentSubject;
+    const normalized = normalizeViewTestQuestions(
+      parsed.questions,
+      viewTestId,
+      currentSubject
+    );
+    if (currentSubject) {
+      fetchedSections[currentSubject] = normalized;
+      questions = normalized;
+    }
+    error = null;
+  }
+
   $effect(() => {
+    if (isViewTestMode) {
+      isLoading = true;
+      const initialSlug = data.subjectSlug || undefined;
+      fetchViewTest(viewTestId, initialSlug)
+        .then((res) => applyViewTestResult(res, data.subjectSlug || ''))
+        .catch((err) => {
+          questions = [];
+          subjectTabs = [];
+          error = err.message || 'An error occurred while fetching questions.';
+        })
+        .finally(() => {
+          isLoading = false;
+        });
+      return;
+    }
+
     isLoading = true;
-    data.streamed.questionsPromise.then((res: any) => {
-      if (res.success) {
-        const payload = res.data?.data || res.data; // fallback in case api wrapper changes
-        const sections = payload?.sections ?? [];
-        const loadedQuestions = payload?.questions ?? [];
-        
-        subjectTabs = sections;
-        const currentSubject = data.subjectSlug || sections[0] || '';
-        activeTab = currentSubject;
-        
-        if (currentSubject) {
-          fetchedSections[currentSubject] = loadedQuestions;
-          questions = loadedQuestions;
+    data.streamed?.questionsPromise
+      ?.then((res: any) => {
+        if (res.success) {
+          const payload = res.data?.data || res.data;
+          const sections = payload?.sections ?? [];
+          const loadedQuestions = payload?.questions ?? [];
+
+          subjectTabs = sections;
+          const currentSubject = data.subjectSlug || sections[0] || '';
+          activeTab = currentSubject;
+
+          if (currentSubject) {
+            fetchedSections[currentSubject] = loadedQuestions;
+            questions = loadedQuestions;
+          }
+          error = null;
+        } else {
+          questions = [];
+          subjectTabs = [];
+          error = res.message || 'Failed to fetch paper questions.';
         }
-        error = null;
-      } else {
-        questions = [];
-        subjectTabs = [];
-        error = res.message || 'Failed to fetch paper questions.';
-      }
-    }).catch((err) => {
-      error = err.message || 'An error occurred while fetching questions.';
-    }).finally(() => {
-      isLoading = false;
-    });
+      })
+      .catch((err) => {
+        error = err.message || 'An error occurred while fetching questions.';
+      })
+      .finally(() => {
+        isLoading = false;
+      });
   });
 
   async function selectTab(tab: string) {
@@ -150,25 +213,42 @@ import { tick } from 'svelte';
       return;
     }
 
-    // Fetch new section
     isLoading = true;
 
-    const { getPaperQuestionsByPaperId } = await import('$lib/api/paper');
-    const res = await getPaperQuestionsByPaperId(data.paperSlug, fetch, tab);
-
-    if (res.success) {
-      const payload = res.data?.data || res.data;
-      const loadedQuestions = payload?.questions ?? [];
-
-      fetchedSections[tab] = loadedQuestions;
-      questions = loadedQuestions;
-      error = null;
-
-      // Wait for Svelte DOM update after questions are assigned
-      await tick();
+    if (isViewTestMode) {
+      const res = await fetchViewTest(viewTestId, tab);
+      const parsed = parseViewTestPayload(res);
+      if (parsed.ok) {
+        const loadedQuestions = normalizeViewTestQuestions(
+          parsed.questions,
+          viewTestId,
+          tab
+        );
+        fetchedSections[tab] = loadedQuestions;
+        questions = loadedQuestions;
+        error = null;
+        await tick();
+      } else {
+        questions = [];
+        error = parsed.message;
+      }
     } else {
-      questions = [];
-      error = res.message || 'Failed to fetch section questions.';
+      const { getPaperQuestionsByPaperId } = await import('$lib/api/paper');
+      const res = await getPaperQuestionsByPaperId(data.paperSlug, fetch, tab);
+
+      if (res.success) {
+        const payload = res.data?.data || res.data;
+        const loadedQuestions = payload?.questions ?? [];
+
+        fetchedSections[tab] = loadedQuestions;
+        questions = loadedQuestions;
+        error = null;
+
+        await tick();
+      } else {
+        questions = [];
+        error = res.message || 'Failed to fetch section questions.';
+      }
     }
   } catch (err: any) {
     questions = [];
@@ -236,6 +316,22 @@ import { tick } from 'svelte';
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ')
   );
+
+  const pageHeading = $derived(
+    isViewTestMode
+      ? `${testViewTitle || 'Test'} Questions`
+      : `${examName} Paper Questions`
+  );
+
+  function tabLabel(tab: string) {
+    const label = sectionTabLabels[tab]?.trim();
+    if (label) return label;
+    return tab
+      .split('-')
+      .filter(Boolean)
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
 
   function startEdit(q: Record<string, any>) {
     editingQuestionId = String(q?._id ?? '');
@@ -463,7 +559,7 @@ import { tick } from 'svelte';
 </script>
 
 <svelte:head>
-  <title>{examName || 'PYQ'} Paper Questions · Exam Abhyas</title>
+  <title>{pageHeading} · Exam Abhyas</title>
 </svelte:head>
 
 <div class="pyq-papers-page min-h-full bg-[var(--pyq-page-bg)] font-sans transition-colors duration-300">
@@ -472,11 +568,11 @@ import { tick } from 'svelte';
       <div class="flex items-center gap-3">
         <BackButton label="Back" tone="pyq" />
         <h1 class="text-xl font-bold text-[var(--pyq-accordion-title)]">
-          {examName} Paper Questions
+          {pageHeading}
         </h1>
       </div>
 
-      {#if paperDetails}
+      {#if !isViewTestMode && paperDetails}
         <div class="flex items-center gap-2">
           {#if isReadOnly}
             <button
@@ -543,7 +639,7 @@ import { tick } from 'svelte';
       </div>
     {:else if questions.length === 0}
       <div class="rounded-2xl border border-[var(--pyq-accordion-border)] bg-[var(--pyq-accordion-bg)] px-4 py-3 text-sm text-[var(--pyq-accordion-title)]">
-        No questions found for this paper.
+        No questions found for this {isViewTestMode ? 'test' : 'paper'}.
       </div>
     {:else}
       {#if saveError}
@@ -580,7 +676,7 @@ import { tick } from 'svelte';
     {#if isTabSwitching && activeTab === tab}
       Loading...
     {:else}
-      {tab.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+      {tabLabel(tab)}
     {/if}
   </button>
 {/each}
