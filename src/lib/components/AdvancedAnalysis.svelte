@@ -459,27 +459,45 @@ import BackButton from "$lib/components/BackButton.svelte";
 	.aa-card p{font-size:.75rem;color:#94a3b8;margin:0;line-height:1.5;font-weight:500}
 	.aa-link{font-size:.7rem;color:#6366f1;font-weight:800;margin-top:auto;padding-top:.5rem;text-transform:uppercase;letter-spacing:0.04em}
 
-	/* modal */
-	.m-overlay{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;cursor:pointer}
-	.m-panel{position:fixed;top:68px;right:0;bottom:0;left:var(--sb-width-expanded,240px);z-index:201;background:var(--analysis-shell-bg,var(--analysis-page-bg,#0b0f19));display:flex;flex-direction:column;overflow:hidden;color:var(--page-text,#f8fafc);font-family:var(--font-sans)}
-	@media (max-width: 767px) {
+	/* modal — align with app topbar (`--sb-left-offset`) and analysis shell tokens */
+	.m-overlay {
+		position: fixed;
+		top: 68px;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: rgba(0, 0, 0, 0.7);
+		backdrop-filter: blur(8px);
+		z-index: 200;
+		cursor: pointer;
+	}
+	.m-panel {
+		position: fixed;
+		top: 68px;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 201;
+		background: var(--analysis-shell-bg, var(--analysis-page-bg, #0b0f19));
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		color: var(--page-text, #f8fafc);
+		font-family: var(--font-sans);
+	}
+	@media (min-width: 768px) {
 		.m-overlay,
 		.m-panel {
-			left: 0;
+			left: var(--sb-left-offset, 240px);
 		}
 	}
 
-	/* Bluish bar: title only (brand-tinted, not flat gray-blue). */
+	/* Header strip — same opaque base as `.ap-header` on analysis page */
 	.m-head-stack {
 		flex-shrink: 0;
 		z-index: 10;
-		background: linear-gradient(
-			115deg,
-			#1a3d78 0%,
-			#244e9a 42%,
-			#1a3568 100%
-		);
-		border-bottom: 1px solid rgba(96, 165, 250, 0.28);
+		background: var(--analysis-page-bg, #f5f7ff);
+		border-bottom: 1px solid var(--analysis-card-border, #e2e8f0);
 	}
 	.m-header {
 		background: transparent;
@@ -537,7 +555,7 @@ import BackButton from "$lib/components/BackButton.svelte";
 	.m-nav-bar {
 		flex-shrink: 0;
 		z-index: 9;
-		background: transparent;
+		background: var(--analysis-page-bg, #f5f7ff);
 		border-top: none;
 		border-bottom: 1px solid var(--analysis-card-border, rgba(148, 163, 184, 0.18));
 		display: flex;
@@ -694,19 +712,11 @@ import BackButton from "$lib/components/BackButton.svelte";
 	/* White Mode (Light Theme) */
 	:global([data-theme="light"]) .m-panel{color:#1e293b} :global([data-theme="light"]) .m-body{background:transparent}
 	:global([data-theme="light"]) .m-head-stack {
-		background: linear-gradient(
-			180deg,
-			color-mix(in srgb, var(--color-brand-primary, #4f7eff) 14%, #ffffff) 0%,
-			color-mix(in srgb, var(--color-brand-primary, #4f7eff) 8%, #f0f4ff) 100%
-		);
-		border-bottom: 1px solid
-			color-mix(
-				in srgb,
-				var(--color-brand-primary, #4f7eff) 22%,
-				var(--analysis-card-border, #e2e8f0)
-			);
+		background: var(--analysis-page-bg, #f5f7ff);
+		border-bottom: 1px solid var(--analysis-card-border, #e2e8f0);
 	}
 	:global([data-theme="light"]) .m-nav-bar {
+		background: var(--analysis-page-bg, #f5f7ff);
 		border-bottom: 1px solid var(--analysis-card-border, #e2e8f0);
 	}
 	:global([data-theme="light"]) .m-title {
@@ -849,33 +859,14 @@ import BackButton from "$lib/components/BackButton.svelte";
 		color: #e2e8f0;
 	}
 	:global([data-theme="dark"]) .m-panel {
-		background: linear-gradient(180deg, #0b1022 0%, #0a122a 100%);
+		background: var(--analysis-shell-bg, var(--analysis-page-bg, #0c0e1a));
 	}
 	:global([data-theme="dark"]) .m-head-stack {
-		background: linear-gradient(
-			118deg,
-			color-mix(
-					in srgb,
-					var(--color-brand-primary, #4f7eff) 38%,
-					#050810
-				)
-				0%,
-			color-mix(
-					in srgb,
-					var(--color-brand-primary, #4f7eff) 26%,
-					#0a1020
-				)
-				50%,
-			#0b1428 100%
-		);
-		border-bottom: 1px solid
-			color-mix(
-				in srgb,
-				var(--color-brand-primary, #4f7eff) 42%,
-				transparent
-			);
+		background: var(--analysis-page-bg, #0c0e1a);
+		border-bottom: 1px solid rgba(79, 126, 255, 0.16);
 	}
 	:global([data-theme="dark"]) .m-nav-bar {
+		background: var(--analysis-page-bg, #0c0e1a);
 		border-top: none;
 		border-bottom: 1px solid
 			color-mix(
@@ -883,6 +874,22 @@ import BackButton from "$lib/components/BackButton.svelte";
 				var(--analysis-card-border, rgba(79, 126, 255, 0.22)) 70%,
 				transparent
 			);
+	}
+	:global([data-theme="dark"]) .m-nav-bar .pill-tab {
+		background: rgba(255, 255, 255, 0.06);
+		border-color: rgba(79, 126, 255, 0.22);
+		color: #e2e8f0;
+	}
+	:global([data-theme="dark"]) .m-nav-bar .pill-tab:hover {
+		background: rgba(79, 126, 255, 0.12);
+		color: #f8fafc;
+		border-color: rgba(79, 126, 255, 0.35);
+	}
+	:global([data-theme="dark"]) .m-nav-bar .pill-tab.active {
+		background: var(--color-brand-primary, #4f7eff);
+		color: #fff;
+		border-color: var(--color-brand-primary-hover, #3a6aee);
+		box-shadow: 0 2px 12px color-mix(in srgb, var(--color-brand-primary, #4f7eff) 40%, transparent);
 	}
 	:global([data-theme="dark"]) .m-title {
 		color: #ffffff;
