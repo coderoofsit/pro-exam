@@ -511,12 +511,9 @@
                           <GeneralActionButton
                             text="View Test"
                             onClick={() => {
-                              if (item.examSlug && item.paperRefId) {
-                                void goto(`${basePath}/tests/pyq/${item.examSlug}/${item.paperRefId}`);
-                              } else {
-                                // For non-PYQ tests, if there's a detail page, we would link it here.
-                                // Currently, the user request specifically mentioned "View Paper" 
-                                // which maps to the PYQ detail view.
+                              const testId = String(item._id ?? '').trim();
+                              if (testId) {
+                                void goto(`${basePath}/tests/view/${encodeURIComponent(testId)}`);
                               }
                             }}
                             variant="highlight"
