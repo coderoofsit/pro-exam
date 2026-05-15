@@ -344,7 +344,7 @@ import BackButton from "$lib/components/BackButton.svelte";
 					<span class="km-lbl">Total Time</span>
 					<b class="km-val blue">{fmt(summary.totalTimeSpentMs)}</b>
 				</div>
-				<div class="km-item purple">
+				<div class="km-item blue">
 					<div class="km-icon-box">
 						<svg
 							width="20"
@@ -363,7 +363,7 @@ import BackButton from "$lib/components/BackButton.svelte";
 						>
 					</div>
 					<span class="km-lbl">Accuracy</span>
-					<b class="km-val purple">{summary.accuracy.toFixed(2)}%</b>
+					<b class="km-val blue">{summary.accuracy.toFixed(2)}%</b>
 				</div>
 				<div class="km-item green">
 					<div class="km-icon-box">

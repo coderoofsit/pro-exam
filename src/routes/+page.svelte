@@ -451,8 +451,6 @@
 </div>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
-
   :root {
     --primary: oklch(0.62 0.26 293);
     --primary-foreground: oklch(0.97 0 0);
@@ -469,7 +467,7 @@
 
   :global(body) {
     margin: 0;
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-sans);
     background-color: var(--background);
     color: var(--foreground);
     overflow-x: hidden;

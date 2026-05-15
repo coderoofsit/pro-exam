@@ -19,10 +19,6 @@
 
 <svelte:head>
   <title>Student Login — ExamAbhyas</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  />
 </svelte:head>
 
 <div class="
