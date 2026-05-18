@@ -5,4 +5,4 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<SettingsPage {data} portalRole="student" />
+<SettingsPage {data} portalRole="tutor" />

@@ -24,6 +24,7 @@
   import { fetchUnreadNotificationCount } from "$lib/api/notifications";
   import { themeStore } from "$lib/stores/theme";
   import SubscriptionReminderModal from "$lib/components/SubscriptionReminderModal.svelte";
+  import { settingsPathForRole } from "$lib/portalPaths";
 
   type Role = "student" | "tutor" | "institute";
   type SidebarIcon = "dashboard" | "exams" | "tests" | "batch" | "subscription";
@@ -571,14 +572,7 @@
 
   async function goToSettings() {
     profileDropdownOpen = false;
-
-    const settingsPathByRole: Record<Role, string> = {
-      student: "/student/settings",
-      tutor: "/teacher/settings",
-      institute: "/institute/settings",
-    };
-
-    await goto(settingsPathByRole[role]);
+    await goto(settingsPathForRole(role));
   }
 
   function usersHaveMembershipShape(users: AuthUser[]) {
