@@ -3032,7 +3032,7 @@ html[data-theme='dark'] .question-card:hover {
   background: color-mix(in srgb, var(--sh-exam-card-bg) 88%, var(--sh-exam-card-border));
 }
 
-/* Student batch list cards — hover matches subscription CTA (pink border + lift) */
+/* Student batch list cards — hover matches shared exam card tokens (blue border + lift) */
 a.student-batch-card {
   transition:
     border-color 0.2s ease,
@@ -3041,9 +3041,14 @@ a.student-batch-card {
 }
 
 a.student-batch-card:hover {
-  border-color: var(--accent-cta-pink);
-  box-shadow: 0 6px 22px -6px rgba(0, 0, 0, 0.18);
+  border-color: var(--sh-exam-card-hover-border);
+  box-shadow: var(--sh-exam-card-hover-shadow);
   transform: translateY(-0.125rem);
+}
+
+/* Batch create/edit modal — Tests/Students/Teachers tabs: active underline uses exam accent (blue), not subscription pink */
+.batch-setup-modal__tab--active {
+  border-bottom-color: var(--sh-exam-card-hover-border) !important;
 }
 
 /* Shared primary CTA — subscription “Continue” + batch “Start Test” */
@@ -3484,18 +3489,27 @@ a.student-batch-card:hover {
   }
 
   .student-tests-page .student-tests-card__actions {
+    display: flex;
+    width: 100%;
     padding: 0.15rem 0.75rem 0.6rem;
-    gap: 0.4rem;
-    justify-content: flex-start;
+    gap: 0.5rem;
+    justify-content: stretch;
   }
 
+  /* Equal-width action buttons — width from flex, not label length */
   .student-tests-page .student-tests-card__actions :global(button),
   .student-tests-page .student-tests-card__actions :global(a) {
+    flex: 1 1 0;
+    min-width: 0 !important;
+    max-width: none;
+    width: auto !important;
     min-height: 2rem !important;
-    min-width: 6.25rem !important;
-    padding: 0.25rem 0.65rem !important;
+    padding: 0.25rem 0.5rem !important;
     font-size: 0.75rem !important;
     border-radius: 0.65rem !important;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
   }
 }
 

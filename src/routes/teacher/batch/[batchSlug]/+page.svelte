@@ -12,10 +12,17 @@
 	} from '$lib/api/batch';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
-import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
+	import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
+	import { authStore } from '$lib/stores/auth';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const activeTeacherMembership = $derived(
+		$authStore.users.find((u) => u.defaultProfile) ?? $authStore.users[0]
+	);
+	const canManageBatch = $derived(activeTeacherMembership?.batchApproved === true);
+	const currentTeacherUserId = $derived((activeTeacherMembership?._id ?? '').trim());
 
 	let loading = $state(false);
 	let errorMessage = $state<string | null>(null);
@@ -40,6 +47,11 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	let removeFormEl: HTMLFormElement | null = null;
 	let batchName = $state('');
 	let batchInfo = $state<any>(null);
+	const canEditCurrentBatch = $derived(
+		canManageBatch &&
+			Boolean(currentTeacherUserId) &&
+			(batchInfo?.createdByUserId ?? '').trim() === currentTeacherUserId
+	);
 	let editBatchModalOpen = $state(false);
 	let editBatchStep = $state<1 | 2>(1);
 	let editStep2Tab = $state<'tests' | 'students'>('tests');
@@ -501,6 +513,7 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	});
 
 	function openEditBatchModal() {
+		if (!canEditCurrentBatch) return;
 		editBatchModalOpen = true;
 		editBatchStep = 1;
 		editStep2Tab = 'tests';
@@ -663,16 +676,18 @@ import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 				</h1>
 			</div>
 			<div class="flex flex-col items-end gap-2 sm:justify-self-end">
-				<button
-					type="button"
-					class="inline-flex items-center gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm font-semibold text-[var(--page-text)] transition-colors hover:border-[var(--sh-exam-card-hover-border)]"
-					onclick={openEditBatchModal}
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-					Edit
-				</button>
+				{#if canEditCurrentBatch}
+					<button
+						type="button"
+						class="inline-flex items-center gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm font-semibold text-[var(--page-text)] transition-colors hover:border-[var(--sh-exam-card-hover-border)]"
+						onclick={openEditBatchModal}
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M4 20h4l10-10-4-4L4 16v4zM13 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						Edit
+					</button>
+				{/if}
 				{#if !loading && totalPages > 1}
 					<Pagination
 						{currentPage}
