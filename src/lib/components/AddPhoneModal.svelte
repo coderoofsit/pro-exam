@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { settingsPathFromPathname } from '$lib/portalPaths';
 	import { updatePhone, sendPhoneOtp, verifyPhoneOtp } from '$lib/api/auth';
 
 	type Props = {
@@ -10,6 +12,8 @@
 	};
 
 	let { open, email, token, onVerified }: Props = $props();
+
+	const settingsHref = $derived(settingsPathFromPathname(page.url.pathname));
 
 	let phoneInput = $state('');
 	let otpInput = $state('');
@@ -139,7 +143,7 @@
 					role="alert"
 				>
 					No email on file. Please open
-					<a href="/student/settings" class="font-semibold underline">Settings</a>
+					<a href={settingsHref} class="font-semibold underline">Settings</a>
 					to fix your account, then refresh this page.
 				</p>
 			{:else if !otpSent}

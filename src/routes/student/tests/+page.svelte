@@ -53,7 +53,7 @@
   let filtersOpen = $state(false);
   let searchDraft = $state("");
   const testsActionBtnClass =
-    "!h-9 !min-w-[7.25rem] !rounded-xl !px-3 !text-sm !font-normal !border-[var(--pyq-sort-btn-border)] !bg-[var(--pyq-sort-btn-bg)] !text-[var(--pyq-sort-btn-text)] !shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:!border-[var(--pyq-sort-btn-hover-border)] hover:!bg-[var(--pyq-sort-btn-hover-bg)] hover:!text-[var(--pyq-sort-btn-hover-text)] hover:!shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--page-link)_30%,transparent)]";
+    "student-tests-action-btn !h-9 !rounded-xl !px-3 !text-sm !font-normal !border-[var(--pyq-sort-btn-border)] !bg-[var(--pyq-sort-btn-bg)] !text-[var(--pyq-sort-btn-text)] !shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:!border-[var(--pyq-sort-btn-hover-border)] hover:!bg-[var(--pyq-sort-btn-hover-bg)] hover:!text-[var(--pyq-sort-btn-hover-text)] hover:!shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--page-link)_30%,transparent)] sm:!min-w-[7.25rem]";
 
   const querySignature = $derived(page.url.search);
 
@@ -517,20 +517,20 @@
                               }
                             }}
                             variant="highlight"
-                            className={`${testsActionBtnClass} !min-w-0 !w-full sm:!min-w-[7.25rem] sm:!w-auto`}
+                            className={testsActionBtnClass}
                           />
                         {:else if hasExistingAttempt(item)}
                           <GeneralActionButton
                             text="View Analysis"
                             onClick={() => void handleViewAnalysis(item)}
-                            className={`${testsActionBtnClass} !min-w-0 !flex-1 sm:!min-w-[7.25rem] sm:!flex-none`}
+                            className={testsActionBtnClass}
                           />
                           <GeneralActionButton
                             text={startingTestId === item._id ? "Starting..." : "Re-attempt"}
                             onClick={() => onReAttemptClick(item)}
                             disabled={startingTestId === item._id}
                             variant="highlight"
-                            className={`${testsActionBtnClass} !min-w-0 !flex-1 sm:!min-w-[7.25rem] sm:!flex-none`}
+                            className={testsActionBtnClass}
                           />
                         {:else}
                           <GeneralActionButton
@@ -538,7 +538,7 @@
                             onClick={() => onStartTestClick(item)}
                             disabled={startingTestId === item._id}
                             variant="highlight"
-                            className={`${testsActionBtnClass} !min-w-0 !w-full sm:!min-w-[7.25rem] sm:!w-auto`}
+                            className={testsActionBtnClass}
                           />
                         {/if}
                       </div>

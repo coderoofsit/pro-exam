@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200..1000&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
 
 @theme {
   /* ─── GLOBAL BRAND COLORS (shared, theme-neutral) ─────────────────────── */
@@ -28,7 +28,8 @@
   --color-content-muted: #94a3b8;
   --color-content-link: #4f7eff;
 
-  --font-sans: "Nunito", system-ui, sans-serif;
+  --font-sans: "Nunito", "Kanit", system-ui, sans-serif;
+  --font-heading: "Kanit", "Nunito", system-ui, sans-serif;
 
   --radius-card: 1.25rem;
   --radius-item: 0.875rem;
@@ -429,6 +430,12 @@
 
   /* ── ANALYSIS PAGE ───────────────────────────────────────────────────── */
   --analysis-page-bg: #f5f7ff;
+  --analysis-shell-bg: linear-gradient(
+    165deg,
+    #f5f7ff 0%,
+    #eef2ff 42%,
+    #f8fafc 100%
+  );
   --analysis-card-bg: #ffffff;
   --analysis-card-border: #e2e8f0;
   --analysis-card-shadow: 0 4px 24px rgba(79, 126, 255, 0.08);
@@ -450,6 +457,15 @@
 html,
 body {
   font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -483,48 +499,48 @@ body {
   /* ── TOPBAR ──────────────────────────────────────────────────────────── */
   --topbar-page-bg: #0C0E1A;
   --topbar-bg: rgba(10, 10, 20, 0.85);
-  --topbar-border: rgba(139, 92, 246, 0.15);
+  --topbar-border: rgba(79, 126, 255, 0.16);
   --topbar-shadow: 0 1px 24px rgba(5, 7, 13, 0.5);
   --topbar-search-bg: rgba(255, 255, 255, 0.05);
-  --topbar-search-border: rgba(139, 92, 246, 0.18);
-  --topbar-search-border-focus: rgba(139, 92, 246, 0.60);
-  --topbar-search-ring-focus: rgba(139, 92, 246, 0.15);
+  --topbar-search-border: rgba(79, 126, 255, 0.18);
+  --topbar-search-border-focus: rgba(79, 126, 255, 0.58);
+  --topbar-search-ring-focus: rgba(79, 126, 255, 0.15);
   --topbar-search-text: #ffffff;
   --topbar-search-placeholder: #52525B;
   --topbar-search-icon: #52525B;
   --topbar-icon-btn-bg: rgba(255, 255, 255, 0.05);
-  --topbar-icon-btn-border: rgba(139, 92, 246, 0.18);
+  --topbar-icon-btn-border: rgba(79, 126, 255, 0.18);
   --topbar-icon-btn-color: #A1A1AA;
-  --topbar-icon-btn-hover-border: rgba(139, 92, 246, 0.50);
-  --topbar-icon-btn-hover-color: #A78BFA;
-  --topbar-notif-dot: #8B5CF6;
+  --topbar-icon-btn-hover-border: rgba(79, 126, 255, 0.48);
+  --topbar-icon-btn-hover-color: #93c5fd;
+  --topbar-notif-dot: #4f7eff;
   --topbar-profile-bg: rgba(255, 255, 255, 0.05);
-  --topbar-profile-border: rgba(139, 92, 246, 0.18);
-  --topbar-profile-hover-border: rgba(139, 92, 246, 0.50);
+  --topbar-profile-border: rgba(79, 126, 255, 0.18);
+  --topbar-profile-hover-border: rgba(79, 126, 255, 0.48);
   --topbar-profile-name: #ffffff;
   --topbar-profile-role: #A1A1AA;
-  --topbar-profile-avatar-bg: rgba(139, 92, 246, 0.25);
-  --topbar-profile-avatar-text: #C4B5FD;
+  --topbar-profile-avatar-bg: rgba(79, 126, 255, 0.26);
+  --topbar-profile-avatar-text: #bfdbfe;
   --topbar-profile-chevron: #71717A;
   --topbar-dd-bg: #0F1020;
-  --topbar-dd-border: rgba(139, 92, 246, 0.22);
-  --topbar-dd-shadow: 0 20px 60px rgba(5, 7, 13, 0.8), 0 0 0 1px rgba(139, 92, 246, 0.10);
-  --topbar-dd-header-border: rgba(139, 92, 246, 0.12);
+  --topbar-dd-border: rgba(79, 126, 255, 0.22);
+  --topbar-dd-shadow: 0 20px 60px rgba(5, 7, 13, 0.8), 0 0 0 1px rgba(79, 126, 255, 0.12);
+  --topbar-dd-header-border: rgba(79, 126, 255, 0.12);
   --topbar-dd-header-title: #ffffff;
   --topbar-dd-header-sub: #71717A;
-  --topbar-dd-item-hover-bg: rgba(139, 92, 246, 0.08);
-  --topbar-dd-item-selected-bg: rgba(139, 92, 246, 0.14);
-  --topbar-dd-item-selected-text: #A78BFA;
+  --topbar-dd-item-hover-bg: rgba(79, 126, 255, 0.10);
+  --topbar-dd-item-selected-bg: rgba(79, 126, 255, 0.16);
+  --topbar-dd-item-selected-text: #93c5fd;
   --topbar-dd-item-name: #ffffff;
   --topbar-dd-item-sub: #71717A;
   --topbar-dd-avatar-bg: rgba(255, 255, 255, 0.06);
   --topbar-dd-avatar-text: #A1A1AA;
-  --topbar-dd-check: #8B5CF6;
-  --topbar-dd-footer-border: rgba(139, 92, 246, 0.12);
+  --topbar-dd-check: #4f7eff;
+  --topbar-dd-footer-border: rgba(79, 126, 255, 0.12);
   --topbar-dd-action-icon-bg: rgba(255, 255, 255, 0.06);
   --topbar-dd-action-icon-color: #A1A1AA;
   --topbar-dd-action-text: #A1A1AA;
-  --topbar-dd-action-hover-bg: rgba(139, 92, 246, 0.08);
+  --topbar-dd-action-hover-bg: rgba(79, 126, 255, 0.10);
   --topbar-dd-action-hover-text: #ffffff;
   --topbar-dd-logout-icon-bg: rgba(239, 68, 68, 0.12);
   --topbar-dd-logout-icon-color: #F87171;
@@ -780,62 +796,62 @@ body {
 
   /* Topbar bar itself */
   --topbar-bg: rgba(10, 10, 20, 0.85);
-  --topbar-border: rgba(139, 92, 246, 0.15);
+  --topbar-border: rgba(79, 126, 255, 0.16);
   --topbar-shadow: 0 1px 24px rgba(5, 7, 13, 0.5);
 
   /* Search input */
   --topbar-search-bg: rgba(255, 255, 255, 0.05);
-  --topbar-search-border: rgba(139, 92, 246, 0.18);
-  --topbar-search-border-focus: rgba(139, 92, 246, 0.60);
-  --topbar-search-ring-focus: rgba(139, 92, 246, 0.15);
+  --topbar-search-border: rgba(79, 126, 255, 0.18);
+  --topbar-search-border-focus: rgba(79, 126, 255, 0.58);
+  --topbar-search-ring-focus: rgba(79, 126, 255, 0.15);
   --topbar-search-text: #ffffff;
   --topbar-search-placeholder: #52525B;
   --topbar-search-icon: #52525B;
 
   /* Icon buttons (bell etc.) */
   --topbar-icon-btn-bg: rgba(255, 255, 255, 0.05);
-  --topbar-icon-btn-border: rgba(139, 92, 246, 0.18);
+  --topbar-icon-btn-border: rgba(79, 126, 255, 0.18);
   --topbar-icon-btn-color: #A1A1AA;
-  --topbar-icon-btn-hover-border: rgba(139, 92, 246, 0.50);
-  --topbar-icon-btn-hover-color: #A78BFA;
-  --topbar-notif-dot: #8B5CF6;
+  --topbar-icon-btn-hover-border: rgba(79, 126, 255, 0.48);
+  --topbar-icon-btn-hover-color: #93c5fd;
+  --topbar-notif-dot: #4f7eff;
 
   /* Profile trigger button */
   --topbar-profile-bg: rgba(255, 255, 255, 0.05);
-  --topbar-profile-border: rgba(139, 92, 246, 0.18);
-  --topbar-profile-hover-border: rgba(139, 92, 246, 0.50);
+  --topbar-profile-border: rgba(79, 126, 255, 0.18);
+  --topbar-profile-hover-border: rgba(79, 126, 255, 0.48);
   --topbar-profile-name: #ffffff;
   --topbar-profile-role: #A1A1AA;
-  --topbar-profile-avatar-bg: rgba(139, 92, 246, 0.25);
-  --topbar-profile-avatar-text: #C4B5FD;
+  --topbar-profile-avatar-bg: rgba(79, 126, 255, 0.26);
+  --topbar-profile-avatar-text: #bfdbfe;
   --topbar-profile-chevron: #71717A;
 
   /* Dropdown card */
   --topbar-dd-bg: #0F1020;
-  --topbar-dd-border: rgba(139, 92, 246, 0.22);
-  --topbar-dd-shadow: 0 20px 60px rgba(5, 7, 13, 0.8), 0 0 0 1px rgba(139, 92, 246, 0.10);
+  --topbar-dd-border: rgba(79, 126, 255, 0.22);
+  --topbar-dd-shadow: 0 20px 60px rgba(5, 7, 13, 0.8), 0 0 0 1px rgba(79, 126, 255, 0.12);
 
   /* Dropdown header */
-  --topbar-dd-header-border: rgba(139, 92, 246, 0.12);
+  --topbar-dd-header-border: rgba(79, 126, 255, 0.12);
   --topbar-dd-header-title: #ffffff;
   --topbar-dd-header-sub: #71717A;
 
   /* Dropdown user items */
-  --topbar-dd-item-hover-bg: rgba(139, 92, 246, 0.08);
-  --topbar-dd-item-selected-bg: rgba(139, 92, 246, 0.14);
-  --topbar-dd-item-selected-text: #A78BFA;
+  --topbar-dd-item-hover-bg: rgba(79, 126, 255, 0.10);
+  --topbar-dd-item-selected-bg: rgba(79, 126, 255, 0.16);
+  --topbar-dd-item-selected-text: #93c5fd;
   --topbar-dd-item-name: #ffffff;
   --topbar-dd-item-sub: #71717A;
   --topbar-dd-avatar-bg: rgba(255, 255, 255, 0.06);
   --topbar-dd-avatar-text: #A1A1AA;
-  --topbar-dd-check: #8B5CF6;
+  --topbar-dd-check: #4f7eff;
 
   /* Dropdown footer actions */
-  --topbar-dd-footer-border: rgba(139, 92, 246, 0.12);
+  --topbar-dd-footer-border: rgba(79, 126, 255, 0.12);
   --topbar-dd-action-icon-bg: rgba(255, 255, 255, 0.06);
   --topbar-dd-action-icon-color: #A1A1AA;
   --topbar-dd-action-text: #A1A1AA;
-  --topbar-dd-action-hover-bg: rgba(139, 92, 246, 0.08);
+  --topbar-dd-action-hover-bg: rgba(79, 126, 255, 0.10);
   --topbar-dd-action-hover-text: #ffffff;
   --topbar-dd-logout-icon-bg: rgba(239, 68, 68, 0.12);
   --topbar-dd-logout-icon-color: #F87171;
@@ -3016,7 +3032,7 @@ html[data-theme='dark'] .question-card:hover {
   background: color-mix(in srgb, var(--sh-exam-card-bg) 88%, var(--sh-exam-card-border));
 }
 
-/* Student batch list cards — hover matches subscription CTA (pink border + lift) */
+/* Student batch list cards — hover matches shared exam card tokens (blue border + lift) */
 a.student-batch-card {
   transition:
     border-color 0.2s ease,
@@ -3025,9 +3041,14 @@ a.student-batch-card {
 }
 
 a.student-batch-card:hover {
-  border-color: var(--accent-cta-pink);
-  box-shadow: 0 6px 22px -6px rgba(0, 0, 0, 0.18);
+  border-color: var(--sh-exam-card-hover-border);
+  box-shadow: var(--sh-exam-card-hover-shadow);
   transform: translateY(-0.125rem);
+}
+
+/* Batch create/edit modal — Tests/Students/Teachers tabs: active underline uses exam accent (blue), not subscription pink */
+.batch-setup-modal__tab--active {
+  border-bottom-color: var(--sh-exam-card-hover-border) !important;
 }
 
 /* Shared primary CTA — subscription “Continue” + batch “Start Test” */
@@ -3468,18 +3489,27 @@ a.student-batch-card:hover {
   }
 
   .student-tests-page .student-tests-card__actions {
+    display: flex;
+    width: 100%;
     padding: 0.15rem 0.75rem 0.6rem;
-    gap: 0.4rem;
-    justify-content: flex-start;
+    gap: 0.5rem;
+    justify-content: stretch;
   }
 
+  /* Equal-width action buttons — width from flex, not label length */
   .student-tests-page .student-tests-card__actions :global(button),
   .student-tests-page .student-tests-card__actions :global(a) {
+    flex: 1 1 0;
+    min-width: 0 !important;
+    max-width: none;
+    width: auto !important;
     min-height: 2rem !important;
-    min-width: 6.25rem !important;
-    padding: 0.25rem 0.65rem !important;
+    padding: 0.25rem 0.5rem !important;
     font-size: 0.75rem !important;
     border-radius: 0.65rem !important;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
   }
 }
 
@@ -3661,6 +3691,56 @@ a.student-batch-card:hover {
   font-family: var(--font-sans);
 }
 
+/* Full-width test analysis: one background behind sidebar + main (Sidebar adds `.student-shell--analysis`). */
+.student-shell--analysis {
+  background: var(--analysis-shell-bg, var(--analysis-page-bg, var(--page-bg)));
+  background-attachment: fixed;
+}
+
+.student-shell--analysis > aside {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-right-color: color-mix(
+    in srgb,
+    var(--color-brand-primary, #4f7eff) 20%,
+    transparent
+  ) !important;
+}
+
+.student-shell--analysis main {
+  background: transparent !important;
+}
+
+.student-shell--analysis .ap {
+  background: transparent !important;
+  min-height: min(100vh, 100%);
+}
+
+/* Analysis sub-header: full-bleed bar, opaque — avoids gutter color mismatch + glass fringe */
+.student-shell--analysis .ap-header {
+  width: 100%;
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(
+    in srgb,
+    var(--color-brand-primary, #4f7eff) 14%,
+    transparent
+  );
+}
+
+[data-theme="dark"] .student-shell--analysis .ap-header {
+  background: var(--analysis-page-bg, #0c0e1a);
+  border-bottom-color: rgba(79, 126, 255, 0.16);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-theme="light"] .student-shell--analysis .ap-header {
+  background: var(--analysis-page-bg, #f5f7ff);
+  border-bottom-color: var(--analysis-card-border, #e2e8f0);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 .ap-loading {
   padding: 4rem;
   text-align: center;
@@ -3702,6 +3782,13 @@ a.student-batch-card:hover {
   color: var(--text-color, #1e293b);
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--analysis-card-border, #e2e8f0);
+}
+
+[data-theme="dark"] .ap-header {
+  background: var(--topbar-bg, var(--analysis-card-bg, #fff));
+  border-bottom-color: var(--topbar-border, var(--analysis-card-border, #e2e8f0));
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .ap-header-inner {
@@ -3794,9 +3881,9 @@ a.student-batch-card:hover {
 }
 
 .ap-badge {
-  background: rgba(99, 102, 241, 0.1);
-  border: none;
-  color: #6366f1;
+  background: rgba(79, 126, 255, 0.14);
+  border: 1px solid rgba(79, 126, 255, 0.22);
+  color: #93c5fd;
   border-radius: 30px;
   padding: 0.3rem 0.85rem;
   font-size: 0.65rem;
@@ -4156,7 +4243,12 @@ a.student-batch-card:hover {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(
+    135deg,
+    #5b8fff 0%,
+    var(--color-brand-primary, #4f7eff) 45%,
+    #2563eb 100%
+  );
   color: #fff;
   padding: 0.65rem 1.75rem;
   border-radius: 40px;
@@ -4164,9 +4256,11 @@ a.student-batch-card:hover {
   font-weight: 800;
   text-decoration: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
+  border: 1px solid color-mix(in srgb, #93c5fd 35%, transparent);
   margin-top: -0.5rem;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--color-brand-primary, #4f7eff) 42%, transparent),
+    0 0 0 1px color-mix(in srgb, #60a5fa 22%, transparent);
   position: relative;
   z-index: 2;
   cursor: pointer;
@@ -4174,8 +4268,10 @@ a.student-batch-card:hover {
 
 .hero-retry-pill:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
-  opacity: 0.95;
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--color-brand-primary, #4f7eff) 52%, transparent),
+    0 0 0 1px color-mix(in srgb, #93c5fd 28%, transparent);
+  opacity: 0.98;
 }
 
 .hero-retry-pill svg {
@@ -4231,6 +4327,11 @@ a.student-batch-card:hover {
 .km-item.blue .km-icon-box {
   background: #eff6ff;
   color: #3b82f6;
+}
+
+[data-theme="dark"] .km-item.blue .km-icon-box {
+  background: rgba(79, 126, 255, 0.12);
+  color: #60a5fa;
 }
 
 .km-item.purple .km-icon-box {
@@ -4555,20 +4656,32 @@ a.student-batch-card:hover {
 }
 
 .qmap-global-btn {
-  background: #6366f1;
+  background: linear-gradient(
+    135deg,
+    #5b8fff 0%,
+    var(--color-brand-primary, #4f7eff) 50%,
+    #2563eb 100%
+  );
   color: #fff;
-  border: none;
+  border: 1px solid color-mix(in srgb, #93c5fd 32%, transparent);
   border-radius: 30px;
   padding: 0.6rem 1.75rem;
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--color-brand-primary, #4f7eff) 38%, transparent),
+    0 0 0 1px color-mix(in srgb, #60a5fa 18%, transparent);
 }
 
 .qmap-global-btn:hover {
-  background: #4f46e5;
+  background: linear-gradient(
+    135deg,
+    #6b9aff 0%,
+    #3d7cff 45%,
+    #1d4ed8 100%
+  );
   transform: translateY(-1px);
 }
 
@@ -5184,7 +5297,7 @@ a.student-batch-card:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CUSTOM SCROLLBAR — thin purple, all browsers
+   CUSTOM SCROLLBAR — thin brand blue, all browsers
 ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Webkit (Chrome, Safari, Edge) */
@@ -5198,12 +5311,12 @@ a.student-batch-card:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.45);
+  background: rgba(79, 126, 255, 0.42);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.75);
+  background: rgba(79, 126, 255, 0.72);
 }
 
 ::-webkit-scrollbar-corner {
@@ -5213,7 +5326,7 @@ a.student-batch-card:hover {
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.45) transparent;
+  scrollbar-color: rgba(79, 126, 255, 0.42) transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

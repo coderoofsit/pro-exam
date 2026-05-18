@@ -319,7 +319,7 @@
                 aria-selected={tab === 'tests'}
                 class={`-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
                   tab === 'tests'
-                    ? 'border-[var(--cta-pink-border-hover)] text-[var(--page-text)]'
+                    ? 'batch-setup-modal__tab--active text-[var(--page-text)]'
                     : 'border-transparent text-[var(--sh-ai-sub)] hover:text-[var(--page-text)]'
                 }`}
                 onclick={() => onSwitchTab('tests')}
@@ -332,7 +332,7 @@
                 aria-selected={tab === 'students'}
                 class={`-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
                   tab === 'students'
-                    ? 'border-[var(--whatsapp-brand)] text-[var(--page-text)]'
+                    ? 'batch-setup-modal__tab--active text-[var(--page-text)]'
                     : 'border-transparent text-[var(--sh-ai-sub)] hover:text-[var(--page-text)]'
                 }`}
                 onclick={() => onSwitchTab('students')}
@@ -346,7 +346,7 @@
                   aria-selected={tab === 'teachers'}
                   class={`-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
                     tab === 'teachers'
-                      ? 'border-[var(--accent-cta-cyan)] text-[var(--page-text)]'
+                      ? 'batch-setup-modal__tab--active text-[var(--page-text)]'
                       : 'border-transparent text-[var(--sh-ai-sub)] hover:text-[var(--page-text)]'
                   }`}
                   onclick={() => onSwitchTab('teachers')}

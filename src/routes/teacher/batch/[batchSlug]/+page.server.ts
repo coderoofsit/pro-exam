@@ -115,6 +115,7 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 									data: [] as BatchTestListItem[]
 								};
 
+						const createdByUserId = batch.createdByUserId?._id ?? '';
 						const batchMeta =
 							teachersRes.success && teachersRes.data?.data
 								? {
@@ -131,7 +132,8 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 										numberOfTeachers:
 											teachersRes.data.data.batchDetails?.numberOfTeachers ?? 0,
 										numberOfTests: teachersRes.data.data.batchDetails?.numberOfTests ?? 0,
-										status: teachersRes.data.data.batchDetails?.status ?? ''
+										status: teachersRes.data.data.batchDetails?.status ?? '',
+										createdByUserId
 									}
 								: {
 										id: batch._id,
@@ -145,7 +147,8 @@ export const load: PageServerLoad = async ({ params, fetch, cookies, url }) => {
 										numberOfStudents: batch.numberOfStudents ?? 0,
 										numberOfTeachers: batch.numberOfTeachers ?? 0,
 										numberOfTests: batch.numberOfTests ?? 0,
-										status: batch.status ?? ''
+										status: batch.status ?? '',
+										createdByUserId
 									};
 
 						return {

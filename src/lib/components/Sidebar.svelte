@@ -24,6 +24,7 @@
   import { fetchUnreadNotificationCount } from "$lib/api/notifications";
   import { themeStore } from "$lib/stores/theme";
   import SubscriptionReminderModal from "$lib/components/SubscriptionReminderModal.svelte";
+  import { settingsPathForRole } from "$lib/portalPaths";
 
   type Role = "student" | "tutor" | "institute";
   type SidebarIcon = "dashboard" | "exams" | "tests" | "batch" | "subscription";
@@ -104,6 +105,11 @@
   /** Full-bleed, no extra top inset — timer + question should sit under the app topbar. */
   const isTestAttemptRoute = $derived(
     page.url.pathname.startsWith("/student/test-attempt"),
+  );
+
+  /** Test result analysis — one shell background across sidebar + main (see `.student-shell--analysis`). */
+  const isTestsAnalysisShellRoute = $derived(
+    page.url.pathname.includes("/tests/analysis/"),
   );
 
   function toggleSidebar() {
@@ -565,14 +571,7 @@
 
   async function goToSettings() {
     profileDropdownOpen = false;
-
-    const settingsPathByRole: Record<Role, string> = {
-      student: "/student/settings",
-      tutor: "/teacher/settings",
-      institute: "/institute/settings",
-    };
-
-    await goto(settingsPathByRole[role]);
+    await goto(settingsPathForRole(role));
   }
 
   function usersHaveMembershipShape(users: AuthUser[]) {
@@ -803,7 +802,9 @@
 {/if}
 
 <div
-  class="flex h-dvh min-h-0 items-stretch bg-[var(--page-bg)] font-sans text-[var(--page-text)]"
+  class="flex h-dvh min-h-0 items-stretch font-sans text-[var(--page-text)] {isTestsAnalysisShellRoute
+    ? 'student-shell--analysis'
+    : 'bg-[var(--page-bg)]'}"
 >
   <aside
     class="
@@ -1530,9 +1531,13 @@
     />
     <main
       id="layout-main-scroll"
-      class="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--page-bg)] pt-[72px] {isTestAttemptRoute
+      class="min-h-0 min-w-0 flex-1 overflow-auto pt-[72px] {isTestsAnalysisShellRoute
+        ? 'bg-transparent'
+        : 'bg-[var(--page-bg)]'} {isTestAttemptRoute
         ? 'flex flex-col px-0 pb-0'
-        : 'px-0 pb-24 md:px-6 md:pb-6'}"
+        : isTestsAnalysisShellRoute
+          ? 'px-0 pb-24 md:px-0 md:pb-6'
+          : 'px-0 pb-24 md:px-6 md:pb-6'}"
     >
       {#key page.url.pathname}
         <div
