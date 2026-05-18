@@ -78,22 +78,23 @@
     </span>
   </div>
 
-  <div class="flex items-start gap-2.5 pl-11 pr-10 pt-0.5">
+  <div class="student-batch-card__head flex items-center gap-2.5 pl-11 pr-10">
     <div
       class="
+        student-batch-card__avatar
         flex-shrink-0 h-9 w-9 rounded-full overflow-hidden
         bg-[var(--sh-exam-card-arrow-bg)]
         ring-1 ring-[var(--sh-exam-card-border)]
         flex items-center justify-center
-        text-[10px] font-bold text-[var(--sh-exam-card-arrow-color)]
+        text-[10px] font-bold leading-none text-[var(--sh-exam-card-arrow-color)]
       "
       aria-hidden="true"
     >
       {initials(batch.name)}
     </div>
-    <div class="min-w-0 flex-1">
+    <div class="student-batch-card__title-wrap flex min-h-9 min-w-0 flex-1 items-center">
       <h3
-        class="text-sm font-semibold text-[var(--sh-exam-card-title)] leading-snug line-clamp-2"
+        class="m-0 text-sm font-semibold leading-snug text-[var(--sh-exam-card-title)] line-clamp-2"
       >
         {batch.name}
       </h3>
