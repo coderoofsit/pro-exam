@@ -10,6 +10,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 		100
 	);
 	const search = (url.searchParams.get('search') ?? '').trim();
+	const approvedParam = url.searchParams.get('approved');
+	const approved =
+		approvedParam === 'true' ? true : approvedParam === 'false' ? false : undefined;
 
 	return {
 		ssrAuthMissing: !token?.trim(),
@@ -21,7 +24,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 						fetchFn: fetch,
 						page: pageNum,
 						limit,
-						search: search || undefined
+						search: search || undefined,
+						approved
 					}).then((res) => unwrapInstituteUsersPage(res))
 				: Promise.resolve(null)
 		}

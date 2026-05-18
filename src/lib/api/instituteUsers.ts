@@ -37,6 +37,8 @@ export async function fetchInstituteUsers(params: {
 	search?: string;
 	/** When true, appends `relation=true` to the query string (institute student–teacher flows). */
 	relation?: boolean;
+	/** Teachers list filter — sent as `approved=true|false` (omit when showing all). */
+	approved?: boolean;
 	token?: string | null;
 	fetchFn?: typeof fetch;
 }) {
@@ -51,6 +53,9 @@ export async function fetchInstituteUsers(params: {
 	}
 	if (params.relation) {
 		qs.set('relation', 'true');
+	}
+	if (params.role === 'teacher' && typeof params.approved === 'boolean') {
+		qs.set('approved', String(params.approved));
 	}
 
 	const segment = params.role === 'teacher' ? 'teachers' : 'students';
@@ -121,6 +126,24 @@ export async function removeInstituteUsers(params: {
 		endpoint: '/api/v1/institute/remove-users',
 		method: 'PATCH',
 		data: body,
+		fetch: params.fetchFn,
+		token: t
+	});
+}
+
+/** PATCH `/api/v1/institute/teachers/:teacherId/batch-approval` */
+export async function updateTeacherBatchApproval(params: {
+	teacherId: string;
+	batchApproved: boolean;
+	token?: string | null;
+	fetchFn?: typeof fetch;
+}) {
+	const t = resolveApiToken(params.token ?? null);
+
+	return apiRequest<{ success?: boolean; message?: string }>({
+		endpoint: `/api/v1/institute/teachers/${params.teacherId}/batch-approval`,
+		method: 'PATCH',
+		data: { batchApproved: params.batchApproved },
 		fetch: params.fetchFn,
 		token: t
 	});

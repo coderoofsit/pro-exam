@@ -1,1 +1,1 @@
-export { load } from '../../../student/batch/[batchSlug]/+page.server';
+export { load, actions } from '../../../teacher/batch/[batchSlug]/+page.server';

@@ -2,12 +2,15 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { get } from 'svelte/store';
+	import { fade, scale } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import ManagementTableSkeleton from '$lib/components/ManagementTableSkeleton.svelte';
 	import ConfirmPermanentRemoveModal from '$lib/components/ConfirmPermanentRemoveModal.svelte';
 	import InstituteTeacherAddStudentsModal from '$lib/components/InstituteTeacherAddStudentsModal.svelte';
 	import {
 		removeInstituteUsers,
+		updateTeacherBatchApproval,
 		type InstituteUserRow,
 		type InstituteUsersPagePayload
 	} from '$lib/api/instituteUsers';
@@ -40,6 +43,8 @@
 	let suppressListLoading = $state(false);
 	let addStudentsModalOpen = $state(false);
 	let addStudentsTeacherId = $state<string | null>(null);
+	let batchConfirmOpen = $state(false);
+	let batchPending = $state<{ id: string; name: string; next: boolean } | null>(null);
 
 	const roleColumnLabel = $derived(variant === 'teachers' ? 'TEACHER' : 'STUDENT');
 
@@ -162,6 +167,57 @@
 		removeError = '';
 	}
 
+	function requestBatchApprovalChange(u: InstituteUserRow, e: Event) {
+		const el = e.currentTarget as HTMLSelectElement;
+		const next = el.value === 'true';
+		const current = u.batchApproved === true;
+		if (next === current) return;
+		el.value = current ? 'true' : 'false';
+		batchPending = { id: u._id, name: displayName(u), next };
+		batchConfirmOpen = true;
+	}
+
+	function closeBatchConfirmModal() {
+		batchConfirmOpen = false;
+	}
+
+	function finalizeBatchModalAfterOutro() {
+		if (!batchConfirmOpen) batchPending = null;
+	}
+
+	function confirmBatchApprovalChange() {
+		const pending = batchPending;
+		if (!pending) return;
+
+		const { id, name, next } = pending;
+		const previous = rows.find((r) => r._id === id)?.batchApproved;
+
+		closeBatchConfirmModal();
+		rows = rows.map((r) => (r._id === id ? { ...r, batchApproved: next } : r));
+
+		const token = get(authStore).token;
+		void updateTeacherBatchApproval({
+			teacherId: id,
+			batchApproved: next,
+			token,
+			fetchFn: fetch
+		}).then((res) => {
+			if (!res.success) {
+				rows = rows.map((r) => (r._id === id ? { ...r, batchApproved: previous } : r));
+				notifyError(res.message || 'Failed to update batch approval');
+				return;
+			}
+
+			notifySuccess(
+				next
+					? `${name} can now create and manage batches.`
+					: `Batch permission removed for ${name}.`
+			);
+			suppressListLoading = true;
+			void invalidateAll();
+		});
+	}
+
 	function executeRemovePermanently() {
 		const ids = selectedIds.slice();
 		if (!ids.length) return;
@@ -231,6 +287,24 @@
 					class="w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm text-[var(--page-text)]"
 					bind:value={searchInput}
 				/>
+				{#if variant === 'teachers'}
+					<select
+						class="tests-filter-select shrink-0 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-2 text-sm"
+						value={page.url.searchParams.get('approved') ?? ''}
+						onchange={(e) => {
+							const u = new URL(page.url);
+							const v = (e.currentTarget as HTMLSelectElement).value;
+							if (v) u.searchParams.set('approved', v);
+							else u.searchParams.delete('approved');
+							u.searchParams.set('page', '1');
+							void goto(`${u.pathname}${u.search}`, { keepFocus: true, noScroll: true, replaceState: true });
+						}}
+					>
+						<option value="">All</option>
+						<option value="true">Approved</option>
+						<option value="false">Not approved</option>
+					</select>
+				{/if}
 			</form>
 
 			<div class="flex min-h-10 min-w-0 justify-center overflow-x-auto px-1 py-0.5 sm:min-h-0">
@@ -328,17 +402,14 @@
 								</td>
 								{#if variant === 'teachers'}
 									<td>
-										{#if u.batchApproved === true}
-											<span
-												class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp-brand)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]"
-												>Approval</span
-											>
-										{:else}
-											<span
-												class="inline-flex items-center rounded-full border border-[color-mix(in_srgb,var(--page-text-muted)_25%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-text-muted)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--page-text-muted)]"
-												>Un-Approval</span
-											>
-										{/if}
+										<select
+											class="tests-filter-select min-w-[8.5rem] rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-1 text-xs"
+											value={u.batchApproved === true ? 'true' : 'false'}
+											onchange={(e) => requestBatchApprovalChange(u, e)}
+										>
+											<option value="true">Approved</option>
+											<option value="false">Un-approved</option>
+										</select>
 									</td>
 								{/if}
 								<td>
@@ -405,3 +476,55 @@
 	onCancel={closeRemoveModal}
 	onConfirm={executeRemovePermanently}
 />
+
+{#if batchConfirmOpen && batchPending}
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<div
+		class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-8 backdrop-blur-md"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="batch-approval-confirm-title"
+		tabindex="-1"
+		transition:fade={{ duration: 200 }}
+		onoutroend={finalizeBatchModalAfterOutro}
+		onclick={(e) => e.target === e.currentTarget && closeBatchConfirmModal()}
+		onkeydown={(e) => e.key === 'Escape' && closeBatchConfirmModal()}
+	>
+		<div
+			class="w-full max-w-md rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-6 shadow-xl"
+			role="document"
+			transition:scale={{ duration: 220, easing: quintOut, start: 0.92 }}
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h2 id="batch-approval-confirm-title" class="text-lg font-bold text-[var(--sh-section-title)]">
+				{batchPending.next ? 'Allow batch creation?' : 'Remove batch permission?'}
+			</h2>
+			<p class="mt-2 text-sm leading-relaxed text-[var(--sh-ai-sub)]">
+				{#if batchPending.next}
+					Do you want to give <span class="font-semibold text-[var(--sh-section-title)]">{batchPending.name}</span>
+					permission to create and manage batches for your institute?
+				{:else}
+					Remove batch creation permission for
+					<span class="font-semibold text-[var(--sh-section-title)]">{batchPending.name}</span>?
+					They will no longer be able to create or manage batches.
+				{/if}
+			</p>
+			<div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+				<button
+					type="button"
+					class="rounded-xl border border-[var(--sh-exam-card-border)] px-4 py-2.5 text-sm font-semibold text-[var(--sh-section-title)]"
+					onclick={closeBatchConfirmModal}
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					class="rounded-xl border border-[color-mix(in_srgb,var(--whatsapp-brand)_35%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_88%,#000_8%)] px-4 py-2.5 text-sm font-semibold text-white"
+					onclick={confirmBatchApprovalChange}
+				>
+					Confirm
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

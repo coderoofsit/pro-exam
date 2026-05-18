@@ -229,7 +229,6 @@
         children: [
           { label: "Students Management", href: "/institute/users/students", icon: "students" },
           { label: "Teachers Management", href: "/institute/users/teachers", icon: "teachers" },
-          { label: "Teacher & Student Relations", href: "/institute/users/relations", icon: "relations" },
         ],
       },
       {
