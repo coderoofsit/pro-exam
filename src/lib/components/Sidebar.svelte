@@ -1,7 +1,8 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { page } from "$app/state";
+  import { navigating, page } from "$app/state";
   import { goto, invalidateAll, preloadData } from "$app/navigation";
+  import PageRouteSkeleton from "$lib/components/skeletons/PageRouteSkeleton.svelte";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
@@ -103,9 +104,13 @@
   }
 
   /** Full-bleed, no extra top inset — timer + question should sit under the app topbar. */
-  const isTestAttemptRoute = $derived(
-    page.url.pathname.startsWith("/student/test-attempt"),
+  const isTestAttemptRoute = $derived(page.url.pathname.includes("/test-attempt"));
+
+  const showRouteSkeleton = $derived(
+    browser && navigating.to !== null && !isTestAttemptRoute,
   );
+
+  const routeSkeletonPath = $derived(navigating.to?.pathname ?? page.url.pathname);
 
   /** Test result analysis — one shell background across sidebar + main (see `.student-shell--analysis`). */
   const isTestsAnalysisShellRoute = $derived(
@@ -1542,10 +1547,25 @@
       {#key page.url.pathname}
         <div
           class={isTestAttemptRoute
-            ? "flex min-h-0 flex-1 flex-col"
-            : "min-h-0 p-0"}
+            ? "relative flex min-h-0 flex-1 flex-col"
+            : "relative min-h-0 p-0"}
         >
-          {@render children?.()}
+          {#if showRouteSkeleton}
+            <div
+              class="absolute inset-0 z-20 overflow-auto bg-[var(--page-bg)]"
+              aria-busy="true"
+              aria-live="polite"
+              aria-label="Loading page"
+            >
+              <PageRouteSkeleton pathname={routeSkeletonPath} />
+            </div>
+          {/if}
+          <div
+            class={showRouteSkeleton ? "pointer-events-none min-h-0 opacity-0" : "min-h-0"}
+            aria-hidden={showRouteSkeleton}
+          >
+            {@render children?.()}
+          </div>
         </div>
       {/key}
     </main>

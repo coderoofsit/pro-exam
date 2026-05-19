@@ -1,6 +1,7 @@
 <script lang="ts">
   import Exam from '$lib/components/Exam.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
+  import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
   import type { Exam as ExamApi } from '$lib/api/exams';
   import { pyqExamsStore } from '$lib/stores/pyqExams';
   import { onMount } from 'svelte';
@@ -35,14 +36,7 @@
       <BackButton label="Back" fallback="/student/tests" />
     </div>
     {#if loading}
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-        {#each Array(6) as _, i (i)}
-          <div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4">
-            <div class="mx-auto h-14 w-14 animate-pulse rounded-full bg-[var(--sh-exam-card-arrow-bg)]"></div>
-            <div class="mx-auto mt-4 h-3 w-20 animate-pulse rounded bg-[var(--sh-exam-card-arrow-bg)]"></div>
-          </div>
-        {/each}
-      </div>
+      <ExamGridSkeleton count={6} cardMinHeight="min-h-[140px]" />
     {:else if error}
       <!-- Error state -->
       <div class="

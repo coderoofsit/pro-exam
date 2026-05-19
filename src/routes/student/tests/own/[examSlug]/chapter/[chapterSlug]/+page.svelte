@@ -4,6 +4,7 @@
   import { fetchTopicsByChapterSlug, type TopicRow } from "$lib/api/topics";
   import Pagination from "$lib/components/Pagination.svelte";
   import Button from "$lib/components/Button.svelte";
+  import QuestionListSkeleton from "$lib/components/skeletons/QuestionListSkeleton.svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -413,10 +414,7 @@
     </div>
 
     {#if isLoading}
-      <div class="flex flex-col items-center justify-center py-20">
-        <div class="h-12 w-12 animate-spin rounded-full border-4 border-[var(--pc-brand)] border-r-transparent"></div>
-        <p class="mt-4 text-sm text-[var(--page-text-muted)]">Loading questions...</p>
-      </div>
+      <QuestionListSkeleton />
     {:else if errorMessage}
       <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-5 py-4 text-sm text-[var(--pc-error-text)]">
         {errorMessage}
