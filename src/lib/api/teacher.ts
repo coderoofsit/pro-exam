@@ -84,6 +84,22 @@ export type BatchTeachersResponse = {
 	};
 };
 
+/** Parse list payload from GET /api/v1/batch/teachers after `apiRequest`. */
+export function unwrapBatchTeachersPage(res: {
+	success: boolean;
+	data?: BatchTeachersResponse;
+}): { rows: BatchStudentItem[]; currentPage: number; lastPage: number } | null {
+	if (!res.success || !res.data?.data) return null;
+	const page = res.data.data;
+	const rows = page.data;
+	if (!Array.isArray(rows)) return null;
+	return {
+		rows,
+		currentPage: page.currentPage ?? 1,
+		lastPage: page.lastPage ?? 1
+	};
+}
+
 export async function fetchBatchTeachers(
 	params: FetchBatchStudentsParams,
 	fetchFn?: typeof fetch,
@@ -93,6 +109,8 @@ export async function fetchBatchTeachers(
 		page: String(Math.max(1, params.page)),
 		limit: String(Math.min(100, Math.max(1, params.limit)))
 	});
+	const search = params.search?.trim();
+	if (search) q.set('search', search);
 	q.set('_ts', String(Date.now()));
 
 	return apiRequest<BatchTeachersResponse>({
