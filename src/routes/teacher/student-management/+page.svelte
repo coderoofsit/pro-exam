@@ -5,6 +5,7 @@
 	import Pagination from "$lib/components/Pagination.svelte";
 	import { type TeacherStudentsRow } from "$lib/api/studentManagement";
 	import ManagementTableSkeleton from "$lib/components/ManagementTableSkeleton.svelte";
+	import InstituteUserViewDetailsModal from "$lib/components/InstituteUserViewDetailsModal.svelte";
 	import type { PageData } from "./$types";
 
 	let { data }: { data: PageData } = $props();
@@ -22,6 +23,9 @@
 	let studentsData = $state<TeacherStudentsRow[]>([]);
 	let currentPage = $state(1);
 	let totalPages = $state(1);
+	let viewDetailsOpen = $state(false);
+	let viewDetailsUserId = $state<string | null>(null);
+	let viewDetailsUserName = $state("");
 
 	function getRowStudent(row: TeacherStudentsRow) {
 		return "student" in row ? row.student : row;
@@ -30,6 +34,26 @@
 	function studentId(row: TeacherStudentsRow) {
 		const s = getRowStudent(row) as any;
 		return typeof s?._id === "string" ? s._id : "";
+	}
+
+	function displayName(row: TeacherStudentsRow): string {
+		const s = getRowStudent(row) as any;
+		const name = `${(s?.firstName ?? "").trim()} ${(s?.lastName ?? "").trim()}`.trim();
+		return name || s?.email || s?.phone || "—";
+	}
+
+	function openViewDetails(row: TeacherStudentsRow) {
+		const id = studentId(row);
+		if (!id) return;
+		viewDetailsUserId = id;
+		viewDetailsUserName = displayName(row);
+		viewDetailsOpen = true;
+	}
+
+	function closeViewDetails() {
+		viewDetailsOpen = false;
+		viewDetailsUserId = null;
+		viewDetailsUserName = "";
 	}
 
 	function removeStudentsFromList(ids: string[]) {
@@ -359,6 +383,7 @@
 									<button
 										type="button"
 										class="cursor-pointer rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
+										onclick={() => openViewDetails(row)}
 									>
 										View
 									</button>
@@ -429,3 +454,12 @@
 		</div>
 	</div>
 {/if}
+
+<InstituteUserViewDetailsModal
+	open={viewDetailsOpen}
+	userId={viewDetailsUserId}
+	userName={viewDetailsUserName}
+	role="student"
+	basePath="/teacher"
+	onClose={closeViewDetails}
+/>

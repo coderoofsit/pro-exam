@@ -8,6 +8,7 @@
 	import ManagementTableSkeleton from '$lib/components/ManagementTableSkeleton.svelte';
 	import ConfirmPermanentRemoveModal from '$lib/components/ConfirmPermanentRemoveModal.svelte';
 	import InstituteTeacherAddStudentsModal from '$lib/components/InstituteTeacherAddStudentsModal.svelte';
+	import InstituteUserViewDetailsModal from '$lib/components/InstituteUserViewDetailsModal.svelte';
 	import {
 		removeInstituteUsers,
 		updateTeacherBatchApproval,
@@ -45,6 +46,9 @@
 	let addStudentsTeacherId = $state<string | null>(null);
 	let batchConfirmOpen = $state(false);
 	let batchPending = $state<{ id: string; name: string; next: boolean } | null>(null);
+	let viewDetailsOpen = $state(false);
+	let viewDetailsUserId = $state<string | null>(null);
+	let viewDetailsUserName = $state('');
 
 	const roleColumnLabel = $derived(variant === 'teachers' ? 'TEACHER' : 'STUDENT');
 
@@ -161,6 +165,20 @@
 		const name = `${(u.firstName ?? '').trim()} ${(u.lastName ?? '').trim()}`.trim();
 		return name || '—';
 	}
+
+	function openViewDetails(u: InstituteUserRow) {
+		viewDetailsUserId = u._id;
+		viewDetailsUserName = displayName(u);
+		viewDetailsOpen = true;
+	}
+
+	function closeViewDetails() {
+		viewDetailsOpen = false;
+		viewDetailsUserId = null;
+		viewDetailsUserName = '';
+	}
+
+	const viewDetailsRole = $derived(variant === 'teachers' ? 'teacher' : 'student');
 
 	function closeRemoveModal() {
 		confirmRemoveOpen = false;
@@ -417,6 +435,7 @@
 										<button
 											type="button"
 											class="cursor-pointer rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
+											onclick={() => openViewDetails(u)}
 										>
 											View
 										</button>
@@ -463,6 +482,14 @@
 		addStudentsTeacherId = null;
 	}}
 	onRelationsSaved={() => void invalidateAll()}
+/>
+
+<InstituteUserViewDetailsModal
+	open={viewDetailsOpen}
+	userId={viewDetailsUserId}
+	userName={viewDetailsUserName}
+	role={viewDetailsRole}
+	onClose={closeViewDetails}
 />
 
 <ConfirmPermanentRemoveModal
