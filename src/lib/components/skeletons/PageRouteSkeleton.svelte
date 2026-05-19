@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { getPageSkeletonVariant } from '$lib/skeletons/routeVariant';
-	import DashboardPageSkeleton from '$lib/components/skeletons/DashboardPageSkeleton.svelte';
+	import StudentDashboardSkeleton from '$lib/components/skeletons/StudentDashboardSkeleton.svelte';
+	import PortalDashboardSkeleton from '$lib/components/skeletons/PortalDashboardSkeleton.svelte';
 	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
+	import ExamSubjectsSkeleton from '$lib/components/skeletons/ExamSubjectsSkeleton.svelte';
+	import ExamChaptersSkeleton from '$lib/components/skeletons/ExamChaptersSkeleton.svelte';
+	import ExamQuestionsListSkeleton from '$lib/components/skeletons/ExamQuestionsListSkeleton.svelte';
+	import ExamQuestionDetailSkeleton from '$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte';
 	import TestsListSkeleton from '$lib/components/skeletons/TestsListSkeleton.svelte';
 	import BatchCardsSkeleton from '$lib/components/skeletons/BatchCardsSkeleton.svelte';
 	import BatchDetailSkeleton from '$lib/components/skeletons/BatchDetailSkeleton.svelte';
@@ -11,6 +16,7 @@
 	import OwnTestSyllabusSkeleton from '$lib/components/OwnTestSyllabusSkeleton.svelte';
 	import QuestionListSkeleton from '$lib/components/skeletons/QuestionListSkeleton.svelte';
 	import DefaultPageSkeleton from '$lib/components/skeletons/DefaultPageSkeleton.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 
 	let { pathname = '/' }: { pathname?: string } = $props();
 
@@ -18,16 +24,41 @@
 </script>
 
 <div class="page-route-skeleton min-h-[50vh]" aria-busy="true" aria-label="Loading page">
-	{#if variant === 'dashboard'}
-		<DashboardPageSkeleton />
+	{#if variant === 'student-dashboard'}
+		<StudentDashboardSkeleton />
+	{:else if variant === 'portal-dashboard'}
+		<PortalDashboardSkeleton />
+	{:else if variant === 'exam-subjects'}
+		<div class="mx-auto w-full px-4 md:px-6 py-1">
+			<ExamSubjectsSkeleton />
+		</div>
+	{:else if variant === 'exam-chapters'}
+		<ExamChaptersSkeleton />
+	{:else if variant === 'exam-questions'}
+		<div class="mx-auto max-w-6xl px-2 sm:px-4 md:px-6 py-3">
+			<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+				<Skeleton width="w-20" height="h-9" rounded="rounded-lg" />
+				<Skeleton width="w-48" height="h-8" />
+			</div>
+			<ExamQuestionsListSkeleton />
+		</div>
+	{:else if variant === 'exam-question-detail'}
+		<div class="mx-auto max-w-6xl px-2 sm:px-4 md:px-6 py-3 h-full min-h-[50vh]">
+			<ExamQuestionDetailSkeleton />
+		</div>
 	{:else if variant === 'exam-grid'}
 		<div class="mx-auto max-w-7xl px-4 py-6">
-			<ExamGridSkeleton />
+			<Skeleton width="w-32" height="h-8" className="mb-6" strong />
+			<ExamGridSkeleton count={12} tileClass="skel-card" cardMinHeight="min-h-[128px]" />
 		</div>
 	{:else if variant === 'tests-list'}
 		<TestsListSkeleton />
 	{:else if variant === 'batch-cards'}
 		<div class="mx-auto max-w-7xl px-4 py-6">
+			<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+				<Skeleton width="w-40" height="h-8" strong />
+				<Skeleton width="w-32" height="h-10" rounded="rounded-xl" />
+			</div>
 			<BatchCardsSkeleton />
 		</div>
 	{:else if variant === 'batch-detail'}
@@ -35,7 +66,8 @@
 	{:else if variant === 'subscription'}
 		<SubscriptionPageSkeleton />
 	{:else if variant === 'management-table'}
-		<div class="mx-auto max-w-7xl px-4 py-4">
+		<div class="mx-auto max-w-7xl space-y-4 px-4 py-4">
+			<Skeleton width="w-48" height="h-8" strong />
 			<ManagementTableSkeleton rowCount={8} />
 		</div>
 	{:else if variant === 'settings'}
@@ -45,7 +77,7 @@
 			<OwnTestSyllabusSkeleton />
 		</div>
 	{:else if variant === 'question-list'}
-		<div class="mx-auto max-w-5xl px-4 py-4">
+		<div class="own-test-page mx-auto max-w-6xl px-4 py-4 sm:px-6">
 			<QuestionListSkeleton />
 		</div>
 	{:else}

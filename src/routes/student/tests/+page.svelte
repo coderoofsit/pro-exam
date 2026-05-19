@@ -398,7 +398,7 @@
           </div>
           <div class="flex flex-col gap-3">
             {#each Array(5) as _}
-              <div class="flex flex-col gap-4 rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="skel-card flex flex-col gap-4 rounded-2xl px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex-1 space-y-2">
                   <Skeleton width="w-3/4" height="h-5" />
                   <Skeleton width="w-1/2" height="h-3" />

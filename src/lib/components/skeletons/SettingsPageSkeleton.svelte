@@ -3,15 +3,37 @@
 </script>
 
 <div class="mx-auto w-full max-w-2xl space-y-6 px-4 py-6" aria-hidden="true">
-	<Skeleton width="w-32" height="h-8" />
-	<div class="space-y-4 rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6">
-		<Skeleton width="w-40" height="h-5" />
-		<Skeleton width="w-full" height="h-10" rounded="rounded-xl" />
-		<Skeleton width="w-full" height="h-10" rounded="rounded-xl" />
-		<Skeleton width="w-28" height="h-9" rounded="rounded-xl" />
+	<div>
+		<Skeleton width="w-28" height="h-7" strong />
+		<Skeleton width="w-44" height="h-4" className="mt-2" />
 	</div>
-	<div class="space-y-4 rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] p-6">
-		<Skeleton width="w-36" height="h-5" />
-		<Skeleton width="w-full" height="h-24" rounded="rounded-xl" />
+
+	<div class="skel-card flex items-start gap-4 rounded-2xl px-5 py-4">
+		<Skeleton width="w-14" height="h-14" rounded="rounded-xl" strong />
+		<div class="min-w-0 flex-1 space-y-2">
+			<Skeleton width="w-40" height="h-5" strong />
+			<Skeleton width="w-20" height="h-3" />
+			<div class="flex flex-wrap gap-1.5 pt-1">
+				<Skeleton width="w-16" height="h-5" rounded="rounded-lg" />
+				<Skeleton width="w-20" height="h-5" rounded="rounded-lg" />
+			</div>
+		</div>
+	</div>
+
+	<Skeleton width="w-16" height="h-3" />
+	<div class="skel-card overflow-hidden rounded-2xl">
+		{#each Array(2) as _, i (i)}
+			<div
+				class="flex items-center justify-between px-5 py-4 {i === 0
+					? 'border-b border-[var(--skel-border)]'
+					: ''}"
+			>
+				<div class="space-y-2">
+					<Skeleton width="w-12" height="h-3" />
+					<Skeleton width="w-44" height="h-4" strong />
+				</div>
+				<Skeleton width="w-16" height="h-4" />
+			</div>
+		{/each}
 	</div>
 </div>

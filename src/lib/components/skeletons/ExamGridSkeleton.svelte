@@ -1,8 +1,16 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
 
-	let { count = 10, cardMinHeight = 'min-h-[118px]' }: { count?: number; cardMinHeight?: string } =
-		$props();
+	let {
+		count = 10,
+		cardMinHeight = 'min-h-[118px]',
+		tileClass = 'skel-exam-tile'
+	}: {
+		count?: number;
+		cardMinHeight?: string;
+		/** `skel-exam-tile` for dashboard; `skel-card` for exams list page. */
+		tileClass?: 'skel-exam-tile' | 'skel-card';
+	} = $props();
 </script>
 
 <div
@@ -11,9 +19,9 @@
 >
 	{#each Array(count) as _, i (i)}
 		<div
-			class="flex {cardMinHeight} flex-col items-center justify-center gap-2 rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center"
+			class="{tileClass} flex {cardMinHeight} flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center"
 		>
-			<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+			<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
 			<Skeleton width="w-20" height="h-3" />
 		</div>
 	{/each}

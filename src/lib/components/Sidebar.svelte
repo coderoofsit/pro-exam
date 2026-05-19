@@ -110,7 +110,11 @@
     browser && navigating.to !== null && !isTestAttemptRoute,
   );
 
-  const routeSkeletonPath = $derived(navigating.to?.pathname ?? page.url.pathname);
+  const routeSkeletonPath = $derived.by(() => {
+    const to = navigating.to;
+    if (to) return `${to.pathname}${to.url.search}`;
+    return `${page.url.pathname}${page.url.search}`;
+  });
 
   /** Test result analysis — one shell background across sidebar + main (see `.student-shell--analysis`). */
   const isTestsAnalysisShellRoute = $derived(

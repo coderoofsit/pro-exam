@@ -5513,6 +5513,61 @@ body.student-exam-questions-lock-scroll {
   text-align: left;
 }
 
+/* ── Skeleton loaders (theme-aware, neutral blue borders — no pink) ─────── */
+:root {
+  --skel-surface: var(--sh-exam-card-bg);
+  --skel-border: color-mix(in srgb, var(--page-link) 22%, var(--sh-exam-card-border));
+  --skel-bar: color-mix(in srgb, var(--page-link) 14%, var(--sh-exam-card-border));
+  --skel-bar-strong: color-mix(in srgb, var(--page-link) 24%, var(--sh-exam-card-border));
+  --skel-dash-tile-border: var(--dash-exam-card-border);
+  --skel-cta-surface: var(--dash-cta-bg);
+  --skel-cta-border: color-mix(in srgb, var(--page-link) 28%, var(--sh-exam-card-border));
+}
+
+[data-theme='dark'] {
+  --skel-surface: var(--sh-exam-card-bg);
+  --skel-border: rgba(79, 126, 255, 0.24);
+  --skel-bar: rgba(79, 126, 255, 0.14);
+  --skel-bar-strong: rgba(79, 126, 255, 0.22);
+  --skel-dash-tile-border: rgba(79, 126, 255, 0.28);
+  --skel-cta-surface: color-mix(in srgb, var(--sh-exam-card-bg) 88%, transparent);
+  --skel-cta-border: rgba(79, 126, 255, 0.26);
+}
+
+html[data-theme='light'] {
+  --skel-surface: #ffffff;
+  --skel-border: color-mix(in srgb, var(--page-link) 26%, var(--sh-exam-card-border));
+  --skel-bar: color-mix(in srgb, var(--page-link) 12%, #e2e8f0);
+  --skel-bar-strong: color-mix(in srgb, var(--page-link) 20%, #e2e8f0);
+  --skel-dash-tile-border: var(--dash-exam-card-border);
+  --skel-cta-surface: var(--dash-cta-bg);
+  --skel-cta-border: color-mix(in srgb, var(--page-link) 32%, var(--sh-exam-card-border));
+}
+
+.skel-bar {
+  background: var(--skel-bar);
+  animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skel-bar--strong {
+  background: var(--skel-bar-strong);
+}
+
+.skel-card {
+  border: 1px solid var(--skel-border);
+  background: var(--skel-surface);
+}
+
+.skel-exam-tile {
+  border: 1px solid var(--skel-dash-tile-border);
+  background: var(--skel-surface);
+}
+
+.skel-cta-tile {
+  border: 1px solid var(--skel-cta-border);
+  background: var(--skel-cta-surface);
+}
+
 /* Shared utility moved from own test chapter route. */
 .skeleton-pulse {
   animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -5522,10 +5577,10 @@ body.student-exam-questions-lock-scroll {
 
   0%,
   100% {
-    opacity: 0.8;
+    opacity: 0.85;
   }
 
   50% {
-    opacity: 0.3;
+    opacity: 0.35;
   }
 }

@@ -1,36 +1,35 @@
 <script lang="ts">
+	import Skeleton from '$lib/components/Skeleton.svelte';
 </script>
 
-<div class="syllabus-skeleton animate-pulse" aria-hidden="true">
-  <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-    <!-- Sidebar Skeleton -->
-    <aside class="flex w-full shrink-0 flex-col gap-3 lg:w-[260px]">
-      {#each Array(4) as _}
-        <div class="h-20 w-full rounded-2xl bg-gray-200 dark:bg-gray-800"></div>
-      {/each}
-    </aside>
+<div class="own-test-chapters-root flex flex-col" aria-hidden="true">
+	<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+		<aside class="flex w-full shrink-0 flex-col gap-2 lg:w-[260px]">
+			{#each Array(4) as _, i (i)}
+				<div class="skel-card rounded-2xl p-4">
+					<Skeleton width="w-3/4" height="h-4" strong />
+					<Skeleton width="w-20" height="h-3" className="mt-2" />
+				</div>
+			{/each}
+		</aside>
 
-    <!-- Content Skeleton -->
-    <div class="flex-1 space-y-4">
-      <div class="h-6 w-48 rounded bg-gray-200 dark:bg-gray-800 mb-6"></div>
-      {#each Array(6) as _}
-        <div class="h-16 w-full rounded-2xl bg-gray-200 dark:bg-gray-800"></div>
-      {/each}
-    </div>
-  </div>
+		<div class="min-w-0 flex-1 space-y-3">
+			{#each Array(5) as _, i (i)}
+				<div class="skel-card rounded-2xl p-4">
+					<div class="flex items-center justify-between gap-3">
+						<Skeleton width="w-1/2" height="h-5" strong />
+						<Skeleton width="w-16" height="h-3" />
+					</div>
+					<div class="mt-3 space-y-2 border-t border-[var(--skel-border)] pt-3">
+						{#each Array(2) as __, j (j)}
+							<div class="flex items-center gap-2 rounded-xl border border-[var(--skel-border)] p-3">
+								<Skeleton width="w-full" height="h-4" />
+								<Skeleton width="w-8" height="h-8" rounded="rounded-lg" className="shrink-0" />
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/each}
+		</div>
+	</div>
 </div>
-
-<style>
-  .animate-pulse {
-    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 0.8;
-    }
-    50% {
-      opacity: 0.4;
-    }
-  }
-</style>

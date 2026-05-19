@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
+	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import Exam from '$lib/components/Exam.svelte';
@@ -71,15 +72,8 @@ let {
 
 {#await data.streamed.examsData}
 	<div class="mx-auto max-w-7xl px-4 py-8">
-		<Skeleton width="w-32" height="h-8" className="mb-6" />
-		<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-			{#each Array(10) as _}
-				<div class="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-4">
-					<Skeleton width="w-10" height="h-10" rounded="rounded-full" />
-					<Skeleton width="w-24" height="h-4" />
-				</div>
-			{/each}
-		</div>
+		<Skeleton width="w-32" height="h-8" className="mb-6" strong />
+		<ExamGridSkeleton count={10} tileClass="skel-card" cardMinHeight="min-h-[128px]" />
 	</div>
 {:then examsData}
 	{@const displayExams = hasCurrentPage ? ($examStore.examsByPage[currentPage] ?? []) : examsData.data}

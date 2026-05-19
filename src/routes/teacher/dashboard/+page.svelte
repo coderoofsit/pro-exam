@@ -79,25 +79,16 @@
 
 <div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)]">
 	{#await dashboardPromise}
-		<section
-			class="mb-6 mt-6 rounded-2xl border border-[color-mix(in_srgb,var(--accent-cta-cyan)_20%,var(--sh-exam-card-border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--sh-exam-card-bg)_94%,transparent),color-mix(in_srgb,var(--accent-cta-cyan)_6%,var(--sh-exam-card-bg)))] p-5 shadow-[0_10px_30px_color-mix(in_srgb,var(--accent-cta-cyan)_10%,transparent)]"
-			aria-label="Dashboard summary loading"
-		>
+		<section class="skel-card mb-6 mt-6 rounded-2xl p-5 shadow-[var(--sh-exam-card-hover-shadow)]" aria-label="Dashboard summary loading">
 			<div class="flex flex-wrap items-start justify-between gap-4">
-				<div class="min-w-0 flex-1">
-					<Skeleton width="w-16" height="h-3" className="bg-[color-mix(in_srgb,var(--accent-cta-cyan)_30%,var(--page-card-border))] opacity-30" />
-					<div class="mt-2">
-						<Skeleton width="w-48 sm:w-64" height="h-7" className="bg-[color-mix(in_srgb,var(--accent-cta-pink)_28%,var(--page-card-border))] opacity-30" />
-					</div>
-					<div class="mt-2">
-						<Skeleton width="w-44 sm:w-56" height="h-4" className="bg-[color-mix(in_srgb,var(--whatsapp-brand)_24%,var(--page-card-border))] opacity-30" />
-					</div>
+				<div class="min-w-0 flex-1 space-y-2">
+					<Skeleton width="w-16" height="h-3" />
+					<Skeleton width="w-48 sm:w-64" height="h-7" strong />
+					<Skeleton width="w-44 sm:w-56" height="h-4" />
 				</div>
 				<div class="flex flex-wrap gap-2">
-					{#each ['pink', 'cyan', 'green', 'amber'] as tone}
-						<div class="rounded-full px-3 py-1.5 {tone === 'pink' ? 'border border-[color-mix(in_srgb,var(--accent-cta-pink)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-pink)_10%,transparent)]' : ''} {tone === 'cyan' ? 'border border-[color-mix(in_srgb,var(--accent-cta-cyan)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-cyan)_10%,transparent)]' : ''} {tone === 'green' ? 'border border-[color-mix(in_srgb,var(--whatsapp-brand)_24%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_10%,transparent)]' : ''} {tone === 'amber' ? 'border border-[color-mix(in_srgb,var(--badge-new-bg)_38%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--badge-new-bg)_14%,transparent)]' : ''}">
-							<Skeleton width="w-20" height="h-3" className="opacity-30" />
-						</div>
+					{#each Array(4) as _}
+						<Skeleton width="w-20" height="h-6" rounded="rounded-full" />
 					{/each}
 				</div>
 			</div>
@@ -143,8 +134,8 @@
 		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#await data.streamed.exams}
 				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
+						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
 						<Skeleton width="w-20" height="h-3" />
 					</div>
 				{/each}
@@ -168,8 +159,8 @@
 		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#await data.streamed.exams}
 				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
+						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
 						<Skeleton width="w-20" height="h-3" />
 					</div>
 				{/each}

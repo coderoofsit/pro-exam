@@ -626,8 +626,8 @@
     {#await data.streamed.batchesData}
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {#each Array(6) as _}
-          <div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5">
-            <Skeleton width="w-12" height="h-12" rounded="rounded-xl" className="mb-4" />
+          <div class="skel-card rounded-2xl p-5">
+            <Skeleton width="w-12" height="h-12" rounded="rounded-xl" className="mb-4" strong />
             <Skeleton width="w-3/4" height="h-6" className="mb-2" />
             <Skeleton width="w-1/2" height="h-4" />
           </div>

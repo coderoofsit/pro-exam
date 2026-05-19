@@ -96,8 +96,8 @@
 		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#await data.streamed.exams}
 				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
+						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
 						<Skeleton width="w-20" height="h-3" />
 					</div>
 				{/each}
@@ -136,8 +136,8 @@
 		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
 			{#await data.streamed.exams}
 				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--accent-cta-pink)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" />
+					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
+						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
 						<Skeleton width="w-20" height="h-3" />
 					</div>
 				{/each}

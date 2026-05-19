@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { get } from 'svelte/store';
+import { getAuthTokenFromDocumentCookie } from '$lib/auth/clientCookieToken';
 import { authStore } from '$lib/stores/auth';
 
 function normalizeBearer(raw: string | null | undefined): string | undefined {
@@ -21,7 +22,7 @@ export function resolveApiToken(override?: string | null): string | undefined {
 	const storeToken = normalizeBearer(get(authStore).token);
 	if (storeToken) return storeToken;
 
-	return undefined;
+	return normalizeBearer(getAuthTokenFromDocumentCookie());
 }
 
 export function setApiToken(token: string): void {

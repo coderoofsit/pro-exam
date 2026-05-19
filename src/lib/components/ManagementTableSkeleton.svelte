@@ -24,7 +24,7 @@
   - Column 3 (optional): status pill when showStatusColumn
   - Column 4 / 3: action button
 -->
-<div class="table-wrap bg-[var(--sh-exam-card-bg)]" aria-busy="true" aria-label="Loading table">
+<div class="table-wrap skel-card bg-[var(--skel-surface)]" aria-busy="true" aria-label="Loading table">
 	<table class="perf-table">
 		<thead>
 			<tr>

@@ -8,7 +8,9 @@
 	import { browser } from "$app/environment";
 	import { page } from "$app/state";
 	import { questionStore } from "$lib/stores/question";
-	import { navigating } from "$app/stores";
+	import { navigating } from "$app/state";
+	import ExamQuestionsListSkeleton from "$lib/components/skeletons/ExamQuestionsListSkeleton.svelte";
+	import ExamQuestionDetailSkeleton from "$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte";
 	import { createReport, type ReportReason } from "$lib/api/reports";
 	import BackButton from "$lib/components/BackButton.svelte";
 	import Pagination from "$lib/components/Pagination.svelte";
@@ -314,7 +316,7 @@
 
 	const PAGINATION_WINDOW = 2;
 
-	const isLoading = $derived($navigating !== null);
+	const isLoading = $derived(navigating.to !== null);
 	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
@@ -924,29 +926,7 @@
 					{:else if !effectiveQuestionId}
 						<div class="flex-1 overflow-y-auto py-3">
 							{#if isLoading}
-								<div class="flex flex-col gap-2.5">
-									{#each Array(10) as _, i}
-										<div
-											class="animate-pulse rounded-xl border border-[var(--page-card-border)] bg-[var(--page-card-bg)] px-4 py-3"
-										>
-											<div
-												class="flex items-baseline gap-3"
-											>
-												<div
-													class="h-4 w-8 shrink-0 rounded bg-[var(--page-bg)]"
-												></div>
-												<div class="flex-1 space-y-2">
-													<div
-														class="h-4 w-full rounded bg-[var(--page-bg)]"
-													></div>
-													<div
-														class="h-4 w-3/4 rounded bg-[var(--page-bg)]"
-													></div>
-												</div>
-											</div>
-										</div>
-									{/each}
-								</div>
+								<ExamQuestionsListSkeleton />
 							{:else}
 								<div class="flex flex-col gap-4">
 									{#each displayQuestions as q, index (q._id)}
@@ -1029,17 +1009,8 @@
 								class="rounded-none sm:rounded-2xl border-x-0 sm:border-x border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-2 sm:p-4 shadow-sm flex flex-col h-full min-h-0"
 							>
 								{#if detailLoading && !detailQuestion}
-									<div class="flex flex-col gap-4 animate-pulse" aria-busy="true">
-										<div class="h-6 w-40 rounded bg-[var(--page-card-border)]"></div>
-										<div class="h-4 w-full max-w-2xl rounded bg-[var(--page-card-border)]"></div>
-										<div class="h-4 w-full max-w-xl rounded bg-[var(--page-card-border)]"></div>
-										<div class="h-4 w-2/3 rounded bg-[var(--page-card-border)]"></div>
-										<div class="mt-6 grid grid-cols-2 gap-3">
-											<div class="h-24 rounded-xl bg-[var(--page-card-border)]"></div>
-											<div class="h-24 rounded-xl bg-[var(--page-card-border)]"></div>
-										</div>
-									</div>
-								{:else if !detailQuestion}
+								<ExamQuestionDetailSkeleton />
+							{:else if !detailQuestion}
 									<div class="text-center text-[var(--page-text-muted)] py-12">
 										Unable to load this question.
 									</div>

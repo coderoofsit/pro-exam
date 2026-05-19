@@ -12,6 +12,8 @@
 		buildSubjectsFromGrouped,
 	} from "$lib/exams/groupedExamData";
 	import BackButton from "$lib/components/BackButton.svelte";
+	import ExamSubjectsSkeleton from "$lib/components/skeletons/ExamSubjectsSkeleton.svelte";
+	import ExamChaptersSkeleton from "$lib/components/skeletons/ExamChaptersSkeleton.svelte";
 
 	type SubjectNavRow = {
 		_id: string;
@@ -43,7 +45,7 @@
 	let subjects = $state<SubjectNavRow[]>([]);
 	let chaptersBySubjectSlug = $state<Record<string, ChapterCardRow[]>>({});
 	let rawGrouped = $state<GroupedSubjectRow[]>([]);
-	let chaptersLoading = $state(false);
+	let chaptersLoading = $state(true);
 	let chaptersError = $state<string | null>(null);
 	let clientLoadSeq = 0;
 
@@ -210,28 +212,7 @@
 						{chaptersError}
 					</p>
 				{:else if chaptersLoading && subjects.length === 0}
-					<div
-						class="flex-1 pb-3"
-						aria-busy="true"
-						aria-label="Loading subjects"
-					>
-						<div
-							class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3"
-						>
-							{#each [1, 2, 3, 4, 5, 6] as sk (sk)}
-								<div
-									class="h-20 animate-pulse rounded-[var(--radius-card)] border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-3"
-								>
-									<div
-										class="h-4 w-3/4 rounded bg-[var(--page-text-muted)]/20"
-									></div>
-									<div
-										class="mt-2 h-3 w-1/2 rounded bg-[var(--page-text-muted)]/15"
-									></div>
-								</div>
-							{/each}
-						</div>
-					</div>
+					<ExamSubjectsSkeleton />
 				{:else if !chaptersLoading && subjects.length === 0}
 					<p class="text-[var(--page-text-muted)]">
 						No subjects found for this exam.
@@ -263,6 +244,8 @@
 					</div>
 				{/if}
 			</div>
+		{:else if chaptersLoading && subjects.length === 0}
+			<ExamChaptersSkeleton />
 		{:else}
 			<aside
 				class="sticky top-0 hidden md:flex h-screen w-64 shrink-0 flex-col border-r border-[var(--sb-border-color)] bg-gradient-to-b from-[var(--sb-bg-from)] to-[var(--sb-bg-to)]"
