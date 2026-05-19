@@ -448,7 +448,7 @@
               </span>
               {#if effectiveSub.current.planSnapshot.isTrial}
                 <span
-                  class="rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-200"
+                  class="subscription-trial-badge rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold"
                 >
                   Trial
                 </span>
@@ -503,7 +503,7 @@
                       </span>
                       {#if item.planSnapshot.isTrial}
                         <span
-                          class="rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-200"
+                          class="subscription-trial-badge rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold"
                         >
                           Trial
                         </span>

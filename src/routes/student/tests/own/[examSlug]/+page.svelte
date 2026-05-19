@@ -1004,10 +1004,4 @@
     -webkit-backdrop-filter: blur(16px) !important;
   }
 
-  /* Make bottom bar translucent and keep blur enabled. */
-  :global(.own-bottom-bar) {
-    background: rgba(15, 23, 42, 0.62) !important;
-    backdrop-filter: blur(18px) !important;
-    -webkit-backdrop-filter: blur(18px) !important;
-  }
 </style>

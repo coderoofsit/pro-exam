@@ -1922,6 +1922,31 @@ html[data-theme='dark'] .question-card:hover {
   }
 }
 
+/* Own test bottom bar — theme-specific bar surface (student/teacher tests/own) */
+html[data-theme='dark'] .own-bottom-bar {
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+html[data-theme='light'] .own-bottom-bar {
+  background: color-mix(in srgb, var(--page-link) 24%, #eef4ff);
+  border-top-color: color-mix(in srgb, var(--page-link) 36%, #e2e8f0);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+html[data-theme='light'] .own-bottom-bar .own-bottom-bar__label,
+html[data-theme='light'] .own-bottom-bar .own-bottom-bar__empty,
+html[data-theme='light'] .own-bottom-bar .own-bottom-bar__chip {
+  color: #000000;
+}
+
+html[data-theme='light'] .own-bottom-bar .own-bottom-bar__chip {
+  border-color: color-mix(in srgb, var(--page-link) 40%, #e2e8f0);
+  background: rgba(255, 255, 255, 0.75);
+}
+
 /* Next: use global .btn-cta-subscription on the button (OwnTestChaptersPanel + own exam page) */
 
 /* Own test — question distribution modal (OwnTestQuestionDistributionModal.svelte) */
@@ -3164,6 +3189,15 @@ a.student-batch-card:hover {
   color: var(--pyq-header-text);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   transform: none;
+}
+
+/* Subscription page — yellow “Trial” plan pill */
+.subscription-trial-badge {
+  color: #fde68a;
+}
+
+html[data-theme='light'] .subscription-trial-badge {
+  color: #000000;
 }
 
 /* Attention variant for key CTAs (Start Test / Re-attempt). */
