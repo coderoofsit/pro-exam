@@ -49,6 +49,7 @@
     teachersLoadingMore?: boolean;
     teachersHasMore?: boolean;
     teachers?: ModalStudentItem[];
+    teachersSearch?: string;
     selectedTeacherIds?: string[];
     onToggleTeacher?: (teacherId: string) => void;
     onToggleAllTeachers?: (checked: boolean) => void;
@@ -64,6 +65,7 @@
     onLoadMoreStudents: () => void;
     onTestsSearchChange: (value: string) => void;
     onStudentsSearchChange: (value: string) => void;
+    onTeachersSearchChange?: (value: string) => void;
     isReady: () => boolean;
     testLabel: (t: BatchTestItem) => string;
     testStatusLabel: (t?: BatchTestItem) => string;
@@ -105,6 +107,7 @@
     teachersLoadingMore = false,
     teachersHasMore = false,
     teachers = [],
+    teachersSearch = '',
     selectedTeacherIds = [],
     onToggleTeacher,
     onToggleAllTeachers,
@@ -124,6 +127,7 @@
     onLoadMoreStudents,
     onTestsSearchChange,
     onStudentsSearchChange,
+    onTeachersSearchChange,
     isReady,
     testLabel,
     testStatusLabel,
@@ -504,6 +508,13 @@
                       Select all
                     </label>
                   </div>
+                  <input
+                    type="search"
+                    placeholder="Search teachers by name"
+                    class="mt-3 w-full rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-3 py-2 text-sm text-[var(--page-text)] outline-none transition-colors focus:border-[var(--page-link)]"
+                    value={teachersSearch}
+                    oninput={(e) => onTeachersSearchChange?.((e.currentTarget as HTMLInputElement).value)}
+                  />
                   {#if teachersLoading}
                     <div class="mt-3 flex-1 space-y-2 overflow-auto pr-1">
                       {#each Array(7) as _}

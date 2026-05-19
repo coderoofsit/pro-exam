@@ -91,11 +91,18 @@
 
     {#each items as item (`${keyPrefix}-${item.type}-${item.type === 'page' ? item.page : item.key}`)}
       {#if item.type === 'page'}
-        <a class={`pagination-btn max-sm:!border-transparent max-sm:!shadow-none max-sm:!text-[12px] sm:px-3.5 ${item.page === currentPage ? 'page-link-active max-sm:!bg-[var(--page-link)] max-sm:!text-white max-sm:!rounded-full max-sm:!w-[26px] max-sm:!h-[26px] max-sm:!p-0 max-sm:!font-bold' : 'max-sm:!bg-transparent max-sm:!bg-none max-sm:!px-1.5'}`} href={getHref(item.page)}>
+        <a
+          class={`pagination-btn pagination-page-dot max-sm:!border-transparent max-sm:!shadow-none max-sm:!text-[12px] sm:inline-flex sm:size-6 sm:min-w-6 sm:shrink-0 sm:items-center sm:justify-center sm:rounded-full sm:p-0 sm:text-[10px] sm:font-semibold ${item.page === currentPage ? 'page-link-active max-sm:!bg-[var(--page-link)] max-sm:!text-white max-sm:!rounded-full max-sm:!size-[26px] max-sm:!p-0 max-sm:!font-bold' : 'max-sm:!bg-transparent max-sm:!px-1.5'}`}
+          href={getHref(item.page)}
+        >
           {item.page}
         </a>
       {:else}
-        <a class="pagination-btn max-sm:!bg-transparent max-sm:!border-transparent max-sm:!shadow-none max-sm:!px-1 max-sm:!text-[12px] sm:px-3.5" href={getHref(item.targetPage)} aria-label="Jump pages">
+        <a
+          class="pagination-btn pagination-page-dot max-sm:!bg-transparent max-sm:!border-transparent max-sm:!shadow-none max-sm:!px-1 max-sm:!text-[12px] sm:inline-flex sm:size-6 sm:min-w-6 sm:shrink-0 sm:items-center sm:justify-center sm:rounded-full sm:p-0 sm:text-[10px]"
+          href={getHref(item.targetPage)}
+          aria-label="Jump pages"
+        >
           ...
         </a>
       {/if}

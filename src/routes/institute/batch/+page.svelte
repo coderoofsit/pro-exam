@@ -12,6 +12,7 @@
     fetchBatchStudents,
     fetchBatchTeachers,
     unwrapBatchStudentsPage,
+    unwrapBatchTeachersPage,
     type BatchStudentItem
   } from '$lib/api/teacher';
   import {
@@ -56,18 +57,21 @@
   let step2Tests = $state<BatchTestItem[]>([]);
   let step2TestsPage = $state(1);
   let step2TestsLastPage = $state(1);
+  let step2TestsSearch = $state('');
   let selectedTestIds = $state<string[]>([]);
   let step2StudentsLoading = $state(false);
   let step2StudentsLoadingMore = $state(false);
   let step2Students = $state<BatchStudentItem[]>([]);
   let step2StudentsPage = $state(1);
   let step2StudentsLastPage = $state(1);
+  let step2StudentsSearch = $state('');
   let selectedStudentIds = $state<string[]>([]);
   let step2TeachersLoading = $state(false);
   let step2TeachersLoadingMore = $state(false);
   let step2Teachers = $state<BatchStudentItem[]>([]);
   let step2TeachersPage = $state(1);
   let step2TeachersLastPage = $state(1);
+  let step2TeachersSearch = $state('');
   let selectedTeacherIds = $state<string[]>([]);
   let step2PrefetchStarted = $state(false);
 
@@ -210,69 +214,83 @@
     selectedTeacherIds = selectedTeacherIds.filter((id) => !visibleIds.includes(id));
   }
 
-  async function loadStep2Data() {
-    const loadTests = async () => {
-      if (step2TestsLoaded) return;
-      step2TestsLoading = true;
-      try {
-        const res = await fetchBatchTests({ search: '', page: 1, limit: 20 }, fetch, { token: $authStore.token });
-        if (res.success) {
-          const payload = res.data?.data;
-          const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
-          step2Tests = items;
-          step2TestsPage = Array.isArray(payload) ? 1 : (payload?.currentPage ?? 1);
-          step2TestsLastPage = Array.isArray(payload) ? 1 : (payload?.lastPage ?? 1);
-        } else {
-          step2Tests = [];
-          step2TestsError = res.message || 'Failed to load tests.';
-        }
-        step2TestsLoaded = true;
-      } catch {
-        step2TestsError = 'Failed to load tests.';
+  async function loadStep2Tests(force = false) {
+    if (!force && step2TestsLoaded) return;
+    step2TestsLoading = true;
+    try {
+      const res = await fetchBatchTests(
+        { search: step2TestsSearch, page: 1, limit: 20 },
+        fetch,
+        { token: $authStore.token }
+      );
+      if (res.success) {
+        const payload = res.data?.data;
+        const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
+        step2Tests = items;
+        step2TestsPage = Array.isArray(payload) ? 1 : (payload?.currentPage ?? 1);
+        step2TestsLastPage = Array.isArray(payload) ? 1 : (payload?.lastPage ?? 1);
+        step2TestsError = null;
+      } else {
         step2Tests = [];
-      } finally {
-        step2TestsLoading = false;
+        step2TestsError = res.message || 'Failed to load tests.';
       }
-    };
+      step2TestsLoaded = true;
+    } catch {
+      step2TestsError = 'Failed to load tests.';
+      step2Tests = [];
+    } finally {
+      step2TestsLoading = false;
+    }
+  }
 
-    const loadStudents = async () => {
-      step2StudentsLoading = true;
-      try {
-        const studRes = await fetchBatchStudents({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
-        const parsed = unwrapBatchStudentsPage(studRes);
-        if (parsed) {
-          step2Students = parsed.rows;
-          step2StudentsPage = parsed.currentPage;
-          step2StudentsLastPage = parsed.lastPage;
-        } else {
-          step2Students = [];
-          step2StudentsPage = 1;
-          step2StudentsLastPage = 1;
-        }
-      } finally {
-        step2StudentsLoading = false;
+  async function loadStep2Students() {
+    step2StudentsLoading = true;
+    try {
+      const studRes = await fetchBatchStudents(
+        { page: 1, limit: 20, search: step2StudentsSearch },
+        fetch,
+        { token: $authStore.token }
+      );
+      const parsed = unwrapBatchStudentsPage(studRes);
+      if (parsed) {
+        step2Students = parsed.rows;
+        step2StudentsPage = parsed.currentPage;
+        step2StudentsLastPage = parsed.lastPage;
+      } else {
+        step2Students = [];
+        step2StudentsPage = 1;
+        step2StudentsLastPage = 1;
       }
-    };
+    } finally {
+      step2StudentsLoading = false;
+    }
+  }
 
-    const loadTeachers = async () => {
-      step2TeachersLoading = true;
-      try {
-        const teachRes = await fetchBatchTeachers({ page: 1, limit: 20 }, fetch, { token: $authStore.token });
-        if (teachRes.success && teachRes.data?.data) {
-          step2Teachers = teachRes.data.data;
-          step2TeachersPage = teachRes.data.currentPage ?? 1;
-          step2TeachersLastPage = teachRes.data.lastPage ?? 1;
-        } else {
-          step2Teachers = [];
-          step2TeachersPage = 1;
-          step2TeachersLastPage = 1;
-        }
-      } finally {
-        step2TeachersLoading = false;
+  async function loadStep2Teachers() {
+    step2TeachersLoading = true;
+    try {
+      const teachRes = await fetchBatchTeachers(
+        { page: 1, limit: 20, search: step2TeachersSearch },
+        fetch,
+        { token: $authStore.token }
+      );
+      const parsedTeachers = unwrapBatchTeachersPage(teachRes);
+      if (parsedTeachers) {
+        step2Teachers = parsedTeachers.rows;
+        step2TeachersPage = parsedTeachers.currentPage;
+        step2TeachersLastPage = parsedTeachers.lastPage;
+      } else {
+        step2Teachers = [];
+        step2TeachersPage = 1;
+        step2TeachersLastPage = 1;
       }
-    };
+    } finally {
+      step2TeachersLoading = false;
+    }
+  }
 
-    await Promise.all([loadTests(), loadStudents(), loadTeachers()]);
+  async function loadStep2Data() {
+    await Promise.all([loadStep2Tests(), loadStep2Students(), loadStep2Teachers()]);
   }
 
   async function loadMoreStep2Tests() {
@@ -280,7 +298,11 @@
     step2TestsLoadingMore = true;
     try {
       const nextPage = step2TestsPage + 1;
-      const res = await fetchBatchTests({ search: '', page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
+      const res = await fetchBatchTests(
+        { search: step2TestsSearch, page: nextPage, limit: 20 },
+        fetch,
+        { token: $authStore.token }
+      );
       if (!res.success) return;
       const payload = res.data?.data;
       const items = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? [];
@@ -298,7 +320,11 @@
     step2StudentsLoadingMore = true;
     try {
       const nextPage = step2StudentsPage + 1;
-      const res = await fetchBatchStudents({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
+      const res = await fetchBatchStudents(
+        { page: nextPage, limit: 20, search: step2StudentsSearch },
+        fetch,
+        { token: $authStore.token }
+      );
       const parsed = unwrapBatchStudentsPage(res);
       if (!parsed) return;
       step2Students = [...step2Students, ...parsed.rows];
@@ -314,12 +340,16 @@
     step2TeachersLoadingMore = true;
     try {
       const nextPage = step2TeachersPage + 1;
-      const res = await fetchBatchTeachers({ page: nextPage, limit: 20 }, fetch, { token: $authStore.token });
-      if (!res.success || !res.data?.data) return;
-      const nextTeachers = Array.isArray(res.data.data) ? res.data.data : [];
-      step2Teachers = [...step2Teachers, ...nextTeachers];
-      step2TeachersPage = res.data.currentPage ?? nextPage;
-      step2TeachersLastPage = res.data.lastPage ?? nextPage;
+      const res = await fetchBatchTeachers(
+        { page: nextPage, limit: 20, search: step2TeachersSearch },
+        fetch,
+        { token: $authStore.token }
+      );
+      const parsed = unwrapBatchTeachersPage(res);
+      if (!parsed) return;
+      step2Teachers = [...step2Teachers, ...parsed.rows];
+      step2TeachersPage = parsed.currentPage ?? nextPage;
+      step2TeachersLastPage = parsed.lastPage ?? nextPage;
     } finally {
       step2TeachersLoadingMore = false;
     }
@@ -329,6 +359,36 @@
     if (step2PrefetchStarted) return;
     step2PrefetchStarted = true;
     void loadStep2Data();
+  }
+
+  const debouncedLoadStep2Tests = debounce(() => {
+    step2TestsPage = 1;
+    void loadStep2Tests(true);
+  }, 350);
+
+  const debouncedLoadStep2Students = debounce(() => {
+    step2StudentsPage = 1;
+    void loadStep2Students();
+  }, 350);
+
+  const debouncedLoadStep2Teachers = debounce(() => {
+    step2TeachersPage = 1;
+    void loadStep2Teachers();
+  }, 350);
+
+  function onStep2TestsSearchChange(value: string) {
+    step2TestsSearch = value;
+    debouncedLoadStep2Tests();
+  }
+
+  function onStep2StudentsSearchChange(value: string) {
+    step2StudentsSearch = value;
+    debouncedLoadStep2Students();
+  }
+
+  function onStep2TeachersSearchChange(value: string) {
+    step2TeachersSearch = value;
+    debouncedLoadStep2Teachers();
   }
 
   function toInputDate(value: string): string {
@@ -396,6 +456,9 @@
     step2Teachers = [];
     step2TeachersPage = 1;
     step2TeachersLastPage = 1;
+    step2TestsSearch = '';
+    step2StudentsSearch = '';
+    step2TeachersSearch = '';
     createBatchModalOpen = true;
     prefetchStep2Data();
   }
@@ -704,8 +767,10 @@
   testsHasMore={step2TestsPage < step2TestsLastPage}
   testsError={step2TestsError}
   tests={step2Tests}
+  testsSearch={step2TestsSearch}
   selectedTestIds={selectedTestIds}
   students={step2Students}
+  studentsSearch={step2StudentsSearch}
   selectedStudentIds={selectedStudentIds}
   studentsLoading={step2StudentsLoading}
   studentsLoadingMore={step2StudentsLoadingMore}
@@ -714,6 +779,7 @@
   teachersLoadingMore={step2TeachersLoadingMore}
   teachersHasMore={step2TeachersPage < step2TeachersLastPage}
   teachers={step2Teachers}
+  teachersSearch={step2TeachersSearch}
   selectedTeacherIds={selectedTeacherIds}
   onClose={closeCreateBatchModal}
   onSubmitStep1={() => void onCreateBatchClick()}
@@ -732,6 +798,9 @@
   onLoadMoreTests={() => void loadMoreStep2Tests()}
   onLoadMoreStudents={() => void loadMoreStep2Students()}
   onLoadMoreTeachers={() => void loadMoreStep2Teachers()}
+  onTestsSearchChange={onStep2TestsSearchChange}
+  onStudentsSearchChange={onStep2StudentsSearchChange}
+  onTeachersSearchChange={onStep2TeachersSearchChange}
   isReady={isCreateBatchReady}
   {testLabel}
   {testStatusLabel}
