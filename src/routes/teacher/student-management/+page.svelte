@@ -186,28 +186,46 @@
 			</div>
 		{/if}
 
-		<div class="mb-4 flex flex-col gap-3">
-			<div class="flex flex-wrap items-center gap-3">
-				<form
-					class="flex w-full max-w-[260px] items-center gap-2"
-					onsubmit={(e) => {
-						e.preventDefault();
-						void applySearch();
-					}}
-				>
-					<input
-						type="search"
-						placeholder="Search by name"
-						class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)]"
-						bind:value={searchInput}
-					/>
-				</form>
+		<div
+			class="mb-4 grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)_11rem] sm:items-center sm:gap-x-4"
+		>
+			<form
+				class="flex min-w-0 items-center gap-2 sm:max-w-[260px]"
+				onsubmit={(e) => {
+					e.preventDefault();
+					void applySearch();
+				}}
+			>
+				<input
+					type="search"
+					placeholder="Search by name"
+					class="w-full rounded-xl border px-3 py-2 text-sm border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text)]"
+					bind:value={searchInput}
+				/>
+			</form>
 
-				{#if selectedStudentIds.length > 0 || actionLoadingForId === "remove:selected"}
-					<form
-						method="POST"
-						action="?/remove"
-						class="ml-auto"
+			<div class="flex min-h-10 min-w-0 justify-center overflow-x-auto px-1 py-0.5 sm:min-h-0">
+				{#if !loading && totalPages > 1}
+					<Pagination
+						{currentPage}
+						{totalPages}
+						getHref={hrefForPage}
+						windowSize={2}
+						keyPrefix="teacher-student-management-top"
+					/>
+				{/if}
+			</div>
+
+			<div class="flex min-h-[40px] min-w-0 items-center justify-end sm:justify-end">
+				<form
+					method="POST"
+					action="?/remove"
+					class="w-full sm:w-auto {selectedStudentIds.length > 0 ||
+					actionLoadingForId === 'remove:selected'
+						? ''
+						: 'pointer-events-none invisible'}"
+					aria-hidden={selectedStudentIds.length === 0 &&
+						actionLoadingForId !== 'remove:selected'}
 						bind:this={removeSelectedFormEl}
 						use:enhance={() => {
 							const ids = [...selectedStudentIds];
@@ -262,21 +280,8 @@
 								? "Removing…"
 								: `Remove selected (${selectedStudentIds.length})`}
 						</button>
-					</form>
-				{/if}
+				</form>
 			</div>
-
-			{#if !loading && totalPages > 1}
-				<div class="flex justify-center">
-					<Pagination
-						{currentPage}
-						{totalPages}
-						getHref={hrefForPage}
-						windowSize={2}
-						keyPrefix="teacher-student-management-top"
-					/>
-				</div>
-			{/if}
 		</div>
 
 		{#if loading}
@@ -299,17 +304,15 @@
 						<tr>
 							<th>
 								<div class="flex items-center gap-2">
-									<!-- <input
+									<input
 										id="select-all-visible"
 										type="checkbox"
 										checked={allVisibleSelected}
 										onchange={(e) =>
 											toggleSelectAll(
-												(
-													e.currentTarget as HTMLInputElement
-												).checked,
+												(e.currentTarget as HTMLInputElement).checked,
 											)}
-									/> -->
+									/>
 									<span>STUDENTS</span>
 								</div>
 							</th>
@@ -320,22 +323,19 @@
 					<tbody>
 						{#each studentsData as row (studentId(row))}
 							{@const s: any = getRowStudent(row)}
+							{@const id = studentId(row)}
 							<tr>
 								<td>
 									<div class="flex items-center gap-3">
-										<!-- <input
+										<input
 											type="checkbox"
-											checked={selectedStudentIds.includes(
-												s._id,
-											)}
+											checked={selectedStudentIds.includes(id)}
 											onchange={(e) =>
 												toggleSelected(
-													s._id,
-													(
-														e.currentTarget as HTMLInputElement
-													).checked,
+													id,
+													(e.currentTarget as HTMLInputElement).checked,
 												)}
-										/> -->
+										/>
 										<div
 											class="font-semibold text-[var(--page-text)]"
 										>
