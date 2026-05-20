@@ -71,10 +71,10 @@ let {
 </svelte:head>
 
 {#await data.streamed.examsData}
-	<div class="mx-auto max-w-7xl px-4 py-8">
-		<Skeleton width="w-32" height="h-8" className="mb-6" strong />
-		<div class="exam-card-responsive-grid min-w-0">
-			<ExamGridSkeleton nested tileClass="skel-card" cardMinHeight="min-h-[128px]" />
+	<div class="exam-page--student mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-8">
+		<Skeleton width="w-32" height="h-8" className="mb-4 sm:mb-6" strong />
+		<div class="exam-card-responsive-grid exam-page__grid min-w-0">
+			<ExamGridSkeleton nested tileClass="skel-card" cardMinHeight="min-h-[92px] sm:min-h-[128px]" />
 		</div>
 	</div>
 {:then examsData}

@@ -3,7 +3,8 @@
 
 	let {
 		count = EXAM_CARD_SKELETON_COUNT,
-		cardMinHeight = 'min-h-[118px]',
+		/** Default tile heights: compact on small screens to match dashboard exam cards. */
+		cardMinHeight = 'min-h-[92px] sm:min-h-[118px]',
 		tileClass = 'skel-exam-tile',
 		/** Parent already uses `.exam-card-responsive-grid`; avoid nested grids that shrink to one cell. */
 		nested = false
@@ -22,10 +23,15 @@
 >
 	{#each Array(count) as _, i (i)}
 		<div
-			class="{tileClass} flex {cardMinHeight} flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center"
+			class="{tileClass} flex {cardMinHeight} flex-col items-center justify-center gap-1 rounded-lg px-1.5 py-2 text-center sm:gap-2 sm:rounded-xl sm:px-3 sm:py-3"
 		>
-			<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
-			<Skeleton width="w-20" height="h-3" />
+			<Skeleton
+				width="w-[1.9rem] sm:w-9"
+				height="h-[1.9rem] sm:h-9"
+				rounded="rounded-full"
+				strong
+			/>
+			<Skeleton width="max-w-[4.25rem] w-full sm:max-w-none sm:w-20" height="h-2.5 sm:h-3" />
 		</div>
 	{/each}
 </div>

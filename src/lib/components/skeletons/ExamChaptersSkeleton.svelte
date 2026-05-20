@@ -23,11 +23,13 @@
 		</div>
 	</aside>
 
-	<main class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 md:px-6 md:py-5">
-		<Skeleton width="w-20" height="h-9" rounded="rounded-lg" className="mb-4 md:hidden" />
-		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+	<main class="flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-5">
+		<Skeleton width="w-20" height="h-9" rounded="rounded-lg" className="mb-3 md:hidden" />
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
 			{#each Array(chapterCount) as _, i (i)}
-				<div class="skel-card flex min-h-[88px] flex-col justify-between rounded-[var(--radius-card)] p-3">
+				<div
+					class="skel-card flex min-h-[76px] flex-col justify-between rounded-[var(--radius-card)] p-2.5 sm:min-h-[88px] sm:p-3"
+				>
 					<Skeleton width="w-full" height="h-4" strong />
 					<Skeleton width="w-28" height="h-3" className="mt-3" />
 				</div>

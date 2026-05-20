@@ -58,26 +58,26 @@
 			</div>
 		</div>
 
-		<div class="flex-1 overflow-y-auto py-3">
-			<div class="flex flex-col gap-4">
+		<div class="flex-1 overflow-y-auto py-2 sm:py-3">
+			<div class="flex flex-col gap-2 sm:gap-4">
 				{#each Array(count) as _, i (i)}
 					<div
-						class="question-card rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-4 py-3.5 text-left shadow-sm"
+						class="question-card rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-tool-card-bg)] px-3 py-2.5 text-left shadow-sm sm:rounded-xl sm:px-4 sm:py-3.5"
 					>
-						<div class="flex items-baseline gap-2">
-							<Skeleton width="w-7" height="h-4" className="shrink-0" />
-							<div class="min-w-0 flex-1 space-y-2">
-								<Skeleton width="w-full" height="h-4" />
-								<Skeleton width="w-[94%]" height="h-4" />
+						<div class="flex items-baseline gap-1.5 sm:gap-2">
+							<Skeleton width="w-6 sm:w-7" height="h-3.5 sm:h-4" className="shrink-0" />
+							<div class="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
+								<Skeleton width="w-full" height="h-3.5 sm:h-4" />
+								<Skeleton width="w-[94%]" height="h-3.5 sm:h-4" />
 								{#if i === 1 || i === 3}
 									<Skeleton
 										width="w-full"
-										height="h-28"
+										height="h-16 sm:h-28"
 										rounded="rounded-lg"
-										className="mt-2.5 max-w-md"
+										className="mt-1.5 max-w-md sm:mt-2.5"
 									/>
 								{/if}
-								<Skeleton width="w-4/5" height="h-4" />
+								<Skeleton width="w-4/5" height="h-3.5 sm:h-4" />
 							</div>
 						</div>
 						<div class="mt-1.5 pl-0.5">

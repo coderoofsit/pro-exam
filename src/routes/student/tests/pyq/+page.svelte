@@ -37,7 +37,7 @@
     </div>
     {#if loading}
       <div class="exam-card-responsive-grid min-w-0">
-        <ExamGridSkeleton nested cardMinHeight="min-h-[140px]" />
+        <ExamGridSkeleton nested cardMinHeight="min-h-[92px] sm:min-h-[140px]" />
       </div>
     {:else if error}
       <!-- Error state -->

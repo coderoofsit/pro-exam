@@ -3388,8 +3388,13 @@ html[data-theme='light'] .subscription-trial-badge {
 /* Dashboard-only mobile tightening: 3 cards per row, smaller boxes. */
 @media (max-width: 639px) {
 
-  section[aria-labelledby="pyq-heading"] > .exam-card-responsive-grid,
-  section[aria-labelledby="qbc-heading"] > .exam-card-responsive-grid {
+  /*
+    Exam card grids without `.exam-page__grid` (dashboard, portal skeletons, etc.) —
+    3 compact columns on small screens.
+    Student/teacher/institute “All exams” uses `.exam-page--student .exam-page__grid` below
+    (same 3-up row as `/tests/own` own-test-exam-grid).
+  */
+  .exam-card-responsive-grid:not(.exam-page__grid) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
   }
@@ -3420,9 +3425,12 @@ html[data-theme='light'] .subscription-trial-badge {
     margin-top: 0.06rem;
   }
 
-  /* Student exams list page: compact tiles without forcing 1/7-width columns on few items. */
+  /*
+    All-exams list (/student|teacher|institute/exams): match `/tests/own` exam picker —
+    fixed 3 columns on phones so 3 cards stay ~1/3 width each (auto-fill was squeezing extra columns).
+  */
   .exam-page--student .exam-page__grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 5.75rem), 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
   }
 
@@ -5560,6 +5568,14 @@ html[data-theme='light'] {
   animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Phones: static skeleton bars (no infinite opacity animation → fewer repaints). */
+@media (max-width: 639px) {
+  .skel-bar {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
 .skel-bar--strong {
   background: var(--skel-bar-strong);
 }
@@ -5593,5 +5609,13 @@ html[data-theme='light'] {
 
   50% {
     opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .skel-bar,
+  .skeleton-pulse {
+    animation: none;
   }
 }
