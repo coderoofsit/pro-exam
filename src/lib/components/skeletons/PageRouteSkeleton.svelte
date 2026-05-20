@@ -5,7 +5,7 @@
 	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
 	import ExamSubjectsSkeleton from '$lib/components/skeletons/ExamSubjectsSkeleton.svelte';
 	import ExamChaptersSkeleton from '$lib/components/skeletons/ExamChaptersSkeleton.svelte';
-	import ExamQuestionsListSkeleton from '$lib/components/skeletons/ExamQuestionsListSkeleton.svelte';
+	import ExamQuestionsPageSkeleton from '$lib/components/skeletons/ExamQuestionsPageSkeleton.svelte';
 	import ExamQuestionDetailSkeleton from '$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte';
 	import TestsListSkeleton from '$lib/components/skeletons/TestsListSkeleton.svelte';
 	import BatchCardsSkeleton from '$lib/components/skeletons/BatchCardsSkeleton.svelte';
@@ -35,13 +35,7 @@
 	{:else if variant === 'exam-chapters'}
 		<ExamChaptersSkeleton />
 	{:else if variant === 'exam-questions'}
-		<div class="mx-auto max-w-6xl px-2 sm:px-4 md:px-6 py-3">
-			<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-				<Skeleton width="w-20" height="h-9" rounded="rounded-lg" />
-				<Skeleton width="w-48" height="h-8" />
-			</div>
-			<ExamQuestionsListSkeleton />
-		</div>
+		<ExamQuestionsPageSkeleton />
 	{:else if variant === 'exam-question-detail'}
 		<div class="mx-auto max-w-6xl px-2 sm:px-4 md:px-6 py-3 h-full min-h-[50vh]">
 			<ExamQuestionDetailSkeleton />

@@ -112,7 +112,7 @@
 
   const routeSkeletonPath = $derived.by(() => {
     const to = navigating.to;
-    if (to) return `${to.pathname}${to.url.search}`;
+    if (to?.url) return `${to.url.pathname}${to.url.search}`;
     return `${page.url.pathname}${page.url.search}`;
   });
 

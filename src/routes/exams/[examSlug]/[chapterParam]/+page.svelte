@@ -9,9 +9,29 @@
 	import { page } from "$app/state";
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/state";
-	import ExamQuestionsListSkeleton from "$lib/components/skeletons/ExamQuestionsListSkeleton.svelte";
+	import ExamQuestionsPageSkeleton from "$lib/components/skeletons/ExamQuestionsPageSkeleton.svelte";
 	import ExamQuestionDetailSkeleton from "$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte";
-	import Skeleton from "$lib/components/Skeleton.svelte";
+
+	/** Mount above Sidebar’s route skeleton layer (children sit in an opacity-0 wrapper). */
+	function portalToMainShell(node: HTMLElement) {
+		const anchor = document
+			.getElementById("layout-main-scroll")
+			?.querySelector(":scope > .relative");
+		if (!anchor) return;
+		Object.assign(node.style, {
+			position: "absolute",
+			inset: "0",
+			zIndex: "30",
+			overflow: "auto",
+			background: "var(--page-bg)",
+		});
+		anchor.appendChild(node);
+		return {
+			destroy() {
+				node.remove();
+			},
+		};
+	}
 	import { createReport, type ReportReason } from "$lib/api/reports";
 	import BackButton from "$lib/components/BackButton.svelte";
 	import Pagination from "$lib/components/Pagination.svelte";
@@ -340,10 +360,14 @@
 			(navigatingToQuestionsUrl !== null || isDataOutOfSync),
 	);
 
+	/** In-route overlay for pagination/filter sync; full navigations use Sidebar skeleton. */
+	const showLocalPageSkeleton = $derived(
+		showPageSkeleton && navigatingToQuestionsUrl === null,
+	);
+
 	const showDetailPageSkeleton = $derived(
-		showPageSkeleton &&
-			(navigatingToQuestionsUrl?.searchParams.has("questionId") ||
-				page.url.searchParams.has("questionId")),
+		showLocalPageSkeleton &&
+			page.url.searchParams.has("questionId"),
 	);
 
 	let settledChapterParam = $state("");
@@ -771,9 +795,9 @@
 <div
 	class="student-exam-question-page relative flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	{#if showPageSkeleton}
+	{#if showLocalPageSkeleton}
 		<div
-			class="fixed inset-0 z-[25] overflow-auto bg-[var(--page-bg)]"
+			use:portalToMainShell
 			aria-busy="true"
 			aria-live="polite"
 			aria-label="Loading questions"
@@ -783,24 +807,15 @@
 					<ExamQuestionDetailSkeleton />
 				</div>
 			{:else}
-				<div class="mx-auto max-w-6xl px-2 py-3 sm:px-4 md:px-6">
-					<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-						<Skeleton width="w-20" height="h-9" rounded="rounded-lg" />
-						<div class="flex gap-2">
-							<Skeleton width="w-32" height="h-8" rounded="rounded-lg" />
-							<Skeleton width="w-24" height="h-8" rounded="rounded-lg" />
-						</div>
-					</div>
-					<ExamQuestionsListSkeleton />
-				</div>
+				<ExamQuestionsPageSkeleton />
 			{/if}
 		</div>
 	{/if}
 	<div
-		class="mx-auto max-w-6xl flex h-full w-full overflow-hidden {showPageSkeleton
+		class="mx-auto max-w-6xl flex h-full w-full overflow-hidden {showLocalPageSkeleton
 			? 'pointer-events-none opacity-0'
 			: ''}"
-		aria-hidden={showPageSkeleton}
+		aria-hidden={showLocalPageSkeleton}
 	>
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
@@ -998,9 +1013,7 @@
 						</div>
 					{:else if !effectiveQuestionId}
 						<div class="flex-1 overflow-y-auto py-3">
-							{#if showPageSkeleton}
-								<ExamQuestionsListSkeleton />
-							{:else}
+							{#if !showLocalPageSkeleton}
 								<div class="flex flex-col gap-4">
 									{#each displayQuestions as q, index (q._id)}
 										<button
