@@ -3,6 +3,7 @@
   import { navigating, page } from "$app/state";
   import { goto, invalidateAll, preloadData } from "$app/navigation";
   import PageRouteSkeleton from "$lib/components/skeletons/PageRouteSkeleton.svelte";
+  import { getPageSkeletonVariant } from "$lib/skeletons/routeVariant";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
@@ -106,15 +107,31 @@
   /** Full-bleed, no extra top inset — timer + question should sit under the app topbar. */
   const isTestAttemptRoute = $derived(page.url.pathname.includes("/test-attempt"));
 
-  const showRouteSkeleton = $derived(
-    browser && navigating.to !== null && !isTestAttemptRoute,
+  const routeSkeletonTarget = $derived.by(() => {
+    const to = navigating.to;
+    if (to?.url) {
+      return {
+        path: `${to.url.pathname}${to.url.search}`,
+        routeId: to.route?.id ?? null,
+      };
+    }
+    return {
+      path: `${page.url.pathname}${page.url.search}`,
+      routeId: page.route?.id ?? null,
+    };
+  });
+
+  const routeSkeletonVariant = $derived(
+    getPageSkeletonVariant(routeSkeletonTarget.path, routeSkeletonTarget.routeId),
   );
 
-  const routeSkeletonPath = $derived.by(() => {
-    const to = navigating.to;
-    if (to?.url) return `${to.url.pathname}${to.url.search}`;
-    return `${page.url.pathname}${page.url.search}`;
-  });
+  const showRouteSkeleton = $derived(
+    browser &&
+      navigating.to !== null &&
+      navigating.type !== 'enter' &&
+      !isTestAttemptRoute &&
+      routeSkeletonVariant !== null,
+  );
 
   /** Test result analysis — one shell background across sidebar + main (see `.student-shell--analysis`). */
   const isTestsAnalysisShellRoute = $derived(
@@ -1561,7 +1578,13 @@
               aria-live="polite"
               aria-label="Loading page"
             >
-              <PageRouteSkeleton pathname={routeSkeletonPath} />
+              {#key `${routeSkeletonTarget.path}|${routeSkeletonTarget.routeId ?? ''}`}
+                <PageRouteSkeleton
+                  pathname={routeSkeletonTarget.path}
+                  routeId={routeSkeletonTarget.routeId}
+                  variant={routeSkeletonVariant}
+                />
+              {/key}
             </div>
           {/if}
           <div
