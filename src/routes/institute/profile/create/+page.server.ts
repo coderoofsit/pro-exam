@@ -1,12 +1,12 @@
 import type { PageServerLoad } from './$types';
-import { getExamsServerSafe } from '$lib/api/exams';
+import type { Exam } from '$lib/api/exams';
 
-export const load: PageServerLoad = async ({ fetch }) => {
-	const { exams, message, examsLoadError } = await getExamsServerSafe(fetch);
-
+/**
+ * Exams are loaded in the browser — see `+page.svelte` — so navigation is not blocked on SSR.
+ */
+export const load: PageServerLoad = async () => {
 	return {
-		exams,
-		message,
-		examsLoadError
+		exams: [] as Exam[],
+		examsLoadError: null as string | null
 	};
 };

@@ -530,21 +530,25 @@ type MobileNavItem = {
     return freshFcmToken;
   }
 
+  /** Avoid hanging the profile switch on browser notification prompts or slow FCM. */
+  function raceWithTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  }
+
   async function selectUser(index: number) {
     const requestId = ++membershipSwitchRequestId;
     const clickedUser = $authStore.users[index];
     if (!clickedUser) return;
 
     profileDropdownOpen = false;
-    const locallyUpdatedUsers = $authStore.users.map((u, i) => ({
-      ...u,
-      defaultProfile: i === index,
-    })).sort((a, b) => (b.defaultProfile ? 1 : 0) - (a.defaultProfile ? 1 : 0));
 
-    authStore.setUsers(locallyUpdatedUsers);
-
+    // Already default — refresh only (no optimistic store mutation).
     if (clickedUser.defaultProfile) {
-      profileDropdownOpen = false;
       hardReloadCurrentPage();
       return;
     }
@@ -558,8 +562,19 @@ type MobileNavItem = {
       return;
     }
 
+    const previousUsers = $authStore.users;
+
     selectingMembershipDefault = true;
     try {
+      const locallyUpdatedUsers = previousUsers
+        .map((u, i) => ({
+          ...u,
+          defaultProfile: i === index,
+        }))
+        .sort((a, b) => (b.defaultProfile ? 1 : 0) - (a.defaultProfile ? 1 : 0));
+
+      authStore.setUsers(locallyUpdatedUsers);
+
       const res = await selectMembershipProfile({
         membershipId,
         userProfiledId,
@@ -568,6 +583,7 @@ type MobileNavItem = {
 
       if (!res.success) {
         console.error("Failed to set default profile", res.message);
+        authStore.setUsers(previousUsers);
         return;
       }
       const root = res.data as SelectMembershipApiBody;
@@ -579,10 +595,14 @@ type MobileNavItem = {
         Array.isArray(root.data.users) &&
         root.data.users.length > 0
       ) {
-        const finalFcmToken = await resolveAndSyncFcmToken({
-          authToken: root.data.token,
-          responseFcmToken: root.data.fcmToken ?? "",
-        });
+        const finalFcmToken = await raceWithTimeout(
+          resolveAndSyncFcmToken({
+            authToken: root.data.token,
+            responseFcmToken: root.data.fcmToken ?? "",
+          }),
+          8000,
+          "",
+        );
         if (requestId !== membershipSwitchRequestId) return;
 
         const sessionSynced = await syncAuthSessionCookies(
@@ -594,6 +614,7 @@ type MobileNavItem = {
           console.error(
             "[Sidebar] Failed to sync auth/fcm session cookies after membership switch.",
           );
+          authStore.setUsers(previousUsers);
           return;
         }
         if (requestId !== membershipSwitchRequestId) return;
@@ -612,17 +633,18 @@ type MobileNavItem = {
           phoneModal = { open: true, phone: root.data.phone ?? '', step: 'input', otp: '', loading: false, error: '', success: '' };
         }
 
-       hardReloadCurrentPage();
+        hardReloadCurrentPage();
         return;
       }
 
       console.warn(
         "[Sidebar] select-membership returned no token/users; falling back to GET /membership",
       );
+      authStore.setUsers(previousUsers);
       await reloadMembershipFromServer();
       selectedUserIndex = 0;
       profileDropdownOpen = false;
-     hardReloadCurrentPage();
+      hardReloadCurrentPage();
     } finally {
       selectingMembershipDefault = false;
     }

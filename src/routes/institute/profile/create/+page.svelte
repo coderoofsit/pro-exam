@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { authStore } from "$lib/stores/auth";
-  import { examStore } from "$lib/stores/exam";
   import ProfileCreateForm from "$lib/components/profile/ProfileCreateForm.svelte";
   import { createMembershipProfile } from "$lib/api/auth";
+  import { getExamsClient } from "$lib/api/exams";
   import type { Exam } from "$lib/api/exams";
   import type { ProfileCreateSubmitPayload } from "$lib/components/profile/ProfileCreateForm.svelte";
 
@@ -14,22 +15,29 @@
   let loading = $state(false);
   let submitError = $state("");
   let submitSuccess = $state("");
+  let profileExams = $state<Exam[]>([...(data.exams ?? [])]);
+  let examsLoadError = $state<string | null>(data.examsLoadError ?? null);
 
-  const exams = $derived(
-    $examStore.loaded && $examStore.exams.length > 0
-      ? $examStore.exams
-      : data.exams,
-  );
+  const exams = $derived(profileExams);
 
-  $effect(() => {
-    if (!$examStore.loaded && data.exams.length > 0) {
-      examStore.setExams(data.exams);
-    }
-  });
+  onMount(async () => {
+    authStore.restore();
 
-  $effect(() => {
     if (!$authStore.profileId) {
-      goto("/login");
+      await goto("/login");
+      return;
+    }
+
+    if (profileExams.length > 0) {
+      return;
+    }
+
+    const res = await getExamsClient();
+    if (res.success) {
+      profileExams = res.exams;
+      examsLoadError = null;
+    } else {
+      examsLoadError = res.message;
     }
   });
 
@@ -103,13 +111,13 @@
   }
 </script>
 
-{#if data.examsLoadError}
+{#if examsLoadError}
   <div
     class="mx-auto mb-4 max-w-2xl rounded-xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]"
     role="alert"
   >
-    Could not load the exam list ({data.examsLoadError}). Check your connection, refresh the page, or
-    ensure <code class="rounded bg-black/10 px-1">VITE_PUBLIC_API_URL</code> is set on the server.
+    Could not load the exam list ({examsLoadError}). Check your connection, refresh the page, or
+    ensure <code class="rounded bg-black/10 px-1">VITE_PUBLIC_API_URL</code> is set for the app.
   </div>
 {/if}
 
