@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Skeleton from '$lib/components/Skeleton.svelte';
 	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
+	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
 	import type { UserDashboardData } from '$lib/api/userDashboard';
@@ -93,14 +93,9 @@
 			</a>
 		</div>
 
-		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+		<div class="exam-card-responsive-grid min-w-0">
 			{#await data.streamed.exams}
-				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
-						<Skeleton width="w-20" height="h-3" />
-					</div>
-				{/each}
+				<ExamGridSkeleton nested />
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<ExamBoxCard
@@ -133,14 +128,9 @@
 			</a>
 		</div>
 
-		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+		<div class="exam-card-responsive-grid min-w-0">
 			{#await data.streamed.exams}
-				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
-						<Skeleton width="w-20" height="h-3" />
-					</div>
-				{/each}
+				<ExamGridSkeleton nested />
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<ExamBoxCard

@@ -25,11 +25,15 @@
 		<Skeleton width="w-40" height="h-5" strong />
 		<Skeleton width="w-16" height="h-3" />
 	</div>
-	<ExamGridSkeleton count={7} />
+	<div class="exam-card-responsive-grid min-w-0">
+		<ExamGridSkeleton nested />
+	</div>
 
 	<div class="mb-2 mt-6 flex items-center justify-between gap-2">
 		<Skeleton width="w-44" height="h-5" strong />
 		<Skeleton width="w-16" height="h-3" />
 	</div>
-	<ExamGridSkeleton count={7} />
+	<div class="exam-card-responsive-grid min-w-0">
+		<ExamGridSkeleton nested />
+	</div>
 </div>

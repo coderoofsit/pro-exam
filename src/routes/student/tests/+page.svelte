@@ -55,12 +55,24 @@
   const testsActionBtnClass =
     "student-tests-action-btn !h-9 !rounded-xl !px-3 !text-sm !font-normal !border-[var(--pyq-sort-btn-border)] !bg-[var(--pyq-sort-btn-bg)] !text-[var(--pyq-sort-btn-text)] !shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:!border-[var(--pyq-sort-btn-hover-border)] hover:!bg-[var(--pyq-sort-btn-hover-bg)] hover:!text-[var(--pyq-sort-btn-hover-text)] hover:!shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--page-link)_30%,transparent)] sm:!min-w-[7.25rem]";
 
-  const querySignature = $derived(page.url.search);
+  /**
+   * Pull `?search=` into the field only when the URL actually changes (back/forward,
+   * debounced replaceState, reset). Do not depend on `searchDraft` here — otherwise
+   * every keystroke re-runs while the URL is still old and clobbers the input.
+   */
+  let prevUrlSearchParam = $state<string | null>(null);
 
-  // Sync initial searchDraft from URL if needed
   $effect(() => {
     const s = new URLSearchParams(page.url.search).get("search") ?? "";
-    if (s !== searchDraft) searchDraft = s;
+    if (prevUrlSearchParam === null) {
+      prevUrlSearchParam = s;
+      searchDraft = s;
+      return;
+    }
+    if (s !== prevUrlSearchParam) {
+      prevUrlSearchParam = s;
+      searchDraft = s;
+    }
   });
 
   const SEARCH_DEBOUNCE_MS = 350;
@@ -409,7 +421,6 @@
           </div>
         </div>
       {:then testsData}
-        {@const _ = console.log('[TestsPage] Received Data:', testsData)}
         {@const items = testsData.items ?? []}
         {@const error = testsData.error}
         {@const filterOptions = testsData.filterOptions}

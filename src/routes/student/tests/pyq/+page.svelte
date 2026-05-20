@@ -36,7 +36,9 @@
       <BackButton label="Back" fallback="/student/tests" />
     </div>
     {#if loading}
-      <ExamGridSkeleton count={6} cardMinHeight="min-h-[140px]" />
+      <div class="exam-card-responsive-grid min-w-0">
+        <ExamGridSkeleton nested cardMinHeight="min-h-[140px]" />
+      </div>
     {:else if error}
       <!-- Error state -->
       <div class="

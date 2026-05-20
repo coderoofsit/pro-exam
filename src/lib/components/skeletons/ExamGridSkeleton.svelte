@@ -1,20 +1,23 @@
 <script lang="ts">
-	import Skeleton from '$lib/components/Skeleton.svelte';
+	import Skeleton, { EXAM_CARD_SKELETON_COUNT } from '$lib/components/Skeleton.svelte';
 
 	let {
-		count = 10,
+		count = EXAM_CARD_SKELETON_COUNT,
 		cardMinHeight = 'min-h-[118px]',
-		tileClass = 'skel-exam-tile'
+		tileClass = 'skel-exam-tile',
+		/** Parent already uses `.exam-card-responsive-grid`; avoid nested grids that shrink to one cell. */
+		nested = false
 	}: {
 		count?: number;
 		cardMinHeight?: string;
 		/** `skel-exam-tile` for dashboard; `skel-card` for exams list page. */
 		tileClass?: 'skel-exam-tile' | 'skel-card';
+		nested?: boolean;
 	} = $props();
 </script>
 
 <div
-	class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+	class={nested ? 'contents min-w-0' : 'exam-card-responsive-grid min-w-0'}
 	aria-hidden="true"
 >
 	{#each Array(count) as _, i (i)}

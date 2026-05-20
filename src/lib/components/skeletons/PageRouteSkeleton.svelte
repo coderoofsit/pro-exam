@@ -43,7 +43,9 @@
 	{:else if variant === 'exam-grid'}
 		<div class="mx-auto max-w-7xl px-4 py-6">
 			<Skeleton width="w-32" height="h-8" className="mb-6" strong />
-			<ExamGridSkeleton count={12} tileClass="skel-card" cardMinHeight="min-h-[128px]" />
+			<div class="exam-card-responsive-grid min-w-0">
+				<ExamGridSkeleton nested tileClass="skel-card" cardMinHeight="min-h-[128px]" />
+			</div>
 		</div>
 	{:else if variant === 'tests-list'}
 		<TestsListSkeleton />

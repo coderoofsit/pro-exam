@@ -3374,11 +3374,22 @@ html[data-theme='light'] .subscription-trial-badge {
   color: var(--accent-cta-pink);
 }
 
+/*
+  Fluid exam card grids (dashboard, exams list, skeletons).
+  min tile width so 2–3 cards on a wide row stay full-sized instead of 1/7-width “slivers”.
+*/
+.exam-card-responsive-grid {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
+}
+
 /* Dashboard-only mobile tightening: 3 cards per row, smaller boxes. */
 @media (max-width: 639px) {
 
-  section[aria-labelledby="pyq-heading"]>.grid,
-  section[aria-labelledby="qbc-heading"]>.grid {
+  section[aria-labelledby="pyq-heading"] > .exam-card-responsive-grid,
+  section[aria-labelledby="qbc-heading"] > .exam-card-responsive-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
   }
@@ -3409,9 +3420,9 @@ html[data-theme='light'] .subscription-trial-badge {
     margin-top: 0.06rem;
   }
 
-  /* Student exams list page: same compact mobile treatment as dashboard cards. */
+  /* Student exams list page: compact tiles without forcing 1/7-width columns on few items. */
   .exam-page--student .exam-page__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 5.75rem), 1fr));
     gap: 0.5rem;
   }
 
@@ -3441,7 +3452,7 @@ html[data-theme='light'] .subscription-trial-badge {
     font-size: 0.75rem;
   }
 
-  /* Own test exam-picker page: match dashboard compact mobile cards. */
+  /* Own test exam-picker page: compact mobile; base grid uses exam-card-responsive-grid. */
   .own-test-page .own-test-exam-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;

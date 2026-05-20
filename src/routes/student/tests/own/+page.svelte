@@ -116,7 +116,7 @@
           <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">Check back later to create a test</p>
         </div>
       {:else}
-        <div class="own-test-exam-grid grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+        <div class="own-test-exam-grid exam-card-responsive-grid min-w-0">
           {#each exams as item (item._id)}
             <ExamBoxCard
               id={item._id}

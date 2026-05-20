@@ -30,6 +30,11 @@ function examQuestionsFromParams(params: URLSearchParams): PageSkeletonVariant {
 	return params.has('questionId') ? 'exam-question-detail' : 'exam-questions';
 }
 
+/** First-time profile onboarding — full-page form, not settings layout; no shell overlay. */
+export function isProfileCreatePath(path: string): boolean {
+	return /\/(student|teacher|institute)\/profile\/create\/?$/.test(path);
+}
+
 /**
  * Map SvelteKit `route.id` → skeleton. Order is specific → general.
  * See `.svelte-kit/non-ambient.d.ts` `RouteId()` for the full route list.
@@ -50,8 +55,15 @@ export function variantFromRouteId(
 	if (routeId.includes('/subscription')) return 'subscription';
 
 	if (
+		routeId === '/student/profile/create' ||
+		routeId === '/teacher/profile/create' ||
+		routeId === '/institute/profile/create'
+	) {
+		return null;
+	}
+
+	if (
 		routeId.includes('/settings') ||
-		routeId.includes('/profile/create') ||
 		routeId === '/profiles' ||
 		routeId === '/student/profiles' ||
 		routeId.endsWith('/profile')
@@ -161,9 +173,10 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 
 	if (/\/subscription/.test(path)) return 'subscription';
 
+	if (isProfileCreatePath(path)) return null;
+
 	if (
 		/\/settings\/?$/.test(path) ||
-		/\/profile\/create/.test(path) ||
 		path === '/profiles' ||
 		path === '/student/profiles' ||
 		/\/student\/profile\/?$/.test(path) ||
@@ -275,6 +288,8 @@ function mergeRouteAndPathVariant(
 	const fromPath = variantFromPathname(path, params);
 	const fromId = variantFromRouteId(routeId, params);
 
+	if (isProfileCreatePath(path)) return null;
+
 	// For /tests routes, destination URL is usually the source of truth — except when pathname
 	// still reflects `/tests/own/...` while `route.id` already shows `/tests/pyq` (or vice versa).
 	if (/\/(student|teacher|institute)\/tests(\/|$)/.test(path)) {
@@ -372,8 +387,16 @@ export function shouldSuppressBatchRouteOverlay(
 
 export function shouldShowRouteSkeleton(
 	variant: PageSkeletonVariant | null,
-	opts: { navigating: boolean; isTestAttempt: boolean; navigationType: string | null },
+	opts: {
+		navigating: boolean;
+		isTestAttempt: boolean;
+		navigationType: string | null;
+		destinationPath?: string;
+	},
 ): boolean {
 	if (!opts.navigating || opts.isTestAttempt || opts.navigationType === 'enter') return false;
+	if (opts.destinationPath && isProfileCreatePath(parsePathAndSearch(opts.destinationPath).path)) {
+		return false;
+	}
 	return variant !== null;
 }

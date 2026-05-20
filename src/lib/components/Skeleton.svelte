@@ -1,3 +1,8 @@
+<script lang="ts" module>
+	/** Default exam card placeholders shown while exam grids load. */
+	export const EXAM_CARD_SKELETON_COUNT = 3;
+</script>
+
 <script lang="ts">
 	let {
 		width = 'w-full',

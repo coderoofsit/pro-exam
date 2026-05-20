@@ -9,7 +9,9 @@
 			<Skeleton width="w-40" height="h-5" strong />
 			<Skeleton width="w-14" height="h-3" />
 		</div>
-		<ExamGridSkeleton count={7} />
+		<div class="exam-card-responsive-grid min-w-0">
+			<ExamGridSkeleton nested />
+		</div>
 	</section>
 
 	<section class="mt-2 min-w-0">
@@ -17,7 +19,9 @@
 			<Skeleton width="w-44" height="h-5" strong />
 			<Skeleton width="w-14" height="h-3" />
 		</div>
-		<ExamGridSkeleton count={7} />
+		<div class="exam-card-responsive-grid min-w-0">
+			<ExamGridSkeleton nested />
+		</div>
 	</section>
 
 	<section class="mt-6 min-w-0">

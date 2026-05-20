@@ -80,7 +80,7 @@ let {
 	{#if exams.length === 0}
 		<p class="text-[var(--page-text-muted)]">No exams found for this board.</p>
 	{:else}
-		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 exam-page__grid">
+		<div class="exam-card-responsive-grid min-w-0 exam-page__grid">
 			{#each exams as exam (exam._id)}
 				<ExamBoxCard
 					id={exam._id}

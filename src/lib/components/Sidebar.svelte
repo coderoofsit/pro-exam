@@ -143,6 +143,7 @@ type MobileNavItem = {
         navigating: navigating.to !== null,
         isTestAttempt: isTestAttemptRoute,
         navigationType: navigating.type,
+        destinationPath: routeSkeletonTarget.path,
       }),
   );
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
+	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
 	import type { UserDashboardData } from '$lib/api/userDashboard';
@@ -131,14 +132,9 @@
 			<h2 id="pyq-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">Chapter wise PYQ</h2>
 			<a href="{basePath}/exams?pyq=true" class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right">View All</a>
 		</div>
-		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+		<div class="exam-card-responsive-grid min-w-0">
 			{#await data.streamed.exams}
-				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
-						<Skeleton width="w-20" height="h-3" />
-					</div>
-				{/each}
+				<ExamGridSkeleton nested />
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<ExamBoxCard id={exam._id} name={getExamNameEn(exam)} image={(exam as any).image ?? null} subtitle={getExamSub(exam) ?? undefined} variant="dashboard" href={`/exams/${getExamSlug(exam)}?pyq=true`} />
@@ -156,14 +152,9 @@
 			<h2 id="qbc-heading" class="text-lg font-bold text-[var(--page-text)] sm:text-xl">Questions by Chapter</h2>
 			<a href="{basePath}/exams" class="shrink-0 text-sm font-medium text-[var(--page-text)] underline-offset-4 hover:underline sm:text-right">View All</a>
 		</div>
-		<div class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+		<div class="exam-card-responsive-grid min-w-0">
 			{#await data.streamed.exams}
-				{#each Array(FEATURED_EXAMS_COUNT) as _}
-					<div class="skel-exam-tile flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-3 text-center">
-						<Skeleton width="w-9" height="h-9" rounded="rounded-full" strong />
-						<Skeleton width="w-20" height="h-3" />
-					</div>
-				{/each}
+				<ExamGridSkeleton nested />
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
 					<ExamBoxCard id={exam._id} name={getExamNameEn(exam)} image={(exam as any).image ?? null} subtitle={getExamSub(exam) ?? undefined} variant="dashboard" href={`/exams/${getExamSlug(exam)}`} />
