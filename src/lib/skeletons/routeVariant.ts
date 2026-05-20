@@ -14,8 +14,8 @@ export type PageSkeletonVariant =
 	| 'settings'
 	| 'own-test-syllabus'
 	| 'question-list'
-	/** Single-column placeholder for profile picker, marketing root, etc. */
-	| 'generic-page';
+	| 'generic-page'
+	| 'pyq-exam-papers';
 
 function parsePathAndSearch(pathWithSearch: string) {
 	const qIndex = pathWithSearch.indexOf('?');
@@ -68,14 +68,39 @@ export function variantFromRouteId(
 		return 'management-table';
 	}
 
-	if (/\/batch\/\[[^\]]+\]/.test(routeId)) return 'batch-detail';
-	if (routeId.endsWith('/batch')) return 'batch-cards';
+	if (/\/(student|teacher|institute)\/batch\/\[[^\]]+\]/.test(routeId)) return 'batch-detail';
+	if (
+		routeId === '/student/batch' ||
+		routeId === '/teacher/batch' ||
+		routeId === '/institute/batch'
+	) {
+		return 'batch-cards';
+	}
 
 	if (routeId.includes('/tests/own/') && routeId.includes('/chapter/')) return 'question-list';
 	if (routeId.includes('/tests/own')) return 'own-test-syllabus';
 
-	if (routeId.includes('/tests/pyq') || routeId.includes('/tests/view')) return 'tests-list';
-	if (routeId.includes('/tests')) return 'tests-list';
+	if (routeId.includes('/tests/pyq/')) {
+		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId)) return 'exam-questions';
+		if (/\/tests\/pyq\/\[examSlug\]$/.test(routeId)) return 'pyq-exam-papers';
+	}
+	if (/\/(student|teacher|institute)\/tests\/pyq$/.test(routeId)) return 'exam-grid';
+
+	if (routeId.includes('/tests/view')) return 'exam-questions';
+
+	if (routeId.endsWith('/tests/batch')) return 'portal-dashboard';
+
+	// Main tests hub only (two CTA tiles + list on …/tests)
+	if (
+		routeId === '/student/tests' ||
+		routeId === '/teacher/tests' ||
+		routeId === '/institute/tests'
+	) {
+		return 'tests-list';
+	}
+
+	// Other /…/tests/* routes — avoid misleading overlays; shell keeps prior view briefly
+	if (routeId.includes('/tests')) return null;
 
 	if (routeId === '/student/dashboard') return 'student-dashboard';
 	if (routeId.endsWith('/dashboard')) return 'portal-dashboard';
@@ -149,14 +174,34 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 		return 'management-table';
 	}
 
-	if (/\/batch\/[^/]+/.test(path)) return 'batch-detail';
-	if (/\/batch\/?$/.test(path)) return 'batch-cards';
+	if (/\/(student|teacher|institute)\/batch\/[^/]+/.test(path)) return 'batch-detail';
+	if (path === '/student/batch' || path === '/teacher/batch' || path === '/institute/batch') {
+		return 'batch-cards';
+	}
 
 	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return 'question-list';
 	if (/\/tests\/own\/[^/]+/.test(path)) return 'own-test-syllabus';
+	if (/\/tests\/own\/?$/.test(path)) return 'own-test-syllabus';
 
-	if (/\/tests(\/|$)/.test(path) && !/\/analysis\//.test(path) && !/\/test-attempt/.test(path)) {
+	if (/\/tests\/pyq\/[^/]+\/[^/]+$/.test(path)) return 'exam-questions';
+	if (/\/tests\/pyq\/[^/]+$/.test(path)) return 'pyq-exam-papers';
+	if (/\/tests\/pyq\/?$/.test(path)) return 'exam-grid';
+
+	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return 'exam-questions';
+
+	if (path === '/student/tests/batch') return 'portal-dashboard';
+
+	if (path === '/student/tests' || path === '/teacher/tests' || path === '/institute/tests') {
 		return 'tests-list';
+	}
+
+	// Unmatched tests subpaths: no sidebar overlay (avoids generic-page flash)
+	if (
+		/\/(student|teacher|institute)\/tests\//.test(path) &&
+		!/\/analysis\//.test(path) &&
+		!/\/test-attempt/.test(path)
+	) {
+		return null;
 	}
 
 	if (path === '/student/custom') return 'own-test-syllabus';
@@ -184,11 +229,55 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 	if (path === '/student/exam') return 'exam-subjects';
 
 	if (path.includes('/exams/')) return 'exam-grid';
-	if (path.includes('/tests/')) return 'tests-list';
-	if (path.includes('/batch/')) return 'batch-detail';
-	if (path.includes('/batch')) return 'batch-cards';
 
 	return null;
+}
+
+const LAYOUT_ONLY_ROUTE_IDS = new Set(['/student', '/teacher', '/institute']);
+
+/**
+ * Combine `route.id` and pathname skeletons. During client navigations, `to.route.id`
+ * can briefly be a layout id (e.g. `/teacher`) or the previous leaf (e.g. `…/dashboard`)
+ * while `to.url` already reflects the destination — `??` would keep the wrong variant
+ * because `portal-dashboard` is truthy. Prefer pathname when it disagrees in those cases.
+ */
+function mergeRouteAndPathVariant(
+	path: string,
+	params: URLSearchParams,
+	routeId: string | null | undefined,
+): PageSkeletonVariant | null {
+	const fromPath = variantFromPathname(path, params);
+	const fromId = variantFromRouteId(routeId, params);
+
+	if (fromPath !== null && routeId && LAYOUT_ONLY_ROUTE_IDS.has(routeId)) {
+		return fromPath;
+	}
+
+	if (fromId === fromPath) return fromId;
+	if (fromPath === null) return fromId;
+	if (fromId === null) return fromPath;
+
+	if (
+		fromId === 'batch-cards' &&
+		fromPath === 'batch-detail' &&
+		/\/(student|teacher|institute)\/batch\/[^/]+/.test(path)
+	) {
+		return 'batch-detail';
+	}
+
+	const pathLooksLikeDashboard = /\/(student|teacher|institute)\/dashboard\/?$/.test(path);
+	const pathIsPortalRoot =
+		path === '/student' || path === '/teacher' || path === '/institute';
+
+	if (
+		(fromId === 'portal-dashboard' || fromId === 'student-dashboard') &&
+		!pathLooksLikeDashboard &&
+		!pathIsPortalRoot
+	) {
+		return fromPath;
+	}
+
+	return fromId;
 }
 
 export function getPageSkeletonVariant(
@@ -198,7 +287,7 @@ export function getPageSkeletonVariant(
 	if (!pathWithSearch?.trim()) return null;
 
 	const { path, params } = parsePathAndSearch(pathWithSearch);
-	return variantFromRouteId(routeId, params) ?? variantFromPathname(path, params);
+	return mergeRouteAndPathVariant(path, params, routeId);
 }
 
 export function shouldShowRouteSkeleton(

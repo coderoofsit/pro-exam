@@ -15,6 +15,7 @@
 	import SettingsPageSkeleton from '$lib/components/skeletons/SettingsPageSkeleton.svelte';
 	import OwnTestSyllabusSkeleton from '$lib/components/OwnTestSyllabusSkeleton.svelte';
 	import QuestionListSkeleton from '$lib/components/skeletons/QuestionListSkeleton.svelte';
+	import PyqExamPapersSkeleton from '$lib/components/skeletons/PyqExamPapersSkeleton.svelte';
 	import GeneralPageSkeleton from '$lib/components/skeletons/GeneralPageSkeleton.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 
@@ -72,6 +73,8 @@
 		<div class="own-test-page mx-auto max-w-6xl px-4 py-4 sm:px-6">
 			<QuestionListSkeleton />
 		</div>
+	{:else if variant === 'pyq-exam-papers'}
+		<PyqExamPapersSkeleton />
 	{:else if variant === 'generic-page'}
 		<GeneralPageSkeleton />
 	{/if}
