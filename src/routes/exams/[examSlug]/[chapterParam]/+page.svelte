@@ -11,6 +11,7 @@
 	import { navigating } from "$app/state";
 	import ExamQuestionsListSkeleton from "$lib/components/skeletons/ExamQuestionsListSkeleton.svelte";
 	import ExamQuestionDetailSkeleton from "$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte";
+	import Skeleton from "$lib/components/Skeleton.svelte";
 	import { createReport, type ReportReason } from "$lib/api/reports";
 	import BackButton from "$lib/components/BackButton.svelte";
 	import Pagination from "$lib/components/Pagination.svelte";
@@ -316,7 +317,49 @@
 
 	const PAGINATION_WINDOW = 2;
 
-	const isLoading = $derived(navigating.to !== null);
+	const urlChapterParam = $derived(page.params.chapterParam ?? "");
+	const urlPage = $derived.by(() => {
+		const p = Number(page.url.searchParams.get("page") || "1");
+		return Number.isNaN(p) || p < 1 ? 1 : p;
+	});
+
+	/** True while URL and server `data` are out of sync (pagination, chapter change, filters). */
+	const isDataOutOfSync = $derived(
+		browser &&
+			(data.chapterParam !== urlChapterParam || data.safePage !== urlPage),
+	);
+
+	const navigatingToQuestionsUrl = $derived.by(() => {
+		const to = navigating.to?.url;
+		if (!to || !/^\/exams\/[^/]+\/[^/]+$/.test(to.pathname)) return null;
+		return to;
+	});
+
+	const showPageSkeleton = $derived(
+		browser &&
+			(navigatingToQuestionsUrl !== null || isDataOutOfSync),
+	);
+
+	const showDetailPageSkeleton = $derived(
+		showPageSkeleton &&
+			(navigatingToQuestionsUrl?.searchParams.has("questionId") ||
+				page.url.searchParams.has("questionId")),
+	);
+
+	let settledChapterParam = $state("");
+	$effect(() => {
+		const cp = urlChapterParam;
+		if (!cp || cp === settledChapterParam) return;
+		settledChapterParam = cp;
+		if (!page.url.searchParams.get("questionId")) {
+			effectiveQuestionId = null;
+			detailQuestion = null;
+			detailLoading = false;
+		}
+		filterDrawerOpen = false;
+		topicsLoadedFor = null;
+	});
+
 	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
 
 	const storeChapterKey = $derived(data.resolvedChapterId);
@@ -726,9 +769,39 @@
 </svelte:head>
 
 <div
-	class="student-exam-question-page flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
+	class="student-exam-question-page relative flex h-full overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 >
-	<div class="mx-auto max-w-6xl flex h-full w-full  overflow-hidden ">
+	{#if showPageSkeleton}
+		<div
+			class="fixed inset-0 z-[25] overflow-auto bg-[var(--page-bg)]"
+			aria-busy="true"
+			aria-live="polite"
+			aria-label="Loading questions"
+		>
+			{#if showDetailPageSkeleton}
+				<div class="mx-auto flex h-full max-w-6xl flex-col px-2 py-3 sm:px-4 md:px-6">
+					<ExamQuestionDetailSkeleton />
+				</div>
+			{:else}
+				<div class="mx-auto max-w-6xl px-2 py-3 sm:px-4 md:px-6">
+					<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+						<Skeleton width="w-20" height="h-9" rounded="rounded-lg" />
+						<div class="flex gap-2">
+							<Skeleton width="w-32" height="h-8" rounded="rounded-lg" />
+							<Skeleton width="w-24" height="h-8" rounded="rounded-lg" />
+						</div>
+					</div>
+					<ExamQuestionsListSkeleton />
+				</div>
+			{/if}
+		</div>
+	{/if}
+	<div
+		class="mx-auto max-w-6xl flex h-full w-full overflow-hidden {showPageSkeleton
+			? 'pointer-events-none opacity-0'
+			: ''}"
+		aria-hidden={showPageSkeleton}
+	>
 		<main class="flex flex-1 flex-col overflow-hidden min-h-0">
 			<div
 				class="mx-auto flex h-full w-full flex-col px-2 sm:px-4 md:px-6 overflow-hidden min-h-0 "
@@ -925,7 +998,7 @@
 						</div>
 					{:else if !effectiveQuestionId}
 						<div class="flex-1 overflow-y-auto py-3">
-							{#if isLoading}
+							{#if showPageSkeleton}
 								<ExamQuestionsListSkeleton />
 							{:else}
 								<div class="flex flex-col gap-4">
