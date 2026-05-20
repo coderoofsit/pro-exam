@@ -49,6 +49,13 @@
     children?: SidebarSubItem[];
   };
 
+type MobileNavItem = {
+  id: string;
+  label: string;
+  href: string;
+  icon: SidebarIcon | "students" | "teachers" | "relations";
+};
+
   let { role, children }: { role: Role; children?: import("svelte").Snippet } =
     $props();
 
@@ -297,6 +304,44 @@
   };
 
   const sidebarNavItems = $derived(navItemsByRole[role]);
+  const mobileBottomNavItems = $derived.by((): MobileNavItem[] => {
+    const mobileLabel = (label: string) =>
+      label.replace(/\s*managements?\s*/gi, " ").replace(/\s+/g, " ").trim();
+
+    const out: MobileNavItem[] = [];
+    const instituteChildren: MobileNavItem[] = [];
+    for (const item of sidebarNavItems) {
+      if (item.children?.length) {
+        for (const child of item.children) {
+          instituteChildren.push({
+            id: `${item.id}-${child.href}`,
+            label: mobileLabel(child.label),
+            href: child.href,
+            icon: child.icon ?? "batch",
+          });
+        }
+        continue;
+      }
+      if (!item.href) continue;
+      out.push({
+        id: item.id,
+        label: mobileLabel(item.label),
+        href: item.href,
+        icon: item.icon,
+      });
+    }
+
+    // Mobile institute nav: place Students/Teachers between Batch and Subscription.
+    if (role === "institute" && instituteChildren.length > 0) {
+      const batchIdx = out.findIndex((x) => x.href === "/institute/batch");
+      if (batchIdx !== -1) {
+        out.splice(batchIdx + 1, 0, ...instituteChildren);
+      } else {
+        out.push(...instituteChildren);
+      }
+    }
+    return out;
+  });
   const isDark = $derived($themeStore === "dark");
   const isAutoCollapseRoute = $derived(
     /^\/student\/tests\/own\/[^/]+/.test(page.url.pathname) ||
@@ -1653,14 +1698,14 @@
 <nav
  class="
     fixed inset-x-0 bottom-0 z-[100] flex h-[calc(4rem+env(safe-area-inset-bottom,0px))]
-    items-start justify-around md:hidden px-4 pt-2
+    items-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap md:hidden px-2 pt-2
     pb-[env(safe-area-inset-bottom,0px)]
     bg-[var(--topbar-bg)] border-t border-[var(--topbar-border)]
     shadow-[0_-4px_16px_rgba(0,0,0,0.06)]
-    backdrop-blur-xl
+    backdrop-blur-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
   "
 >
-  {#each sidebarNavItems as navItem}
+  {#each mobileBottomNavItems as navItem}
     {@const active = isActive(navItem.href)}
     <a
       href={navItem.href}
@@ -1668,7 +1713,7 @@
       onfocus={() => warmSidebarRoute(navItem.href)}
       onclick={(event) => void handleSidebarNavClick(event, navItem.href)}
       class="
-        relative flex flex-col items-center justify-center gap-1 min-w-[64px]
+        relative flex flex-shrink-0 flex-col items-center justify-center gap-1 min-w-[64px] px-1
         transition-colors duration-200
         {active ? 'text-[var(--sb-nav-active-text)]' : 'text-[var(--sb-nav-text)]'}
       "
@@ -1709,6 +1754,24 @@
           {:else if navItem.icon === "subscription"}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+          {:else if navItem.icon === "students"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          {:else if navItem.icon === "teachers"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="8.5" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M17 11l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          {:else if navItem.icon === "relations"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M13.83 10.17a4 4 0 0 0-5.66 0l-4 4a4 4 0 1 0 5.66 5.66l1.1-1.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10.17 13.83a4 4 0 0 0 5.66 0l4-4a4 4 0 1 0-5.66-5.66l-1.1 1.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           {/if}
         </span>
