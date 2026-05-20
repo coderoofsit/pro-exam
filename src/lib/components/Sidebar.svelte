@@ -6,6 +6,7 @@
   import {
     getPageSkeletonVariant,
     shouldShowRouteSkeleton,
+    shouldSuppressBatchRouteOverlay,
   } from "$lib/skeletons/routeVariant";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
@@ -130,6 +131,7 @@
 
   const showRouteSkeleton = $derived(
     browser &&
+      !shouldSuppressBatchRouteOverlay(navigating.from?.url, routeSkeletonTarget.path) &&
       shouldShowRouteSkeleton(routeSkeletonVariant, {
         navigating: navigating.to !== null,
         isTestAttempt: isTestAttemptRoute,

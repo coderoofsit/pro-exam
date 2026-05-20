@@ -9,6 +9,7 @@
 	import ExamQuestionDetailSkeleton from '$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte';
 	import TestsListSkeleton from '$lib/components/skeletons/TestsListSkeleton.svelte';
 	import BatchCardsSkeleton from '$lib/components/skeletons/BatchCardsSkeleton.svelte';
+	import StudentBatchDetailSkeleton from '$lib/components/skeletons/StudentBatchDetailSkeleton.svelte';
 	import BatchDetailSkeleton from '$lib/components/skeletons/BatchDetailSkeleton.svelte';
 	import SubscriptionPageSkeleton from '$lib/components/skeletons/SubscriptionPageSkeleton.svelte';
 	import ManagementTableSkeleton from '$lib/components/ManagementTableSkeleton.svelte';
@@ -54,6 +55,8 @@
 			</div>
 			<BatchCardsSkeleton />
 		</div>
+	{:else if variant === 'student-batch-detail'}
+		<StudentBatchDetailSkeleton />
 	{:else if variant === 'batch-detail'}
 		<BatchDetailSkeleton />
 	{:else if variant === 'subscription'}

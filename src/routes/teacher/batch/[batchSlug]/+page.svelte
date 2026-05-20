@@ -11,7 +11,7 @@
 		type BatchTestItem
 	} from '$lib/api/batch';
 	import Pagination from '$lib/components/Pagination.svelte';
-	import Skeleton from '$lib/components/Skeleton.svelte';
+	import BatchDetailTableSkeleton from '$lib/components/skeletons/BatchDetailTableSkeleton.svelte';
 	import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
 	import { authStore } from '$lib/stores/auth';
 	import type { PageData } from './$types';
@@ -24,7 +24,7 @@
 	const canManageBatch = $derived(activeTeacherMembership?.batchApproved === true);
 	const currentTeacherUserId = $derived((activeTeacherMembership?._id ?? '').trim());
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let errorMessage = $state<string | null>(null);
 	let searchInput = $state('');
 	let activeTab = $state<'teacher' | 'student' | 'test'>('teacher');
@@ -850,16 +850,7 @@
 		</div>
 
 		{#if loading}
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{#each Array(6) as _}
-					<div class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5">
-						<Skeleton width="w-3/4" height="h-5" className="mb-3" />
-						<Skeleton width="w-full" height="h-3" className="mb-2" />
-						<Skeleton width="w-2/3" height="h-3" className="mb-2" />
-						<Skeleton width="w-24" height="h-8" rounded="rounded-xl" />
-					</div>
-				{/each}
-			</div>
+			<BatchDetailTableSkeleton rowCount={8} />
 		{:else if activeRows.length === 0}
 			<div
 				class="flex flex-col items-center justify-center rounded-2xl border px-6 py-16 text-center border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]"

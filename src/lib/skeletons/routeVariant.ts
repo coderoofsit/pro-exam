@@ -8,6 +8,7 @@ export type PageSkeletonVariant =
 	| 'exam-grid'
 	| 'tests-list'
 	| 'batch-cards'
+	| 'student-batch-detail'
 	| 'batch-detail'
 	| 'subscription'
 	| 'management-table'
@@ -68,7 +69,9 @@ export function variantFromRouteId(
 		return 'management-table';
 	}
 
-	if (/\/(student|teacher|institute)\/batch\/\[[^\]]+\]/.test(routeId)) return 'batch-detail';
+	if (/\/student\/batch\/\[[^\]]+\]/.test(routeId)) return 'student-batch-detail';
+	if (/\/(teacher|institute)\/batch\/\[[^\]]+\]/.test(routeId)) return 'batch-detail';
+	if (/\/batch\/\[[^\]]+\]/.test(routeId)) return 'batch-detail';
 	if (
 		routeId === '/student/batch' ||
 		routeId === '/teacher/batch' ||
@@ -81,14 +84,15 @@ export function variantFromRouteId(
 	if (routeId.includes('/tests/own')) return 'own-test-syllabus';
 
 	if (routeId.includes('/tests/pyq/')) {
-		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId)) return 'exam-questions';
+		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId))
+			return examQuestionsFromParams(params);
 		if (/\/tests\/pyq\/\[examSlug\]$/.test(routeId)) return 'pyq-exam-papers';
 	}
 	if (/\/(student|teacher|institute)\/tests\/pyq$/.test(routeId)) return 'exam-grid';
 
-	if (routeId.includes('/tests/view')) return 'exam-questions';
+	if (routeId.includes('/tests/view')) return examQuestionsFromParams(params);
 
-	if (routeId.endsWith('/tests/batch')) return 'portal-dashboard';
+	if (routeId.endsWith('/tests/batch')) return null;
 
 	// Main tests hub only (two CTA tiles + list on …/tests)
 	if (
@@ -174,7 +178,9 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 		return 'management-table';
 	}
 
-	if (/\/(student|teacher|institute)\/batch\/[^/]+/.test(path)) return 'batch-detail';
+	if (/\/student\/batch\/[^/]+/.test(path)) return 'student-batch-detail';
+	if (/\/(teacher|institute)\/batch\/[^/]+/.test(path)) return 'batch-detail';
+	if (/\/batch\/[^/]+/.test(path)) return 'batch-detail';
 	if (path === '/student/batch' || path === '/teacher/batch' || path === '/institute/batch') {
 		return 'batch-cards';
 	}
@@ -183,13 +189,13 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 	if (/\/tests\/own\/[^/]+/.test(path)) return 'own-test-syllabus';
 	if (/\/tests\/own\/?$/.test(path)) return 'own-test-syllabus';
 
-	if (/\/tests\/pyq\/[^/]+\/[^/]+$/.test(path)) return 'exam-questions';
+	if (/\/tests\/pyq\/[^/]+\/[^/]+$/.test(path)) return examQuestionsFromParams(params);
 	if (/\/tests\/pyq\/[^/]+$/.test(path)) return 'pyq-exam-papers';
 	if (/\/tests\/pyq\/?$/.test(path)) return 'exam-grid';
 
-	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return 'exam-questions';
+	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return examQuestionsFromParams(params);
 
-	if (path === '/student/tests/batch') return 'portal-dashboard';
+	if (/\/(student|teacher|institute)\/tests\/batch\/?$/.test(path)) return null;
 
 	if (path === '/student/tests' || path === '/teacher/tests' || path === '/institute/tests') {
 		return 'tests-list';
@@ -249,6 +255,16 @@ function mergeRouteAndPathVariant(
 	const fromPath = variantFromPathname(path, params);
 	const fromId = variantFromRouteId(routeId, params);
 
+	// For /tests routes, destination URL is the source of truth during in-flight
+	// navigations because `to.route.id` can lag behind and point to the previous page.
+	if (/\/(student|teacher|institute)\/tests(\/|$)/.test(path)) {
+		return fromPath ?? fromId;
+	}
+	// Apply destination-first resolution for batch routes as well.
+	if (/\/batch(\/|$)/.test(path)) {
+		return fromPath ?? fromId;
+	}
+
 	if (fromPath !== null && routeId && LAYOUT_ONLY_ROUTE_IDS.has(routeId)) {
 		return fromPath;
 	}
@@ -259,10 +275,10 @@ function mergeRouteAndPathVariant(
 
 	if (
 		fromId === 'batch-cards' &&
-		fromPath === 'batch-detail' &&
+		(fromPath === 'batch-detail' || fromPath === 'student-batch-detail') &&
 		/\/(student|teacher|institute)\/batch\/[^/]+/.test(path)
 	) {
-		return 'batch-detail';
+		return fromPath;
 	}
 
 	const pathLooksLikeDashboard = /\/(student|teacher|institute)\/dashboard\/?$/.test(path);
@@ -288,6 +304,47 @@ export function getPageSkeletonVariant(
 
 	const { path, params } = parsePathAndSearch(pathWithSearch);
 	return mergeRouteAndPathVariant(path, params, routeId);
+}
+
+function normalizePathOnly(path: string): string {
+	return path.replace(/\/$/, '') || '/';
+}
+
+function portalBatchRoot(path: string): string | null {
+	const m = path.match(/^(\/(?:student|teacher|institute))\/batch/);
+	return m?.[1] ?? null;
+}
+
+function isPortalBatchDetailPath(path: string): boolean {
+	return (
+		/\/student\/batch\/[^/]+/.test(path) ||
+		/\/(teacher|institute)\/batch\/[^/]+/.test(path)
+	);
+}
+
+function isUnderPortalBatchTree(path: string): boolean {
+	return /\/(student|teacher|institute)\/batch(\/|$)/.test(path);
+}
+
+/**
+ * List → detail (or detail → detail) under the same portal already uses an in-page
+ * table skeleton on the batch slug page. Skipping the shell overlay avoids stacking
+ * two full-page skeletons plus the real chrome (feels like “multiple loaders”).
+ */
+export function shouldSuppressBatchRouteOverlay(
+	fromUrl: URL | null | undefined,
+	toPathWithSearch: string,
+): boolean {
+	if (!fromUrl) return false;
+	const from = normalizePathOnly(fromUrl.pathname);
+	const to = parsePathAndSearch(toPathWithSearch).path;
+
+	if (!isPortalBatchDetailPath(to)) return false;
+	if (!isUnderPortalBatchTree(from) || !isUnderPortalBatchTree(to)) return false;
+
+	const rootFrom = portalBatchRoot(from);
+	const rootTo = portalBatchRoot(to);
+	return rootFrom !== null && rootFrom === rootTo;
 }
 
 export function shouldShowRouteSkeleton(
