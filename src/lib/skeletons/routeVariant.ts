@@ -80,15 +80,18 @@ export function variantFromRouteId(
 		return 'batch-cards';
 	}
 
-	if (routeId.includes('/tests/own/') && routeId.includes('/chapter/')) return 'question-list';
-	if (routeId.includes('/tests/own')) return 'own-test-syllabus';
-
+	// PYQ + own-tests: order matters — own hub is an exam *card* grid (same skeleton as PYQ hub),
+	// not the OwnTestSyllabus builder used under `/tests/own/[examSlug]`.
 	if (routeId.includes('/tests/pyq/')) {
 		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId))
 			return examQuestionsFromParams(params);
 		if (/\/tests\/pyq\/\[examSlug\]$/.test(routeId)) return 'pyq-exam-papers';
 	}
 	if (/\/(student|teacher|institute)\/tests\/pyq$/.test(routeId)) return 'exam-grid';
+
+	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+\/chapter\//.test(routeId)) return 'question-list';
+	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+/.test(routeId)) return 'own-test-syllabus';
+	if (/\/(student|teacher|institute)\/tests\/own$/.test(routeId)) return 'exam-grid';
 
 	if (routeId.includes('/tests/view')) return examQuestionsFromParams(params);
 
@@ -185,13 +188,16 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 		return 'batch-cards';
 	}
 
-	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return 'question-list';
-	if (/\/tests\/own\/[^/]+/.test(path)) return 'own-test-syllabus';
-	if (/\/tests\/own\/?$/.test(path)) return 'own-test-syllabus';
-
+	// PYQ before `/tests/own*` — during navigations pathname can briefly lag; merge layer also
+	// reconciles own↔pyq when `route.id` and pathname disagree.
 	if (/\/tests\/pyq\/[^/]+\/[^/]+$/.test(path)) return examQuestionsFromParams(params);
 	if (/\/tests\/pyq\/[^/]+$/.test(path)) return 'pyq-exam-papers';
 	if (/\/tests\/pyq\/?$/.test(path)) return 'exam-grid';
+
+	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return 'question-list';
+	if (/\/tests\/own\/[^/]+/.test(path)) return 'own-test-syllabus';
+	// `/tests/own` + `?mode=manual|random` — exam card grid (modal or tiles), not syllabus skeleton
+	if (/\/tests\/own\/?$/.test(path)) return 'exam-grid';
 
 	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return examQuestionsFromParams(params);
 
@@ -241,6 +247,20 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 
 const LAYOUT_ONLY_ROUTE_IDS = new Set(['/student', '/teacher', '/institute']);
 
+/** When pathname still shows own-tests but `route.id` already resolved to PYQ (or the reverse). */
+function testsOwnPyqBranchMismatch(path: string, routeId: string | null | undefined): boolean {
+	const r = routeId ?? '';
+	if (!/\/(student|teacher|institute)\/tests\//.test(path)) return false;
+	if (!/\/(student|teacher|institute)\/tests\//.test(r)) return false;
+
+	const pathOwn = /\/tests\/own(\/|$)/.test(path);
+	const pathPyq = /\/tests\/pyq(\/|$)/.test(path);
+	const idOwn = /\/tests\/own(\/|$)/.test(r);
+	const idPyq = /\/tests\/pyq(\/|$)/.test(r);
+
+	return pathOwn !== idOwn || pathPyq !== idPyq;
+}
+
 /**
  * Combine `route.id` and pathname skeletons. During client navigations, `to.route.id`
  * can briefly be a layout id (e.g. `/teacher`) or the previous leaf (e.g. `…/dashboard`)
@@ -255,9 +275,12 @@ function mergeRouteAndPathVariant(
 	const fromPath = variantFromPathname(path, params);
 	const fromId = variantFromRouteId(routeId, params);
 
-	// For /tests routes, destination URL is the source of truth during in-flight
-	// navigations because `to.route.id` can lag behind and point to the previous page.
+	// For /tests routes, destination URL is usually the source of truth — except when pathname
+	// still reflects `/tests/own/...` while `route.id` already shows `/tests/pyq` (or vice versa).
 	if (/\/(student|teacher|institute)\/tests(\/|$)/.test(path)) {
+		if (testsOwnPyqBranchMismatch(path, routeId)) {
+			return fromId ?? fromPath;
+		}
 		return fromPath ?? fromId;
 	}
 	// Apply destination-first resolution for batch routes as well.
