@@ -3,7 +3,10 @@
   import { navigating, page } from "$app/state";
   import { goto, invalidateAll, preloadData } from "$app/navigation";
   import PageRouteSkeleton from "$lib/components/skeletons/PageRouteSkeleton.svelte";
-  import { getPageSkeletonVariant } from "$lib/skeletons/routeVariant";
+  import {
+    getPageSkeletonVariant,
+    shouldShowRouteSkeleton,
+  } from "$lib/skeletons/routeVariant";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
   import {
@@ -127,10 +130,11 @@
 
   const showRouteSkeleton = $derived(
     browser &&
-      navigating.to !== null &&
-      navigating.type !== 'enter' &&
-      !isTestAttemptRoute &&
-      routeSkeletonVariant !== null,
+      shouldShowRouteSkeleton(routeSkeletonVariant, {
+        navigating: navigating.to !== null,
+        isTestAttempt: isTestAttemptRoute,
+        navigationType: navigating.type,
+      }),
   );
 
   /** Test result analysis — one shell background across sidebar + main (see `.student-shell--analysis`). */
@@ -1571,19 +1575,15 @@
             ? "relative flex min-h-0 flex-1 flex-col"
             : "relative min-h-0 p-0"}
         >
-          {#if showRouteSkeleton}
+          {#if showRouteSkeleton && routeSkeletonVariant}
             <div
               class="absolute inset-0 z-20 overflow-auto bg-[var(--page-bg)]"
               aria-busy="true"
               aria-live="polite"
               aria-label="Loading page"
             >
-              {#key `${routeSkeletonTarget.path}|${routeSkeletonTarget.routeId ?? ''}`}
-                <PageRouteSkeleton
-                  pathname={routeSkeletonTarget.path}
-                  routeId={routeSkeletonTarget.routeId}
-                  variant={routeSkeletonVariant}
-                />
+              {#key routeSkeletonVariant}
+                <PageRouteSkeleton variant={routeSkeletonVariant} />
               {/key}
             </div>
           {/if}
