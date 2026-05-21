@@ -134,7 +134,8 @@ export function variantFromRouteId(
 	/* Own-tests hub: exams load in +page.server (no streamed shell) — no route overlay */
 	if (/\/(student|teacher|institute)\/tests\/own$/.test(routeId)) return null;
 
-	if (routeId.includes('/tests/view')) return examQuestionsFromParams(params);
+	/* View-test page loads questions client-side; `QuestionListSkeleton` in pyq paper page */
+	if (routeId.includes('/tests/view')) return null;
 
 	if (routeId.endsWith('/tests/batch')) return null;
 
@@ -243,7 +244,7 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 	/* Own-tests hub: no exam-grid overlay (data ready when page renders) */
 	if (/\/tests\/own\/?$/.test(path)) return null;
 
-	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return examQuestionsFromParams(params);
+	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return null;
 
 	if (/\/(student|teacher|institute)\/tests\/batch\/?$/.test(path)) return null;
 
