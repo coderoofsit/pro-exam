@@ -128,7 +128,8 @@ export function variantFromRouteId(
 	}
 	if (/\/(student|teacher|institute)\/tests\/pyq$/.test(routeId)) return 'exam-grid';
 
-	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+\/chapter\//.test(routeId)) return 'question-list';
+	/* Own-test chapter: streamed questions + `QuestionListSkeleton` in +page.svelte */
+	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+\/chapter\//.test(routeId)) return null;
 	/* Own exam builder: back + syllabus skeleton live in +page.svelte (layout stream) */
 	if (/\/(student|teacher|institute)\/tests\/own\/\[examSlug\]$/.test(routeId)) return null;
 	/* Own-tests hub: exams load in +page.server (no streamed shell) — no route overlay */
@@ -239,7 +240,7 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 	if (/\/tests\/pyq\/[^/]+$/.test(path)) return 'pyq-exam-papers';
 	if (/\/tests\/pyq\/?$/.test(path)) return 'exam-grid';
 
-	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return 'question-list';
+	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return null;
 	if (/\/tests\/own\/[^/]+\/?$/.test(path) && !/\/tests\/own\/[^/]+\/chapter\//.test(path)) return null;
 	/* Own-tests hub: no exam-grid overlay (data ready when page renders) */
 	if (/\/tests\/own\/?$/.test(path)) return null;

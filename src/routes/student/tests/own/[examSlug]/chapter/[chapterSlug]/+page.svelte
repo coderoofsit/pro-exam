@@ -337,6 +337,9 @@
 
 <div class="own-test-page own-test-chapter-page min-h-full font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
+    {#if isLoading}
+      <QuestionListSkeleton variant="own-chapter" />
+    {:else}
     <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">
         {#if paginationMeta}
@@ -449,9 +452,7 @@
       {/if}
     </div>
 
-    {#if isLoading}
-      <QuestionListSkeleton />
-    {:else if errorMessage}
+    {#if errorMessage}
       <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-5 py-4 text-sm text-[var(--pc-error-text)]">
         {errorMessage}
       </div>
@@ -528,6 +529,7 @@
         />
       {/if}
 
+    {/if}
     {/if}
   </div>
 </div>
