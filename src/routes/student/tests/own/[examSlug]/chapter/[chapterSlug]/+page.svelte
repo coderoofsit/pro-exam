@@ -1,7 +1,7 @@
 <script lang="ts">
   import MathText from "$lib/components/MathText.svelte";
   import { questionPromptEnContent } from "$lib/api/questions";
-  import { fetchTopicsByChapterSlug, type TopicRow } from "$lib/api/topics";
+  import type { TopicRow } from "$lib/api/topics";
   import Pagination from "$lib/components/Pagination.svelte";
   import Button from "$lib/components/Button.svelte";
   import QuestionListSkeleton from "$lib/components/skeletons/QuestionListSkeleton.svelte";
@@ -16,6 +16,8 @@
   }: { data: PageData; basePath?: string } = $props();
 
   let topicOptions = $state<TopicRow[]>(data.topics ?? []);
+  let chapterMeta = $state(data.chapter);
+  let resolvedChapterId = $state<string | null>((data as { chapterId?: string | null }).chapterId ?? null);
   let topicsLoading = $state(false);
   let selectedTopicSlug = $state<string[]>([]);
   let selectedKind = $state<string[]>([]);
@@ -92,6 +94,28 @@
   });
 
   $effect(() => {
+    const topicsPromise = data.streamed?.topicsMeta;
+    if (!topicsPromise) return;
+    let cancelled = false;
+    topicsLoading = true;
+    void topicsPromise
+      .then((meta) => {
+        if (cancelled || !meta) return;
+        topicOptions = meta.topics ?? [];
+        if (meta.chapter) {
+          chapterMeta = meta.chapter;
+          resolvedChapterId = meta.chapter._id ?? resolvedChapterId;
+        }
+      })
+      .finally(() => {
+        if (!cancelled) topicsLoading = false;
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  $effect(() => {
     if (!browser) return;
     const params = new URLSearchParams(window.location.search);
     // Keep chapter-open URL topic from pre-selecting the filter UI.
@@ -107,11 +131,13 @@
   type Question = any;
   type ImageLike = string | { url?: string; alt?: string; publicId?: string; version?: string };
 
-  const title = $derived(data.chapter?.name?.en ?? data.chapterSlug);
+  const title = $derived(
+    chapterMeta?.name?.en ?? (data as { chapterTitle?: string }).chapterTitle ?? data.chapterSlug,
+  );
   const examSlug = $derived(data.examSlug);
   const examId = $derived((data as any).examId ?? "");
   const boardId = $derived((data as any).boardId ?? "");
-  const chapterId = $derived((data as any).chapterId ?? "");
+  const chapterId = $derived(resolvedChapterId ?? "");
 
   const selectionKey = $derived(`own-manual-selected::${examSlug}`);
   type ManualSelectedRow = {
@@ -190,7 +216,7 @@
       return;
     }
 
-    const resolvedChapterId = String(chapterId ?? "").trim() || String(data.chapter?._id ?? "");
+    const resolvedChapterId = String(chapterId ?? "").trim() || String(chapterMeta?._id ?? "");
     const params = browser ? new URLSearchParams(window.location.search) : new URLSearchParams();
     const subjectParam = String(params.get("subject") ?? "").trim();
     const unitsParam = String(params.get("units") ?? "")
@@ -230,7 +256,7 @@
 
   const selectedCount = $derived(selectedIds.size);
   const selectedCountInChapter = $derived.by(() => {
-    const currentChapterId = String(chapterId ?? "").trim() || String(data.chapter?._id ?? "");
+    const currentChapterId = String(chapterId ?? "").trim() || String(chapterMeta?._id ?? "");
     if (!currentChapterId) return selectedCount;
     return selectedRows.filter((r) => String(r.chapterId).trim() === currentChapterId).length;
   });
@@ -421,7 +447,7 @@
             </div>
           </div>
 
-          {#if topicOptions.length > 0}
+          {#if topicsLoading || topicOptions.length > 0}
             <div>
               <div class="mb-3 text-sm font-semibold text-[var(--page-text)]">Topic</div>
               {#if topicsLoading}

@@ -382,8 +382,15 @@
 
 	const navigatingToQuestionsUrl = $derived.by(() => {
 		const to = navigating.to?.url;
-		if (!to || !/^\/exams\/[^/]+\/[^/]+$/.test(to.pathname)) return null;
-		return to;
+		if (!to) return null;
+		const p = to.pathname.replace(/\/$/, '') || '/';
+		if (
+			/^\/exams\/[^/]+\/[^/]+$/.test(p) ||
+			/^\/(?:student|teacher|institute)\/exams\/[^/]+\/[^/]+$/.test(p)
+		) {
+			return to;
+		}
+		return null;
 	});
 
 	const showPageSkeleton = $derived(
@@ -391,10 +398,8 @@
 			(navigatingToQuestionsUrl !== null || isDataOutOfSync),
 	);
 
-	/** In-route overlay for pagination/filter sync; full navigations use Sidebar skeleton. */
-	const showLocalPageSkeleton = $derived(
-		showPageSkeleton && navigatingToQuestionsUrl === null,
-	);
+	/** Single in-page overlay for navigations, pagination, and filter sync. */
+	const showLocalPageSkeleton = $derived(showPageSkeleton);
 
 	const showDetailPageSkeleton = $derived(
 		showLocalPageSkeleton &&

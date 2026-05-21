@@ -1,13 +1,18 @@
 import type { PageServerLoad } from './$types';
 import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
-import { fetchTopicsByChapterSlug } from '$lib/api/topics';
+import { fetchTopicsByChapterSlug, type TopicRow } from '$lib/api/topics';
 import { fetchQuestionsByChapter } from '$lib/api/questions';
+import { isMongoObjectIdString } from '$lib/chapterRoutes';
 
 const QUESTIONS_PAGE_LIMIT = 25;
 
+function titleFromChapterSlug(slug: string): string {
+	return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export const load: PageServerLoad = async ({ params, url, cookies, fetch }) => {
 	const examSlug = params.examSlug;
-	const chapterSlug = params.chapterSlug;
+	const chapterSlugParam = decodeURIComponent(params.chapterSlug ?? '');
 	const token = getAuthTokenFromCookies(cookies) ?? null;
 	const examId = String(url.searchParams.get('examId') ?? '').trim();
 	const boardId = String(url.searchParams.get('boardId') ?? '').trim();
@@ -18,57 +23,46 @@ export const load: PageServerLoad = async ({ params, url, cookies, fetch }) => {
 	const topicSlug = url.searchParams.get('topic');
 	const difficulty = url.searchParams.get('difficulty');
 
-	try {
-		// Consolidate: Fetch Chapter metadata AND Topics in one call
-		const topicsRes = await fetchTopicsByChapterSlug(decodeURIComponent(chapterSlug), fetch, { token });
-		
-		if (!topicsRes.success || !topicsRes.data) {
-			throw new Error(topicsRes.message || 'Chapter topics not found');
+	const isChapterId = isMongoObjectIdString(chapterSlugParam);
+	const chapterId = isChapterId ? chapterSlugParam : null;
+	const chapterSlugForApi = isChapterId ? null : chapterSlugParam;
+
+	const topicsPromise = fetchTopicsByChapterSlug(chapterSlugParam, fetch, { token }).then((res) => {
+		if (!res.success || !res.data) {
+			return {
+				chapter: null as { _id?: string; name?: { en?: string } } | null,
+				topics: [] as TopicRow[]
+			};
 		}
+		return res.data;
+	});
 
-		const { chapter, topics } = topicsRes.data;
-		const chapterId = chapter?._id ?? null;
-		if (!chapterId) throw new Error('Chapter not found');
+	const questionsPromise = fetchQuestionsByChapter(
+		chapterId,
+		safePage,
+		QUESTIONS_PAGE_LIMIT,
+		difficulty,
+		kind,
+		token,
+		topicSlug,
+		chapterSlugForApi,
+		null
+	);
 
-		const questionsPromise = fetchQuestionsByChapter(
-			chapterId,
-			safePage,
-			QUESTIONS_PAGE_LIMIT,
-			difficulty,
-			kind,
-			token,
-			topicSlug,
-			null
-		);
-
-		return {
-			examSlug,
-			examId,
-			boardId,
-			chapterSlug,
-			safePage,
-			chapter,
-			chapterId,
-			topics,
-			streamed: {
-				questionsRes: questionsPromise
-			},
-			message: null as string | null
-		};
-	} catch (e) {
-		return {
-			examSlug,
-			examId,
-			boardId,
-			chapterSlug,
-			safePage,
-			chapter: null,
-			chapterId: null,
-			topics: [],
-			questions: [],
-			paginationMeta: null,
-			message: e instanceof Error ? e.message : 'Failed to load'
-		};
-	}
+	return {
+		examSlug,
+		examId,
+		boardId,
+		chapterSlug: chapterSlugParam,
+		chapterTitle: titleFromChapterSlug(chapterSlugParam),
+		safePage,
+		chapter: null,
+		chapterId,
+		topics: [],
+		streamed: {
+			topicsMeta: topicsPromise,
+			questionsRes: questionsPromise
+		},
+		message: null as string | null
+	};
 };
-

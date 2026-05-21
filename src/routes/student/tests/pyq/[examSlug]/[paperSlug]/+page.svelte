@@ -39,6 +39,8 @@ import { tick } from 'svelte';
   let questions = $state<Array<Record<string, any>>>([]);
   let error = $state<string | null>(null);
   let isLoading = $state(true);
+  /** List only — paper metadata loads in parallel. */
+  let questionsLoading = $state(true);
 
   let fetchedSections = $state<Record<string, Array<Record<string, any>>>>({});
   let subjectTabs = $state<string[]>([]);
@@ -140,6 +142,7 @@ import { tick } from 'svelte';
   $effect(() => {
     if (isViewTestMode) {
       isLoading = true;
+      questionsLoading = true;
       const initialSlug = data.subjectSlug || undefined;
       fetchViewTest(viewTestId, initialSlug)
         .then((res) => applyViewTestResult(res, data.subjectSlug || ''))
@@ -150,11 +153,12 @@ import { tick } from 'svelte';
         })
         .finally(() => {
           isLoading = false;
+          questionsLoading = false;
         });
       return;
     }
 
-    isLoading = true;
+    questionsLoading = true;
     data.streamed?.questionsPromise
       ?.then((res: any) => {
         if (res.success) {
@@ -181,7 +185,7 @@ import { tick } from 'svelte';
         error = err.message || 'An error occurred while fetching questions.';
       })
       .finally(() => {
-        isLoading = false;
+        questionsLoading = false;
       });
   });
 
@@ -215,7 +219,8 @@ import { tick } from 'svelte';
       return;
     }
 
-    isLoading = true;
+    if (isViewTestMode) isLoading = true;
+    else questionsLoading = true;
 
     if (isViewTestMode) {
       const res = await fetchViewTest(viewTestId, tab);
@@ -256,7 +261,8 @@ import { tick } from 'svelte';
     questions = [];
     error = err.message || 'An error occurred while fetching section.';
   } finally {
-    isLoading = false;
+    if (isViewTestMode) isLoading = false;
+    else questionsLoading = false;
 
     // Let the UI finish one more update before enabling tabs again
     await tick();
@@ -632,7 +638,7 @@ import { tick } from 'svelte';
       </div>
     {/if}
 
-    {#if isLoading}
+    {#if isViewTestMode ? isLoading : questionsLoading}
       <QuestionListSkeleton count={6} />
     {:else if error}
       <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]">

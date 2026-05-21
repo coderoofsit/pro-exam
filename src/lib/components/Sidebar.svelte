@@ -1723,16 +1723,17 @@ type MobileNavItem = {
   </div>
 {/if}
 
-<!-- Mobile Bottom Navigation -->
+<!-- Mobile Bottom Navigation — equal-width tabs from sidebarNavItems / mobileBottomNavItems -->
 <nav
  class="
     fixed inset-x-0 bottom-0 z-[100] flex h-[calc(4rem+env(safe-area-inset-bottom,0px))]
-    items-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap md:hidden px-2 pt-2
+    w-full items-start md:hidden pt-2
     pb-[env(safe-area-inset-bottom,0px)]
     bg-[var(--topbar-bg)] border-t border-[var(--topbar-border)]
     shadow-[0_-4px_16px_rgba(0,0,0,0.06)]
-    backdrop-blur-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+    backdrop-blur-xl
   "
+  aria-label="Main navigation"
 >
   {#each mobileBottomNavItems as navItem}
     {@const active = isActive(navItem.href)}
@@ -1742,7 +1743,7 @@ type MobileNavItem = {
       onfocus={() => warmSidebarRoute(navItem.href)}
       onclick={(event) => void handleSidebarNavClick(event, navItem.href)}
       class="
-        relative flex flex-shrink-0 flex-col items-center justify-center gap-1 min-w-[64px] px-1
+        relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5
         transition-colors duration-200
         {active ? 'text-[var(--sb-nav-active-text)]' : 'text-[var(--sb-nav-text)]'}
       "
@@ -1805,7 +1806,7 @@ type MobileNavItem = {
           {/if}
         </span>
       </div>
-      <span class="text-[10px] font-semibold tracking-tight">{navItem.label}</span>
+      <span class="max-w-full truncate text-center text-[10px] font-semibold leading-tight tracking-tight">{navItem.label}</span>
       {#if active}
         <span class="absolute -bottom-1 w-1 h-1 rounded-full bg-[var(--sb-nav-active-indicator)]"></span>
       {:else}

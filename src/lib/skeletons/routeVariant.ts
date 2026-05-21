@@ -31,9 +31,9 @@ function examQuestionsFromParams(params: URLSearchParams): PageSkeletonVariant {
 	return params.has('questionId') ? 'exam-question-detail' : 'exam-questions';
 }
 
-/** `/exams/.../chapterId` (and portal copies) — list skeleton separate from generic question bank */
+/** Exam chapter list: in-page `ExamChapterQuestionsSkeleton` only (no sidebar overlay). */
 function examChapterQuestionsFromParams(params: URLSearchParams): PageSkeletonVariant {
-	return params.has('questionId') ? 'exam-question-detail' : 'exam-chapter-questions';
+	return params.has('questionId') ? 'exam-question-detail' : null;
 }
 
 function isExamChapterQuestionsRouteId(routeId: string): boolean {
