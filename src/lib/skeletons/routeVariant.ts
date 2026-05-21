@@ -110,13 +110,13 @@ export function variantFromRouteId(
 
 	if (routeId.endsWith('/tests/batch')) return null;
 
-	// Main tests hub only (two CTA tiles + list on …/tests)
+	/* Tests hub: CTAs + search are static; list skeleton is in +page.svelte (#await) */
 	if (
 		routeId === '/student/tests' ||
 		routeId === '/teacher/tests' ||
 		routeId === '/institute/tests'
 	) {
-		return 'tests-list';
+		return null;
 	}
 
 	// Other /…/tests/* routes — avoid misleading overlays; shell keeps prior view briefly
@@ -218,7 +218,7 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 	if (/\/(student|teacher|institute)\/tests\/batch\/?$/.test(path)) return null;
 
 	if (path === '/student/tests' || path === '/teacher/tests' || path === '/institute/tests') {
-		return 'tests-list';
+		return null;
 	}
 
 	// Unmatched tests subpaths: no sidebar overlay (avoids generic-page flash)

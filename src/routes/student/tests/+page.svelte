@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Skeleton from "$lib/components/Skeleton.svelte";
+  import TestsListSkeleton from "$lib/components/skeletons/TestsListSkeleton.svelte";
   import GeneralActionButton from "$lib/components/GeneralActionButton.svelte";
   import Pagination from "$lib/components/Pagination.svelte";
   import TestsFiltersDropdown from "$lib/components/student/TestsFiltersDropdown.svelte";
@@ -477,22 +477,7 @@
       </div>
 
       {#await data.streamed.testsData}
-        <div class="space-y-4">
-          <div class="flex justify-between items-end mb-4">
-            <Skeleton width="w-32" height="h-4" />
-          </div>
-          <div class="flex flex-col gap-3">
-            {#each Array(5) as _}
-              <div class="skel-card flex flex-col gap-4 rounded-2xl px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex-1 space-y-2">
-                  <Skeleton width="w-3/4" height="h-5" />
-                  <Skeleton width="w-1/2" height="h-3" />
-                </div>
-                <Skeleton width="w-32" height="h-10" rounded="rounded-xl" />
-              </div>
-            {/each}
-          </div>
-        </div>
+        <TestsListSkeleton />
       {:then testsData}
         {@const items = testsData.items ?? []}
         {@const error = testsData.error}
