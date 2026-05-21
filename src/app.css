@@ -1924,7 +1924,12 @@ html[data-theme='dark'] .question-card:hover {
   }
 }
 
-/* Own test bottom bar — inherits sidebar gradient from base rule; no glass (avoids scroll bleed). */
+/* Dark: flat sidebar tone (no gradient) — opaque so content does not show through */
+html[data-theme='dark'] .own-bottom-bar {
+  background: #0a132d;
+  border-top-color: var(--sb-border-color);
+}
+
 html[data-theme='light'] .own-bottom-bar .own-bottom-bar__label,
 html[data-theme='light'] .own-bottom-bar .own-bottom-bar__empty {
   color: var(--sb-nav-text);
