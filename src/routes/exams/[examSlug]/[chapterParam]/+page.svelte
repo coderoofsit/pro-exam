@@ -35,6 +35,11 @@
 	import { createReport, type ReportReason } from "$lib/api/reports";
 	import { notifyError, notifySuccess } from "$lib/notifications";
 	import BackButton from "$lib/components/BackButton.svelte";
+	import {
+		examChapterPath,
+		examSlugChaptersFallback,
+		resolveExamsBasePath,
+	} from "$lib/exams/examPortalPaths";
 	import Pagination from "$lib/components/Pagination.svelte";
 	import ImageLightbox from "$lib/components/ImageLightbox.svelte";
 	import Button from "$lib/components/Button.svelte";
@@ -563,8 +568,14 @@
 		);
 	});
 
+	const examsBasePath = $derived(resolveExamsBasePath(page.url.pathname));
+
 	const chapterBaseUrl = (chapterParamOverride?: string) =>
-		`/exams/${data.examSlug}/${encodeURIComponent(chapterParamOverride ?? data.chapterParam)}`;
+		examChapterPath(
+			examsBasePath,
+			data.examSlug,
+			chapterParamOverride ?? data.chapterParam,
+		);
 
 	const activeFiltersQuery = (opts?: { page?: number }) => {
 		const params = new URLSearchParams();
@@ -862,7 +873,9 @@
 								{:else}
 									<BackButton
 										label="Back"
-										fallback={`/exams/${data.examSlug}?view=chapters${isPyq ? '&pyq=true' : ''}`}
+										fallback={examSlugChaptersFallback(examsBasePath, data.examSlug, {
+											pyq: isPyq,
+										})}
 									/>
 								{/if}
 								{#if displayPaginationMeta}

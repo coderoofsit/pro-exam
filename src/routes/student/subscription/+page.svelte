@@ -1,5 +1,8 @@
 <script lang="ts">
-  import Skeleton from '$lib/components/Skeleton.svelte';
+  import SubscriptionProfileSkeleton from '$lib/components/skeletons/SubscriptionProfileSkeleton.svelte';
+  import SubscriptionLiveSkeleton from '$lib/components/skeletons/SubscriptionLiveSkeleton.svelte';
+  import SubscriptionPlansSkeleton from '$lib/components/skeletons/SubscriptionPlansSkeleton.svelte';
+  import SubscriptionPaymentHistorySkeleton from '$lib/components/skeletons/SubscriptionPaymentHistorySkeleton.svelte';
   import { browser } from '$app/environment';
   import { invalidateAll } from '$app/navigation';
   import { resolveApiToken } from '$lib/api/authToken';
@@ -361,59 +364,65 @@
     </p>
   </header>
 
-  {#if defaultProfile}
+  {#await data.streamed.subscription}
+    <SubscriptionProfileSkeleton />
+
     <section
-      class="mb-8 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 sm:p-6"
-      aria-labelledby="sub-profile-heading"
+      class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
+      aria-labelledby="sub-live-heading"
     >
-      <h2 id="sub-profile-heading" class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-        Your profile
-      </h2>
-      <p class="mt-1 text-base font-semibold text-[var(--sh-section-title)]">
-        {defaultProfile.firstName}
-        {defaultProfile.lastName}
-      </p>
-      <p class="mt-2 text-sm text-[var(--sh-ai-sub)]">
-        Subscription status below is loaded live from your account.
-      </p>
-    </section>
-  {/if}
-
-  <section
-    class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
-    aria-labelledby="sub-live-heading"
-  >
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h2
-        id="sub-live-heading"
-        class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]"
-      >
-        Your subscription
-      </h2>
-      <button
-        type="button"
-        class="text-xs font-semibold text-[var(--page-link)] underline-offset-2 hover:underline"
-        onclick={() => void refreshSubscription()}
-        disabled={loading}
-      >
-        Refresh
-      </button>
-    </div>
-
-    {#await data.streamed.subscription}
-      <div class="mt-6 space-y-4">
-        <div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5">
-           <Skeleton width="w-24" height="h-4" className="mb-4" />
-           <Skeleton width="w-48" height="h-8" className="mb-2" />
-           <Skeleton width="w-32" height="h-4" />
-           <div class="mt-6 grid gap-4 sm:grid-cols-2">
-              <Skeleton width="w-full" height="h-10" />
-              <Skeleton width="w-full" height="h-10" />
-           </div>
-        </div>
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <h2
+          id="sub-live-heading"
+          class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]"
+        >
+          Your subscription
+        </h2>
       </div>
-    {:then currentSub}
-      {@const effectiveSub = subscription ?? currentSub}
+      <SubscriptionLiveSkeleton />
+    </section>
+  {:then currentSub}
+    {#if defaultProfile}
+      <section
+        class="mb-8 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 sm:p-6"
+        aria-labelledby="sub-profile-heading"
+      >
+        <h2 id="sub-profile-heading" class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
+          Your profile
+        </h2>
+        <p class="mt-1 text-base font-semibold text-[var(--sh-section-title)]">
+          {defaultProfile.firstName}
+          {defaultProfile.lastName}
+        </p>
+        <p class="mt-2 text-sm text-[var(--sh-ai-sub)]">
+          Subscription status below is loaded live from your account.
+        </p>
+      </section>
+    {/if}
+
+    <section
+      class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
+      aria-labelledby="sub-live-heading-loaded"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <h2
+          id="sub-live-heading-loaded"
+          class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]"
+        >
+          Your subscription
+        </h2>
+        <button
+          type="button"
+          class="text-xs font-semibold text-[var(--page-link)] underline-offset-2 hover:underline"
+          onclick={() => void refreshSubscription()}
+          disabled={loading}
+        >
+          Refresh
+        </button>
+      </div>
+
+      {#if true}
+        {@const effectiveSub = subscription ?? currentSub}
       {#if loadError}
         <p class="mt-4 text-sm text-[var(--pc-error-text)]" role="alert">{loadError}</p>
         <button
@@ -578,8 +587,9 @@
           </div>
         </div>
       {/if}
-    {/await}
-  </section>
+      {/if}
+    </section>
+  {/await}
 
   {#if !needsAuth}
     <section
@@ -591,20 +601,7 @@
       </h2>
 
       {#if plansLoading}
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {#each [1, 2, 3] as sk (sk)}
-            <div class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-4">
-              <Skeleton width="w-28" height="h-5" />
-              <Skeleton width="w-20" height="h-3" className="mt-2" />
-              <Skeleton width="w-24" height="h-7" className="mt-3" />
-              <div class="mt-4 space-y-2">
-                <Skeleton width="w-full" height="h-3" />
-                <Skeleton width="w-11/12" height="h-3" />
-                <Skeleton width="w-9/12" height="h-3" />
-              </div>
-            </div>
-          {/each}
-        </div>
+        <SubscriptionPlansSkeleton count={3} />
       {:else if plansError}
         <p class="mt-4 text-sm text-[var(--pc-error-text)]">{plansError}</p>
       {:else if visiblePlans.length > 0}
@@ -720,10 +717,7 @@
           </div>
 
           {#if transactionsLoading}
-            <div class="space-y-3 animate-pulse">
-              <div class="h-12 rounded-lg bg-[color-mix(in_srgb,var(--sh-exam-card-border)_50%,transparent)]"></div>
-              <div class="h-12 rounded-lg bg-[color-mix(in_srgb,var(--sh-exam-card-border)_40%,transparent)]"></div>
-            </div>
+            <SubscriptionPaymentHistorySkeleton rowCount={3} />
           {:else if transactionsError}
             <p class="text-sm text-[var(--pc-error-text)]" role="alert">{transactionsError}</p>
           {:else if transactions.length === 0}

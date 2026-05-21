@@ -1,52 +1,85 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
+	import SubscriptionProfileSkeleton from '$lib/components/skeletons/SubscriptionProfileSkeleton.svelte';
+	import SubscriptionLiveSkeleton from '$lib/components/skeletons/SubscriptionLiveSkeleton.svelte';
+	import SubscriptionPlansSkeleton from '$lib/components/skeletons/SubscriptionPlansSkeleton.svelte';
+	import SubscriptionPaymentHistorySkeleton from '$lib/components/skeletons/SubscriptionPaymentHistorySkeleton.svelte';
 </script>
 
-<div class="subscription-page mx-auto max-w-5xl space-y-4 px-3 py-2 sm:space-y-6 sm:px-4" aria-hidden="true">
-	<header class="text-center">
-		<Skeleton width="w-40 sm:w-48" height="h-5 sm:h-6" rounded="rounded-full" className="mx-auto mb-2 sm:mb-3" />
-		<Skeleton width="w-full max-w-lg" height="h-8 sm:h-9" className="mx-auto" strong />
-		<Skeleton width="w-full max-w-md" height="h-3.5 sm:h-4" className="mx-auto mt-3 sm:mt-4" />
+<!-- Full-page fallback — matches subscription/+page.svelte section order -->
+<div
+	class="subscription-page mx-auto max-w-5xl px-4 pt-2 md:pb-12 sm:px-5"
+	aria-hidden="true"
+	aria-busy="true"
+>
+	<header class="mb-10 text-center sm:mb-14">
+		<Skeleton
+			width="w-44 sm:w-52"
+			height="h-7"
+			rounded="rounded-full"
+			className="mx-auto mb-3"
+		/>
+		<Skeleton width="w-full max-w-xl" height="h-9 sm:h-10" className="mx-auto" strong />
+		<Skeleton width="w-full max-w-2xl" height="h-5" className="mx-auto mt-4" />
 	</header>
 
-	<div class="skel-card rounded-xl p-4 sm:rounded-2xl sm:p-6">
-		<Skeleton width="w-28" height="h-3" />
-		<Skeleton width="w-40" height="h-5" className="mt-2" strong />
-		<Skeleton width="w-full max-w-sm" height="h-3" className="mt-2" />
-	</div>
+	<SubscriptionProfileSkeleton />
 
-	<div class="skel-card rounded-xl p-4 sm:rounded-2xl sm:p-6">
+	<section
+		class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
+	>
 		<div class="flex flex-wrap items-start justify-between gap-3">
-			<Skeleton width="w-32 sm:w-36" height="h-3" />
+			<Skeleton width="w-32" height="h-3" />
 			<Skeleton width="w-14" height="h-3" />
 		</div>
-		<div class="mt-4 rounded-lg border border-[var(--skel-border)] bg-[var(--skel-surface)] p-3 sm:mt-6 sm:rounded-xl sm:p-5">
-			<div class="flex flex-wrap gap-2">
-				<Skeleton width="w-24" height="h-6" rounded="rounded-full" />
-				<Skeleton width="w-16" height="h-6" rounded="rounded-full" />
-				<Skeleton width="w-14" height="h-6" rounded="rounded-full" />
-			</div>
-			<Skeleton width="w-40" height="h-7" className="mt-4" strong />
-			<Skeleton width="w-56" height="h-4" className="mt-2" />
-			<div class="mt-4 grid gap-3 sm:mt-6 sm:gap-4 sm:grid-cols-2">
-				<Skeleton width="w-full" height="h-10" rounded="rounded-lg" />
-				<Skeleton width="w-full" height="h-10" rounded="rounded-lg" />
-			</div>
-		</div>
-	</div>
+		<SubscriptionLiveSkeleton />
+	</section>
 
-	<div class="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+	<section
+		class="mb-10 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_26%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 sm:p-6"
+	>
+		<Skeleton width="w-28" height="h-3" />
+		<Skeleton width="w-full max-w-xs" height="h-3" className="mt-3" />
+		<SubscriptionPlansSkeleton />
+	</section>
+
+	<section class="mb-10 overflow-hidden rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]">
+		<div class="flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-[1.125rem]">
+			<div class="min-w-0 flex-1 space-y-2">
+				<Skeleton width="w-32" height="h-3" />
+				<Skeleton width="w-48" height="h-3" />
+			</div>
+			<Skeleton width="w-9" height="h-9" rounded="rounded-xl" className="shrink-0" />
+		</div>
+		<div class="border-t border-[var(--sh-exam-card-border)] px-5 pb-5 pt-4 sm:px-6">
+			<SubscriptionPaymentHistorySkeleton />
+		</div>
+	</section>
+
+	<div class="mb-10 grid gap-4 sm:grid-cols-3">
 		{#each Array(3) as _, i (i)}
-			<div class="skel-card rounded-lg p-3 sm:rounded-xl sm:p-4">
-				<Skeleton width="w-28" height="h-5" strong />
-				<Skeleton width="w-20" height="h-3" className="mt-2" />
-				<Skeleton width="w-24" height="h-7" className="mt-3" strong />
-				<div class="mt-3 space-y-2">
-					<Skeleton width="w-full" height="h-3" />
-					<Skeleton width="w-11/12" height="h-3" />
-					<Skeleton width="w-9/12" height="h-3" />
-				</div>
+			<div
+				class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)]"
+			>
+				<Skeleton width="w-10" height="h-10" rounded="rounded-xl" className="mb-3" />
+				<Skeleton width="w-32" height="h-5" strong />
+				<Skeleton width="w-full" height="h-3" className="mt-2" />
+				<Skeleton width="w-11/12" height="h-3" className="mt-1.5" />
 			</div>
 		{/each}
 	</div>
+
+	<section
+		class="rounded-2xl border border-[var(--sh-exam-card-border)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_55%,transparent)_0%,var(--sh-exam-card-bg)_100%)] p-6 sm:p-8"
+	>
+		<Skeleton width="w-40" height="h-6" strong />
+		<div class="mt-4 space-y-3">
+			{#each Array(3) as _, i (i)}
+				<div class="flex gap-3">
+					<Skeleton width="w-4" height="h-4" rounded="rounded" className="shrink-0" />
+					<Skeleton width="w-full" height="h-4" />
+				</div>
+			{/each}
+		</div>
+	</section>
 </div>

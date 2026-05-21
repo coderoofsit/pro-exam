@@ -6,6 +6,7 @@ import { tick } from 'svelte';
   import { createReport, type ReportReason } from '$lib/api/reports';
   import MathText from '$lib/components/MathText.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
+  import QuestionListSkeleton from '$lib/components/skeletons/QuestionListSkeleton.svelte';
   import { questionPromptEnContent, uploadImage } from '$lib/api/questions';
   import { 
     BATCH_TEST_ATTEMPT_STORAGE_KEY, 
@@ -632,23 +633,7 @@ import { tick } from 'svelte';
     {/if}
 
     {#if isLoading}
-      <div class="space-y-4">
-        {#each Array(3) as _}
-          <div class="animate-pulse rounded-2xl border border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)] p-4">
-            <div class="mb-4 h-5 w-3/4 rounded bg-[var(--pyq-paper-border)]/50"></div>
-            <div class="mb-6 flex gap-2">
-              <div class="h-6 w-16 rounded bg-[var(--pyq-paper-border)]/50"></div>
-              <div class="h-6 w-32 rounded bg-[var(--pyq-paper-border)]/50"></div>
-            </div>
-            <div class="space-y-2">
-              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
-              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
-              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
-              <div class="h-12 w-full rounded-lg bg-[var(--pyq-paper-border)]/30"></div>
-            </div>
-          </div>
-        {/each}
-      </div>
+      <QuestionListSkeleton count={6} />
     {:else if error}
       <div class="rounded-2xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]">
         {error}

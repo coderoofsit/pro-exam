@@ -6,10 +6,11 @@
 	import type { UserDashboardData } from '$lib/api/userDashboard';
 	import type { PageData } from './$types';
 	import AddStudentsUploadSection from '$lib/components/AddStudentsUploadSection.svelte';
+	import { examSlugHref } from '$lib/exams/examPortalPaths';
 
 	let { data } = $props<{ data: PageData }>();
 
-	const basePath = '/teacher';
+	const basePath = '/institute';
 	const dashboardPromise = $derived(Promise.resolve(data.streamed.dashboard ?? null));
 	const FEATURED_EXAMS_COUNT = 7;
 
@@ -135,7 +136,7 @@
 				{/each}
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
-					<ExamBoxCard id={exam._id} name={getExamNameEn(exam)} image={(exam as any).image ?? null} subtitle={getExamSub(exam) ?? undefined} variant="dashboard" href={`/exams/${getExamSlug(exam)}?pyq=true`} />
+					<ExamBoxCard id={exam._id} name={getExamNameEn(exam)} image={(exam as any).image ?? null} subtitle={getExamSub(exam) ?? undefined} variant="dashboard" href={examSlugHref(`${basePath}/exams`, getExamSlug(exam), { pyq: true })} />
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 				{/each}
@@ -160,7 +161,7 @@
 				{/each}
 			{:then exams}
 				{#each exams.slice(0, FEATURED_EXAMS_COUNT) as exam (exam._id)}
-					<ExamBoxCard id={exam._id} name={getExamNameEn(exam)} image={(exam as any).image ?? null} subtitle={getExamSub(exam) ?? undefined} variant="dashboard" href={`/exams/${getExamSlug(exam)}`} />
+					<ExamBoxCard id={exam._id} name={getExamNameEn(exam)} image={(exam as any).image ?? null} subtitle={getExamSub(exam) ?? undefined} variant="dashboard" href={examSlugHref(`${basePath}/exams`, getExamSlug(exam))} />
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
 				{/each}

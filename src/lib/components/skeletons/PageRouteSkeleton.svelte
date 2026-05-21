@@ -41,8 +41,19 @@
 	{:else if variant === 'exam-questions'}
 		<ExamQuestionsPageSkeleton />
 	{:else if variant === 'exam-question-detail'}
-		<div class="mx-auto max-w-6xl px-2 sm:px-4 md:px-6 py-3 h-full min-h-[50vh]">
-			<ExamQuestionDetailSkeleton />
+		<div
+			class="student-exam-question-page mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col overflow-hidden bg-[var(--page-bg)] px-2 py-2.5 sm:px-4 md:px-6 max-sm:min-h-[calc(100dvh-72px)]"
+		>
+			<div class="shrink-0">
+				<Skeleton width="w-20" height="h-9" rounded="rounded-lg" />
+			</div>
+			<div class="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+				<div
+					class="flex h-full min-h-0 flex-col rounded-none border-x-0 border border-[var(--sh-exam-card-border)] bg-[var(--page-bg)] p-2 shadow-sm max-sm:border-x-0 sm:rounded-2xl sm:border-x sm:p-4"
+				>
+					<ExamQuestionDetailSkeleton />
+				</div>
+			</div>
 		</div>
 	{:else if variant === 'exam-grid'}
 		<div class="exam-page--student mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">

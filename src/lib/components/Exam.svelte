@@ -3,6 +3,7 @@
 	import ExamBoxCard from '$lib/components/ExamBoxCard.svelte';
 	import BackButton from '$lib/components/BackButton.svelte';
 	import { goto } from '$app/navigation';
+	import { examSlugHref } from '$lib/exams/examPortalPaths';
 
 let {
 	exams,
@@ -32,11 +33,8 @@ let {
 
 	function getExamHref(exam: any): string {
 		const slug = getExamSlug(exam);
-		if (basePath) {
-			const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-			return `${normalizedBasePath}/${encodeURIComponent(slug)}`;
-		}
-		return pyq ? `/exams/${slug}?pyq=true` : `/exams/${slug}`;
+		const examsBase = basePath ?? '/exams';
+		return examSlugHref(examsBase, slug, { pyq });
 	}
 
 	function getExamNameEn(exam: any): string {

@@ -52,7 +52,8 @@ export function variantFromRouteId(
 	if (routeId.includes('/test-attempt')) return null;
 	if (routeId.includes('/tests/analysis')) return null;
 
-	if (routeId.includes('/subscription')) return 'subscription';
+	/* Subscription: static chrome + partial skeletons in +page.svelte */
+	if (routeId.includes('/subscription')) return null;
 
 	if (
 		routeId === '/student/profile/create' ||
@@ -95,14 +96,16 @@ export function variantFromRouteId(
 	// PYQ + own-tests: order matters — `/tests/own` hub has no route overlay (sync load);
 	// `[examSlug]` uses own-test-syllabus, not PYQ exam-grid.
 	if (routeId.includes('/tests/pyq/')) {
-		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId))
-			return examQuestionsFromParams(params);
+		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId)) {
+			return params.has('questionId') ? 'exam-question-detail' : null;
+		}
 		if (/\/tests\/pyq\/\[examSlug\]$/.test(routeId)) return 'pyq-exam-papers';
 	}
 	if (/\/(student|teacher|institute)\/tests\/pyq$/.test(routeId)) return 'exam-grid';
 
 	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+\/chapter\//.test(routeId)) return 'question-list';
-	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+/.test(routeId)) return 'own-test-syllabus';
+	/* Own exam builder: back + syllabus skeleton live in +page.svelte (layout stream) */
+	if (/\/(student|teacher|institute)\/tests\/own\/\[examSlug\]$/.test(routeId)) return null;
 	/* Own-tests hub: exams load in +page.server (no streamed shell) — no route overlay */
 	if (/\/(student|teacher|institute)\/tests\/own$/.test(routeId)) return null;
 
@@ -172,7 +175,7 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 	if (/\/student\/dashboard\/?$/.test(path)) return 'student-dashboard';
 	if (/\/dashboard\/?$/.test(path)) return 'portal-dashboard';
 
-	if (/\/subscription/.test(path)) return 'subscription';
+	if (/\/subscription/.test(path)) return null;
 
 	if (isProfileCreatePath(path)) return null;
 
@@ -204,12 +207,14 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 
 	// PYQ before `/tests/own*` — during navigations pathname can briefly lag; merge layer also
 	// reconciles own↔pyq when `route.id` and pathname disagree.
-	if (/\/tests\/pyq\/[^/]+\/[^/]+$/.test(path)) return examQuestionsFromParams(params);
+	if (/\/tests\/pyq\/[^/]+\/[^/]+$/.test(path)) {
+		return params.has('questionId') ? 'exam-question-detail' : null;
+	}
 	if (/\/tests\/pyq\/[^/]+$/.test(path)) return 'pyq-exam-papers';
 	if (/\/tests\/pyq\/?$/.test(path)) return 'exam-grid';
 
 	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return 'question-list';
-	if (/\/tests\/own\/[^/]+/.test(path)) return 'own-test-syllabus';
+	if (/\/tests\/own\/[^/]+\/?$/.test(path) && !/\/tests\/own\/[^/]+\/chapter\//.test(path)) return null;
 	/* Own-tests hub: no exam-grid overlay (data ready when page renders) */
 	if (/\/tests\/own\/?$/.test(path)) return null;
 

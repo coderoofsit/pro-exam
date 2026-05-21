@@ -350,7 +350,9 @@ type MobileNavItem = {
   const isDark = $derived($themeStore === "dark");
   const isAutoCollapseRoute = $derived(
     /^\/student\/tests\/own\/[^/]+/.test(page.url.pathname) ||
-    (/^\/exams/.test(page.url.pathname) && page.url.searchParams.get("view") === "chapters")
+    (/^\/exams/.test(page.url.pathname) && page.url.searchParams.get("view") === "chapters") ||
+    (/^\/(student|teacher|institute)\/exams\/[^/]+/.test(page.url.pathname) &&
+      (page.url.searchParams.get("view") === "chapters" || /\/chapters\/?$/.test(page.url.pathname)))
   );
   const isCollapsed = $derived(sidebarCollapsed);
 

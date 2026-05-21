@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import BackButton from '$lib/components/BackButton.svelte';
+  import Button from '$lib/components/Button.svelte';
   import {
     BATCH_TEST_ATTEMPT_STORAGE_KEY,
     createTestAttempt,
@@ -449,22 +450,22 @@ async function viewPaper(paper: PaperItem) {
                   </div>
                 </div>
               <div
-  class="flex w-full shrink-0 items-center justify-center gap-1.5 px-2 py-2 sm:w-auto sm:justify-end sm:px-2 sm:py-2 sm:pl-0"
->
-  <!-- View Paper Button -->
-  <button
-    type="button"
-    class="h-8 min-w-0 flex-1 justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] sm:min-w-[7.25rem] sm:flex-none"
-    disabled={startingPaperId !== null || viewingAnalysisId !== null || viewingPaperId !== null}
-    onclick={() => void viewPaper(paper)}
-  >
-    {#if viewingPaperId === paper._id}
-      <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
-      Opening...
-    {:else}
-      {isReadOnly ? 'View Test' : 'View Paper'}
-    {/if}
-  </button>
+                class="flex w-full shrink-0 items-center justify-start gap-1.5 px-3 pb-3 pt-0 sm:w-auto sm:justify-end sm:px-2 sm:py-2 sm:pl-0"
+              >
+                <Button
+                  type="button"
+                  tone="pyq"
+                  className="h-8 min-h-8 w-auto min-w-[7.25rem] shrink-0 justify-center px-3"
+                  disabled={startingPaperId !== null || viewingAnalysisId !== null || viewingPaperId !== null}
+                  onClick={() => void viewPaper(paper)}
+                >
+                  {#if viewingPaperId === paper._id}
+                    <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>
+                    Opening...
+                  {:else}
+                    {isReadOnly ? 'View Test' : 'View Paper'}
+                  {/if}
+                </Button>
 
   {#if !isReadOnly}
     {#if !(paper.testAttemptedId ?? '').trim()}

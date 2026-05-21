@@ -4,6 +4,7 @@
 	import type { Exam } from '$lib/api/exams';
 	import { preloadData } from '$app/navigation';
 	import type { UserDashboardData } from '$lib/api/userDashboard';
+	import { examSlugHref } from '$lib/exams/examPortalPaths';
 
 	interface StreamedData {
 		exams: Promise<Exam[]>;
@@ -104,7 +105,7 @@
 						image={(exam as any).image ?? null}
 						subtitle={getExamSub(exam) ?? undefined}
 						variant="dashboard"
-						href={`/exams/${getExamSlug(exam)}?pyq=true`}
+						href={examSlugHref(`${basePath}/exams`, getExamSlug(exam), { pyq: true })}
 					/>
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>
@@ -139,7 +140,7 @@
 						image={(exam as any).image ?? null}
 						subtitle={getExamSub(exam) ?? undefined}
 						variant="dashboard"
-						href={`/exams/${getExamSlug(exam)}`}
+						href={examSlugHref(`${basePath}/exams`, getExamSlug(exam))}
 					/>
 				{:else}
 					<p class="col-span-full mt-4 text-sm text-[var(--page-text-muted)]">No exams available yet.</p>

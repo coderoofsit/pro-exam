@@ -69,14 +69,6 @@
 							<div class="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
 								<Skeleton width="w-full" height="h-3.5 sm:h-4" />
 								<Skeleton width="w-[94%]" height="h-3.5 sm:h-4" />
-								{#if i === 1 || i === 3}
-									<Skeleton
-										width="w-full"
-										height="h-16 sm:h-28"
-										rounded="rounded-lg"
-										className="mt-1.5 max-w-md sm:mt-2.5"
-									/>
-								{/if}
 								<Skeleton width="w-4/5" height="h-3.5 sm:h-4" />
 							</div>
 						</div>

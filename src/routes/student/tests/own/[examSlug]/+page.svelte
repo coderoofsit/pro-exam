@@ -52,15 +52,38 @@
 
   const isStudent = $derived(basePath === '/student');
 
-  // Handle streamed data
+  // Streamed topics from layout — skeleton only below Back (no route overlay)
   let topicsResponse = $state<any>(null);
   let isLoading = $state(true);
+  let settledTopicsPromise = $state<Promise<unknown> | null>(null);
 
   $effect(() => {
-    void data.streamed.topicsResponse.then((res) => {
-      topicsResponse = res;
+    const topicsPromise = data.streamed?.topicsResponse;
+    if (!topicsPromise) {
       isLoading = false;
-    });
+      return;
+    }
+    if (settledTopicsPromise === topicsPromise) return;
+
+    let cancelled = false;
+    if (topicsResponse == null) isLoading = true;
+
+    void topicsPromise
+      .then((res) => {
+        if (cancelled) return;
+        topicsResponse = res;
+        settledTopicsPromise = topicsPromise;
+        isLoading = false;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        settledTopicsPromise = topicsPromise;
+        isLoading = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   const rawSubjects = $derived(topicsResponse?.data?.data ?? []);

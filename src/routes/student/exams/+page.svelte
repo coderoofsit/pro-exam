@@ -31,13 +31,6 @@ let {
 
 	const currentPage = $derived(data.currentPage);
 	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');
-	const examBasePath = $derived(
-		basePath === '/student/exams' || 
-		basePath === '/institute/exams' || 
-		basePath === '/teacher/exams' 
-			? undefined 
-			: basePath
-	);
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -91,7 +84,7 @@ let {
 		boardName="All"
 		pyq={isPyq}
 		hideBoardTitle={true}
-		basePath={examBasePath}
+		basePath={basePath}
 		showBackButton={false}
 		pageClass="student-exams"
 	/>
