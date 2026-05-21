@@ -92,8 +92,8 @@ export function variantFromRouteId(
 		return 'batch-cards';
 	}
 
-	// PYQ + own-tests: order matters — own hub is an exam *card* grid (same skeleton as PYQ hub),
-	// not the OwnTestSyllabus builder used under `/tests/own/[examSlug]`.
+	// PYQ + own-tests: order matters — `/tests/own` hub has no route overlay (sync load);
+	// `[examSlug]` uses own-test-syllabus, not PYQ exam-grid.
 	if (routeId.includes('/tests/pyq/')) {
 		if (/\/tests\/pyq\/\[examSlug\]\/\[paperSlug\]$/.test(routeId))
 			return examQuestionsFromParams(params);
@@ -103,7 +103,8 @@ export function variantFromRouteId(
 
 	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+\/chapter\//.test(routeId)) return 'question-list';
 	if (/\/(student|teacher|institute)\/tests\/own\/[^/]+/.test(routeId)) return 'own-test-syllabus';
-	if (/\/(student|teacher|institute)\/tests\/own$/.test(routeId)) return 'exam-grid';
+	/* Own-tests hub: exams load in +page.server (no streamed shell) — no route overlay */
+	if (/\/(student|teacher|institute)\/tests\/own$/.test(routeId)) return null;
 
 	if (routeId.includes('/tests/view')) return examQuestionsFromParams(params);
 
@@ -209,8 +210,8 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 
 	if (/\/tests\/own\/[^/]+\/chapter\//.test(path)) return 'question-list';
 	if (/\/tests\/own\/[^/]+/.test(path)) return 'own-test-syllabus';
-	// `/tests/own` + `?mode=manual|random` — exam card grid (modal or tiles), not syllabus skeleton
-	if (/\/tests\/own\/?$/.test(path)) return 'exam-grid';
+	/* Own-tests hub: no exam-grid overlay (data ready when page renders) */
+	if (/\/tests\/own\/?$/.test(path)) return null;
 
 	if (/\/tests\/view\/[^/]+\/?$/.test(path)) return examQuestionsFromParams(params);
 
