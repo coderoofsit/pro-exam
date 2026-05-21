@@ -7,6 +7,8 @@
     getPageSkeletonVariant,
     shouldShowRouteSkeleton,
     shouldSuppressBatchRouteOverlay,
+    shouldSuppressOwnTestsHubOverlay,
+    shouldSuppressOwnTestChapterOverlay,
   } from "$lib/skeletons/routeVariant";
   import { Notification } from "$lib/components/Notification";
   import { authStore, type AuthUser } from "$lib/stores/auth";
@@ -139,6 +141,8 @@ type MobileNavItem = {
   const showRouteSkeleton = $derived(
     browser &&
       !shouldSuppressBatchRouteOverlay(navigating.from?.url, routeSkeletonTarget.path) &&
+      !shouldSuppressOwnTestsHubOverlay(navigating.from?.url, routeSkeletonTarget.path) &&
+      !shouldSuppressOwnTestChapterOverlay(navigating.from?.url, routeSkeletonTarget.path) &&
       shouldShowRouteSkeleton(routeSkeletonVariant, {
         navigating: navigating.to !== null,
         isTestAttempt: isTestAttemptRoute,
@@ -1643,7 +1647,7 @@ type MobileNavItem = {
         <div
           class={isTestAttemptRoute
             ? "relative flex min-h-0 flex-1 flex-col"
-            : "relative min-h-0 p-0"}
+            : "relative min-h-full p-0"}
         >
           {#if showRouteSkeleton && routeSkeletonVariant}
             <div

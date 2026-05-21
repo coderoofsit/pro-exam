@@ -7,6 +7,7 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import ManagementTableSkeleton from '$lib/components/ManagementTableSkeleton.svelte';
 	import ConfirmPermanentRemoveModal from '$lib/components/ConfirmPermanentRemoveModal.svelte';
+	import AddStudentsUploadSection from '$lib/components/AddStudentsUploadSection.svelte';
 	import InstituteTeacherAddStudentsModal from '$lib/components/InstituteTeacherAddStudentsModal.svelte';
 	import InstituteUserViewDetailsModal from '$lib/components/InstituteUserViewDetailsModal.svelte';
 	import {
@@ -60,6 +61,9 @@
 
 	const entitySingular = $derived(variant === 'teachers' ? 'teacher' : 'student');
 	const entityPlural = $derived(variant === 'teachers' ? 'teachers' : 'students');
+	const importSectionTitle = $derived(
+		variant === 'teachers' ? 'Add teachers & students' : 'Add students'
+	);
 
 	$effect(() => {
 		if (typeof ssrAuthMissing !== 'boolean') return;
@@ -288,6 +292,15 @@
 			<div class="flex justify-center sm:justify-self-center"></div>
 			<div class="flex items-center justify-end gap-3 sm:justify-self-end"></div>
 		</header>
+
+		<AddStudentsUploadSection
+			sectionTitle={importSectionTitle}
+			importEndpoint="/api/v1/institute/import-users"
+			on:create={() => {
+				suppressListLoading = true;
+				void invalidateAll();
+			}}
+		/>
 
 		<div
 			class="mb-4 grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)_10rem] sm:items-center sm:gap-x-4"

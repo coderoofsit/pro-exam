@@ -11,7 +11,8 @@
     persistBatchAttemptSessionFromCreateResponse,
   } from "$lib/api/testAttempts";
   import { ATTEMPT_START_ERROR_KEY } from "$lib/student/testAttempt/loadAttemptFromSession";
-  import { onMount } from "svelte";
+  import type { GetTestUserFilterOptions } from "$lib/api/tests";
+  import { onMount, tick } from "svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -52,6 +53,9 @@
 
   let filtersOpen = $state(false);
   let searchDraft = $state("");
+  let searchInputEl = $state<HTMLInputElement | null>(null);
+  let cachedFilterOptions = $state<GetTestUserFilterOptions | null>(null);
+  let refocusSearchAfterNavigate = $state(false);
   const testsActionBtnClass =
     "student-tests-action-btn !h-9 !rounded-xl !px-3 !text-sm !font-normal !border-[var(--pyq-sort-btn-border)] !bg-[var(--pyq-sort-btn-bg)] !text-[var(--pyq-sort-btn-text)] !shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:!border-[var(--pyq-sort-btn-hover-border)] hover:!bg-[var(--pyq-sort-btn-hover-bg)] hover:!text-[var(--pyq-sort-btn-hover-text)] hover:!shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--page-link)_30%,transparent)] sm:!min-w-[7.25rem]";
 
@@ -75,7 +79,35 @@
     }
   });
 
-  const SEARCH_DEBOUNCE_MS = 350;
+  const SEARCH_DEBOUNCE_MS = 1000;
+
+  const urlFilterParams = $derived({
+    creatorUserId: page.url.searchParams.get("creatorUserId") ?? "",
+    examId: page.url.searchParams.get("examId") ?? "",
+    kind: page.url.searchParams.get("kind") ?? "",
+    status: page.url.searchParams.get("status") ?? "",
+  });
+
+  function focusSearchInput() {
+    const el = searchInputEl;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    const end = el.value.length;
+    el.setSelectionRange(end, end);
+  }
+
+  $effect(() => {
+    const p = data.streamed.testsData;
+    if (!p || typeof (p as Promise<unknown>).then !== "function") return;
+    void (p as Promise<{ filterOptions?: GetTestUserFilterOptions | null }>).then(
+      (testsData) => {
+        if (testsData?.filterOptions) cachedFilterOptions = testsData.filterOptions;
+        if (!refocusSearchAfterNavigate) return;
+        refocusSearchAfterNavigate = false;
+        void tick().then(() => focusSearchInput());
+      }
+    );
+  });
 
   async function navigateWithFilters(
     updates: Record<string, string | undefined>,
@@ -97,7 +129,13 @@
 
     const next = `${u.pathname}${u.search}`;
     const cur = `${page.url.pathname}${page.url.search}`;
-    if (next === cur) return;
+    if (next === cur) {
+      if (refocusSearchAfterNavigate) {
+        refocusSearchAfterNavigate = false;
+        void tick().then(() => focusSearchInput());
+      }
+      return;
+    }
 
     await goto(next, { keepFocus: true, noScroll: true, replaceState: true });
   }
@@ -109,6 +147,7 @@
     if (q.trim() === urlSearch.trim()) return;
 
     const t = setTimeout(() => {
+      refocusSearchAfterNavigate = true;
       void navigateWithFilters({ search: q.trim() }, q);
     }, SEARCH_DEBOUNCE_MS);
 
@@ -402,6 +441,40 @@
     </section>
 
     <section class="mt-3 min-w-0 sm:mt-4" aria-labelledby="your-tests-heading">
+      <div class="mb-3">
+        <div class="flex w-full flex-row items-center gap-2">
+          <input
+            type="search"
+            bind:this={searchInputEl}
+            bind:value={searchDraft}
+            placeholder="Search by name…"
+            aria-label="Search tests"
+            class="min-h-[2.25rem] min-w-0 w-full max-w-xl rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 py-2 text-sm text-[var(--pyq-sort-btn-text)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--pyq-header-text)] hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] focus:border-[var(--pyq-sort-btn-hover-border)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--page-link)_30%,transparent)]"
+          />
+          {#if cachedFilterOptions}
+            <button
+              type="button"
+              class="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] sm:w-auto sm:gap-2 sm:px-3"
+              aria-label="Filter tests"
+              onclick={() => (filtersOpen = !filtersOpen)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="hidden sm:inline">Filter</span>
+            </button>
+          {/if}
+        </div>
+
+        {#if filtersOpen && cachedFilterOptions}
+          <TestsFiltersDropdown
+            filterOptions={cachedFilterOptions}
+            creatorUserId={urlFilterParams.creatorUserId}
+            examId={urlFilterParams.examId}
+            kind={urlFilterParams.kind}
+            status={urlFilterParams.status}
+            {onFilterSelect}
+          />
+        {/if}
+      </div>
 
       {#await data.streamed.testsData}
         <div class="space-y-4">
@@ -423,7 +496,6 @@
       {:then testsData}
         {@const items = testsData.items ?? []}
         {@const error = testsData.error}
-        {@const filterOptions = testsData.filterOptions}
         {@const pagination = testsData.pagination}
         {@const currentPage = testsData.page ?? 1}
         {@const totalPages = pagination?.totalPages ?? 1}
@@ -463,40 +535,6 @@
             Sign in to load your tests. If you are signed in, refresh this page.
           </p>
         {:else}
-          {#if filterOptions}
-            <div class="mb-3">
-              <div class="flex w-full flex-row items-center gap-2">
-                <input
-                  type="search"
-                  bind:value={searchDraft}
-                  placeholder="Search by name…"
-                  aria-label="Search tests"
-                  class="min-h-[2.25rem] min-w-0 w-full max-w-xl rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] px-3 py-2 text-sm text-[var(--pyq-sort-btn-text)] outline-none ring-0 transition-colors duration-200 placeholder:text-[var(--pyq-header-text)] hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] focus:border-[var(--pyq-sort-btn-hover-border)] focus:ring-1 focus:ring-[color-mix(in_srgb,var(--page-link)_30%,transparent)]"
-                />
-                <button
-                  type="button"
-                  class="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--pyq-sort-btn-border)] bg-[var(--pyq-sort-btn-bg)] text-xs font-medium text-[var(--pyq-sort-btn-text)] transition-all duration-150 hover:border-[var(--pyq-sort-btn-hover-border)] hover:bg-[var(--pyq-sort-btn-hover-bg)] hover:text-[var(--pyq-sort-btn-hover-text)] sm:w-auto sm:gap-2 sm:px-3"
-                  aria-label="Filter tests"
-                  onclick={() => (filtersOpen = !filtersOpen)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <span class="hidden sm:inline">Filter</span>
-                </button>
-              </div>
-
-               {#if filtersOpen}
-                <TestsFiltersDropdown
-                  {filterOptions}
-                  creatorUserId={testsData.creatorUserId ?? ""}
-                  examId={testsData.examId ?? ""}
-                  kind={testsData.kind ?? ""}
-                  status={testsData.status ?? ""}
-                  {onFilterSelect}
-                />
-               {/if}
-            </div>
-          {/if}
-
           {#if items.length === 0}
             <div class="flex flex-col items-center justify-center rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-6 py-16 text-center">
               <p class="text-sm font-semibold text-[var(--sh-section-title)]">No tests match</p>

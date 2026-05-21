@@ -23,7 +23,11 @@
 	let { variant }: { variant: PageSkeletonVariant } = $props();
 </script>
 
-<div class="page-route-skeleton min-h-[50vh]" aria-busy="true" aria-label="Loading page">
+<div
+	class="page-route-skeleton w-full {variant === 'pyq-exam-papers' ? 'min-h-[calc(100dvh-72px)]' : 'min-h-[50vh]'}"
+	aria-busy="true"
+	aria-label="Loading page"
+>
 	{#if variant === 'student-dashboard'}
 		<StudentDashboardSkeleton />
 	{:else if variant === 'portal-dashboard'}
@@ -79,7 +83,7 @@
 			<QuestionListSkeleton />
 		</div>
 	{:else if variant === 'pyq-exam-papers'}
-		<PyqExamPapersSkeleton />
+		<PyqExamPapersSkeleton yearRows={10} expandedPaperRows={3} />
 	{:else if variant === 'generic-page'}
 		<GeneralPageSkeleton />
 	{/if}

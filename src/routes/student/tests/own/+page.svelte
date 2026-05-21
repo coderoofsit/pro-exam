@@ -24,7 +24,11 @@
   const showChoiceModal = $derived(Boolean(!error && creationMode === null));
 
   function onSelect(mode: 'manual' | 'random') {
-    goto(`${basePath}/tests/own?mode=${mode}`, { noScroll: true });
+    goto(`${basePath}/tests/own?mode=${mode}`, {
+      noScroll: true,
+      replaceState: true,
+      keepFocus: true,
+    });
   }
 
   function onBack() {

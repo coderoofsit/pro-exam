@@ -8,6 +8,7 @@
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
+  import { page } from "$app/state";
 
   let {
     data,
@@ -30,29 +31,64 @@
   let isLoading = $state(true);
   let errorMessage = $state<string | null>(null);
 
+  const questionsLoadKey = $derived(
+    [
+      data.chapterSlug,
+      String(data.safePage),
+      page.url.searchParams.get("topic") ?? "",
+      page.url.searchParams.get("kind") ?? "",
+      page.url.searchParams.get("difficulty") ?? "",
+    ].join("|"),
+  );
+
+  let settledQuestions = $state<{ key: string; promise: Promise<unknown> } | null>(null);
+
   $effect(() => {
-    isLoading = true;
     errorMessage = data.message;
     const questionsPromise = data.streamed?.questionsRes;
+    const key = questionsLoadKey;
+
     if (!questionsPromise) {
       isLoading = false;
+      settledQuestions = null;
       if (!errorMessage) errorMessage = "Failed to load questions";
       questions = [];
       paginationMeta = null;
       return;
     }
-    void questionsPromise.then((res) => {
-      if (res) {
-         questions = res.data ?? [];
-         paginationMeta = { total: res.total, lastPage: res.lastPage, limit: res.limit };
-      } else {
-         errorMessage = 'Failed to load questions';
-      }
-      isLoading = false;
-    }).catch((err) => {
-      errorMessage = err.message || 'Failed to load questions';
-      isLoading = false;
-    });
+
+    if (settledQuestions?.key === key && settledQuestions.promise === questionsPromise) {
+      return;
+    }
+
+    let cancelled = false;
+    if (questions.length === 0) isLoading = true;
+
+    void questionsPromise
+      .then((res) => {
+        if (cancelled) return;
+        if (res) {
+          questions = res.data ?? [];
+          paginationMeta = { total: res.total, lastPage: res.lastPage, limit: res.limit };
+          errorMessage = null;
+        } else {
+          errorMessage = "Failed to load questions";
+          questions = [];
+          paginationMeta = null;
+        }
+        settledQuestions = { key, promise: questionsPromise };
+        isLoading = false;
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        errorMessage = err.message || "Failed to load questions";
+        settledQuestions = { key, promise: questionsPromise };
+        isLoading = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   $effect(() => {

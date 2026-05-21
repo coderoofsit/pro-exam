@@ -385,6 +385,38 @@ export function shouldSuppressBatchRouteOverlay(
 	return rootFrom !== null && rootFrom === rootTo;
 }
 
+/** Manual/Random on `/tests/own` only updates `?mode=` — no full-page route skeleton. */
+function isOwnTestsHubPath(path: string): boolean {
+	return /\/(student|teacher|institute)\/tests\/own$/.test(normalizePathOnly(path));
+}
+
+export function shouldSuppressOwnTestsHubOverlay(
+	fromUrl: URL | null | undefined,
+	toPathWithSearch: string,
+): boolean {
+	if (!fromUrl) return false;
+	const from = normalizePathOnly(fromUrl.pathname);
+	const to = parsePathAndSearch(toPathWithSearch).path;
+	return isOwnTestsHubPath(from) && isOwnTestsHubPath(to);
+}
+
+/** Pagination/filters on own-test chapter only change query — skip full-page route skeleton. */
+function isOwnTestChapterPath(path: string): boolean {
+	return /\/(student|teacher|institute)\/tests\/own\/[^/]+\/chapter\/[^/]+$/.test(
+		normalizePathOnly(path),
+	);
+}
+
+export function shouldSuppressOwnTestChapterOverlay(
+	fromUrl: URL | null | undefined,
+	toPathWithSearch: string,
+): boolean {
+	if (!fromUrl) return false;
+	const from = normalizePathOnly(fromUrl.pathname);
+	const to = parsePathAndSearch(toPathWithSearch).path;
+	return isOwnTestChapterPath(from) && isOwnTestChapterPath(to) && from === to;
+}
+
 export function shouldShowRouteSkeleton(
 	variant: PageSkeletonVariant | null,
 	opts: {

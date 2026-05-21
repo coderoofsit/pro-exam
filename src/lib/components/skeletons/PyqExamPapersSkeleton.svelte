@@ -1,16 +1,16 @@
 <script lang="ts">
 	import Skeleton from '$lib/components/Skeleton.svelte';
 
-	let { yearRows = 6, expandedPaperRows = 2 }: { yearRows?: number; expandedPaperRows?: number } = $props();
+	let { yearRows = 10, expandedPaperRows = 3 }: { yearRows?: number; expandedPaperRows?: number } = $props();
 </script>
 
 <!-- Mirrors `PYQAccordion.svelte` + `pyq-papers-page` wrapper from student/tests/pyq/[examSlug]/+page.svelte -->
 <div
-	class="pyq-papers-page min-h-full bg-[var(--pyq-page-bg)] font-sans"
+	class="pyq-papers-page flex min-h-[calc(100dvh-72px)] flex-col bg-[var(--pyq-page-bg)] font-sans"
 	aria-busy="true"
 	aria-label="Loading PYQ papers"
 >
-	<div class="mx-auto max-w-6xl px-4 py-4">
+	<div class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-4">
 		<!-- Toolbar -->
 		<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
 			<div class="flex flex-wrap items-center gap-3">
@@ -72,8 +72,8 @@
 			</div>
 		</div>
 
-		<!-- Accordion list -->
-		<div class="flex flex-col gap-2">
+		<!-- Accordion list — flex-1 so skeleton fills viewport below toolbar -->
+		<div class="flex flex-1 flex-col gap-2 pb-6">
 			{#each Array(yearRows) as _, y (y)}
 				<div
 					class="rounded-xl border overflow-hidden {y === 0

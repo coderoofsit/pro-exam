@@ -1763,7 +1763,8 @@ html[data-theme='dark'] .question-card:hover {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  /* Above sticky own-test rails / cards so scrolled content never paints on top */
+  z-index: 55;
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -1779,11 +1780,12 @@ html[data-theme='dark'] .question-card:hover {
   padding-right: max(50px, env(safe-area-inset-right));
   border-radius: 0;
   border: none;
-  border-top: 1px solid var(--sh-exam-card-border);
-  background: color-mix(in srgb, var(--sh-exam-card-bg) 92%, transparent);
+  /* Match app sidebar surface (opaque) so list content does not show through when scrolling */
+  border-top: 1px solid var(--sb-border-color);
+  background: linear-gradient(160deg, var(--sb-bg-from) 0%, var(--sb-bg-to) 100%);
   box-shadow: none;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 @media (min-width: 768px) {
@@ -1922,29 +1924,16 @@ html[data-theme='dark'] .question-card:hover {
   }
 }
 
-/* Own test bottom bar — theme-specific bar surface (student/teacher tests/own) */
-html[data-theme='dark'] .own-bottom-bar {
-  background: rgba(15, 23, 42, 0.62);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-html[data-theme='light'] .own-bottom-bar {
-  background: color-mix(in srgb, var(--page-link) 24%, #eef4ff);
-  border-top-color: color-mix(in srgb, var(--page-link) 36%, #e2e8f0);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
+/* Own test bottom bar — inherits sidebar gradient from base rule; no glass (avoids scroll bleed). */
 html[data-theme='light'] .own-bottom-bar .own-bottom-bar__label,
-html[data-theme='light'] .own-bottom-bar .own-bottom-bar__empty,
-html[data-theme='light'] .own-bottom-bar .own-bottom-bar__chip {
-  color: #000000;
+html[data-theme='light'] .own-bottom-bar .own-bottom-bar__empty {
+  color: var(--sb-nav-text);
 }
 
 html[data-theme='light'] .own-bottom-bar .own-bottom-bar__chip {
-  border-color: color-mix(in srgb, var(--page-link) 40%, #e2e8f0);
-  background: rgba(255, 255, 255, 0.75);
+  color: var(--sb-brand-name-color);
+  border-color: var(--sb-border-color);
+  background: color-mix(in srgb, var(--sb-bg-from) 72%, var(--sb-nav-hover-bg));
 }
 
 /* Next: use global .btn-cta-subscription on the button (OwnTestChaptersPanel + own exam page) */

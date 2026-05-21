@@ -89,6 +89,9 @@
 				selectedStudentIds = [];
 			}
 			studentsLastPage = 1;
+			if (!res.success) {
+				notifyError(res.message || 'Failed to load students.');
+			}
 		} else {
 			studentsLastPage = payload.lastPage ?? 1;
 			const chunk = (payload.data ?? []) as Row[];
@@ -153,22 +156,26 @@
 	async function handleContinue() {
 		if (!teacherId || selectedStudentIds.length === 0 || continueSubmitting) return;
 		continueSubmitting = true;
-		const res = await createInstituteTeacherStudentRelations({
-			teacherId,
-			add: selectedStudentIds.slice(),
-			token: get(authStore).token,
-			fetchFn: fetch
-		});
-		continueSubmitting = false;
+		try {
+			const res = await createInstituteTeacherStudentRelations({
+				teacherId,
+				add: selectedStudentIds.slice(),
+				token: get(authStore).token,
+				fetchFn: fetch
+			});
 
-		if (res.success) {
-			notifySuccess(res.message || 'Students linked successfully.');
-			onRelationsSaved?.();
-		} else {
-			notifyError(res.message || 'Could not link students.');
+			if (res.success) {
+				notifySuccess(res.message || 'Students linked successfully.');
+				onRelationsSaved?.();
+				queueMicrotask(() => onClose());
+			} else {
+				notifyError(res.message || 'Could not link students.');
+			}
+		} catch {
+			notifyError('Could not link students. Please try again.');
+		} finally {
+			continueSubmitting = false;
 		}
-
-		queueMicrotask(() => onClose());
 	}
 </script>
 

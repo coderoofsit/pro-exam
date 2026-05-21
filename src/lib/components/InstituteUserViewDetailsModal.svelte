@@ -8,6 +8,7 @@
 		type UserViewDetailsRole,
 		type UserViewDetailsTestEntry
 	} from '$lib/api/userViewDetails';
+	import { notifyError } from '$lib/notifications';
 	import { authStore } from '$lib/stores/auth';
 
 	let {
@@ -73,6 +74,7 @@
 			const payload = unwrapUserViewDetails(res);
 			if (!payload) {
 				error = res.message || 'Failed to load user details';
+				notifyError(error);
 				return;
 			}
 			details = payload;
