@@ -21,6 +21,7 @@ import { tick } from 'svelte';
     normalizeViewTestQuestions,
     parseViewTestPayload,
   } from '$lib/api/tests';
+  import { notifyError, notifySuccess } from '$lib/notifications';
 
   let {
     data,
@@ -333,6 +334,14 @@ import { tick } from 'svelte';
       .join(' ');
   }
 
+  function showToast(msg: string, type: 'success' | 'error' = 'success') {
+    if (type === 'error') {
+      notifyError(msg);
+    } else {
+      notifySuccess(msg);
+    }
+  }
+
   function startEdit(q: Record<string, any>) {
     editingQuestionId = String(q?._id ?? '');
     saveError = null;
@@ -387,6 +396,7 @@ import { tick } from 'svelte';
       updateFn(url);
     } catch (err: any) {
       saveError = err.message || 'Failed to upload image';
+      showToast(saveError, 'error');
     } finally {
       isUploadingImage = false;
       input.value = '';
@@ -462,8 +472,10 @@ import { tick } from 'svelte';
 
       questions = next;
       editingQuestionId = null;
+      showToast('Question updated successfully.');
     } catch (e) {
       saveError = e instanceof Error ? e.message : 'Could not save question changes.';
+      showToast(saveError, 'error');
     }
   }
 
@@ -485,13 +497,15 @@ import { tick } from 'svelte';
   }
 
   async function toggleApprove(questionId: string, currentApprove: boolean) {
+    const nextApprove = !currentApprove;
     try {
-      await updateQuestionApproveStatus(questionId, !currentApprove);
+      await updateQuestionApproveStatus(questionId, nextApprove);
       questions = questions.map((q) =>
-        String(q._id) === questionId ? { ...q, approve: !currentApprove } : q
+        String(q._id) === questionId ? { ...q, approve: nextApprove } : q
       );
-    } catch {
-      // silent
+      showToast(nextApprove ? 'Question approved.' : 'Question unapproved.');
+    } catch (e: any) {
+      showToast(e?.message || 'Failed to update approval status.', 'error');
     }
   }
 
@@ -523,9 +537,11 @@ import { tick } from 'svelte';
         message: reportMessage
       });
       reportFeedback = { type: 'success', message: 'Report submitted successfully.' };
+      showToast(reportFeedback.message);
       closeReportModal();
     } catch (e: any) {
       reportFeedback = { type: 'error', message: e?.message || 'Failed to submit report.' };
+      showToast(reportFeedback.message, 'error');
     } finally {
       isSubmittingReport = false;
     }

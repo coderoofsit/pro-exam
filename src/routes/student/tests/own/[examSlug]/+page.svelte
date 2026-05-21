@@ -12,6 +12,7 @@
     type CreateManualCustomTestBody
   } from '$lib/api/tests';
   import { createTestAttempt, persistBatchAttemptSessionFromCreateResponse } from '$lib/api/testAttempts';
+  import { notifyError, notifySuccess } from '$lib/notifications';
   import { goto } from '$app/navigation';
   import BackButton from '$lib/components/BackButton.svelte';
   import { browser } from '$app/environment';
@@ -484,6 +485,17 @@
     return out;
   });
 
+  /** Toast + inline error for create-test API only (manual & random). */
+  function setCreateTestError(message: string) {
+    createTestError = message;
+    notifyError(message);
+  }
+
+  function notifyCreateTestSuccess(message?: string | null) {
+    const modeLabel = distMode === 'random' ? 'Random' : 'Manual';
+    notifySuccess(message?.trim() || `${modeLabel} test created successfully.`);
+  }
+
   function finishManualCreateSuccess(newTestId: string) {
     createdTestId = newTestId;
     successStartError = null;
@@ -505,7 +517,7 @@
     manualBgCreatedTestId = null;
     const payload = buildManualCreatePayload();
     if (!payload) {
-      createTestError = 'Please select at least one question before continuing.';
+      setCreateTestError('Please select at least one question before continuing.');
       return;
     }
 
@@ -535,7 +547,7 @@
     const examId = (pendingSnapshot?.examId || examIdFromPage)?.trim();
 
     if (!boardId || !examId) {
-      createTestError = 'Missing exam or board information.';
+      setCreateTestError('Missing exam or board information.');
       manualBgCreatePending = false;
       return;
     }
@@ -598,18 +610,19 @@
 
         if (gen !== manualBgCreateRequestGen) return;
         if (!res.success) {
-          createTestError = res.message;
+          setCreateTestError(res.message || 'Failed to create test.');
           return;
         }
         const newTestId = extractCreatedTestIdFromCreateTestResponse(res.data);
         if (!newTestId) {
-          createTestError = 'Test created but ID not found.';
+          setCreateTestError('Test created but ID not found.');
           return;
         }
         manualBgCreatedTestId = newTestId;
+        notifyCreateTestSuccess(res.message);
       } catch (e) {
         if (gen !== manualBgCreateRequestGen) return;
-        createTestError = e instanceof Error ? e.message : 'Something went wrong';
+        setCreateTestError(e instanceof Error ? e.message : 'Something went wrong');
       } finally {
         if (gen === manualBgCreateRequestGen) {
           manualBgCreatePending = false;

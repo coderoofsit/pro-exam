@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { importUsersFile } from '$lib/api/auth';
+  import { notifyError, notifySuccess } from '$lib/notifications';
 
   type Props = {
     /** Main label on the card and modal title */
@@ -37,12 +38,15 @@
 
   function setFile(file: File) {
     if (!isValidFile(file)) {
-      errorMessage = 'Only .xlsx, .xls, .csv, or .json files are allowed.';
+      const msg = 'Only .xlsx, .xls, .csv, or .json files are allowed.';
+      errorMessage = msg;
       selectedFile = null;
+      notifyError(msg);
       return;
     }
 
     errorMessage = '';
+    successMessage = '';
     selectedFile = file;
   }
 
@@ -89,7 +93,9 @@
 
   async function onCreate() {
     if (!selectedFile) {
-      errorMessage = 'Please select a file before creating.';
+      const msg = 'Please select a file before creating.';
+      errorMessage = msg;
+      notifyError(msg);
       return;
     }
 
@@ -99,17 +105,34 @@
     try {
       const response = await importUsersFile({ file: selectedFile, endpoint: importEndpoint });
       if (!response.success) {
-        errorMessage = response.message || 'Failed to import users.';
+        const msg = response.message || 'Failed to import users.';
+        errorMessage = msg;
+        notifyError(msg);
         return;
       }
 
-      successMessage = 'Users imported successfully.';
+      const body = response.data as { success?: boolean; message?: string } | null | undefined;
+      if (body?.success === false) {
+        const msg = body.message || 'Failed to import users.';
+        errorMessage = msg;
+        notifyError(msg);
+        return;
+      }
+
+      const msg =
+        body?.message?.trim() ||
+        response.message?.trim() ||
+        'Students imported successfully.';
+      successMessage = msg;
+      notifySuccess(msg);
       dispatch('create', { file: selectedFile });
       modalOpen = false;
       dragActive = false;
       clearSelectedFile();
     } catch {
-      errorMessage = 'Unable to upload file. Please try again.';
+      const msg = 'Unable to upload file. Please try again.';
+      errorMessage = msg;
+      notifyError(msg);
     } finally {
       submitting = false;
     }

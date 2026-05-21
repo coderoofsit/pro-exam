@@ -33,6 +33,7 @@
 		};
 	}
 	import { createReport, type ReportReason } from "$lib/api/reports";
+	import { notifyError, notifySuccess } from "$lib/notifications";
 	import BackButton from "$lib/components/BackButton.svelte";
 	import Pagination from "$lib/components/Pagination.svelte";
 	import ImageLightbox from "$lib/components/ImageLightbox.svelte";
@@ -72,6 +73,33 @@
 	let draftOptionsImages = $state<Record<string, string[]>>({});
 	let draftOptionsRePhrasedImages = $state<Record<string, string[]>>({});
 	let isUploadingImage = $state(false);
+
+	/** INTEGER/Numeric answers: allow negatives and decimals (e.g. 3.14, -0.5). */
+	function sanitizeNumericAnswerInput(raw: string): string {
+		let s = raw.replace(/[^0-9.-]/g, '');
+		const negative = s.startsWith('-');
+		if (negative) s = s.slice(1);
+		s = s.replace(/-/g, '');
+		const dotIdx = s.indexOf('.');
+		if (dotIdx !== -1) {
+			s = s.slice(0, dotIdx + 1) + s.slice(dotIdx + 1).replace(/\./g, '');
+		}
+		return negative ? `-${s}` : s;
+	}
+
+	function parseNumericAnswerInput(raw: string): number | null {
+		const s = sanitizeNumericAnswerInput(raw.trim());
+		if (!s || s === '-' || s === '.' || s === '-.') return null;
+		const n = Number(s);
+		return Number.isFinite(n) ? n : null;
+	}
+
+	function numericAnswersMatch(user: number | null, expected: unknown): boolean {
+		if (user === null || expected === null || expected === undefined || expected === '') return false;
+		const exp = Number(expected);
+		if (!Number.isFinite(exp)) return false;
+		return user === exp || Math.abs(user - exp) < 1e-9;
+	}
 
 	async function handleImageUpload(e: Event, updateFn: (url: string) => void) {
 		const input = e.target as HTMLInputElement;
@@ -117,14 +145,12 @@
 		isEditing = true;
 	}
 
-	// ── toast ──────────────────────────────────────────────────────────────
-	let toastMsg = $state<string | null>(null);
-	let toastType = $state<"success" | "error">("success");
-	let toastTimer: ReturnType<typeof setTimeout> | null = null;
 	function showToast(msg: string, type: "success" | "error" = "success") {
-		if (toastTimer) clearTimeout(toastTimer);
-		toastMsg = msg; toastType = type;
-		toastTimer = setTimeout(() => { toastMsg = null; }, 3000);
+		if (type === "error") {
+			notifyError(msg);
+		} else {
+			notifySuccess(msg);
+		}
 	}
 
 	// ── report ─────────────────────────────────────────────────────────────
@@ -1565,11 +1591,13 @@
 													</label>
 													<input
 														type="number"
+														step="any"
+														inputmode="decimal"
 														id="correct_integer"
 														name="correct_integer"
 														value={qCorrect?.integer ?? ''}
 														class="w-full max-w-xs rounded-lg border border-[var(--page-card-border)] bg-[var(--page-bg)] px-3 py-2 text-sm text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-1 focus:ring-[var(--page-link)] transition"
-														placeholder="Enter integer"
+														placeholder="Enter number (decimals allowed)"
 													/>
 												</div>
 											{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
@@ -1874,21 +1902,22 @@
 												class="block text-sm font-semibold text-[var(--page-text)] mb-3"
 												for="integerAnswer"
 											>
-												Enter your answer (Integer)
+												Enter your answer (numeric)
 											</label>
 											<input
 												type="text"
+												inputmode="decimal"
 												id="integerAnswer"
 												value={integerAnswer !== null ? String(integerAnswer) : ''}
 												disabled={isAnswerChecked}
 												oninput={(e) => {
 													const target = e.target as HTMLInputElement;
-													const value = target.value.replace(/[^0-9-]/g, '');
+													const value = sanitizeNumericAnswerInput(target.value);
 													target.value = value;
-													integerAnswer = value ? parseInt(value) : null;
+													integerAnswer = parseNumericAnswerInput(value);
 												}}
 												class="w-full max-w-md rounded-xl border border-[var(--page-card-border)] bg-[var(--page-bg)] px-4 py-3 text-[1.05rem] text-[var(--page-text)] focus:border-[var(--page-link)] focus:ring-2 focus:ring-[var(--page-link)]/20 transition disabled:opacity-60"
-												placeholder="Enter integer value"
+												placeholder="Enter number (decimals allowed)"
 											/>
 										</div>
 									{:else if (detailQuestion as any).kind === 'FILL_BLANK'}
@@ -1948,7 +1977,7 @@
 												{#if integerAnswer !== null}
 													<div class="mt-3 text-sm">
 														<span class="text-[var(--page-text-muted)]">Your answer:</span>
-														<span class="ml-2 font-semibold {integerAnswer === (detailQuestion as any).correct?.integer ? 'text-semantic-success' : 'text-semantic-error'}">
+														<span class="ml-2 font-semibold {numericAnswersMatch(integerAnswer, (detailQuestion as any).correct?.integer) ? 'text-semantic-success' : 'text-semantic-error'}">
 															{integerAnswer}
 														</span>
 													</div>
@@ -2126,21 +2155,6 @@
 		</main>
 	</div>
 </div>
-
-<!-- ── Toast notification ── -->
-{#if toastMsg}
-<div class="toast-wrap {toastType}" role="alert" aria-live="polite">
-	{#if toastType === "success"}
-	<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-	{:else}
-	<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-	{/if}
-	<span>{toastMsg}</span>
-	<button onclick={() => (toastMsg = null)} aria-label="Dismiss">
-		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-	</button>
-</div>
-{/if}
 
 <!-- ── Report Modal ── -->
 {#if reportModalOpen}

@@ -10,6 +10,7 @@
 		updateBatchAssignments,
 		type BatchTestItem
 	} from '$lib/api/batch';
+	import { showBatchError, showBatchSuccess } from '$lib/batch/notifyBatch';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import BatchDetailTableSkeleton from '$lib/components/skeletons/BatchDetailTableSkeleton.svelte';
 	import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
@@ -419,10 +420,12 @@
 				} else {
 					editTests = [];
 					editTestsError = res.message || 'Failed to load tests.';
+					showBatchError(editTestsError);
 				}
 				editTestsLoaded = true;
 			} catch {
 				editTestsError = 'Failed to load tests.';
+				showBatchError(editTestsError);
 				editTests = [];
 			} finally {
 				editTestsLoading = false;
@@ -569,6 +572,7 @@
 	async function onEditBatchStep1Continue() {
 		if (!isEditBatchReady()) {
 			editBatchError = 'Please fill all fields correctly.';
+			showBatchError(editBatchError);
 			return;
 		}
 		editBatchError = null;
@@ -590,8 +594,10 @@
 			const updateRes = await updateBatchDetails(batchId, patch, fetch);
 			if (!updateRes.success) {
 				editBatchError = updateRes.message || 'Could not update batch details.';
+				showBatchError(editBatchError);
 				return;
 			}
+			showBatchSuccess(updateRes.data?.message, 'Batch details updated.');
 		}
 		editBatchStep = 2;
 		editStep2Tab = 'tests';
@@ -601,14 +607,17 @@
 	async function onFinishEditBatch() {
 		if (!batchId) {
 			editBatchError = 'Batch id is missing.';
+			showBatchError(editBatchError);
 			return;
 		}
 		if (editSelectedTestIds.length === 0) {
 			editBatchError = 'Select at least one test.';
+			showBatchError(editBatchError);
 			return;
 		}
 		if (editSelectedStudentIds.length === 0) {
 			editBatchError = 'Select at least one student.';
+			showBatchError(editBatchError);
 			return;
 		}
 
@@ -635,14 +644,17 @@
 
 			if (!res.success) {
 				editBatchError = res.message || 'Failed to update batch.';
+				showBatchError(editBatchError);
 				return;
 			}
 
 			editBatchSuccess = res.data?.message || 'Batch updated successfully.';
+			showBatchSuccess(editBatchSuccess);
 			await invalidateAll();
 			closeEditBatchModal();
 		} catch {
 			editBatchError = 'Failed to update batch.';
+			showBatchError(editBatchError);
 		} finally {
 			editSubmitting = false;
 		}
@@ -802,6 +814,7 @@
 								selectedTeacherIds = [];
 								selectedStudentIds = [];
 								selectedTestIds = [];
+								showBatchSuccess(null, 'Selected items removed from the batch.');
 								const u = new URL(page.url);
 								u.searchParams.set('tab', 'teacher');
 								await goto(`${u.pathname}${u.search}`, {
@@ -813,6 +826,7 @@
 								return;
 							}
 							errorMessage = result?.data?.message || 'Failed to remove selected items.';
+							showBatchError(errorMessage);
 						};
 					}}
 					onsubmit={(e) => {

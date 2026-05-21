@@ -18,6 +18,7 @@
     updateBatchDetails,
     updateBatchAssignments
   } from '$lib/api/batch';
+  import { showBatchError, showBatchSuccess } from '$lib/batch/notifyBatch';
 
   let { data }: { data: PageData } = $props();
 
@@ -180,10 +181,12 @@
         } else {
           step2Tests = [];
           step2TestsError = res.message || 'Failed to load tests.';
+          showBatchError(step2TestsError);
         }
         step2TestsLoaded = true;
       } catch {
         step2TestsError = 'Failed to load tests.';
+        showBatchError(step2TestsError);
         step2Tests = [];
       } finally {
         step2TestsLoading = false;
@@ -384,14 +387,17 @@ step2Students = [...mergedStudents];
 	async function onFinishCreateBatch() {
 		if (!createdBatchId) {
 			createBatchError = 'Batch id is missing. Please save details again.';
+			showBatchError(createBatchError);
 			return;
 		}
 		if (selectedTestIds.length === 0) {
 			createBatchError = 'Select at least one test.';
+			showBatchError(createBatchError);
 			return;
 		}
 		if (selectedStudentIds.length === 0) {
 			createBatchError = 'Select at least one student.';
+			showBatchError(createBatchError);
 			return;
 		}
 
@@ -419,14 +425,17 @@ step2Students = [...mergedStudents];
 
 			if (!res.success) {
 				createBatchError = res.message || 'Failed to update batch.';
+				showBatchError(createBatchError);
 				return;
 			}
 
 			createBatchSuccess = res.data?.message || 'Batch updated successfully.';
+			showBatchSuccess(createBatchSuccess);
 			await invalidateAll();
 			closeCreateBatchModal();
 		} catch {
 			createBatchError = 'Failed to update batch.';
+			showBatchError(createBatchError);
 		} finally {
 			createBatchSubmitting = false;
 		}
@@ -444,6 +453,7 @@ step2Students = [...mergedStudents];
 	async function onCreateBatchClick() {
 		if (!isCreateBatchReady()) {
 			createBatchError = 'Please fill all fields correctly.';
+			showBatchError(createBatchError);
 			return;
 		}
 
@@ -475,8 +485,10 @@ step2Students = [...mergedStudents];
 					);
 					if (!updateRes.success) {
 						createBatchError = updateRes.message || 'Could not update batch details.';
+						showBatchError(createBatchError);
 						return;
 					}
+					showBatchSuccess(updateRes.data?.message, 'Batch details updated.');
 				}
 				createdBatchId = editingBatchId;
 				createBatchStep = 2;
@@ -506,6 +518,7 @@ step2Students = [...mergedStudents];
 
 			if (!res.success) {
 				createBatchError = res.message || 'Could not create batch.';
+				showBatchError(createBatchError);
 				return;
 			}
 
@@ -513,9 +526,11 @@ step2Students = [...mergedStudents];
 			createBatchStep = 2;
 			step2Tab = 'tests';
 			createBatchSuccess = res.data?.message || 'Batch created successfully.';
+			showBatchSuccess(createBatchSuccess);
 			prefetchStep2Data();
 		} catch {
 			createBatchError = 'Could not save batch details. Please try again.';
+			showBatchError(createBatchError);
 		} finally {
 			createBatchSubmitting = false;
 		}
