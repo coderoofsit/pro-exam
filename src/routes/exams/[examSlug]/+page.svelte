@@ -2,14 +2,11 @@
 	import { browser } from "$app/environment";
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
-	import { get } from "svelte/store";
 	import {
 		fetchGroupedChaptersByExamSlug,
 		type GroupedSubjectRow,
 	} from "$lib/api/chapters";
 	import { chaptersStore } from "$lib/stores/chapters";
-	import { authStore } from "$lib/stores/auth";
-	import type { PageData } from "./$types";
 	import {
 		buildChaptersBySubjectFromGrouped,
 		buildSubjectsFromGrouped,
@@ -21,6 +18,9 @@
 		examChapterHref,
 		resolveExamsBasePath,
 	} from "$lib/exams/examPortalPaths";
+	import type { PageData } from "./$types";
+
+	let { data }: { data: PageData } = $props();
 
 	type SubjectNavRow = {
 		_id: string;
@@ -41,23 +41,8 @@
 		groupOrder: number;
 	};
 
-	let { data }: { data: PageData } = $props();
-
+	/** No `+page.server.ts` here so client navigations do not fetch `__data.json` — only the grouped chapters API runs. */
 	const examSlug = $derived(page.params.examSlug ?? "");
-
-	function applyGroupedList(groupedList: GroupedSubjectRow[], slug: string) {
-		rawGrouped = groupedList;
-		if (groupedList.length === 0) {
-			subjects = [];
-			chaptersBySubjectSlug = {};
-			return;
-		}
-		const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
-		const subs = buildSubjectsFromGrouped(groupedList, bySubject);
-		chaptersBySubjectSlug = bySubject;
-		subjects = subs;
-		chaptersStore.setGroupedChapters(slug, groupedList);
-	}
 	const examsBasePath = $derived(resolveExamsBasePath(page.url.pathname));
 	const examsListFallback = $derived(
 		browser
@@ -70,32 +55,27 @@
 		return slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 	}
 
-	function initialGroupedState() {
-		if (!data.loaded || data.error || data.grouped.length === 0) {
-			return {
-				subjects: [] as SubjectNavRow[],
-				chaptersBySubjectSlug: {} as Record<string, ChapterCardRow[]>,
-				rawGrouped: [] as GroupedSubjectRow[],
-			};
-		}
-		const bySubject = buildChaptersBySubjectFromGrouped(data.grouped);
-		const subs = buildSubjectsFromGrouped(data.grouped, bySubject);
-		return {
-			subjects: subs,
-			chaptersBySubjectSlug: bySubject,
-			rawGrouped: data.grouped,
-		};
-	}
-
-	const seeded = initialGroupedState();
-	let subjects = $state<SubjectNavRow[]>(seeded.subjects);
-	let chaptersBySubjectSlug = $state<Record<string, ChapterCardRow[]>>(
-		seeded.chaptersBySubjectSlug,
-	);
-	let rawGrouped = $state<GroupedSubjectRow[]>(seeded.rawGrouped);
-	let chaptersLoading = $state(!data.loaded);
-	let chaptersError = $state<string | null>(data.error);
+	let subjects = $state<SubjectNavRow[]>([]);
+	let chaptersBySubjectSlug = $state<Record<string, ChapterCardRow[]>>({});
+	let rawGrouped = $state<GroupedSubjectRow[]>([]);
+	let chaptersLoading = $state(true);
+	let chaptersError = $state<string | null>(null);
 	let clientLoadSeq = 0;
+	let ssrApplied = $state(false);
+
+	function applyGroupedList(groupedList: GroupedSubjectRow[]) {
+		rawGrouped = groupedList;
+		if (groupedList.length === 0) {
+			subjects = [];
+			chaptersBySubjectSlug = {};
+			return;
+		}
+		const bySubject = buildChaptersBySubjectFromGrouped(groupedList);
+		const subs = buildSubjectsFromGrouped(groupedList, bySubject);
+		chaptersBySubjectSlug = bySubject;
+		subjects = subs;
+		chaptersStore.setGroupedChapters(examSlug, groupedList);
+	}
 
 	let selectedSubjectSlug = $state("");
 	let showChapters = $state(false);
@@ -122,32 +102,32 @@
 		const slug = examSlug;
 		if (!slug) return;
 
+		// SSR / refresh: use server load (httpOnly cookie auth) before client store/API
+		if (!ssrApplied && slug === (data.examSlug ?? slug)) {
+			ssrApplied = true;
+			if (data.error) {
+				chaptersError = data.error;
+				chaptersLoading = false;
+				return;
+			}
+			applyGroupedList(data.grouped ?? []);
+			chaptersLoading = false;
+			chaptersError = null;
+			return;
+		}
+
 		// Check store first to prevent redundant API calls on back navigation
 		if (chaptersStore.hasGroupedChapters(slug)) {
 			const groupedList = chaptersStore.getGroupedChapters(slug);
 			if (groupedList && groupedList.length > 0) {
-				applyGroupedList(groupedList, slug);
+				applyGroupedList(groupedList);
 				chaptersLoading = false;
 				chaptersError = null;
 				return;
 			}
 		}
 
-		// SSR / client navigation payload (cookie-authenticated on server)
-		if (data.examSlug === slug && data.loaded) {
-			if (data.error) {
-				chaptersError = data.error;
-				chaptersLoading = false;
-				return;
-			}
-			applyGroupedList(data.grouped, slug);
-			chaptersError = null;
-			chaptersLoading = false;
-			return;
-		}
-
-		// Wait for httpOnly session to hydrate into auth store before client fetch
-		const token = get(authStore).token;
+		const token = page.data.authToken ?? null;
 		if (!token) return;
 
 		const seq = ++clientLoadSeq;
@@ -162,8 +142,7 @@
 					throw new Error(res.message || "Failed to load chapters");
 				}
 				const groupedList = (res.data?.data ?? []) as GroupedSubjectRow[];
-				applyGroupedList(groupedList, slug);
-				chaptersError = null;
+				applyGroupedList(groupedList);
 				chaptersLoading = false;
 			} catch (e) {
 				if (seq !== clientLoadSeq) return;

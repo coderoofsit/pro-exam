@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ExamSlugPage from '../../../exams/[examSlug]/+page.svelte';
 
-	let { data } = $props();
+	const props = $props();
 </script>
 
-<ExamSlugPage {data} />
+<ExamSlugPage {...props} />

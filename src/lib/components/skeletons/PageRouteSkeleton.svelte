@@ -6,6 +6,7 @@
 	import ExamSubjectsSkeleton from '$lib/components/skeletons/ExamSubjectsSkeleton.svelte';
 	import ExamChaptersSkeleton from '$lib/components/skeletons/ExamChaptersSkeleton.svelte';
 	import ExamQuestionsPageSkeleton from '$lib/components/skeletons/ExamQuestionsPageSkeleton.svelte';
+	import ExamChapterQuestionsSkeleton from '$lib/components/skeletons/ExamChapterQuestionsSkeleton.svelte';
 	import ExamQuestionDetailSkeleton from '$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte';
 	import TestsListSkeleton from '$lib/components/skeletons/TestsListSkeleton.svelte';
 	import BatchCardsSkeleton from '$lib/components/skeletons/BatchCardsSkeleton.svelte';
@@ -38,6 +39,8 @@
 		</div>
 	{:else if variant === 'exam-chapters'}
 		<ExamChaptersSkeleton />
+	{:else if variant === 'exam-chapter-questions'}
+		<ExamChapterQuestionsSkeleton />
 	{:else if variant === 'exam-questions'}
 		<ExamQuestionsPageSkeleton />
 	{:else if variant === 'exam-question-detail'}

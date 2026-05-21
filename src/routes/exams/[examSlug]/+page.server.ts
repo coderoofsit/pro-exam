@@ -1,28 +1,13 @@
 import type { PageServerLoad } from './$types';
-import { fetchGroupedChaptersByExamSlug, type GroupedSubjectRow } from '$lib/api/chapters';
-import { AUTH_STORAGE_KEY } from '$lib/stores/auth';
+import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
+import {
+	fetchGroupedChaptersByExamSlug,
+	type GroupedSubjectRow
+} from '$lib/api/chapters';
 
-export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
+export const load: PageServerLoad = async ({ params, fetch, cookies }) => {
 	const examSlug = params.examSlug ?? '';
-	const token = cookies.get(AUTH_STORAGE_KEY) ?? null;
-
-	if (!examSlug) {
-		return {
-			examSlug,
-			grouped: [] as GroupedSubjectRow[],
-			error: 'Missing exam',
-			loaded: true
-		};
-	}
-
-	if (!token?.trim()) {
-		return {
-			examSlug,
-			grouped: [] as GroupedSubjectRow[],
-			error: null,
-			loaded: false
-		};
-	}
+	const token = getAuthTokenFromCookies(cookies) ?? null;
 
 	try {
 		const res = await fetchGroupedChaptersByExamSlug(examSlug, fetch, token);
@@ -30,24 +15,19 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 			return {
 				examSlug,
 				grouped: [] as GroupedSubjectRow[],
-				error: res.message || 'Failed to load chapters',
-				loaded: true
+				error: res.message || 'Failed to load chapters'
 			};
 		}
-
-		const grouped = (res.data?.data ?? []) as GroupedSubjectRow[];
 		return {
 			examSlug,
-			grouped,
-			error: null,
-			loaded: true
+			grouped: (res.data?.data ?? []) as GroupedSubjectRow[],
+			error: null as string | null
 		};
 	} catch (e) {
 		return {
 			examSlug,
 			grouped: [] as GroupedSubjectRow[],
-			error: e instanceof Error ? e.message : 'Failed to load chapters',
-			loaded: true
+			error: e instanceof Error ? e.message : 'Failed to load chapters'
 		};
 	}
 };

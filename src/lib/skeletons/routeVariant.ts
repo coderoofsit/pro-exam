@@ -4,6 +4,7 @@ export type PageSkeletonVariant =
 	| 'exam-subjects'
 	| 'exam-chapters'
 	| 'exam-questions'
+	| 'exam-chapter-questions'
 	| 'exam-question-detail'
 	| 'exam-grid'
 	| 'tests-list'
@@ -28,6 +29,30 @@ function parsePathAndSearch(pathWithSearch: string) {
 
 function examQuestionsFromParams(params: URLSearchParams): PageSkeletonVariant {
 	return params.has('questionId') ? 'exam-question-detail' : 'exam-questions';
+}
+
+/** `/exams/.../chapterId` (and portal copies) — list skeleton separate from generic question bank */
+function examChapterQuestionsFromParams(params: URLSearchParams): PageSkeletonVariant {
+	return params.has('questionId') ? 'exam-question-detail' : 'exam-chapter-questions';
+}
+
+function isExamChapterQuestionsRouteId(routeId: string): boolean {
+	return (
+		routeId === '/exams/[examSlug]/[chapterParam]' ||
+		routeId === '/student/exams/[examSlug]/[chapterParam]' ||
+		routeId === '/teacher/exams/[examSlug]/[chapterParam]' ||
+		routeId === '/institute/exams/[examSlug]/[chapterParam]'
+	);
+}
+
+function pathnameIsExamChapterQuestionList(path: string): boolean {
+	const p = path.replace(/\/$/, '') || '/';
+	if (/\/exams\/[^/]+\/(chapters|subject)(\/|$)/.test(p)) return false;
+	if (/\/(?:student|teacher|institute)\/exams\/[^/]+\/(chapters|subject)(\/|$)/.test(p)) return false;
+	return (
+		/^\/exams\/[^/]+\/[^/]+$/.test(p) ||
+		/^\/(?:student|teacher|institute)\/exams\/[^/]+\/[^/]+$/.test(p)
+	);
 }
 
 /** First-time profile onboarding — full-page form, not settings layout; no shell overlay. */
@@ -144,7 +169,7 @@ export function variantFromRouteId(
 	if (routeId.includes('/questions/[chapterParam]')) return examQuestionsFromParams(params);
 	if (routeId.endsWith('/questions')) return 'exam-questions';
 
-	if (routeId === '/exams/[examSlug]/[chapterParam]') return examQuestionsFromParams(params);
+	if (isExamChapterQuestionsRouteId(routeId)) return examChapterQuestionsFromParams(params);
 	// +server under chapter (not a user-facing page layout)
 	if (routeId.endsWith('/api')) return null;
 
@@ -245,7 +270,7 @@ function variantFromPathname(path: string, params: URLSearchParams): PageSkeleto
 
 	if (/\/exams\/[^/]+\/(chapters|subject)(\/|$)/.test(path)) return 'exam-chapters';
 
-	if (/\/exams\/[^/]+\/[^/]+/.test(path)) return examQuestionsFromParams(params);
+	if (pathnameIsExamChapterQuestionList(path)) return examChapterQuestionsFromParams(params);
 
 	if (/\/exams\/[^/]+\/?$/.test(path)) {
 		return params.get('view') === 'chapters' ? 'exam-chapters' : 'exam-subjects';

@@ -4,7 +4,7 @@
 	let { count = 6 }: { count?: number } = $props();
 </script>
 
-<!-- Mirrors `src/routes/exams/[examSlug]/[chapterParam]/+page.svelte` list header + question cards -->
+<!-- Generic question-bank list shell (e.g. `/questions`, tests view) — not exam chapter route -->
 <div
 	class="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--page-bg)] text-[var(--page-text)]"
 	aria-busy="true"
@@ -69,7 +69,7 @@
 							<div class="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
 								<Skeleton width="w-full" height="h-3.5 sm:h-4" />
 								<Skeleton width="w-[94%]" height="h-3.5 sm:h-4" />
-								<Skeleton width="w-4/5" height="h-3.5 sm:h-4" />
+								<Skeleton width="w-4/5" height="h-3.5 sm:h-4" className="hidden sm:block" />
 							</div>
 						</div>
 						<div class="mt-1.5 pl-0.5">

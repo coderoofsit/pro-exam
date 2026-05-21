@@ -9,7 +9,7 @@
 	import { page } from "$app/state";
 	import { questionStore } from "$lib/stores/question";
 	import { navigating } from "$app/state";
-	import ExamQuestionsPageSkeleton from "$lib/components/skeletons/ExamQuestionsPageSkeleton.svelte";
+	import ExamChapterQuestionsSkeleton from "$lib/components/skeletons/ExamChapterQuestionsSkeleton.svelte";
 	import ExamQuestionDetailSkeleton from "$lib/components/skeletons/ExamQuestionDetailSkeleton.svelte";
 
 	/** Mount above Sidebar’s route skeleton layer (children sit in an opacity-0 wrapper). */
@@ -844,7 +844,7 @@
 					<ExamQuestionDetailSkeleton />
 				</div>
 			{:else}
-				<ExamQuestionsPageSkeleton />
+				<ExamChapterQuestionsSkeleton />
 			{/if}
 		</div>
 	{/if}
