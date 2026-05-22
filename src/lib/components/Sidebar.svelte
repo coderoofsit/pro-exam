@@ -25,6 +25,7 @@
     type MembershipResponse,
     type SelectMembershipApiBody,
   } from "$lib/api/auth";
+  import { syncAuthSessionCookies } from "$lib/auth/syncSession";
   import {
     listenForegroundMessages,
     requestNotificationPermissionAndToken,
@@ -427,23 +428,6 @@ type MobileNavItem = {
     }
   }
 
-  async function syncAuthSessionCookies(
-    token: string,
-    role: Role | null,
-    fcmToken?: string | null,
-  ) {
-    try {
-      const response = await fetch("/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, role: role ?? "", fcmToken: fcmToken ?? "" }),
-      });
-      return response.ok;
-    } catch (error) {
-      console.error("[Sidebar] Failed to sync session cookies.", error);
-      return false;
-    }
-  }
 
   async function getFcmTokenFromFirebase(): Promise<string> {
     if (!browser) return "";
@@ -611,11 +595,13 @@ type MobileNavItem = {
         );
         if (requestId !== membershipSwitchRequestId) return;
 
-        const sessionSynced = await syncAuthSessionCookies(
-          root.data.token,
-          $authStore.role ?? role,
-          finalFcmToken,
-        );
+        const sessionSynced = await syncAuthSessionCookies({
+          token: root.data.token,
+          role: $authStore.role ?? role,
+          fcmToken: finalFcmToken,
+          ownedBy: normalizeOwnedId(root.data.ownedBy),
+          ownedRole: root.data.ownedRole?.trim() || null,
+        });
         if (!sessionSynced) {
           console.error(
             "[Sidebar] Failed to sync auth/fcm session cookies after membership switch.",

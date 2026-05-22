@@ -1,4 +1,5 @@
 import { BASE_URL } from '$lib/http';
+import { withOwnedQuery } from '$lib/api/authToken';
 import { apiRequest } from '../../http/api';
 
 export type BackendRole = 'student' | 'teacher' | 'admin' | 'institute';
@@ -341,7 +342,7 @@ export async function createMembershipProfile(params: {
     headers['Authorization'] = `Bearer ${params.token}`;
   }
 
-  const res = await fetch(`${BASE_URL}/api/v1/users/membership`, {
+  const res = await fetch(`${BASE_URL}${withOwnedQuery('/api/v1/users/membership')}`, {
     method: 'POST',
     headers,
     body: formData

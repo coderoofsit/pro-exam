@@ -1,6 +1,8 @@
 import { browser } from '$app/environment';
-import { get } from 'svelte/store';
+import { getRequestEvent } from '$app/server';
 import { getAuthTokenFromDocumentCookie } from '$lib/auth/clientCookieToken';
+import { AUTH_OWNED_BY_KEY, AUTH_OWNED_ROLE_KEY, getPersistedOwnedContext } from '$lib/stores/auth';
+import { get } from 'svelte/store';
 import { authStore } from '$lib/stores/auth';
 
 function normalizeBearer(raw: string | null | undefined): string | undefined {
@@ -31,14 +33,39 @@ export function setApiToken(token: string): void {
 
 export function clearApiToken(): void {
 	if (!browser) return;
-	// token is now cleared by auth store clear/logout and server logout endpoint
 }
 
-/** Append `ownedBy` / `ownedRole` query params when present in auth store. */
-export function withOwnedQuery(endpoint: string): string {
-	if (!browser) return endpoint;
+export type OwnedQueryContext = {
+	ownedBy?: string | null;
+	ownedRole?: string | null;
+};
 
-	const { ownedBy, ownedRole } = get(authStore);
+/** Resolve `ownedBy` / `ownedRole` from auth store (browser), localStorage, or httpOnly cookies (SSR). */
+export function resolveOwnedContext(): OwnedQueryContext {
+	if (browser) {
+		const state = get(authStore);
+		const fromStore = {
+			ownedBy: state.ownedBy?.trim() || null,
+			ownedRole: state.ownedRole?.trim() || null
+		};
+		if (fromStore.ownedBy || fromStore.ownedRole) return fromStore;
+		return getPersistedOwnedContext();
+	}
+
+	try {
+		const { cookies } = getRequestEvent();
+		return {
+			ownedBy: cookies.get(AUTH_OWNED_BY_KEY)?.trim() || null,
+			ownedRole: cookies.get(AUTH_OWNED_ROLE_KEY)?.trim() || null
+		};
+	} catch {
+		return { ownedBy: null, ownedRole: null };
+	}
+}
+
+/** Append `ownedBy` / `ownedRole` query params for every API call (GET, POST, etc.). */
+export function withOwnedQuery(endpoint: string, ctx?: OwnedQueryContext): string {
+	const { ownedBy, ownedRole } = ctx ?? resolveOwnedContext();
 	const ob = ownedBy?.trim();
 	const or = ownedRole?.trim();
 	if (!ob && !or) return endpoint;

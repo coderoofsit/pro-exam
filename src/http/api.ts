@@ -39,6 +39,11 @@ export const PUBLIC_API_BASE_URL = (
 	"https://test-exam-backend-yc8u.onrender.com"
 ).replace(/\/+$/, '');
 
+/** Full backend URL with `ownedBy` / `ownedRole` query params when available. */
+export function buildApiUrl(endpoint: string): string {
+	return `${PUBLIC_API_BASE_URL}${withOwnedQuery(endpoint)}`;
+}
+
 export async function apiRequest<T>({
 	endpoint,
 	method = 'GET',
@@ -66,7 +71,7 @@ export async function apiRequest<T>({
 			finalHeaders['Authorization'] = `Bearer ${bearer}`;
 		}
 
-		const response = await customFetch(`${PUBLIC_API_BASE_URL}${withOwnedQuery(endpoint)}`, {
+		const response = await customFetch(buildApiUrl(endpoint), {
 			method,
 			headers: finalHeaders,
 			cache: 'no-store',

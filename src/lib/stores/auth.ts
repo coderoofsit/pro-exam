@@ -52,8 +52,11 @@ export const AUTH_ROLE_STORAGE_KEY = "auth_role";
 /** Cookie key for FCM token mirrored by `/auth/session`. */
 export const FCM_TOKEN_STORAGE_KEY = "fcm_token";
 const AUTH_PROFILE_ID_KEY = "auth_profile_id";
-const OWNED_BY_KEY = "owned_by";
-const OWNED_ROLE_KEY = "owned_role";
+/** HttpOnly cookies mirrored by `/auth/session` for SSR API calls. */
+export const AUTH_OWNED_BY_KEY = "owned_by";
+export const AUTH_OWNED_ROLE_KEY = "owned_role";
+const OWNED_BY_KEY = AUTH_OWNED_BY_KEY;
+const OWNED_ROLE_KEY = AUTH_OWNED_ROLE_KEY;
 
 const initialState: AuthState = {
   users: [],
@@ -81,6 +84,14 @@ function readPersistedOwned(): { ownedBy: string | null; ownedRole: string | nul
     ownedBy: localStorage.getItem(OWNED_BY_KEY)?.trim() || null,
     ownedRole: localStorage.getItem(OWNED_ROLE_KEY)?.trim() || null,
   };
+}
+
+/** Browser-only fallback when auth store has not hydrated yet. */
+export function getPersistedOwnedContext(): {
+  ownedBy: string | null;
+  ownedRole: string | null;
+} {
+  return readPersistedOwned();
 }
 
 function mapLinkedProfile(

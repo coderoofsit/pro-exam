@@ -3,10 +3,12 @@
   import { goto } from "$app/navigation";
   import {
     googleLogin,
+    normalizeOwnedId,
     type BackendRole,
     type AccountType,
     type LoginResponse,
   } from "$lib/api/auth";
+  import { syncAuthSessionCookies } from "$lib/auth/syncSession";
   import { authStore } from "$lib/stores/auth";
 
   let {
@@ -79,12 +81,13 @@
       const users = loginResponse.data?.users ?? [];
       const token = loginResponse.data?.token ?? null;
       if (token) {
-        const sessionRes = await fetch("/auth/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, role: selected })
+        const sessionOk = await syncAuthSessionCookies({
+          token,
+          role: selected,
+          ownedBy: normalizeOwnedId(loginResponse.data?.ownedBy),
+          ownedRole: loginResponse.data?.ownedRole?.trim() || null,
         });
-        if (!sessionRes.ok) {
+        if (!sessionOk) {
           errorMessage = "Could not create login session.";
           return;
         }
