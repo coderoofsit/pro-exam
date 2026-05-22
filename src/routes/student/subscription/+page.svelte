@@ -1,5 +1,4 @@
 <script lang="ts">
-  import SubscriptionProfileSkeleton from '$lib/components/skeletons/SubscriptionProfileSkeleton.svelte';
   import SubscriptionLiveSkeleton from '$lib/components/skeletons/SubscriptionLiveSkeleton.svelte';
   import SubscriptionPlansSkeleton from '$lib/components/skeletons/SubscriptionPlansSkeleton.svelte';
   import SubscriptionPaymentHistorySkeleton from '$lib/components/skeletons/SubscriptionPaymentHistorySkeleton.svelte';
@@ -23,7 +22,14 @@
   import { openRazorpayCheckout } from '$lib/payments/razorpay';
   import { authStore } from '$lib/stores/auth';
 
-  let { data } = $props<{ data: { plans: SubscriptionPlan[]; streamed: { subscription: Promise<UserSubscriptionRecord | null> } } }>();
+  let { data } = $props<{
+    data: {
+      streamed: {
+        subscription: Promise<UserSubscriptionRecord | null>;
+        plans: Promise<SubscriptionPlan[]>;
+      };
+    };
+  }>();
 
   /** UTC ISO → calendar date in IST, e.g. 24 Aug 2026 (no time). */
   function formatUtcIsoToIstDate(iso: string | null | undefined): string {
@@ -69,6 +75,8 @@
   );
 
   let subscription = $state<UserSubscriptionRecord | null>(null);
+  /** False until streamed subscription resolves (skeleton on “Your subscription”). */
+  let subscriptionResolved = $state(false);
   let loadError = $state<string | null>(null);
   let loading = $state(false);
   let autoRenewBusy = $state(false);
@@ -77,14 +85,12 @@
   let needsAuth = $state(false);
 
   let transactions = $state<SubscriptionTransactionItem[]>([]);
-  const serverPlans = $derived(data.plans ?? []);
   let plans = $state<SubscriptionPlan[]>([]);
   let selectedPlanId = $state<string | null>(null);
   let checkoutBusy = $state(false);
   let checkoutError = $state<string | null>(null);
-  let plansLoading = $state(false);
+  let plansLoading = $state(true);
   let plansError = $state<string | null>(null);
-  let plansRequested = $state(false);
   /** Not loading until first hover / open prefetch. */
   let transactionsLoading = $state(false);
   let transactionsError = $state<string | null>(null);
@@ -100,12 +106,6 @@
   const hasProfilePhone = $derived(!!defaultProfile?.profilePhone?.trim());
   const trialUsed = $derived(!!defaultProfile?.subscription?.trialUsed);
   const visiblePlans = $derived(plans.filter((p) => !(p.isTrial && trialUsed)));
-
-  $effect(() => {
-    if (plans.length === 0 && serverPlans.length > 0) {
-      plans = [...serverPlans];
-    }
-  });
 
   $effect(() => {
     if (visiblePlans.length === 0 || !selectedPlanId) {
@@ -318,26 +318,48 @@
   }
 
   $effect(() => {
-    data.streamed.subscription.then((s:any) => {
-      subscription = s;
-    });
+    let cancelled = false;
+    void data.streamed.subscription
+      .then((s: UserSubscriptionRecord | null) => {
+        if (cancelled) return;
+        subscription = s;
+        loadError = null;
+        subscriptionResolved = true;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        subscription = null;
+        loadError = 'Could not load subscription';
+        subscriptionResolved = true;
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 
   $effect(() => {
-    if (!browser || plansRequested) return;
-    if (serverPlans.length > 0) {
-      plansRequested = true;
-      if (!selectedPlanId && plans.length > 0) selectedPlanId = plans[0]._id;
-      return;
-    }
-    const token = resolveApiToken();
-    if (!token) return;
-    plansRequested = true;
-    void loadPlans();
+    let cancelled = false;
+    void data.streamed.plans
+      .then((list: SubscriptionPlan[]) => {
+        if (cancelled) return;
+        plans = list;
+        plansLoading = false;
+        plansError = null;
+        if (!selectedPlanId && list.length > 0) selectedPlanId = list[0]._id;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        plans = [];
+        plansLoading = false;
+        plansError = 'Could not load plans';
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 
   $effect(() => {
-    if (!browser || !paymentHistoryOpen || transactionsPrefetchStarted) return;
+    if (!browser || !subscriptionResolved || !paymentHistoryOpen || transactionsPrefetchStarted) return;
     prefetchTransactions();
   });
 </script>
@@ -364,53 +386,37 @@
     </p>
   </header>
 
-  {#await data.streamed.subscription}
-    <SubscriptionProfileSkeleton />
-
+  {#if defaultProfile}
     <section
-      class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
-      aria-labelledby="sub-live-heading"
+      class="mb-8 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 sm:p-6"
+      aria-labelledby="sub-profile-heading"
     >
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <h2
-          id="sub-live-heading"
-          class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]"
-        >
-          Your subscription
-        </h2>
-      </div>
-      <SubscriptionLiveSkeleton />
+      <h2 id="sub-profile-heading" class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
+        Your profile
+      </h2>
+      <p class="mt-1 text-base font-semibold text-[var(--sh-section-title)]">
+        {defaultProfile.firstName}
+        {defaultProfile.lastName}
+      </p>
+      <p class="mt-2 text-sm text-[var(--sh-ai-sub)]">
+        Subscription status below is loaded live from your account.
+      </p>
     </section>
-  {:then currentSub}
-    {#if defaultProfile}
-      <section
-        class="mb-8 rounded-2xl border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] p-5 sm:p-6"
-        aria-labelledby="sub-profile-heading"
-      >
-        <h2 id="sub-profile-heading" class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-          Your profile
-        </h2>
-        <p class="mt-1 text-base font-semibold text-[var(--sh-section-title)]">
-          {defaultProfile.firstName}
-          {defaultProfile.lastName}
-        </p>
-        <p class="mt-2 text-sm text-[var(--sh-ai-sub)]">
-          Subscription status below is loaded live from your account.
-        </p>
-      </section>
-    {/if}
+  {/if}
 
-    <section
-      class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
-      aria-labelledby="sub-live-heading-loaded"
-    >
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <h2
-          id="sub-live-heading-loaded"
-          class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]"
-        >
-          Your subscription
-        </h2>
+  <section
+    class="mb-8 rounded-2xl border border-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-border))] bg-[var(--sh-exam-card-bg)] p-5 shadow-[var(--sh-exam-card-hover-shadow)] sm:p-6"
+    aria-labelledby="sub-live-heading"
+    aria-busy={!subscriptionResolved}
+  >
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <h2
+        id="sub-live-heading"
+        class="text-sm font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]"
+      >
+        Your subscription
+      </h2>
+      {#if subscriptionResolved}
         <button
           type="button"
           class="text-xs font-semibold text-[var(--page-link)] underline-offset-2 hover:underline"
@@ -419,10 +425,14 @@
         >
           Refresh
         </button>
-      </div>
+      {/if}
+    </div>
 
+    {#if !subscriptionResolved}
+      <SubscriptionLiveSkeleton />
+    {:else}
       {#if true}
-        {@const effectiveSub = subscription ?? currentSub}
+        {@const effectiveSub = subscription}
       {#if loadError}
         <p class="mt-4 text-sm text-[var(--pc-error-text)]" role="alert">{loadError}</p>
         <button
@@ -588,8 +598,8 @@
         </div>
       {/if}
       {/if}
-    </section>
-  {/await}
+    {/if}
+  </section>
 
   {#if !needsAuth}
     <section

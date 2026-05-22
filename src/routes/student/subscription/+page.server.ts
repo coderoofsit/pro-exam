@@ -4,15 +4,15 @@ import { fetchSubscriptionPlans, fetchUserSubscription, sortSubscriptionPlans } 
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get(AUTH_STORAGE_KEY) ?? null;
-	const plansRes = await fetchSubscriptionPlans(fetch, { token });
-	const plans = plansRes.success ? sortSubscriptionPlans(plansRes.data?.data ?? []) : [];
 
 	return {
-		plans,
 		streamed: {
 			subscription: fetchUserSubscription({ token, fetch })
-				.then(res => res.success ? (res.data?.data ?? null) : null)
-				.catch(() => null)
+				.then((res) => (res.success ? (res.data?.data ?? null) : null))
+				.catch(() => null),
+			plans: fetchSubscriptionPlans(fetch, { token })
+				.then((res) => (res.success ? sortSubscriptionPlans(res.data?.data ?? []) : []))
+				.catch(() => [])
 		}
 	};
 };
