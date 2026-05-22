@@ -519,7 +519,7 @@
     notifySuccess(message?.trim() || `${modeLabel} test created successfully.`);
   }
 
-  function finishManualCreateSuccess(newTestId: string) {
+  function finishCreateAndRedirect(newTestId: string) {
     createdTestId = newTestId;
     successStartError = null;
     if (browser) {
@@ -529,9 +529,12 @@
       manualSelectedIds = new Set();
       manualSelectedRows = [];
     }
+    testSettingsOpen = false;
     manualConfirmModalOpen = false;
+    distModalOpen = false;
     manualBgCreatedTestId = null;
-    successModalOpen = true;
+    successModalOpen = false;
+    void goto(`${basePath}/tests`);
   }
 
   function handleManualNext() {
@@ -643,6 +646,7 @@
         }
         manualBgCreatedTestId = newTestId;
         notifyCreateTestSuccess(res.message);
+        finishCreateAndRedirect(newTestId);
       } catch (e) {
         if (gen !== manualBgCreateRequestGen) return;
         setCreateTestError(e instanceof Error ? e.message : 'Something went wrong');
@@ -665,7 +669,7 @@
     }
     const tid = manualBgCreatedTestId?.trim();
     if (!tid) return;
-    finishManualCreateSuccess(tid);
+    finishCreateAndRedirect(tid);
   }
 
   function closeDistModal() {
@@ -1024,8 +1028,8 @@
       {/if}
 
       <div class="mt-6 flex justify-center">
-        <button type="button" class="h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50" onclick={handleManualConfirmOk}>
-          OK
+        <button type="button" class="h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50" onclick={handleManualConfirmOk} disabled={manualBgCreatePending}>
+          {manualBgCreatePending ? 'Creating…' : 'OK'}
         </button>
       </div>
     </div>
