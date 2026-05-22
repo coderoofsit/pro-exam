@@ -384,18 +384,18 @@ type MobileNavItem = {
       null,
   );
 
-  $effect(() => {
-    if (!defaultProfileUser) return;
-    if (activeReminderType) return; // Don't override if already showing
+  // $effect(() => {
+  //   if (!defaultProfileUser) return;
+  //   if (activeReminderType) return; // Don't override if already showing
 
-    if (defaultProfileUser.subscriptionExpired) {
-      activeReminderType = 'expired';
-    } else if (defaultProfileUser.subscriptionGoingToEnd) {
-      activeReminderType = 'goingToEnd';
-    } else if (defaultProfileUser.freeTrialNotification) {
-      activeReminderType = 'freeTrial';
-    }
-  });
+  //   if (defaultProfileUser.subscriptionExpired) {
+  //     activeReminderType = 'expired';
+  //   } else if (defaultProfileUser.subscriptionGoingToEnd) {
+  //     activeReminderType = 'goingToEnd';
+  //   } else if (defaultProfileUser.freeTrialNotification) {
+  //     activeReminderType = 'freeTrial';
+  //   }
+  // });
 
   function isActive(href: string): boolean {
     return (
