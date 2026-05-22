@@ -3,7 +3,8 @@
   import { goto } from "$app/navigation";
   import { authStore } from "$lib/stores/auth";
   import ProfileCreateForm from "$lib/components/profile/ProfileCreateForm.svelte";
-  import { createMembershipProfile } from "$lib/api/auth";
+  import { createMembershipProfile, normalizeOwnedId } from "$lib/api/auth";
+  import { syncAuthSessionCookies } from "$lib/auth/syncSession";
   import { getExamsClient } from "$lib/api/exams";
   import type { Exam } from "$lib/api/exams";
   import type { ProfileCreateSubmitPayload } from "$lib/components/profile/ProfileCreateForm.svelte";
@@ -75,13 +76,17 @@
       const apiUsers = membershipResponse?.data?.users ?? [];
       const token = membershipResponse?.data?.token ?? null;
 
+      const ownedBy = normalizeOwnedId(membershipResponse?.data?.ownedBy);
+      const ownedRole = membershipResponse?.data?.ownedRole?.trim() || null;
+
       if (token) {
-        const sessionRes = await fetch("/auth/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, role: "student" })
+        const sessionOk = await syncAuthSessionCookies({
+          token,
+          role: "student",
+          ownedBy,
+          ownedRole,
         });
-        if (!sessionRes.ok) {
+        if (!sessionOk) {
           submitError = "Could not activate login session. Please login again.";
           return;
         }
@@ -90,6 +95,8 @@
       authStore.setAuthAfterMembership({
         token,
         role: "student",
+        ownedBy,
+        ownedRole,
         users: apiUsers.map((user) => ({
           _id: user._id,
           firstName: user.firstName,

@@ -1,6 +1,12 @@
 import { dev } from '$app/environment';
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { AUTH_ROLE_STORAGE_KEY, AUTH_STORAGE_KEY, FCM_TOKEN_STORAGE_KEY } from '$lib/stores/auth';
+import {
+	AUTH_OWNED_BY_KEY,
+	AUTH_OWNED_ROLE_KEY,
+	AUTH_ROLE_STORAGE_KEY,
+	AUTH_STORAGE_KEY,
+	FCM_TOKEN_STORAGE_KEY
+} from '$lib/stores/auth';
 
 const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
@@ -14,11 +20,19 @@ const authCookieOptions = {
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const body = (await request.json().catch(() => null)) as
-		| { token?: string | null; fcmToken?: string | null; role?: string | null }
+		| {
+				token?: string | null;
+				fcmToken?: string | null;
+				role?: string | null;
+				ownedBy?: string | null;
+				ownedRole?: string | null;
+		  }
 		| null;
 	const token = (body?.token ?? '').trim();
 	const fcmToken = (body?.fcmToken ?? '').trim();
 	const role = (body?.role ?? '').trim();
+	const ownedBy = (body?.ownedBy ?? '').trim();
+	const ownedRole = (body?.ownedRole ?? '').trim();
 
 	if (!token) {
 		return json({ success: false, message: 'Token is required.' }, { status: 400 });
@@ -34,6 +48,16 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		cookies.set(FCM_TOKEN_STORAGE_KEY, fcmToken, authCookieOptions);
 	} else {
 		cookies.delete(FCM_TOKEN_STORAGE_KEY, { ...authCookieOptions, maxAge: 0 });
+	}
+	if (ownedBy) {
+		cookies.set(AUTH_OWNED_BY_KEY, ownedBy, authCookieOptions);
+	} else {
+		cookies.delete(AUTH_OWNED_BY_KEY, { ...authCookieOptions, maxAge: 0 });
+	}
+	if (ownedRole) {
+		cookies.set(AUTH_OWNED_ROLE_KEY, ownedRole, authCookieOptions);
+	} else {
+		cookies.delete(AUTH_OWNED_ROLE_KEY, { ...authCookieOptions, maxAge: 0 });
 	}
 	return json({ success: true });
 };
