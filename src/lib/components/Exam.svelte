@@ -52,11 +52,14 @@ let {
 	}
 
 	const isStudentExamsPage = $derived(basePath === '/student/exams' || pageClass === 'student-exams');
+	const metaSpacing = $derived(
+		compact && !showBackButton ? 'mt-0 mb-1.5 sm:mb-2' : 'mt-3 mb-3'
+	);
 </script>
 
 <div class="mx-auto w-full max-w-7xl min-w-0 text-[var(--page-text)] {compact ? '' : 'p-4'} {isStudentExamsPage ? 'exam-page--student' : ''}">
 	{#if showBackButton || !hideCount}
-	<div class="{showBackButton || !hideCount ? 'mt-3 mb-3' : ''} flex items-center gap-3 exam-page__meta">
+	<div class="{showBackButton || !hideCount ? metaSpacing : ''} flex items-center gap-3 exam-page__meta">
 		{#if showBackButton}
 			<BackButton
 				label="Back"

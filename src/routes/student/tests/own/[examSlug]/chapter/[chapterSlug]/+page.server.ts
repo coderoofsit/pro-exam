@@ -20,8 +20,13 @@ export const load: PageServerLoad = async ({ params, url, cookies, fetch }) => {
 	const currentPageParam = Number(url.searchParams.get('page') || '1');
 	const safePage = Number.isNaN(currentPageParam) || currentPageParam < 1 ? 1 : currentPageParam;
 	const kind = url.searchParams.get('kind');
-	const topicSlug = url.searchParams.get('topic');
+	const topicParam = url.searchParams.get('topic');
 	const difficulty = url.searchParams.get('difficulty');
+	/** Match client: deep-link `topic` from manual create is context only, not an initial filter. */
+	const topicSlug =
+		topicParam && !url.searchParams.has('page') && !url.searchParams.has('kind') && !url.searchParams.has('difficulty')
+			? null
+			: topicParam;
 
 	const isChapterId = isMongoObjectIdString(chapterSlugParam);
 	const chapterId = isChapterId ? chapterSlugParam : null;

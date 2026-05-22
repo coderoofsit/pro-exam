@@ -235,7 +235,7 @@ export function normalizeViewTestQuestions(
 ): Array<Record<string, unknown>> {
 	return questions.map((q, idx) => ({
 		...q,
-		_id: q._id ?? `view-${testId}-${sectionSlug}-${idx}`,
+		_id: String(q._id ?? q.questionId ?? `view-${testId}-${sectionSlug}-${idx}`),
 		kind: q.kind ?? q.questionKind ?? ''
 	}));
 }

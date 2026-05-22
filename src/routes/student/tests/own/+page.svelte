@@ -56,7 +56,7 @@
 </svelte:head>
 
 <div class="own-test-page min-h-full font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-7xl px-4 pt-0 pb-8">
+  <div class="mx-auto max-w-7xl px-4 pt-[19px] pb-8 sm:pt-[23px]">
     <CustomeModal
       open={showChoiceModal}
       dismissible={false}
@@ -66,7 +66,7 @@
     />
 
     {#if !showChoiceModal}
-      <div class="mb-4 mt-2 flex justify-start">
+      <div class="mb-1.5 mt-0 flex justify-start">
         <BackButton
           label="Back"
           useHistory={false}

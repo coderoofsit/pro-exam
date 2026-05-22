@@ -1,6 +1,5 @@
 <script lang="ts">
-	import Skeleton from '$lib/components/Skeleton.svelte';
-	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
+	import ExamGridPageSkeleton from '$lib/components/skeletons/ExamGridPageSkeleton.svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import Exam from '$lib/components/Exam.svelte';
@@ -64,12 +63,7 @@ let {
 </svelte:head>
 
 {#await data.streamed.examsData}
-	<div class="exam-page--student mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-8">
-		<Skeleton width="w-32" height="h-8" className="mb-4 sm:mb-6" strong />
-		<div class="exam-card-responsive-grid exam-page__grid min-w-0">
-			<ExamGridSkeleton nested tileClass="skel-card" cardMinHeight="min-h-[92px] sm:min-h-[128px]" />
-		</div>
-	</div>
+	<ExamGridPageSkeleton showCount />
 {:then examsData}
 	{@const displayExams = hasCurrentPage ? ($examStore.examsByPage[currentPage] ?? []) : examsData.data}
 	{@const effectiveLastPage = $examStore.lastPage > 1 ? $examStore.lastPage : examsData.lastPage}

@@ -261,19 +261,6 @@
 		selectedApprove = data.approveStatus ?? params.get("approve") ?? "";
 	});
 
-	let topicsLoadedFor = $state<string | null>(null);
-	$effect(() => {
-		if (!browser) return;
-		const cp = data.chapterSlug || data.chapterParam;
-		if (!cp || topicsLoadedFor === cp) return;
-		topicsLoadedFor = cp;
-		topicsLoading = true;
-		void fetchTopicsByChapterSlug(cp, fetch)
-			.then((r) => { if (r.success && r.data) topicOptions = r.data.topics; })
-			.catch(() => {})
-			.finally(() => { topicsLoading = false; });
-	});
-
 	/** Full navigations only: shallow `replaceState` does not change `data`, so this won't overwrite client-driven id. */
 	$effect(() => {
 		const qid = data.questionId;
@@ -406,6 +393,39 @@
 			page.url.searchParams.has("questionId"),
 	);
 
+	/** Stable chapter key for topics — avoid refetch when `chapterSlug` resolves from questions. */
+	const topicsChapterKey = $derived(data.resolvedChapterId ?? data.chapterParam ?? "");
+	let topicsFetchedFor = $state<string | null>(null);
+	let topicsFetchInFlight = $state(false);
+
+	async function loadTopicsInBackground(chapterKey: string) {
+		if (!browser || !chapterKey || topicsFetchedFor === chapterKey || topicsFetchInFlight) {
+			return;
+		}
+		topicsFetchInFlight = true;
+		topicsLoading = true;
+		try {
+			const r = await fetchTopicsByChapterSlug(chapterKey, fetch);
+			if (r.success && r.data) {
+				topicOptions = r.data.topics;
+				topicsFetchedFor = chapterKey;
+			}
+		} catch {
+			/* non-blocking filter data */
+		} finally {
+			topicsLoading = false;
+			topicsFetchInFlight = false;
+		}
+	}
+
+	/** After questions are shown, fetch topics once in the background for the filter drawer. */
+	$effect(() => {
+		if (!browser || showLocalPageSkeleton) return;
+		const key = topicsChapterKey;
+		if (!key || topicsFetchedFor === key) return;
+		void loadTopicsInBackground(key);
+	});
+
 	let settledChapterParam = $state("");
 	$effect(() => {
 		const cp = urlChapterParam;
@@ -417,7 +437,8 @@
 			detailLoading = false;
 		}
 		filterDrawerOpen = false;
-		topicsLoadedFor = null;
+		topicsFetchedFor = null;
+		topicOptions = [];
 	});
 
 	const isPyq = $derived(page.url.searchParams.get('pyq') === 'true');

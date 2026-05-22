@@ -1,7 +1,7 @@
 <script lang="ts">
   import Exam from '$lib/components/Exam.svelte';
   import BackButton from '$lib/components/BackButton.svelte';
-  import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
+  import ExamGridPageSkeleton from '$lib/components/skeletons/ExamGridPageSkeleton.svelte';
   import type { Exam as ExamApi } from '$lib/api/exams';
   import { pyqExamsStore } from '$lib/stores/pyqExams';
   import { onMount } from 'svelte';
@@ -9,6 +9,8 @@
   let {
     basePath = '/student/tests/pyq'
   }: { basePath?: string } = $props();
+
+  const testsHubPath = $derived(basePath.replace(/\/pyq\/?$/, '') || '/student/tests');
 
   let exams = $state<ExamApi[]>([]);
   let error = $state<string | null>(null);
@@ -31,15 +33,14 @@
 </svelte:head>
 
 <div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-7xl px-4 pt-0 pb-8">
-    <div class="mb-3 mt-2 flex justify-start">
-      <BackButton label="Back" fallback="/student/tests" />
+  {#if loading}
+    <ExamGridPageSkeleton showBack showCount cardMinHeight="min-h-[92px] sm:min-h-[128px]" />
+  {:else}
+  <div class="exam-page--student mx-auto max-w-7xl min-w-0 px-4 pt-[19px] pb-8 sm:pt-[23px]">
+    <div class="mb-1.5 mt-0 flex justify-start">
+      <BackButton label="Back" fallback={testsHubPath} />
     </div>
-    {#if loading}
-      <div class="exam-card-responsive-grid min-w-0">
-        <ExamGridSkeleton nested cardMinHeight="min-h-[92px] sm:min-h-[140px]" />
-      </div>
-    {:else if error}
+    {#if error}
       <!-- Error state -->
       <div class="
         flex items-center gap-3 rounded-2xl px-5 py-4
@@ -85,11 +86,11 @@
         hideBoardTitle={true}
         {basePath}
         showBackButton={false}
-        hideCount={true}
+        hideCount={false}
         compact={true}
         pageClass="student-exams"
       />
     {/if}
-
   </div>
+  {/if}
 </div>

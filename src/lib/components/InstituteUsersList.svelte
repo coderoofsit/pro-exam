@@ -7,8 +7,8 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import ManagementTableSkeleton from '$lib/components/ManagementTableSkeleton.svelte';
 	import ConfirmPermanentRemoveModal from '$lib/components/ConfirmPermanentRemoveModal.svelte';
-	import AddStudentsUploadSection from '$lib/components/AddStudentsUploadSection.svelte';
 	import InstituteTeacherAddStudentsModal from '$lib/components/InstituteTeacherAddStudentsModal.svelte';
+	import InstituteTeacherViewStudentsModal from '$lib/components/InstituteTeacherViewStudentsModal.svelte';
 	import InstituteUserViewDetailsModal from '$lib/components/InstituteUserViewDetailsModal.svelte';
 	import {
 		removeInstituteUsers,
@@ -45,6 +45,9 @@
 	let suppressListLoading = $state(false);
 	let addStudentsModalOpen = $state(false);
 	let addStudentsTeacherId = $state<string | null>(null);
+	let viewStudentsModalOpen = $state(false);
+	let viewStudentsTeacherId = $state<string | null>(null);
+	let viewStudentsTeacherName = $state('');
 	let batchConfirmOpen = $state(false);
 	let batchPending = $state<{ id: string; name: string; next: boolean } | null>(null);
 	let viewDetailsOpen = $state(false);
@@ -61,9 +64,6 @@
 
 	const entitySingular = $derived(variant === 'teachers' ? 'teacher' : 'student');
 	const entityPlural = $derived(variant === 'teachers' ? 'teachers' : 'students');
-	const importSectionTitle = $derived(
-		variant === 'teachers' ? 'Add teachers & students' : 'Add students'
-	);
 
 	$effect(() => {
 		if (typeof ssrAuthMissing !== 'boolean') return;
@@ -182,6 +182,18 @@
 		viewDetailsUserName = '';
 	}
 
+	function openViewStudentList(u: InstituteUserRow) {
+		viewStudentsTeacherId = u._id;
+		viewStudentsTeacherName = displayName(u);
+		viewStudentsModalOpen = true;
+	}
+
+	function closeViewStudentList() {
+		viewStudentsModalOpen = false;
+		viewStudentsTeacherId = null;
+		viewStudentsTeacherName = '';
+	}
+
 	const viewDetailsRole = $derived(variant === 'teachers' ? 'teacher' : 'student');
 
 	function closeRemoveModal() {
@@ -292,15 +304,6 @@
 			<div class="flex justify-center sm:justify-self-center"></div>
 			<div class="flex items-center justify-end gap-3 sm:justify-self-end"></div>
 		</header>
-
-		<AddStudentsUploadSection
-			sectionTitle={importSectionTitle}
-			importEndpoint="/api/v1/institute/import-users"
-			on:create={() => {
-				suppressListLoading = true;
-				void invalidateAll();
-			}}
-		/>
 
 		<div
 			class="mb-4 grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)_10rem] sm:items-center sm:gap-x-4"
@@ -455,6 +458,13 @@
 										{#if variant === 'teachers'}
 											<button
 												type="button"
+												class="cursor-pointer rounded-lg border border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-text)] transition-colors hover:border-[var(--pagination-active-from)]"
+												onclick={() => openViewStudentList(u)}
+											>
+												View student list
+											</button>
+											<button
+												type="button"
 												class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--page-link)_35%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--page-link)_08%,transparent)] px-2 py-1 text-xs font-semibold leading-snug text-[var(--page-link)] transition-colors hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_12%,transparent)]"
 												onclick={() => {
 													addStudentsTeacherId = u._id;
@@ -494,6 +504,14 @@
 		addStudentsModalOpen = false;
 		addStudentsTeacherId = null;
 	}}
+	onRelationsSaved={() => void invalidateAll()}
+/>
+
+<InstituteTeacherViewStudentsModal
+	open={viewStudentsModalOpen}
+	teacherId={viewStudentsTeacherId}
+	teacherName={viewStudentsTeacherName}
+	onClose={closeViewStudentList}
 	onRelationsSaved={() => void invalidateAll()}
 />
 

@@ -2,7 +2,7 @@
 	import type { PageSkeletonVariant } from '$lib/skeletons/routeVariant';
 	import StudentDashboardSkeleton from '$lib/components/skeletons/StudentDashboardSkeleton.svelte';
 	import PortalDashboardSkeleton from '$lib/components/skeletons/PortalDashboardSkeleton.svelte';
-	import ExamGridSkeleton from '$lib/components/skeletons/ExamGridSkeleton.svelte';
+	import ExamGridPageSkeleton from '$lib/components/skeletons/ExamGridPageSkeleton.svelte';
 	import ExamSubjectsSkeleton from '$lib/components/skeletons/ExamSubjectsSkeleton.svelte';
 	import ExamChaptersSkeleton from '$lib/components/skeletons/ExamChaptersSkeleton.svelte';
 	import ExamQuestionsPageSkeleton from '$lib/components/skeletons/ExamQuestionsPageSkeleton.svelte';
@@ -59,12 +59,7 @@
 			</div>
 		</div>
 	{:else if variant === 'exam-grid'}
-		<div class="exam-page--student mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
-			<Skeleton width="w-32" height="h-8" className="mb-4 sm:mb-6" strong />
-			<div class="exam-card-responsive-grid exam-page__grid min-w-0">
-				<ExamGridSkeleton nested tileClass="skel-card" cardMinHeight="min-h-[92px] sm:min-h-[128px]" />
-			</div>
-		</div>
+		<ExamGridPageSkeleton showCount />
 	{:else if variant === 'tests-list'}
 		<TestsListSkeleton />
 	{:else if variant === 'batch-cards'}
