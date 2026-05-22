@@ -430,6 +430,75 @@ export async function fetchBatchTestsItems(
 	});
 }
 
+export type BatchAssignedIds = {
+	studentIds: string[];
+	teacherIds: string[];
+	testIds: string[];
+};
+
+async function collectPaginatedBatchItemIds(
+	batchId: string,
+	type: 'student' | 'teacher' | 'test',
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null }
+): Promise<string[]> {
+	const ids: string[] = [];
+	let page = 1;
+	let hasNext = true;
+	const limit = 100;
+
+	while (hasNext) {
+		const res =
+			type === 'student'
+				? await fetchBatchStudentsItems(batchId, { page, limit }, fetchFn, options)
+				: type === 'teacher'
+					? await fetchBatchTeachersItems(batchId, { page, limit }, fetchFn, options)
+					: await fetchBatchTestsItems(batchId, { page, limit }, fetchFn, options);
+
+		if (!res.success) break;
+
+		const payload = res.data?.data;
+		const items = payload?.items ?? [];
+
+		for (const item of items) {
+			if (type === 'test') {
+				const testId = String((item as BatchTestListItem).testId ?? '').trim();
+				if (testId) ids.push(testId);
+			} else {
+				const userId = String((item as BatchTeacherItem).userId ?? '').trim();
+				if (userId) ids.push(userId);
+			}
+		}
+
+		hasNext = Boolean(payload?.pagination?.hasNextPage);
+		page += 1;
+	}
+
+	return Array.from(new Set(ids));
+}
+
+/** Load all student / teacher / test ids already assigned to a batch (for edit pre-selection). */
+export async function fetchBatchAssignedIds(
+	batchId: string,
+	fetchFn?: typeof fetch,
+	options?: { token?: string | null; includeTeachers?: boolean }
+): Promise<BatchAssignedIds> {
+	const id = batchId.trim();
+	if (!id) return { studentIds: [], teacherIds: [], testIds: [] };
+
+	const includeTeachers = options?.includeTeachers !== false;
+
+	const [studentIds, testIds, teacherIds] = await Promise.all([
+		collectPaginatedBatchItemIds(id, 'student', fetchFn, options),
+		collectPaginatedBatchItemIds(id, 'test', fetchFn, options),
+		includeTeachers
+			? collectPaginatedBatchItemIds(id, 'teacher', fetchFn, options)
+			: Promise.resolve([])
+	]);
+
+	return { studentIds, teacherIds, testIds };
+}
+
 /** Nested payload from GET /api/v1/batch/student/:batchId */
 export type StudentBatchDetailPayload = {
 	batch: {

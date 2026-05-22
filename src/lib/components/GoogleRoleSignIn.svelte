@@ -3,7 +3,7 @@
   import { goto } from "$app/navigation";
   import {
     googleLogin,
-    normalizeOwnedId,
+    deriveOwnedContext,
     type BackendRole,
     type AccountType,
     type LoginResponse,
@@ -80,12 +80,17 @@
 
       const users = loginResponse.data?.users ?? [];
       const token = loginResponse.data?.token ?? null;
+      const { ownedBy, ownedRole } = deriveOwnedContext({
+        ownedBy: loginResponse.data?.ownedBy,
+        ownedRole: loginResponse.data?.ownedRole,
+        users,
+      });
       if (token) {
         const sessionOk = await syncAuthSessionCookies({
           token,
           role: selected,
-          ownedBy: normalizeOwnedId(loginResponse.data?.ownedBy),
-          ownedRole: loginResponse.data?.ownedRole?.trim() || null,
+          ownedBy,
+          ownedRole,
         });
         if (!sessionOk) {
           errorMessage = "Could not create login session.";

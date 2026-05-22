@@ -17,6 +17,7 @@
   } from '$lib/api/teacher';
   import {
     createBatch,
+    fetchBatchAssignedIds,
     fetchBatchTests,
     type BatchTestItem,
     type StudentBatchItem,
@@ -400,6 +401,13 @@
     return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
   }
 
+  async function loadEditBatchAssignments(batchId: string) {
+    const assigned = await fetchBatchAssignedIds(batchId, fetch, { token: $authStore.token });
+    selectedTestIds = assigned.testIds;
+    selectedStudentIds = assigned.studentIds;
+    selectedTeacherIds = assigned.teacherIds;
+  }
+
   function openEditBatchModal(batch: StudentBatchItem) {
     createBatchModalOpen = true;
     createBatchStep = 1;
@@ -426,6 +434,7 @@
     selectedTestIds = [];
     selectedStudentIds = [];
     selectedTeacherIds = [];
+    void loadEditBatchAssignments(batch._id);
     prefetchStep2Data();
   }
 

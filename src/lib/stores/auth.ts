@@ -1,12 +1,15 @@
 
 import { writable, get } from "svelte/store";
 import {
+  deriveOwnedContext,
   normalizeOwnedId,
   type AccountType,
   type LoginResponse,
   type LoginUser,
   type LinkedProfile,
   type MembershipSubscription,
+  type MembershipUser,
+  normalizeMembershipProfileRef,
 } from "$lib/api/auth";
 
 export type AuthLinkedProfile = {
@@ -106,6 +109,51 @@ function mapLinkedProfile(
   };
 }
 
+function mapLinkedProfileFromUnknown(value: unknown): AuthLinkedProfile | null {
+  const id = normalizeOwnedId(value);
+  if (!id) return null;
+  if (value && typeof value === "object" && "firstName" in value) {
+    const p = value as LinkedProfile;
+    return {
+      _id: id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+    };
+  }
+  return { _id: id };
+}
+
+export function mapMembershipUserToAuthUser(user: MembershipUser): AuthUser {
+  const prof = normalizeMembershipProfileRef(user.userProfileId);
+
+  return {
+    _id: user._id,
+    batchApproved: user.batchApproved,
+    userProfileId: prof.userProfileId,
+    profileEmail: prof.email,
+    profilePhone: prof.phone,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    image: user.image,
+    defaultProfile: user.defaultProfile,
+    freeTrialNotification: !!user.freeTrialNotification,
+    subscriptionGoingToEnd: !!user.subscriptionGoingToEnd,
+    subscriptionExpired: !!user.subscriptionExpired,
+    subscription: user.subscription
+      ? {
+          isSubscribed: !!user.subscription.isSubscribed,
+          isTrial: !!user.subscription.isTrial,
+          planId: user.subscription.planId ?? null,
+          expiry: user.subscription.expiry ?? null,
+          trialUsed: !!user.subscription.trialUsed,
+        }
+      : null,
+    instituteId: mapLinkedProfileFromUnknown(user.instituteId),
+    teacherId: mapLinkedProfileFromUnknown(user.teacherId),
+    adminId: mapLinkedProfileFromUnknown(user.adminId),
+  };
+}
+
 function mapBackendRoleToAccountType(
   backendRole?: "student" | "teacher" | "admin" | "institute" | null,
 ): AccountType | null {
@@ -149,8 +197,11 @@ function createAuthStore() {
       ownedRole?: string | null;
     }) {
       const persisted = readPersistedOwned();
-      const ownedBy = data.ownedBy ?? persisted.ownedBy;
-      const ownedRole = data.ownedRole ?? persisted.ownedRole;
+      const derived = deriveOwnedContext({ users: data.users });
+      const ownedBy =
+        data.ownedBy ?? persisted.ownedBy ?? derived.ownedBy;
+      const ownedRole =
+        data.ownedRole ?? persisted.ownedRole ?? derived.ownedRole;
       const authData: AuthState = {
         users: data.users,
         token: data.token,
@@ -175,11 +226,17 @@ function createAuthStore() {
       ownedRole?: string | null;
     }) {
       persistToken(data.token);
+      const derived = deriveOwnedContext({ users: data.users });
+      const prev = get({ subscribe });
       const ownedBy =
-        data.ownedBy !== undefined ? data.ownedBy : get({ subscribe }).ownedBy;
+        data.ownedBy !== undefined
+          ? data.ownedBy
+          : (prev.ownedBy ?? derived.ownedBy);
       const ownedRole =
-        data.ownedRole !== undefined ? data.ownedRole : get({ subscribe }).ownedRole;
-      if (data.ownedBy !== undefined || data.ownedRole !== undefined) {
+        data.ownedRole !== undefined
+          ? data.ownedRole
+          : (prev.ownedRole ?? derived.ownedRole);
+      if (ownedBy || ownedRole) {
         persistOwned(ownedBy, ownedRole);
       }
 
@@ -205,8 +262,11 @@ function createAuthStore() {
       const token = payload?.token ?? null;
       const profileId = payload?.id ?? null;
       const backendRole = payload?.role ?? null;
-      const ownedBy = normalizeOwnedId(payload?.ownedBy);
-      const ownedRole = payload?.ownedRole?.trim() || null;
+      const { ownedBy, ownedRole } = deriveOwnedContext({
+        ownedBy: payload?.ownedBy,
+        ownedRole: payload?.ownedRole,
+        users: usersFromApi,
+      });
 
       const mappedUsers: AuthUser[] = usersFromApi.map((user: LoginUser) => ({
         _id: user._id,
@@ -269,10 +329,18 @@ function createAuthStore() {
     },
 
     setUsers(users: AuthUser[]) {
-      update((state) => ({
-        ...state,
-        users,
-      }));
+      const derived = deriveOwnedContext({ users });
+      update((state) => {
+        const ownedBy = state.ownedBy ?? derived.ownedBy;
+        const ownedRole = state.ownedRole ?? derived.ownedRole;
+        if (ownedBy || ownedRole) persistOwned(ownedBy, ownedRole);
+        return {
+          ...state,
+          users,
+          ownedBy,
+          ownedRole,
+        };
+      });
     },
 
     setRole(role: AccountType | null) {

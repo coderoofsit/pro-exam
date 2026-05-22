@@ -37,6 +37,39 @@ export function normalizeOwnedId(value: unknown): string | null {
   return null;
 }
 
+type OwnedUserRef = {
+  defaultProfile?: boolean;
+  instituteId?: LinkedProfile | null;
+  teacherId?: LinkedProfile | null;
+  adminId?: LinkedProfile | null;
+};
+
+/** Resolve owner context from API fields or default membership row (student → institute/teacher). */
+export function deriveOwnedContext(input: {
+  ownedBy?: unknown;
+  ownedRole?: string | null;
+  users?: OwnedUserRef[];
+}): { ownedBy: string | null; ownedRole: string | null } {
+  const fromApiBy = normalizeOwnedId(input.ownedBy);
+  const fromApiRole = input.ownedRole?.trim() || null;
+  if (fromApiBy && fromApiRole) {
+    return { ownedBy: fromApiBy, ownedRole: fromApiRole };
+  }
+
+  const list = input.users ?? [];
+  const target = list.find((u) => u.defaultProfile) ?? list[0];
+  if (target) {
+    const inst = normalizeOwnedId(target.instituteId);
+    const teach = normalizeOwnedId(target.teacherId);
+    const admin = normalizeOwnedId(target.adminId);
+    if (inst) return { ownedBy: inst, ownedRole: 'institute' };
+    if (teach) return { ownedBy: teach, ownedRole: 'teacher' };
+    if (admin) return { ownedBy: admin, ownedRole: 'admin' };
+  }
+
+  return { ownedBy: fromApiBy, ownedRole: fromApiRole };
+}
+
 export type GoogleLoginData = {
   users: LoginUser[];
   id: string;
@@ -93,6 +126,9 @@ export type MembershipUser = {
   firstName?: string;
   lastName?: string;
   image?: string;
+  instituteId?: LinkedProfile | null;
+  teacherId?: LinkedProfile | null;
+  adminId?: LinkedProfile | null;
   /** When true, this profile is the account default — shown first in the topbar list. */
   defaultProfile?: boolean;
   subscription?: MembershipSubscription | null;
@@ -157,6 +193,8 @@ export type CreateMembershipResponse = {
   data?: {
     token: string | null;
     users: LoginUser[];
+    ownedBy?: string | { _id?: string } | null;
+    ownedRole?: string | null;
   };
 };
 

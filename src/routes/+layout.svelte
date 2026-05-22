@@ -2,16 +2,18 @@
   import { browser } from '$app/environment';
   import { page } from '$app/state';
   import favicon from '$lib/assets/favicon.svg';
-  import { normalizeMembershipProfileRef, type MembershipUser } from '$lib/api/auth';
+  import { syncAuthSessionCookies } from '$lib/auth/syncSession';
   import '../app.css';
-  import { authStore } from '$lib/stores/auth';
+  import { authStore, mapMembershipUserToAuthUser } from '$lib/stores/auth';
   import NotificationHost from '$lib/components/notifications/NotificationHost.svelte';
 
   let { children, data } = $props<{
     children: import('svelte').Snippet;
     data: {
       authToken: string | null;
-      membershipUsers: MembershipUser[];
+      membershipUsers: import('$lib/api/auth').MembershipUser[];
+      ownedBy: string | null;
+      ownedRole: string | null;
     };
   }>();
 
@@ -29,27 +31,24 @@
       return;
     }
 
+    const users = (data?.membershipUsers ?? [])
+      .sort((a, b) => (b.defaultProfile ? 1 : 0) - (a.defaultProfile ? 1 : 0))
+      .map(mapMembershipUserToAuthUser);
+
     authStore.setAuth({
-      users: (data?.membershipUsers ?? [])
-        .sort((a, b) => (b.defaultProfile ? 1 : 0) - (a.defaultProfile ? 1 : 0))
-        .map((user) => {
-          const prof = normalizeMembershipProfileRef(user.userProfileId);
-          return {
-            _id: user._id,
-            batchApproved: user.batchApproved,
-            userProfileId: prof.userProfileId,
-            profileEmail: prof.email,
-            profilePhone: prof.phone,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            image: user.image,
-            defaultProfile: user.defaultProfile,
-            subscription: user.subscription
-          };
-        }),
+      users,
       token,
       role: $authStore.role,
-      profileId: $authStore.profileId
+      profileId: $authStore.profileId,
+      ownedBy: data?.ownedBy ?? null,
+      ownedRole: data?.ownedRole ?? null
+    });
+
+    void syncAuthSessionCookies({
+      token,
+      role: $authStore.role,
+      ownedBy: data?.ownedBy ?? null,
+      ownedRole: data?.ownedRole ?? null
     });
 
     hydratedFromServer = true;

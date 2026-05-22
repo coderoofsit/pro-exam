@@ -3,7 +3,7 @@
   import { goto } from "$app/navigation";
   import { authStore } from "$lib/stores/auth";
   import ProfileCreateForm from "$lib/components/profile/ProfileCreateForm.svelte";
-  import { createMembershipProfile, normalizeOwnedId } from "$lib/api/auth";
+  import { createMembershipProfile, deriveOwnedContext } from "$lib/api/auth";
   import { syncAuthSessionCookies } from "$lib/auth/syncSession";
   import { getExamsClient } from "$lib/api/exams";
   import type { Exam } from "$lib/api/exams";
@@ -74,8 +74,11 @@
       const membershipResponse = response.data;
       const apiUsers = membershipResponse?.data?.users ?? [];
       const token = membershipResponse?.data?.token ?? null;
-      const ownedBy = normalizeOwnedId(membershipResponse?.data?.ownedBy);
-      const ownedRole = membershipResponse?.data?.ownedRole?.trim() || null;
+      const { ownedBy, ownedRole } = deriveOwnedContext({
+        ownedBy: membershipResponse?.data?.ownedBy,
+        ownedRole: membershipResponse?.data?.ownedRole,
+        users: apiUsers,
+      });
 
       if (token) {
         const sessionOk = await syncAuthSessionCookies({

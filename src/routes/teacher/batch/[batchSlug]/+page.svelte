@@ -4,9 +4,10 @@
 	import { page } from '$app/state';
 	import { fetchBatchStudents, unwrapBatchStudentsPage, type BatchStudentItem } from '$lib/api/teacher';
 	import {
+		fetchBatchAssignedIds,
 		fetchBatchTests,
-	type CreateBatchBody,
-	updateBatchDetails,
+		type CreateBatchBody,
+		updateBatchDetails,
 		updateBatchAssignments,
 		type BatchTestItem
 	} from '$lib/api/batch';
@@ -515,6 +516,12 @@
 		return () => clearTimeout(t);
 	});
 
+	async function loadEditBatchAssignments(targetBatchId: string) {
+		const assigned = await fetchBatchAssignedIds(targetBatchId, fetch);
+		editSelectedTestIds = assigned.testIds;
+		editSelectedStudentIds = assigned.studentIds;
+	}
+
 	function openEditBatchModal() {
 		if (!canEditCurrentBatch) return;
 		editBatchModalOpen = true;
@@ -550,6 +557,7 @@
 		editStudents = [];
 		editStudentsPage = 1;
 		editStudentsLastPage = 1;
+		if (batchId) void loadEditBatchAssignments(batchId);
 		prefetchEditStep2Data();
 	}
 

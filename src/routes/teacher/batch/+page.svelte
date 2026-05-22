@@ -11,6 +11,7 @@
   import { fetchBatchStudents, unwrapBatchStudentsPage, type BatchStudentItem } from '$lib/api/teacher';
   import {
     createBatch,
+    fetchBatchAssignedIds,
     fetchBatchTests,
     type BatchTestItem,
     type CreateBatchBody,
@@ -286,6 +287,15 @@ step2Students = [...mergedStudents];
     return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
   }
 
+  async function loadEditBatchAssignments(batchId: string) {
+    const assigned = await fetchBatchAssignedIds(batchId, fetch, {
+      token: $authStore.token,
+      includeTeachers: false
+    });
+    selectedTestIds = assigned.testIds;
+    selectedStudentIds = assigned.studentIds;
+  }
+
   function openEditBatchModal(batch: StudentBatchItem) {
     if (!canManageBatch || !isBatchOwner(batch)) return;
     createBatchModalOpen = true;
@@ -315,6 +325,7 @@ step2Students = [...mergedStudents];
     selectedTestIds = [];
     selectedStudentIds = [];
 
+    void loadEditBatchAssignments(batch._id);
     prefetchStep2Data();
   }
 

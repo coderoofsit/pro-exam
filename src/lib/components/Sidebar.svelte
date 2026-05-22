@@ -11,11 +11,11 @@
     shouldSuppressOwnTestChapterOverlay,
   } from "$lib/skeletons/routeVariant";
   import { Notification } from "$lib/components/Notification";
-  import { authStore, type AuthUser } from "$lib/stores/auth";
+  import { authStore, mapMembershipUserToAuthUser, type AuthUser } from "$lib/stores/auth";
   import {
+    deriveOwnedContext,
     getMembershipUsers,
     normalizeOwnedId,
-    normalizeMembershipProfileRef,
     selectMembershipProfile,
     updateFcmToken,
     sendPhoneOtp,
@@ -595,12 +595,17 @@ type MobileNavItem = {
         );
         if (requestId !== membershipSwitchRequestId) return;
 
+        const { ownedBy, ownedRole } = deriveOwnedContext({
+          ownedBy: root.data.ownedBy,
+          ownedRole: root.data.ownedRole,
+          users: root.data.users,
+        });
         const sessionSynced = await syncAuthSessionCookies({
           token: root.data.token,
           role: $authStore.role ?? role,
           fcmToken: finalFcmToken,
-          ownedBy: normalizeOwnedId(root.data.ownedBy),
-          ownedRole: root.data.ownedRole?.trim() || null,
+          ownedBy,
+          ownedRole,
         });
         if (!sessionSynced) {
           console.error(
@@ -616,8 +621,8 @@ type MobileNavItem = {
           token: root.data.token,
           users: mapped,
           role: $authStore.role,
-          ownedBy: normalizeOwnedId(root.data.ownedBy),
-          ownedRole: root.data.ownedRole?.trim() || null,
+          ownedBy,
+          ownedRole,
         });
 
         // Show phone modal if phone missing or not verified
@@ -677,43 +682,27 @@ type MobileNavItem = {
     const mappedUsers = mapMembershipUsers(apiUsers);
     authStore.setUsers(mappedUsers);
     selectedUserIndex = 0;
+
+    const token = $authStore.token;
+    const { ownedBy, ownedRole } = deriveOwnedContext({ users: apiUsers });
+    if (token && (ownedBy || ownedRole)) {
+      void syncAuthSessionCookies({
+        token,
+        role: $authStore.role ?? role,
+        ownedBy,
+        ownedRole,
+      });
+    }
   }
 
   function mapMembershipUsers(users: MembershipUser[]): AuthUser[] {
-    const sorted = [...users].sort((a, b) => {
-      const ap = a.defaultProfile ? 1 : 0;
-      const bp = b.defaultProfile ? 1 : 0;
-      return bp - ap;
-    });
-    return sorted.map((user) => {
-      const prof = normalizeMembershipProfileRef(user.userProfileId);
-      return {
-        _id: user._id,
-        batchApproved: user.batchApproved,
-        userProfileId: prof.userProfileId,
-        profileEmail: prof.email,
-        profilePhone: prof.phone,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        image: user.image,
-        defaultProfile: user.defaultProfile,
-        freeTrialNotification: !!user.freeTrialNotification,
-        subscriptionGoingToEnd: !!user.subscriptionGoingToEnd,
-        subscriptionExpired: !!user.subscriptionExpired,
-        subscription: user.subscription
-          ? {
-              isSubscribed: !!user.subscription.isSubscribed,
-              isTrial: !!user.subscription.isTrial,
-              planId: user.subscription.planId ?? null,
-              expiry: user.subscription.expiry ?? null,
-              trialUsed: !!user.subscription.trialUsed,
-            }
-          : null,
-        instituteId: null,
-        teacherId: null,
-        adminId: null,
-      };
-    });
+    return [...users]
+      .sort((a, b) => {
+        const ap = a.defaultProfile ? 1 : 0;
+        const bp = b.defaultProfile ? 1 : 0;
+        return bp - ap;
+      })
+      .map(mapMembershipUserToAuthUser);
   }
 
   async function loadUsersIfMissing() {
