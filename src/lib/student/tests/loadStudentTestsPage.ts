@@ -5,6 +5,24 @@ import { getAuthTokenFromCookies } from '$lib/auth/cookieToken';
 
 const DEFAULT_LIMIT = 5;
 
+/** Dedupe concurrent loads (sidebar preload + navigation, or streamed load re-run). */
+const inflightLoads = new Map<string, ReturnType<typeof loadStudentTestsPageDataInner>>();
+
+function buildLoadKey(url: URL): string {
+	const pageNum = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
+	const limit = Math.min(
+		100,
+		Math.max(1, parseInt(url.searchParams.get('limit') || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT)
+	);
+	const search = (url.searchParams.get('search') ?? '').trim();
+	const creatorUserId = (url.searchParams.get('creatorUserId') ?? '').trim();
+	const examId = (url.searchParams.get('examId') ?? '').trim();
+	const kind = (url.searchParams.get('kind') ?? '').trim();
+	const status = (url.searchParams.get('status') ?? '').trim();
+	const analysisAttemptId = (url.searchParams.get('analysisAttemptId') ?? '').trim();
+	return [pageNum, limit, search, creatorUserId, examId, kind, status, analysisAttemptId].join('|');
+}
+
 async function loadAttemptAnalysis(
 	url: URL,
 	fetchFn: typeof fetch,
@@ -34,7 +52,7 @@ async function loadAttemptAnalysis(
 	return { ...base, attemptAnalysisError: ar.message };
 }
 
-export async function loadStudentTestsPageData(opts: {
+async function loadStudentTestsPageDataInner(opts: {
 	fetch: typeof fetch;
 	url: URL;
 	cookies: Cookies;
@@ -136,4 +154,20 @@ export async function loadStudentTestsPageData(opts: {
 		kind,
 		status
 	};
+}
+
+export async function loadStudentTestsPageData(opts: {
+	fetch: typeof fetch;
+	url: URL;
+	cookies: Cookies;
+}) {
+	const key = buildLoadKey(opts.url);
+	const existing = inflightLoads.get(key);
+	if (existing) return existing;
+
+	const promise = loadStudentTestsPageDataInner(opts).finally(() => {
+		if (inflightLoads.get(key) === promise) inflightLoads.delete(key);
+	});
+	inflightLoads.set(key, promise);
+	return promise;
 }

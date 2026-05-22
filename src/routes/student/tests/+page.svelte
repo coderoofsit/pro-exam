@@ -97,16 +97,11 @@
   }
 
   $effect(() => {
-    const p = data.streamed.testsData;
-    if (!p || typeof (p as Promise<unknown>).then !== "function") return;
-    void (p as Promise<{ filterOptions?: GetTestUserFilterOptions | null }>).then(
-      (testsData) => {
-        if (testsData?.filterOptions) cachedFilterOptions = testsData.filterOptions;
-        if (!refocusSearchAfterNavigate) return;
-        refocusSearchAfterNavigate = false;
-        void tick().then(() => focusSearchInput());
-      }
-    );
+    const testsData = data.testsData;
+    if (testsData?.filterOptions) cachedFilterOptions = testsData.filterOptions;
+    if (!refocusSearchAfterNavigate) return;
+    refocusSearchAfterNavigate = false;
+    void tick().then(() => focusSearchInput());
   });
 
   async function navigateWithFilters(
@@ -476,9 +471,10 @@
         {/if}
       </div>
 
-      {#await data.streamed.testsData}
+      {#if !data.testsData}
         <TestsListSkeleton />
-      {:then testsData}
+      {:else}
+        {@const testsData = data.testsData}
         {@const items = testsData.items ?? []}
         {@const error = testsData.error}
         {@const pagination = testsData.pagination}
@@ -592,7 +588,7 @@
             {/if}
           {/if}
         {/if}
-      {/await}
+      {/if}
     </section>
   </div>
 </div>

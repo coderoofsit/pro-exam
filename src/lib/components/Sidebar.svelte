@@ -840,6 +840,7 @@ type MobileNavItem = {
 
   function warmSidebarRoute(route: string) {
     if (!route.startsWith("/")) return;
+    if (page.url.pathname === route || page.url.pathname === `${route}/`) return;
     if (warmedSidebarRoutes.has(route) || warmingSidebarRoutes.has(route)) return;
 
     const preloadPromise = preloadData(route)
