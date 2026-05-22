@@ -163,7 +163,7 @@
 
 <div class="student-batch-detail-page min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-4 py-4 pb-24 sm:px-5 sm:py-8 sm:pb-10">
-    <div class="mb-3 flex justify-start">
+    <div class="mb-2 flex justify-start">
       <BackButton
         label="Back"
         useHistory={false}
@@ -237,24 +237,18 @@
                 {batchInitials(batch.name)}
               </div>
               <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <h1 class="text-base font-semibold leading-snug text-[var(--sh-exam-card-title)] sm:text-lg">
                     {batch.name}
                   </h1>
                   <span
-                    class="student-batch-card__status hidden shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline-flex"
+                    class="student-batch-card__status inline-flex shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
                     data-status={batchStatusKey}
                   >
                     {batch.status}
                   </span>
                 </div>
-                <span
-                  class="student-batch-card__status mt-1.5 inline-flex shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:hidden"
-                  data-status={batchStatusKey}
-                >
-                  {batch.status}
-                </span>
-                <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">
+                <p class="mt-0.5 text-xs text-[var(--sh-ai-sub)]">
                   {tests.length} test{tests.length === 1 ? '' : 's'} in this batch
                 </p>
               </div>

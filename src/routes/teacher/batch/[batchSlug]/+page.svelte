@@ -682,8 +682,8 @@
 	class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300"
 	style="font-family: 'Segoe UI', Inter, Poppins, system-ui, -apple-system, sans-serif;"
 >
-	<div class="mx-auto max-w-6xl px-4 py-6">
-		<div class="mb-3 flex justify-start">
+	<div class="mx-auto max-w-6xl px-4 py-4 sm:py-6">
+		<div class="mb-2 flex justify-start">
 			<BackButton
 				label="Back"
 				useHistory={false}
@@ -691,14 +691,14 @@
 				onClick={() => void goto(batchListPath)}
 			/>
 		</div>
-		<header class="mb-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
+		<header class="mb-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-3">
 			<div class="min-w-0 sm:justify-self-start">
-				<div class="flex flex-wrap items-center gap-2">
-					<h1 class="min-w-0 text-xl font-bold leading-tight text-[var(--page-text)] sm:text-2xl">
+				<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+					<h1 class="min-w-0 text-lg font-bold leading-tight text-[var(--page-text)] sm:text-2xl">
 						{batchName || 'Batch'} Details
 					</h1>
 					<span
-						class={`hidden shrink-0 items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide sm:inline-flex ${
+						class={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide sm:px-3 sm:py-1 sm:text-[11px] ${
 							(batchInfo?.status ?? '').toUpperCase() === 'ACTIVE'
 								? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_16%,transparent)] text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]'
 								: (batchInfo?.status ?? '').toUpperCase() === 'UPCOMING'
@@ -709,17 +709,6 @@
 						{batchInfo?.status || 'UNKNOWN'}
 					</span>
 				</div>
-				<span
-					class={`mt-2 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide sm:hidden ${
-						(batchInfo?.status ?? '').toUpperCase() === 'ACTIVE'
-							? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_16%,transparent)] text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]'
-							: (batchInfo?.status ?? '').toUpperCase() === 'UPCOMING'
-								? 'border-[color-mix(in_srgb,var(--accent-cta-cyan)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-cyan)_15%,transparent)] text-[var(--accent-cta-cyan)]'
-								: 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text-muted)]'
-					}`}
-				>
-					{batchInfo?.status || 'UNKNOWN'}
-				</span>
 			</div>
 			<div class="flex flex-col items-end gap-2 sm:justify-self-end">
 				{#if canEditCurrentBatch}
