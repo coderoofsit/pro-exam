@@ -4,7 +4,9 @@
 	import { debounce } from '$lib/utils/debounce';
 	import {
 		fetchInstituteUsers,
+		fetchInstituteTeacherStudents,
 		unwrapInstituteUsersPage,
+		unwrapInstituteTeacherStudentsPage,
 		createInstituteTeacherStudentRelations,
 		type InstituteUserRow
 	} from '$lib/api/instituteUsers';
@@ -34,8 +36,17 @@
 	let studentsSearch = $state('');
 	let selectedStudentIds = $state<string[]>([]);
 	let continueSubmitting = $state(false);
+	/** Students already linked to this teacher (from view-student list) — hidden in add modal. */
+	let linkedStudentIds = $state<Set<string>>(new Set());
 
 	const PAGE_LIMIT = 30;
+
+	const visibleStudents = $derived(
+		students.filter((u) => {
+			const id = sid(u);
+			return id && !linkedStudentIds.has(id);
+		})
+	);
 
 	function sid(u: Row): string {
 		return String(u._id ?? '');
@@ -69,6 +80,40 @@
 		);
 	}
 
+	async function loadLinkedStudentIds(forTeacherId: string): Promise<Set<string>> {
+		const token = get(authStore).token;
+		const ids = new Set<string>();
+		let page = 1;
+		let lastPage = 1;
+
+		do {
+			const res = await fetchInstituteTeacherStudents({
+				teacherId: forTeacherId,
+				page,
+				limit: 100,
+				token,
+				fetchFn: fetch
+			});
+			const payload = unwrapInstituteTeacherStudentsPage(res);
+			if (!payload) break;
+			for (const u of payload.items) {
+				const id = String(u._id ?? '').trim();
+				if (id) ids.add(id);
+			}
+			lastPage = payload.lastPage;
+			page += 1;
+		} while (page <= lastPage);
+
+		return ids;
+	}
+
+	function filterOutLinked(rows: Row[]): Row[] {
+		return rows.filter((u) => {
+			const id = sid(u);
+			return id && !linkedStudentIds.has(id);
+		});
+	}
+
 	async function fetchPage(page: number, append: boolean) {
 		const token = get(authStore).token;
 		if (append) studentsLoadingMore = true;
@@ -94,7 +139,7 @@
 			}
 		} else {
 			studentsLastPage = payload.lastPage ?? 1;
-			const chunk = (payload.data ?? []) as Row[];
+			const chunk = filterOutLinked((payload.data ?? []) as Row[]);
 			if (append) {
 				students = [...students, ...chunk];
 			} else {
@@ -125,12 +170,23 @@
 
 	$effect(() => {
 		if (!open || !teacherId) return;
+		const tid = teacherId;
 		studentsSearch = '';
 		selectedStudentIds = [];
 		students = [];
 		studentsPage = 1;
 		studentsLastPage = 1;
-		void fetchPage(1, false);
+		linkedStudentIds = new Set();
+
+		void (async () => {
+			studentsLoading = true;
+			try {
+				linkedStudentIds = await loadLinkedStudentIds(tid);
+				await fetchPage(1, false);
+			} finally {
+				studentsLoading = false;
+			}
+		})();
 	});
 
 	function toggleStudent(id: string) {
@@ -146,7 +202,7 @@
 			selectedStudentIds = [];
 			return;
 		}
-		selectedStudentIds = students.map((u) => sid(u)).filter(Boolean);
+		selectedStudentIds = visibleStudents.map((u) => sid(u)).filter(Boolean);
 	}
 
 	function isSelected(id: string): boolean {
@@ -203,7 +259,9 @@
 						<label class="inline-flex items-center gap-2 text-xs text-[var(--sh-ai-sub)]">
 							<input
 								type="checkbox"
-								checked={students.length > 0 && students.every((u) => isSelected(sid(u)))}
+								checked={visibleStudents.length > 0 &&
+									visibleStudents.every((u) => isSelected(sid(u)))}
+								disabled={visibleStudents.length === 0}
 								onchange={(e) => toggleAll((e.currentTarget as HTMLInputElement).checked)}
 							/>
 							Select all
@@ -236,7 +294,7 @@
 							role="list"
 							onscroll={(e) => maybeLoadMore(e.currentTarget as HTMLElement)}
 						>
-							{#each students as u, index (`${sid(u)}-${index}`)}
+							{#each visibleStudents as u, index (`${sid(u)}-${index}`)}
 								<li>
 									<label
 										class="flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-bg)_92%,transparent)] px-3 py-2 text-sm transition-colors hover:border-[var(--sh-exam-card-hover-border)]"
@@ -268,8 +326,14 @@
 									</label>
 								</li>
 							{/each}
-							{#if students.length === 0}
-								<li class="text-xs text-[var(--sh-ai-sub)]">No students found.</li>
+							{#if visibleStudents.length === 0}
+								<li class="text-xs text-[var(--sh-ai-sub)]">
+									{studentsSearch.trim()
+										? 'No students found.'
+										: linkedStudentIds.size > 0
+											? 'All institute students are already linked to this teacher.'
+											: 'No students found.'}
+								</li>
 							{/if}
 							{#if studentsLoadingMore}
 								<li class="text-center text-xs text-[var(--sh-ai-sub)]">Loading more students...</li>

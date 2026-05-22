@@ -3558,6 +3558,50 @@ html[data-theme='light'] .subscription-trial-badge {
     text-align: center;
     white-space: nowrap;
   }
+
+  /* Student batch detail — compact mobile layout + full-width CTAs */
+  .student-batch-detail-page p,
+  .student-batch-detail-page li,
+  .student-batch-detail-page a,
+  .student-batch-detail-page button,
+  .student-batch-detail-page dd,
+  .student-batch-detail-page dt {
+    font-size: 0.78rem;
+  }
+
+  .student-batch-detail-page h1 {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .student-batch-detail-summary {
+    margin-bottom: 0;
+  }
+
+  .student-batch-test-card {
+    gap: 0.35rem;
+  }
+
+  .student-batch-test-card__content {
+    padding: 0.65rem 0.75rem 0.35rem;
+  }
+
+  .student-batch-test-card__actions {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0 0.75rem 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .student-batch-test-card__actions .student-batch-test-card__btn {
+    width: auto !important;
+    min-width: 5.5rem;
+    min-height: 1.75rem !important;
+    height: 1.75rem !important;
+    padding: 0.15rem 0.5rem !important;
+    font-size: 0.6875rem !important;
+    border-radius: 0.5rem !important;
+  }
 }
 
 /* Route back buttons (student exams pages) aligned with exam-box hover language. */

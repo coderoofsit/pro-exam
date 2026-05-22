@@ -12,6 +12,7 @@
 		type BatchTestItem
 	} from '$lib/api/batch';
 	import { showBatchError, showBatchSuccess } from '$lib/batch/notifyBatch';
+	import BackButton from '$lib/components/BackButton.svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import BatchDetailTableSkeleton from '$lib/components/skeletons/BatchDetailTableSkeleton.svelte';
 	import BatchSetupModal from '$lib/components/BatchSetupModal.svelte';
@@ -53,6 +54,10 @@
 		canManageBatch &&
 			Boolean(currentTeacherUserId) &&
 			(batchInfo?.createdByUserId ?? '').trim() === currentTeacherUserId
+	);
+
+	const batchListPath = $derived(
+		page.url.pathname.startsWith('/institute/') ? '/institute/batch' : '/teacher/batch'
 	);
 	let editBatchModalOpen = $state(false);
 	let editBatchStep = $state<1 | 2>(1);
@@ -678,10 +683,34 @@
 	style="font-family: 'Segoe UI', Inter, Poppins, system-ui, -apple-system, sans-serif;"
 >
 	<div class="mx-auto max-w-6xl px-4 py-6">
+		<div class="mb-3 flex justify-start">
+			<BackButton
+				label="Back"
+				useHistory={false}
+				fallback={batchListPath}
+				onClick={() => void goto(batchListPath)}
+			/>
+		</div>
 		<header class="mb-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
 			<div class="min-w-0 sm:justify-self-start">
+				<div class="flex flex-wrap items-center gap-2">
+					<h1 class="min-w-0 text-xl font-bold leading-tight text-[var(--page-text)] sm:text-2xl">
+						{batchName || 'Batch'} Details
+					</h1>
+					<span
+						class={`hidden shrink-0 items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide sm:inline-flex ${
+							(batchInfo?.status ?? '').toUpperCase() === 'ACTIVE'
+								? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_16%,transparent)] text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]'
+								: (batchInfo?.status ?? '').toUpperCase() === 'UPCOMING'
+									? 'border-[color-mix(in_srgb,var(--accent-cta-cyan)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--accent-cta-cyan)_15%,transparent)] text-[var(--accent-cta-cyan)]'
+									: 'border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)] text-[var(--page-text-muted)]'
+						}`}
+					>
+						{batchInfo?.status || 'UNKNOWN'}
+					</span>
+				</div>
 				<span
-					class={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+					class={`mt-2 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide sm:hidden ${
 						(batchInfo?.status ?? '').toUpperCase() === 'ACTIVE'
 							? 'border-[color-mix(in_srgb,var(--whatsapp-brand)_45%,var(--sh-exam-card-border))] bg-[color-mix(in_srgb,var(--whatsapp-brand)_16%,transparent)] text-[color-mix(in_srgb,var(--whatsapp-brand)_90%,#fff_10%)]'
 							: (batchInfo?.status ?? '').toUpperCase() === 'UPCOMING'
@@ -691,9 +720,6 @@
 				>
 					{batchInfo?.status || 'UNKNOWN'}
 				</span>
-				<h1 class="mt-2 text-2xl font-bold text-[var(--page-text)]">
-					{batchName || 'Batch'} Details
-				</h1>
 			</div>
 			<div class="flex flex-col items-end gap-2 sm:justify-self-end">
 				{#if canEditCurrentBatch}

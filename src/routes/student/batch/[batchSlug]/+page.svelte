@@ -10,6 +10,7 @@
     peelTestAttemptEnvelope
   } from '$lib/api/testAttempts';
   import { onMount } from 'svelte';
+  import BackButton from '$lib/components/BackButton.svelte';
   import type { PageData } from './$types';
 
   /** Mirrors `StudentBatchAssignedTest` from the batch load (`+page.server.ts`). */
@@ -151,14 +152,25 @@
   }
 
   const batchStatusKey = $derived(batch?.status?.toLowerCase() ?? '');
+
+  const batchTestActionBtnClass =
+    'student-batch-test-card__btn inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-lg border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-2.5 text-xs font-normal text-[var(--page-link)] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] hover:shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--page-link)_30%,transparent)] disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:min-w-[7.25rem] sm:rounded-xl sm:px-3 sm:text-sm';
 </script>
 
 <svelte:head>
   <title>{batch?.name ?? 'Batch'} — Exam Abhyas</title>
 </svelte:head>
 
-<div class="min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
-  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
+<div class="student-batch-detail-page min-h-full bg-[var(--sh-page-bg)] font-sans transition-colors duration-300">
+  <div class="mx-auto max-w-6xl px-4 py-4 pb-24 sm:px-5 sm:py-8 sm:pb-10">
+    <div class="mb-3 flex justify-start">
+      <BackButton
+        label="Back"
+        useHistory={false}
+        fallback="/student/batch"
+        onClick={() => void goto('/student/batch')}
+      />
+    </div>
     {#if error}
       <div
         class="
@@ -203,23 +215,20 @@
         </p>
       </div>
     {:else}
-      <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-        <!-- Sidebar: batch -->
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
+        <!-- Batch summary -->
         <aside
           class="
-            relative w-full shrink-0 overflow-hidden rounded-2xl border
-            border-[var(--sh-exam-card-border)] border-t-2 border-t-[var(--sh-exam-card-hover-border)]
-            bg-[var(--sh-exam-card-bg)]
-            transition-shadow duration-200
-            hover:shadow-[var(--sh-exam-card-hover-shadow)]
+            student-batch-detail-summary w-full shrink-0 rounded-2xl border
+            border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]
             lg:w-80 lg:sticky lg:top-6
           "
         >
-          <div class="relative p-5 sm:p-6">
-            <div class="relative flex items-start gap-3">
+          <div class="p-4 sm:p-5">
+            <div class="flex items-start gap-3">
               <div
                 class="
-                  flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xs font-bold
+                  flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold
                   bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-exam-card-arrow-color)]
                   ring-1 ring-[var(--sh-exam-card-border)]
                 "
@@ -227,124 +236,77 @@
               >
                 {batchInitials(batch.name)}
               </div>
-              <div class="min-w-0 flex-1 pt-0.5">
-                <h1 class="mt-1 text-lg font-semibold leading-snug text-[var(--sh-exam-card-title)]">
-                  {batch.name}
-                </h1>
-              </div>
-            </div>
-
-            <div class="relative mt-5">
-              <span
-                class="student-batch-card__status inline-block rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide"
-                data-status={batchStatusKey}
-              >
-                {batch.status}
-              </span>
-            </div>
-
-            <dl class="relative mt-6 space-y-3">
-              <div
-                class="
-                  flex gap-3 rounded-2xl border border-[var(--sh-exam-card-border)]
-                  bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_40%,transparent)] p-3
-                "
-              >
-                <span
-                  class="
-                    mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl
-                    bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-arrow-color)]
-                    ring-1 ring-[var(--sh-exam-card-border)]
-                  "
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect
-                      x="3"
-                      y="4"
-                      width="18"
-                      height="18"
-                      rx="2"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                    />
-                    <path d="M7 2v4M17 2v4M3 10h18" stroke="currentColor" stroke-width="1.6" />
-                  </svg>
-                </span>
-                <div class="min-w-0">
-                  <dt class="text-[11px] font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-                    Starts
-                  </dt>
-                  <dd class="mt-0.5 text-sm font-semibold text-[var(--sh-exam-card-title)]">
-                    {batch.startDate}
-                    <span class="font-normal text-[var(--sh-ai-sub)]">·</span>
-                    {batch.startTime}
-                  </dd>
-                </div>
-              </div>
-
-              <div
-                class="
-                  flex gap-3 rounded-2xl border border-[var(--sh-exam-card-border)]
-                  bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_40%,transparent)] p-3
-                "
-              >
-                <span
-                  class="
-                    mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl
-                    bg-[var(--sh-exam-card-bg)] text-[var(--sh-exam-card-arrow-color)]
-                    ring-1 ring-[var(--sh-exam-card-border)]
-                  "
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
-                    <path
-                      d="M12 7v5l3 2"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                </span>
-                <div class="min-w-0">
-                  <dt class="text-[11px] font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">
-                    CLOSE
-                  </dt>
-                  <dd class="mt-0.5 text-sm font-semibold text-[var(--sh-exam-card-title)]">
-                    {batch.endDate}
-                    <span class="font-normal text-[var(--sh-ai-sub)]">·</span>
-                    {batch.endTime}
-                  </dd>
-                </div>
-              </div>
-
-              <div
-                class="
-                  flex items-center justify-between gap-3 rounded-2xl border border-[var(--sh-exam-card-border)]
-                  bg-[var(--sh-exam-card-bg)] px-4 py-3
-                "
-              >
-                <span class="text-xs font-medium text-[var(--sh-ai-sub)]">Enrollment</span>
-                <span
-                  class="
-                    inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
-                    ring-1
-                    {batch.isActive
-                    ? 'bg-[var(--pc-success-bg)] text-[var(--pc-success-text)] ring-[var(--pc-success-border)]'
-                    : 'bg-[color-mix(in_srgb,var(--sh-exam-card-border)_55%,transparent)] text-[var(--sh-ai-sub)] ring-[var(--sh-exam-card-border)]'}
-                  "
-                >
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h1 class="text-base font-semibold leading-snug text-[var(--sh-exam-card-title)] sm:text-lg">
+                    {batch.name}
+                  </h1>
                   <span
-                    class="h-1.5 w-1.5 rounded-full {batch.isActive ? 'bg-[var(--pc-success-text)]' : 'bg-[var(--sh-ai-sub)]'}"
-                  ></span>
-                  {batch.isActive ? 'Active' : 'Inactive'}
+                    class="student-batch-card__status hidden shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline-flex"
+                    data-status={batchStatusKey}
+                  >
+                    {batch.status}
+                  </span>
+                </div>
+                <span
+                  class="student-batch-card__status mt-1.5 inline-flex shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:hidden"
+                  data-status={batchStatusKey}
+                >
+                  {batch.status}
                 </span>
+                <p class="mt-1 text-xs text-[var(--sh-ai-sub)]">
+                  {tests.length} test{tests.length === 1 ? '' : 's'} in this batch
+                </p>
+              </div>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div
+                class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,transparent)] px-3 py-2.5"
+              >
+                <dt class="text-[10px] font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Starts</dt>
+                <dd class="mt-0.5 text-xs font-semibold text-[var(--sh-exam-card-title)] sm:text-sm">
+                  {batch.startDate}
+                  <span class="font-normal text-[var(--sh-ai-sub)]"> · </span>
+                  {batch.startTime}
+                </dd>
+              </div>
+              <div
+                class="rounded-xl border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_35%,transparent)] px-3 py-2.5"
+              >
+                <dt class="text-[10px] font-semibold uppercase tracking-wide text-[var(--sh-ai-sub)]">Ends</dt>
+                <dd class="mt-0.5 text-xs font-semibold text-[var(--sh-exam-card-title)] sm:text-sm">
+                  {batch.endDate}
+                  <span class="font-normal text-[var(--sh-ai-sub)]"> · </span>
+                  {batch.endTime}
+                </dd>
               </div>
             </dl>
+
+            <div
+              class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[var(--sh-exam-card-border)] px-3 py-2.5"
+            >
+              <span class="text-xs font-medium text-[var(--sh-ai-sub)]">Enrollment</span>
+              <span
+                class="
+                  inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1
+                  {batch.isActive
+                    ? 'bg-[var(--pc-success-bg)] text-[var(--pc-success-text)] ring-[var(--pc-success-border)]'
+                    : 'bg-[color-mix(in_srgb,var(--sh-exam-card-border)_55%,transparent)] text-[var(--sh-ai-sub)] ring-[var(--sh-exam-card-border)]'}
+                "
+              >
+                <span
+                  class="h-1.5 w-1.5 rounded-full {batch.isActive ? 'bg-[var(--pc-success-text)]' : 'bg-[var(--sh-ai-sub)]'}"
+                ></span>
+                {batch.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
           </div>
         </aside>
 
-        <!-- Tests list -->
+        <!-- Tests -->
         <div class="min-w-0 flex-1">
+          <h2 class="mb-3 text-sm font-semibold text-[var(--sh-section-title)] lg:sr-only">Tests</h2>
           {#if startTestError}
             <div
               class="mb-4 rounded-xl border border-[var(--pc-error-border)] bg-[var(--pc-error-bg)] px-4 py-3 text-sm text-[var(--pc-error-text)]"
@@ -358,13 +320,13 @@
             <div
               class="
                 flex flex-col items-center justify-center rounded-2xl border px-6 py-16 text-center
-                border-[var(--pyq-accordion-border)] bg-[var(--pyq-accordion-bg)]
+                border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]
               "
             >
               <span
                 class="
                   mb-4 flex h-14 w-14 items-center justify-center rounded-2xl
-                  bg-[var(--pyq-paper-arrow-bg)] text-[var(--pyq-paper-arrow-color)]
+                  bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-exam-card-arrow-color)]
                 "
               >
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -377,8 +339,8 @@
                   <rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.75" />
                 </svg>
               </span>
-              <p class="text-sm font-semibold text-[var(--pyq-accordion-title)]">No tests yet</p>
-              <p class="mt-1 max-w-xs text-xs leading-relaxed text-[var(--pyq-header-text)]">
+              <p class="text-sm font-semibold text-[var(--sh-exam-card-title)]">No tests yet</p>
+              <p class="mt-1 max-w-xs text-xs leading-relaxed text-[var(--sh-ai-sub)]">
                 When your institute assigns tests, they will appear here.
               </p>
             </div>
@@ -388,23 +350,17 @@
                 <li>
                   <div
                     class="
-                      group relative flex flex-col gap-4 overflow-hidden rounded-2xl border pl-0
-                      sm:flex-row sm:items-center sm:justify-between sm:gap-4
-                      border-[var(--pyq-paper-border)] bg-[var(--pyq-paper-bg)]
+                      student-batch-test-card flex flex-col overflow-hidden rounded-2xl border
+                      border-[var(--sh-exam-card-border)] bg-[var(--sh-exam-card-bg)]
                       transition-all duration-200
-                      hover:border-[var(--pyq-paper-hover-border)] hover:bg-[var(--pyq-paper-hover-bg)]
-                      hover:shadow-[var(--pyq-paper-hover-shadow)]
+                      hover:border-[var(--sh-exam-card-hover-border)] hover:shadow-[var(--sh-exam-card-hover-shadow)]
+                      sm:flex-row sm:items-center sm:justify-between
                     "
                   >
-                    <div
-                      class="absolute left-0 top-0 h-full w-1 rounded-l-2xl bg-[var(--sh-exam-card-hover-border)] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                      aria-hidden="true"
-                    ></div>
-
-                    <div class="flex min-w-0 flex-1 gap-3 px-4 pb-4 pt-4 sm:pl-5 sm:pr-2 sm:pb-4 sm:pt-4">
+                    <div class="student-batch-test-card__content flex min-w-0 flex-1 gap-3 px-4 py-3 sm:pl-4">
                       <span
                         class="
-                          inline-flex h-9 min-w-[2.25rem] shrink-0 items-center justify-center rounded-xl
+                          inline-flex h-8 min-w-[2rem] shrink-0 items-center justify-center rounded-lg
                           text-xs font-bold tabular-nums
                           bg-[var(--sh-exam-card-arrow-bg)] text-[var(--sh-exam-card-arrow-color)]
                           ring-1 ring-[var(--sh-exam-card-border)]
@@ -413,30 +369,18 @@
                         {(currentPage - 1) * (data.limit ?? 20) + i + 1}
                       </span>
                       <div class="min-w-0 flex-1">
-                        <p
-                          class="text-sm font-semibold text-[var(--pyq-paper-title)] leading-snug line-clamp-2 sm:text-[15px]"
-                        >
+                        <p class="text-sm font-semibold leading-snug text-[var(--sh-exam-card-title)] line-clamp-2">
                           {testTitle(t)}
                         </p>
-                        <div
-                          class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-[var(--pyq-paper-meta)]"
-                        >
+                        <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--sh-ai-sub)]">
                           <span
-                            class="
-                              px-2.5 py-0.5 rounded-full font-semibold
-                              bg-[var(--pyq-paper-badge-bg)]
-                              border border-[var(--pyq-paper-badge-border)]
-                              text-[var(--pyq-paper-badge-text)]
-                            "
+                            class="rounded-full border border-[var(--sh-exam-card-border)] bg-[color-mix(in_srgb,var(--sh-exam-card-arrow-bg)_50%,transparent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--sh-exam-card-title)]"
                           >
                             {t.status}
                           </span>
-                          <span class="hidden h-1 w-1 rounded-full bg-[var(--pyq-paper-meta)] opacity-40 sm:inline"
-                          ></span>
-                          <span class="hidden sm:inline">{t.questionCount ?? 0} questions</span>
-                          <span class="sm:hidden">{t.questionCount ?? 0} Qs</span>
+                          <span>{t.questionCount ?? 0} Qs</span>
                           {#if t.settings?.durationMinutes != null}
-                            <span class="opacity-40">·</span>
+                            <span class="opacity-50">·</span>
                             <span>{t.settings.durationMinutes} min</span>
                           {/if}
                         </div>
@@ -444,50 +388,20 @@
                     </div>
 
                     <div
-                      class="flex shrink-0 items-stretch gap-2 border-t border-[var(--pyq-paper-border)] px-4 pb-4 sm:border-0 sm:px-4 sm:pb-4 sm:pl-0"
+                      class="student-batch-test-card__actions flex shrink-0 items-center justify-start gap-2 px-4 pb-3 pt-0 sm:justify-end sm:px-4 sm:py-3 sm:pl-0 sm:pt-0"
                     >
                       {#if t.attempted}
-                        <a
-                          href={viewAnalysisHref(t)}
-                          class="flex items-center justify-center gap-2 h-9 min-w-[6.5rem] shrink-0 rounded-xl border border-[var(--page-link)] bg-[color-mix(in_srgb,var(--page-link)_18%,var(--sh-exam-card-arrow-bg))] px-4 text-sm font-medium text-[var(--page-link)] transition-all duration-150 hover:border-[var(--page-link)] hover:bg-[color-mix(in_srgb,var(--page-link)_28%,var(--sh-exam-card-arrow-bg))] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80">
-                            <path
-                              d="M4 19V5M4 19l4-4M4 19l-4-4M20 5v14M20 5l-4 4M20 5l4 4"
-                              stroke="currentColor"
-                              stroke-width="1.8"
-                              stroke-linecap="round"
-                            />
-                          </svg>
+                        <a href={viewAnalysisHref(t)} class="{batchTestActionBtnClass} no-underline">
                           View Analysis
                         </a>
                       {:else}
                         <button
                           type="button"
-                          class="btn-cta-subscription-outline flex-1 sm:flex-initial sm:min-w-[8.5rem]"
+                          class={batchTestActionBtnClass}
                           disabled={!!startingTestId}
                           onclick={() => onStartTestClick(t)}
                         >
-                          {#if startingTestId === t._id}
-                            <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
-                            ></span>
-                            Starting…
-                          {:else}
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              class="opacity-80"
-                              aria-hidden="true"
-                            >
-                              <path
-                                d="M8 5v14l11-7-11-7z"
-                                fill="currentColor"
-                              />
-                            </svg>
-                            Start Test
-                          {/if}
+                          {startingTestId === t._id ? 'Starting…' : 'Start Test'}
                         </button>
                       {/if}
                     </div>
