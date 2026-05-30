@@ -4,6 +4,7 @@
     fetchNotifications,
     type NotificationItem,
   } from "$lib/api/notifications";
+  import { formatAnnouncementSubType } from "$lib/announcements/constants";
 
   let {
     open = false,
@@ -23,10 +24,34 @@
   let hasMore = $derived(currentPage < totalPages);
   let listContainerRef = $state<HTMLDivElement | null>(null);
 
+  function getNotificationTitle(item: NotificationItem): string {
+    const t = item.title?.trim();
+    if (t) return t;
+    if (item.type === "ANNOUNCEMENT") return "Announcement";
+    return item.type?.replace(/_/g, " ") || "Notification";
+  }
+
+  function getNotificationMessage(item: NotificationItem): string {
+    return item.message?.trim() || "";
+  }
+
+  function getNotificationCategory(item: NotificationItem): string | null {
+    if (item.type === "ANNOUNCEMENT") {
+      return formatAnnouncementSubType(item.subType);
+    }
+    const subType = item.subType?.trim();
+    if (!subType) return null;
+    if (subType.startsWith("ANNOUNCEMENT.")) return formatAnnouncementSubType(subType);
+    return subType.replace(/_/g, " ").replace(/\./g, " · ");
+  }
+
   function getSenderName(item: NotificationItem): string {
+    if (item.type === "ANNOUNCEMENT") return "Exam Abhyas";
     const first = item.senderId?.firstName?.trim() ?? "";
     const last = item.senderId?.lastName?.trim() ?? "";
-    return `${first} ${last}`.trim() || "Unknown sender";
+    const name = `${first} ${last}`.trim();
+    if (name) return name;
+    return "Unknown sender";
   }
 
   function formatNotificationDate(isoDate?: string): string {
@@ -40,17 +65,22 @@
     }).format(date);
   }
 
-  async function loadNotifications(pageToLoad: number) {
-    if (isLoading || isLoadingMore) return;
-    if (pageToLoad > totalPages && hasLoadedOnce) return;
-
+  async function loadNotifications(pageToLoad: number, options?: { force?: boolean }) {
     const isInitialLoad = pageToLoad === 1;
+
+    if (!options?.force) {
+      if (isLoading || isLoadingMore) return;
+      if (pageToLoad > totalPages && hasLoadedOnce) return;
+    }
+
     if (isInitialLoad) {
       isLoading = true;
+      isLoadingMore = false;
+      errorMessage = "";
     } else {
+      if (isLoading || isLoadingMore) return;
       isLoadingMore = true;
     }
-    errorMessage = "";
 
     try {
       const response = await fetchNotifications(
@@ -60,7 +90,7 @@
       );
 
       if (!response.success) {
-        notifications = [];
+        if (isInitialLoad) notifications = [];
         errorMessage = response.message || "Failed to load notifications.";
         return;
       }
@@ -111,8 +141,61 @@
 
   $effect(() => {
     if (!open) return;
-    if (hasLoadedOnce || isLoading || isLoadingMore) return;
-    void loadNotifications(1);
+
+    let cancelled = false;
+
+    void (async () => {
+      notifications = [];
+      hasLoadedOnce = false;
+      currentPage = 0;
+      totalPages = 1;
+      errorMessage = "";
+      isLoading = true;
+      isLoadingMore = false;
+
+      try {
+        const response = await fetchNotifications(
+          { page: 1, limit: 10 },
+          undefined,
+          { token: $authStore.token },
+        );
+
+        if (cancelled) return;
+
+        if (!response.success) {
+          notifications = [];
+          errorMessage = response.message || "Failed to load notifications.";
+          return;
+        }
+
+        const body = response.data;
+        if (!body?.success) {
+          notifications = [];
+          errorMessage = body?.message || "Failed to load notifications.";
+          return;
+        }
+
+        const items = Array.isArray(body.data?.items) ? body.data.items : [];
+        totalPages = Math.max(1, Number(body.data?.totalPages) || 1);
+        currentPage = Number(body.data?.page) || 1;
+        notifications = items;
+        hasLoadedOnce = true;
+      } catch (error) {
+        if (cancelled) return;
+        notifications = [];
+        errorMessage =
+          error instanceof Error ? error.message : "Failed to load notifications.";
+      } finally {
+        if (!cancelled) {
+          isLoading = false;
+          isLoadingMore = false;
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
@@ -184,7 +267,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <h3 class="text-sm text-[var(--page-text)] {item.isRead ? 'font-semibold' : 'font-bold'}">
-                    {item.title}
+                    {getNotificationTitle(item)}
                   </h3>
                 </div>
                 <span class="flex-shrink-0 text-[11px] text-[var(--topbar-search-placeholder)]">
@@ -192,12 +275,16 @@
                 </span>
               </div>
 
-              <p class="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--topbar-search-placeholder)]">
-                {item.subType}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-[var(--page-text)]">
-                {item.message}
-              </p>
+              {#if getNotificationCategory(item)}
+                <p class="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--topbar-search-placeholder)]">
+                  {getNotificationCategory(item)}
+                </p>
+              {/if}
+              {#if getNotificationMessage(item)}
+                <p class="mt-2 text-sm leading-6 text-[var(--page-text)]">
+                  {getNotificationMessage(item)}
+                </p>
+              {/if}
               <p class="mt-2 text-xs {item.isRead ? 'font-medium text-[var(--topbar-search-placeholder)]' : 'font-semibold text-[var(--page-text)]'}">
                 {getSenderName(item)}
               </p>
