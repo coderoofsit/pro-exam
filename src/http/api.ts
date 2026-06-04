@@ -36,7 +36,8 @@ export const PUBLIC_API_BASE_URL = (
 	((globalThis as unknown as { process?: { env?: { VITE_PUBLIC_API_URL?: string } } })
 		.process?.env?.VITE_PUBLIC_API_URL as string | undefined) ||
 	// 'http://localhost:8000' ||
-	"https://test-exam-backend-yc8u.onrender.com"
+	// "https://test-exam-backend-yc8u.onrender.com" // paid
+	"https://test-exam-backend-8u1v.onrender.com"
 ).replace(/\/+$/, '');
 
 /** Full backend URL with `ownedBy` / `ownedRole` query params when available. */
